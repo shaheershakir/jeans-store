@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RAWT — Denim for the real world</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-theme="minimal">
+    <div class="prototype-bar">
+      <span class="eyebrow">RAWT / Website exploration</span>
+      <div class="design-tabs" aria-label="Design concepts">
+        <button class="active" data-theme-select="minimal">01 <span>Minimal</span></button>
+        <button data-theme-select="street">02 <span>Street</span></button>
+        <button data-theme-select="industrial">03 <span>Industrial</span></button>
+        <button data-theme-select="indian">04 <span>Indian</span></button>
+      </div>
+      <div class="device-toggle" aria-label="Preview size"><button class="active" data-device="desktop">Desktop</button><button data-device="mobile">Mobile</button></div>
+    </div>
+    <main class="site-shell">
+      <div class="announcement"><span>Complimentary shipping above ₹1,499</span><span>•</span><span>Easy 7-day exchanges</span><span>•</span><span>COD available</span></div>
+      <nav class="nav"><button class="menu-toggle" aria-label="Open menu">☰</button><a class="wordmark" href="#home">RAWT<span>®</span></a><div class="nav-links"><a href="#shop">New arrivals</a><a href="#shop">Jeans</a><a href="#fits">Fits</a><a href="#story">Our denim</a></div><div class="nav-actions"><button aria-label="Search">⌕</button><button aria-label="Account">♙</button><button class="cart-button" aria-label="Cart">Bag <b>0</b></button></div></nav>
+
+      <section class="page active" id="home">
+        <section class="hero">
+          <div class="hero-copy"><p class="eyebrow hero-kicker">Drop 08 / Autumn denim</p><h1></h1><p class="hero-sub"></p><div class="hero-ctas"><a href="#shop" class="button primary">Shop jeans <i>↗</i></a><a href="#fits" class="text-link">Explore fits <i>→</i></a></div></div>
+          <div class="hero-image"><img src="https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=1400&q=85" alt="Model in denim jeans" /><span class="image-label">Crafted for every day<br>Delhi / Mumbai / Everywhere</span></div>
+          <div class="hero-index"><b>01</b><span></span><em>04</em></div>
+        </section>
+        <section class="marquee"><div>DENIM WITHOUT THE DRAMA <b>✦</b> WEAR IT HARD <b>✦</b> FIND YOUR FIT <b>✦</b> DENIM WITHOUT THE DRAMA <b>✦</b></div></section>
+        <section class="arrival-section" id="shop"><div class="section-heading"><div><p class="eyebrow">Fresh from the wash</p><h2>New arrivals</h2></div><a href="#collection" class="text-link">View all <i>→</i></a></div><div class="product-grid"></div></section>
+        <section class="fit-section" id="fits"><div class="fit-heading"><p class="eyebrow">Silhouettes, not rules</p><h2>Find your<br><i>fit.</i></h2><p>Every pair is built around a silhouette. Start with the shape that feels like you.</p></div><div class="fit-grid"><button data-fit="Baggy"><span>01</span><strong>Baggy</strong><img src="https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80" alt="Baggy jeans" /></button><button data-fit="Straight"><span>02</span><strong>Straight</strong><img src="https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80" alt="Straight jeans" /></button><button data-fit="Wide"><span>03</span><strong>Wide</strong><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80" alt="Wide jeans" /></button></div></section>
+        <section class="editorial"><div class="editorial-photo"><img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1200&q=80" alt="Denim campaign" /></div><div class="editorial-copy"><p class="eyebrow">The RAWT standard</p><h2>Made to move.<br>Built to <i>stay.</i></h2><p>Weighty denim, honest washes, and fits that get better with every wear. No shortcuts. No seasonal expiry date.</p><a href="#story" class="button outline">Our story <i>↗</i></a></div></section>
+        <section class="trust-row"><span>01 / 100% cotton denim</span><span>02 / Fits tested on real bodies</span><span>03 / Easy exchanges, always</span></section>
+      </section>
+
+      <section class="page" id="collection"><header class="collection-head"><p class="eyebrow">All denim / 24 styles</p><h1>Jeans that<br><i>fit different.</i></h1><div class="filter-row"><button class="filter-trigger">Filters <b>+</b></button><button>Fit <b>⌄</b></button><button>Wash <b>⌄</b></button><button>Size <b>⌄</b></button><span>24 pieces</span><button class="sort">Sort: Featured ⌄</button></div></header><aside class="filter-panel"><p class="eyebrow">Filter by fit</p><label><input type="checkbox" /> Baggy</label><label><input type="checkbox" /> Straight</label><label><input type="checkbox" /> Relaxed</label><label><input type="checkbox" /> Wide</label><hr><p class="eyebrow">Price</p><label><input type="checkbox" /> Under ₹1,499</label><label><input type="checkbox" /> ₹1,500 – ₹1,999</label></aside><div class="collection-grid product-grid"></div></section>
+
+      <section class="page" id="product"><div class="crumb">Home / Jeans / <b>Classic Straight Indigo</b></div><div class="pdp"><div class="gallery"><img src="https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=1000&q=85" alt="Classic Straight Indigo jeans" /><img src="https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=1000&q=85" alt="Classic Straight Indigo details" /></div><div class="product-info"><p class="eyebrow">Straight fit / Indigo</p><h1>Classic Straight<br>Indigo</h1><div class="rating">★★★★★ <u>4.8 / 126 reviews</u></div><div class="price">₹1,699 <s>₹2,199</s> <span>23% off</span></div><p class="product-description">Your dependable, everyday pair. A structured mid-weight denim with a straight leg and a lived-in indigo wash.</p><div class="wash-row"><span>Wash: <b>Classic Indigo</b></span><button class="swatch indigo active"></button><button class="swatch black"></button><button class="swatch blue"></button></div><div class="size-row"><span>Choose size <a href="#">Size guide ↗</a></span><div><button>28</button><button>30</button><button class="selected">32</button><button>34</button><button>36</button></div></div><button class="add-cart">Add to bag <span>₹1,699</span></button><button class="buy-now">Buy it now</button><div class="delivery"><span>⌖</span><div><b>Delivering to India</b><p>Enter pincode to check delivery options</p></div><button>Check</button></div><details open><summary>Details & fit <b>+</b></summary><p>100% cotton · 13 oz denim · Mid rise · Straight through hip and leg · Model is 6'1&quot; and wears 32.</p></details><details><summary>Shipping & returns <b>+</b></summary></details></div></div></section>
+    </main>
+    <div class="toast">Added to your bag <span>×</span></div>
+    <script src="app.js"></script>
+  </body>
+</html>
