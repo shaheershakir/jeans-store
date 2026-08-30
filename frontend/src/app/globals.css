@@ -191,13 +191,25 @@ body {
 }
 
 .collection-head {
-  padding: 88px 4% 30px;
+  padding: 34px 4% 18px;
 }
 
-.collection-head h1 {
-  font: 500 clamp(58px, 8vw, 118px)/0.85 var(--serif);
-  letter-spacing: -0.07em;
-  margin: 16px 0 55px;
+.collection-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.collection-toolbar .sort {
+  border: 0;
+  background: none;
+  font: 500 11px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 8px;
 }
 
 .filter-row {
@@ -274,7 +286,7 @@ body {
 }
 
 .collection-grid {
-  padding: 40px 4% 100px;
+  padding: 26px 4% 90px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
@@ -615,15 +627,15 @@ body {
 }
 
 .product-info {
-  padding: 50px 11%;
+  padding: 30px 8%;
   position: sticky;
   top: 0;
 }
 
 .product-info h1 {
-  font: 500 clamp(40px, 4vw, 65px)/0.9 var(--serif);
-  letter-spacing: -0.07em;
-  margin: 15px 0 24px;
+  font: 500 clamp(30px, 3.2vw, 44px)/1 var(--serif);
+  letter-spacing: -0.04em;
+  margin: 12px 0 18px;
 }
 
 .rating {
@@ -1370,11 +1382,7 @@ details p {
     display: none;
   }
   .collection-head {
-    padding: 50px 16px 22px;
-  }
-  .collection-head h1 {
-    font-size: 64px;
-    margin-bottom: 34px;
+    padding: 20px 16px 12px;
   }
   .filter-row {
     overflow: auto;
@@ -1386,7 +1394,7 @@ details p {
   .collection-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 20px 8px;
-    padding: 30px 16px 70px;
+    padding: 18px 16px 70px;
   }
   .product-meta {
     display: block;
@@ -1440,11 +1448,11 @@ details p {
     height: 360px;
   }
   .product-info {
-    padding: 34px 16px 70px;
+    padding: 24px 16px 70px;
     position: static;
   }
   .product-info h1 {
-    font-size: 47px;
+    font-size: 30px;
   }
   .search-results-grid {
     grid-template-columns: 1fr;

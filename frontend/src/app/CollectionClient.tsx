@@ -14,9 +14,9 @@ const PRICE_LABELS: Record<PriceRange, string> = {
 }
 
 const SORT_LABELS: Record<SortMode, string> = {
-  featured: 'Sort: Featured ⌄',
-  'price-asc': 'Sort: Price ↑ ⌄',
-  'price-desc': 'Sort: Price ↓ ⌄'
+  featured: 'Sort · Featured ⌄',
+  'price-asc': 'Sort · Price ↑ ⌄',
+  'price-desc': 'Sort · Price ↓ ⌄'
 }
 
 const SORT_CYCLE: SortMode[] = ['featured', 'price-asc', 'price-desc']
@@ -46,12 +46,14 @@ export default function CollectionClient() {
   return (
     <>
       <header className="collection-head">
-        <p className="eyebrow">All denim / {PRODUCTS.length} styles</p>
-        <h1>
-          Jeans that
-          <br />
-          <i>fit different.</i>
-        </h1>
+        <div className="collection-toolbar">
+          <p className="eyebrow">
+            All denim · {products.length} of {PRODUCTS.length}
+          </p>
+          <button className="sort" type="button" onClick={handleSort} aria-label="Sort products">
+            {SORT_LABELS[sort]}
+          </button>
+        </div>
         <div className="filter-row">
           <button className="filter-trigger" type="button" onClick={() => setFiltersOpen((v) => !v)}>
             Filters <b>{filtersOpen ? '–' : '+'}</b>
@@ -61,7 +63,7 @@ export default function CollectionClient() {
             type="button"
             onClick={() => setFit('all')}
           >
-            All Fits
+            All
           </button>
           {FITS.map((f) => (
             <button
@@ -73,12 +75,6 @@ export default function CollectionClient() {
               {f}
             </button>
           ))}
-          <span className="collection-count">
-            {products.length} piece{products.length === 1 ? '' : 's'}
-          </span>
-          <button className="sort" type="button" onClick={handleSort}>
-            {SORT_LABELS[sort]}
-          </button>
         </div>
       </header>
 
