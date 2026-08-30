@@ -26,14 +26,14 @@ export function useCan(permission: Permission): boolean {
   return session ? session.permissions.includes(permission) : false
 }
 
-/** Redirects to /login when signed out. */
-export function useRequireAuth(): boolean {
+/** Redirects to /login when signed out. Pass `skipRedirect: true` on the login page itself to avoid an infinite redirect loop. */
+export function useRequireAuth(skipRedirect = false): boolean {
   const hydrated = useAdminStore((s) => s.hydrated)
   const session = useAdminStore((s) => s.session)
   React.useEffect(() => {
-    if (hydrated && !session) {
+    if (!skipRedirect && hydrated && !session) {
       window.location.assign('/login')
     }
-  }, [hydrated, session])
+  }, [skipRedirect, hydrated, session])
   return hydrated && !!session
 }

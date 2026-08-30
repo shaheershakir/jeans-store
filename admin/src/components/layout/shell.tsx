@@ -15,7 +15,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [collapsed, setCollapsed] = React.useState(false)
 
-  const isAuth = useRequireAuth()
+  const isAuth = useRequireAuth(isLoginPage)
   const isReady = useDataReady()
 
   React.useEffect(() => {
