@@ -56,7 +56,7 @@ export const PRODUCTS: Product[] = [
     price: '₹1,699',
     priceNum: 1699,
     img: 'https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1506629905607-d4052e16f733?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=800&q=80',
     desc: 'Sulphur-dyed deep matte black that fades into subtle charcoal highlights with prolonged wear.',
     wash: 'Washed Black'
   },
@@ -78,7 +78,7 @@ export const PRODUCTS: Product[] = [
     fit: 'Straight',
     price: '₹1,499',
     priceNum: 1499,
-    img: 'https://images.unsplash.com/photo-1506629905607-d4052e16f733?auto=format&fit=crop&w=800&q=80',
+    img: 'https://images.unsplash.com/photo-1584370848010-d7fe6bc767ec?auto=format&fit=crop&w=800&q=80',
     img2: 'https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&w=800&q=80',
     badge: 'Sale',
     desc: 'Clean straight leg in an overdyed slate grey with subtle hand-scraping on thighs.',

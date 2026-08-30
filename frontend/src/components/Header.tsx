@@ -2,111 +2,151 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { cartCount, useCartStore, useUIStore } from '@/lib/store'
+import { cartCount, useCartStore, useUIStore, useFilterStore } from '@/lib/store'
 
 const NAV_LINKS = [
-  { label: 'New arrivals', href: '/' },
-  { label: 'Jeans', href: '/' },
-  { label: 'Fits', href: '/' },
-  { label: 'Our denim', href: '/' }
+  { label: 'All Silhouettes', href: '/' },
+  { label: 'Straight', href: '/#straight' },
+  { label: 'Baggy & Wide', href: '/#baggy' },
+  { label: 'Selvedge Archive', href: '/#selvedge' }
 ]
 
 export default function Header() {
   const items = useCartStore((state) => state.items)
   const openOverlay = useUIStore((state) => state.openOverlay)
-  const showToast = useUIStore((state) => state.showToast)
+  const setFit = useFilterStoreSync()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
     void useCartStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
+
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const count = cartCount(items)
 
   return (
     <>
-      <nav className="nav">
-        <button
-          className="search-button menu-toggle"
-          type="button"
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={menuOpen}
-          title="Menu"
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          {menuOpen ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          )}
-        </button>
-        <Link className="wordmark" href="/">
-          INFIT<span>®</span>
-        </Link>
-        <div className="nav-links">
-          {NAV_LINKS.map((link) => (
-            <Link key={link.label} href={link.href}>
-              {link.label}
-            </Link>
-          ))}
-        </div>
-        <div className="nav-actions">
+      <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
+        <div className="header-container">
+          {/* Mobile Menu Toggle */}
           <button
-            className="search-button"
+            className="mobile-menu-btn"
             type="button"
-            aria-label="Search"
-            title="Search catalog"
-            onClick={() => openOverlay('search')}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+            {menuOpen ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            )}
           </button>
-          <button
-            className="account-button"
-            type="button"
-            aria-label="Account"
-            title="Account"
-            onClick={() => showToast('Accounts are coming soon')}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </button>
-          <button
-            className="cart-button"
-            type="button"
-            aria-label="Cart"
-            title="View shopping bag"
-            onClick={() => openOverlay('cart')}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <path d="M16 10a4 4 0 0 1-8 0" />
-            </svg>
-            <span>Bag</span>
-            <b className="cart-badge">{cartCount(items)}</b>
-          </button>
+
+          {/* Elevated Wordmark */}
+          <Link className="site-brand" href="/" aria-label="INFIT Homepage">
+            <span className="brand-name">INFIT</span>
+            <span className="brand-badge">ARCHIVE</span>
+          </Link>
+
+          {/* Desktop Navigation Links */}
+          <nav className="desktop-nav" aria-label="Main Navigation">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="nav-item-link"
+                onClick={() => {
+                  if (link.label === 'Straight') setFit('Straight')
+                  else if (link.label === 'Baggy & Wide') setFit('Baggy')
+                  else if (link.label === 'All Silhouettes') setFit('all')
+                }}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Action Tools */}
+          <div className="header-actions">
+            <button
+              className="action-icon-btn search-trigger"
+              type="button"
+              aria-label="Search catalog"
+              title="Search products"
+              onClick={() => openOverlay('search')}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <span className="action-btn-text">Search</span>
+            </button>
+
+            <button
+              className="header-cart-btn"
+              type="button"
+              aria-label={`Shopping bag with ${count} items`}
+              title="View shopping bag"
+              onClick={() => openOverlay('cart')}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+              </svg>
+              <span className="cart-label">Bag</span>
+              <span className={`cart-count-pill ${count > 0 ? 'highlight' : ''}`}>{count}</span>
+            </button>
+          </div>
         </div>
-      </nav>
-      {menuOpen && (
-        <div className="mobile-menu">
-          {NAV_LINKS.map((link) => (
-            <Link key={link.label} href={link.href} onClick={() => setMenuOpen(false)}>
-              {link.label}
-            </Link>
-          ))}
-        </div>
-      )}
+
+        {/* Mobile Navigation Drawer */}
+        {menuOpen && (
+          <div className="mobile-nav-panel">
+            <div className="mobile-nav-links">
+              {NAV_LINKS.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="mobile-nav-item"
+                  onClick={() => {
+                    if (link.label === 'Straight') setFit('Straight')
+                    else if (link.label === 'Baggy & Wide') setFit('Baggy')
+                    else if (link.label === 'All Silhouettes') setFit('all')
+                    setMenuOpen(false)
+                  }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <div className="mobile-nav-meta">
+                <span>Direct Studio Support</span>
+                <a href="mailto:concierge@infit.in">concierge@infit.in</a>
+              </div>
+            </div>
+          </div>
+        )}
+      </header>
     </>
   )
+}
+
+function useFilterStoreSync() {
+  const setFit = useFilterStore((state) => state.setFit)
+  return setFit
 }

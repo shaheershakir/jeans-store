@@ -13,13 +13,11 @@ const PRICE_LABELS: Record<PriceRange, string> = {
   'above-2000': '₹2,000 & Above'
 }
 
-const SORT_LABELS: Record<SortMode, string> = {
-  featured: 'Sort · Featured ⌄',
-  'price-asc': 'Sort · Price ↑ ⌄',
-  'price-desc': 'Sort · Price ↓ ⌄'
-}
-
-const SORT_CYCLE: SortMode[] = ['featured', 'price-asc', 'price-desc']
+const SORT_OPTIONS: { mode: SortMode; label: string }[] = [
+  { mode: 'featured', label: 'Featured' },
+  { mode: 'price-asc', label: 'Price: Low to High' },
+  { mode: 'price-desc', label: 'Price: High to Low' }
+]
 
 export default function CollectionClient() {
   const fit = useFilterStore((state) => state.fit)
@@ -37,79 +35,149 @@ export default function CollectionClient() {
   }, [])
 
   const products = filterAndSortProducts(fit, prices, sort)
-
-  function handleSort() {
-    const next = SORT_CYCLE[(SORT_CYCLE.indexOf(sort) + 1) % SORT_CYCLE.length]
-    setSort(next)
-  }
+  const activeFilterCount = (fit !== 'all' ? 1 : 0) + prices.length
 
   return (
     <>
-      <header className="collection-head">
-        <div className="collection-toolbar">
-          <p className="eyebrow">
-            All denim · {products.length} of {PRODUCTS.length}
+      {/* Editorial Collection Hero Banner */}
+      <section className="collection-hero">
+        <div className="collection-hero-inner">
+          <div className="hero-tagline">
+            <span className="hero-dot"></span>
+            <span className="hero-eyebrow">HEAVYWEIGHT DENIM EDITION // V26</span>
+          </div>
+          <h1 className="hero-title">Crafted for permanence. Cut for movement.</h1>
+          <p className="hero-subtitle">
+            13.5oz to 14.5oz raw and washed denim spun on shuttle looms. Free shipping across India.
           </p>
-          <button className="sort" type="button" onClick={handleSort} aria-label="Sort products">
-            {SORT_LABELS[sort]}
-          </button>
         </div>
-        <div className="filter-row">
-          <button className="filter-trigger" type="button" onClick={() => setFiltersOpen((v) => !v)}>
-            Filters <b>{filtersOpen ? '–' : '+'}</b>
-          </button>
-          <button
-            className={`fit-filter-btn${fit === 'all' ? ' active' : ''}`}
-            type="button"
-            onClick={() => setFit('all')}
-          >
-            All
-          </button>
-          {FITS.map((f) => (
+      </section>
+
+      {/* Interactive Sticky Toolbar */}
+      <header className="collection-toolbar-wrapper">
+        <div className="collection-toolbar-content">
+          {/* Fit Filter Segmented Chips */}
+          <div className="fit-pills-scroll" role="tablist" aria-label="Filter by denim fit">
             <button
-              key={f}
-              className={`fit-filter-btn${fit === f ? ' active' : ''}`}
               type="button"
-              onClick={() => setFit(f)}
+              role="tab"
+              aria-selected={fit === 'all'}
+              className={`pill-btn ${fit === 'all' ? 'active' : ''}`}
+              onClick={() => setFit('all')}
             >
-              {f}
+              All Fits <span className="pill-count">{PRODUCTS.length}</span>
             </button>
-          ))}
+            {FITS.map((f) => {
+              const count = PRODUCTS.filter((p) => p.fit === f).length
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  role="tab"
+                  aria-selected={fit === f}
+                  className={`pill-btn ${fit === f ? 'active' : ''}`}
+                  onClick={() => setFit(f)}
+                >
+                  {f} <span className="pill-count">{count}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Secondary Controls: Price Filter Toggle & Sort Menu */}
+          <div className="toolbar-actions">
+            <button
+              type="button"
+              className={`filter-drawer-toggle ${activeFilterCount > 0 ? 'has-active' : ''}`}
+              onClick={() => setFiltersOpen((v) => !v)}
+              aria-expanded={filtersOpen}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="4" y1="21" x2="4" y2="14"></line>
+                <line x1="4" y1="10" x2="4" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12" y2="3"></line>
+                <line x1="20" y1="21" x2="20" y2="16"></line>
+                <line x1="20" y1="12" x2="20" y2="3"></line>
+                <line x1="1" y1="14" x2="7" y2="14"></line>
+                <line x1="9" y1="8" x2="15" y2="8"></line>
+                <line x1="17" y1="16" x2="23" y2="16"></line>
+              </svg>
+              <span>Filters</span>
+              {activeFilterCount > 0 && <span className="filter-badge-pill">{activeFilterCount}</span>}
+            </button>
+
+            <div className="sort-dropdown-wrap">
+              <select
+                className="sort-select"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortMode)}
+                aria-label="Sort products"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.mode} value={opt.mode}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
+
+        {/* Expandable Filter Panel */}
+        {filtersOpen && (
+          <div className="filter-drawer-panel">
+            <div className="filter-drawer-content">
+              <div className="filter-group">
+                <span className="filter-group-heading">Price Range</span>
+                <div className="filter-checkbox-list">
+                  {(Object.keys(PRICE_LABELS) as PriceRange[]).map((range) => (
+                    <label key={range} className="custom-checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={prices.includes(range)}
+                        onChange={() => togglePrice(range)}
+                      />
+                      <span className="checkbox-custom"></span>
+                      <span className="checkbox-text">{PRICE_LABELS[range]}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="filter-drawer-footer">
+                <span className="filter-status-text">
+                  Showing {products.length} of {PRODUCTS.length} silhouettes
+                </span>
+                {activeFilterCount > 0 && (
+                  <button type="button" className="clear-filters-btn" onClick={reset}>
+                    Reset all filters
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
-      <aside className={`filter-panel${filtersOpen ? ' open' : ''}`}>
-        <p className="eyebrow">Filter by fit</p>
-        {FITS.map((f) => (
-          <label key={f}>
-            <input type="checkbox" checked={fit === f} onChange={() => setFit(fit === f ? 'all' : f)} /> {f}
-          </label>
-        ))}
-        <hr />
-        <p className="eyebrow">Price</p>
-        {(Object.keys(PRICE_LABELS) as PriceRange[]).map((range) => (
-          <label key={range}>
-            <input type="checkbox" checked={prices.includes(range)} onChange={() => togglePrice(range)} />{' '}
-            {PRICE_LABELS[range]}
-          </label>
-        ))}
-        <button type="button" className="text-link" onClick={reset}>
-          Clear all
-        </button>
-      </aside>
-
-      <div className="collection-grid product-grid">
+      {/* Main Grid */}
+      <section className="catalog-section">
         {products.length === 0 ? (
-          <div className="grid-empty">
-            <p>No jeans match those filters.</p>
-            <button className="text-link" type="button" onClick={reset}>
+          <div className="catalog-empty-state">
+            <p className="empty-title">No jeans match those filters.</p>
+            <p className="empty-desc">Try resetting your filter parameters to view the archive.</p>
+            <button className="reset-catalog-btn" type="button" onClick={reset}>
               Clear all filters
             </button>
           </div>
         ) : (
-          products.map((product) => <ProductCard key={product.id} product={product} />)
+          <div className="collection-grid">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
         )}
-      </div>
+      </section>
     </>
   )
 }

@@ -26,13 +26,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <main className="site-shell">
-          <div className="announcement">
-            <span>Complimentary shipping above ₹1,499</span>
-            <span>•</span>
-            <span>Easy 7-day exchanges</span>
-            <span>•</span>
-            <span>COD available</span>
-          </div>
           <Header />
           {children}
           <Footer />
