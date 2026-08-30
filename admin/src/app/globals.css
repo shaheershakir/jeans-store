@@ -1,0 +1,81 @@
+@import 'tailwindcss';
+
+/*
+ * INFIT Admin design tokens.
+ * Mirrors admin/DESIGN.md: light neutral canvas, white surfaces,
+ * indigo primary accent, restrained borders, 8px spacing scale.
+ */
+@theme inline {
+  --font-sans:
+    var(--font-inter), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-canvas: #f8f9fa;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f9fafb;
+
+  --color-ink: #111827;
+  --color-ink-2: #667085;
+  --color-ink-3: #98a2b3;
+  --color-ink-4: #b8bec8;
+
+  --color-line: #e5e7eb;
+  --color-line-strong: #d1d5db;
+  --color-divider: #eaecf0;
+
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-soft: #eef2ff;
+
+  --color-success: #16a34a;
+  --color-success-soft: #f0fdf4;
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
+  --color-info: #2563eb;
+  --color-info-soft: #eff6ff;
+
+  --radius-card: 12px;
+
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-pop: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-modal: 0 12px 32px rgba(16, 24, 40, 0.16);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-size: 14px;
+    line-height: 1.4286;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--color-primary-soft);
+  }
+}
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
