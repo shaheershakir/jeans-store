@@ -1453,3 +1453,189 @@ details p {
     max-width: 100%;
   }
 }
+
+/* ============================================================
+   Mobile & accessibility overhaul (price-first UX)
+   Overrides above rules by order; flat specificity throughout.
+   ============================================================ */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a,
+button {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 2px solid var(--denim);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* --- Price-first product cards --- */
+.product-image {
+  display: block; /* the wrapper is an <a>; must be block for aspect-ratio + absolute children */
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-meta a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-meta h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.product-meta strong {
+  font: 700 16px/1.2 var(--mono); /* the price is the loudest thing on the card */
+}
+
+.product-meta p {
+  margin-top: 2px;
+}
+
+/* --- PDP: price leads --- */
+.price {
+  font: 700 21px var(--mono);
+}
+
+/* --- Mobile menu --- */
+.mobile-menu {
+  display: none;
+}
+
+.menu-toggle {
+  display: none; /* desktop has inline nav links */
+}
+
+/* --- Toast containment --- */
+.toast {
+  max-width: min(92vw, 480px);
+  flex-wrap: wrap;
+  line-height: 1.4;
+}
+
+/* --- Prevent iOS input zoom --- */
+.search-input-wrap input {
+  font-size: 16px;
+}
+
+/* --- Always-visible sort/count, scrollable filter row --- */
+.filter-row .sort {
+  display: inline-block;
+}
+
+.filter-row span {
+  display: inline;
+}
+
+@media (max-width: 700px) {
+  /* Sticky header keeps navigation reachable */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--paper);
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  .mobile-menu {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--ink);
+    background: var(--paper);
+    position: sticky;
+    top: 60px;
+    z-index: 39;
+  }
+
+  .mobile-menu a {
+    padding: 15px 16px;
+    border-top: 1px solid var(--line);
+    text-decoration: none;
+    color: inherit;
+    text-transform: uppercase;
+    font: 500 12px var(--mono);
+    letter-spacing: 0.03em;
+  }
+
+  /* Keep sort reachable; hide only the redundant count on tiny screens */
+  .filter-row {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .filter-row span {
+    display: none; /* count returns under the grid heading area instead */
+  }
+
+  .filter-panel {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    z-index: 50;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  .collection-grid {
+    gap: 22px 10px;
+  }
+
+  /* Touch has no hover: quick-add stays hidden, the card itself links to the PDP */
+  .product-card:hover img {
+    transform: none;
+  }
+
+  /* Sticky price CTA on the PDP */
+  .product-info {
+    padding-bottom: 90px;
+  }
+
+  .add-cart {
+    position: sticky;
+    bottom: 12px;
+    z-index: 5;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .size-row button {
+    height: 44px;
+    min-width: 48px;
+    flex: 1; /* full-width row of comfortable tap targets */
+  }
+
+  .delivery button {
+    padding: 10px;
+  }
+
+  .cart-drawer .checkout-btn {
+    padding: 17px 18px; /* comfortable thumb target */
+  }
+}
+

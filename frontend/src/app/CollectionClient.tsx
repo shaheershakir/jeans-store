@@ -103,9 +103,16 @@ export default function CollectionClient() {
       </aside>
 
       <div className="collection-grid product-grid">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
+        {products.length === 0 ? (
+          <div className="grid-empty">
+            <p>No jeans match those filters.</p>
+            <button className="text-link" type="button" onClick={reset}>
+              Clear all filters
+            </button>
+          </div>
+        ) : (
+          products.map((product) => <ProductCard key={product.id} product={product} />)
+        )}
       </div>
     </>
   )
