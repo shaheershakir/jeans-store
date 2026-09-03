@@ -2,8 +2,8 @@ import type { Fit, Product } from './constants'
 import type { SortMode } from './store'
 import { PRODUCTS } from './constants'
 
-export function getProductById(id: number): Product | undefined {
-  return PRODUCTS.find((p) => p.id === id)
+export function getProductById(id: number, catalog: Product[] = PRODUCTS): Product | undefined {
+  return catalog.find((p) => p.id === id)
 }
 
 export function formatPrice(value: number): string {
@@ -13,9 +13,10 @@ export function formatPrice(value: number): string {
 export function filterAndSortProducts(
   fit: Fit | 'all',
   prices: string[],
-  sort: SortMode
+  sort: SortMode,
+  catalog: Product[] = PRODUCTS
 ): Product[] {
-  let list = [...PRODUCTS]
+  let list = [...catalog]
 
   if (fit !== 'all') {
     list = list.filter((p) => p.fit === fit)
@@ -43,10 +44,10 @@ export function filterAndSortProducts(
   return list
 }
 
-export function searchProducts(query: string): Product[] {
+export function searchProducts(query: string, catalog: Product[] = PRODUCTS): Product[] {
   const clean = query.trim().toLowerCase()
-  if (!clean) return PRODUCTS
-  return PRODUCTS.filter(
+  if (!clean) return catalog
+  return catalog.filter(
     (p) =>
       p.name.toLowerCase().includes(clean) ||
       p.fit.toLowerCase().includes(clean) ||

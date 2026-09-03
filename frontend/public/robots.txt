@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /checkout
+
+Sitemap: https://infit.in/sitemap.xml

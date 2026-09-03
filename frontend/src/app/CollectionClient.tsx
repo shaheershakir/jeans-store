@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import type { Product } from '@/lib/constants'
 import { FITS, PRODUCTS } from '@/lib/constants'
 import type { PriceRange, SortMode } from '@/lib/store'
 import { useCartStore, useFilterStore } from '@/lib/store'
@@ -19,7 +20,11 @@ const SORT_OPTIONS: { mode: SortMode; label: string }[] = [
   { mode: 'price-desc', label: 'Price: High to Low' }
 ]
 
-export default function CollectionClient() {
+interface CollectionClientProps {
+  initialProducts?: Product[]
+}
+
+export default function CollectionClient({ initialProducts = PRODUCTS }: CollectionClientProps) {
   const fit = useFilterStore((state) => state.fit)
   const prices = useFilterStore((state) => state.prices)
   const sort = useFilterStore((state) => state.sort)
@@ -34,7 +39,7 @@ export default function CollectionClient() {
     void useCartStore.persist.rehydrate()
   }, [])
 
-  const products = filterAndSortProducts(fit, prices, sort)
+  const products = filterAndSortProducts(fit, prices, sort, initialProducts)
   const activeFilterCount = (fit !== 'all' ? 1 : 0) + prices.length
 
   return (
@@ -65,10 +70,10 @@ export default function CollectionClient() {
               className={`pill-btn ${fit === 'all' ? 'active' : ''}`}
               onClick={() => setFit('all')}
             >
-              All Fits <span className="pill-count">{PRODUCTS.length}</span>
+              All Fits <span className="pill-count">{initialProducts.length}</span>
             </button>
             {FITS.map((f) => {
-              const count = PRODUCTS.filter((p) => p.fit === f).length
+              const count = initialProducts.filter((p) => p.fit === f).length
               return (
                 <button
                   key={f}
@@ -147,7 +152,7 @@ export default function CollectionClient() {
 
               <div className="filter-drawer-footer">
                 <span className="filter-status-text">
-                  Showing {products.length} of {PRODUCTS.length} silhouettes
+                  Showing {products.length} of {initialProducts.length} silhouettes
                 </span>
                 {activeFilterCount > 0 && (
                   <button type="button" className="clear-filters-btn" onClick={reset}>
