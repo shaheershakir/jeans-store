@@ -1,20 +1,28 @@
 # AGENTS.md — admin
 
-Admin panel for the INFIT store. **Not built yet.** This directory contains docs only — there is no code, no package.json, no commands to run.
+This directory houses the administrative dashboard for INFIT. It is a fully built Next.js 15 application with Tailwind CSS v4.
 
-## Status
+## Commands
 
-- No framework chosen. The stack decision is deferred to when this phase starts; do not scaffold unprompted.
-- `DESIGN.md` here is stale: it describes "WattVision", a Spanish-language electrical-monitoring dashboard unrelated to INFIT. Do not apply it to admin work; treat it as leftover unless the user says otherwise.
+All commands run inside `admin/`:
 
-## Contract (when building)
+```bash
+npm run dev      # Dev server on port 3001
+npm run build    # Production build (typecheck + ESLint)
+npm run start    # Start production server on port 3001
+npm run lint     # Next.js ESLint checks
+npm run format   # Format files with Prettier
+```
 
-- Admin talks to `backend/`, never to the frontend. Backend is also a placeholder; see `backend/README.md`.
-- The shared data shape is `Product` (and the `Fit` union) in `frontend/src/lib/constants.ts`. Until the backend exists, that file is the source of truth — keep the admin's product model identical to it:
-  - `id: number`, `name`, `fit: 'Straight' | 'Baggy' | 'Wide' | 'Relaxed' | 'Bootcut'`, `price: string` / `priceNum: number` (both exist — display string plus numeric INR value), `img`/`img2` (both Unsplash URLs required per product), `badge?`, `desc`, `wash`.
-- Planned surface: product CRUD, badge and wash edits, price changes. The 8 seed products in `constants.ts` are the first dataset.
-- Pricing and shipping logic use INR (₹); business rules live in the frontend (`../AGENTS.md` / `frontend`), not here.
+## Architecture and layout
 
-## Repo root
+- Next.js 15 App Router with React 19 and Tailwind CSS v4.
+- `src/app/`: Admin routes including `/products`, `/orders`, `/inventory`, `/analytics`, `/customers`, `/marketing`, and `/settings`.
+- `src/components/`: Dashboard shell, sidebar navigation, primitives, and forms.
+- `src/store/`: Zustand stores for authentication sessions, simulated metrics, and administrative state.
+- `src/data/`: Mock customer, order, and product seed datasets.
 
-Repo-wide conventions (three-app layout, command locations, why source of truth is `constants.ts`) are in `../AGENTS.md`. All runnable commands today live in `frontend/` — nothing in `admin/` builds yet.
+## Status and contract
+
+- Product catalog shape mirrors the shared `Product` interface in `frontend/src/lib/constants.ts` and `backend/src/schemas/product.ts`.
+- The admin dashboard currently runs with simulated client-side datasets and hardcoded local backend URL assumptions. Do not rewrite admin features during the testing storefront pass. Environment variable integration is documented in `docs/tasks/03-admin-env-wiring.md`.
