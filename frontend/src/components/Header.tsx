@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { cartCount, useCartStore, useUIStore, useFilterStore } from '@/lib/store'
 
-const NAV_LINKS = [
-  { label: 'All Silhouettes', href: '/' },
-  { label: 'Straight', href: '/#straight' },
-  { label: 'Baggy & Wide', href: '/#baggy' },
-  { label: 'Selvedge Archive', href: '/#selvedge' }
+const NAV_LINKS: { label: string; href: string; fit: 'all' | 'Straight' | 'Baggy' | 'Wide' | 'Relaxed' | 'Bootcut' }[] = [
+  { label: 'All Silhouettes', href: '/', fit: 'all' },
+  { label: 'Straight', href: '/', fit: 'Straight' },
+  { label: 'Baggy & Wide', href: '/', fit: 'Baggy' },
+  { label: 'Relaxed', href: '/', fit: 'Relaxed' }
 ]
 
 export default function Header() {
@@ -70,11 +70,7 @@ export default function Header() {
                 key={link.label}
                 href={link.href}
                 className="nav-item-link"
-                onClick={() => {
-                  if (link.label === 'Straight') setFit('Straight')
-                  else if (link.label === 'Baggy & Wide') setFit('Baggy')
-                  else if (link.label === 'All Silhouettes') setFit('all')
-                }}
+                onClick={() => setFit(link.fit)}
               >
                 {link.label}
               </Link>
@@ -125,9 +121,7 @@ export default function Header() {
                   href={link.href}
                   className="mobile-nav-item"
                   onClick={() => {
-                    if (link.label === 'Straight') setFit('Straight')
-                    else if (link.label === 'Baggy & Wide') setFit('Baggy')
-                    else if (link.label === 'All Silhouettes') setFit('all')
+                    setFit(link.fit)
                     setMenuOpen(false)
                   }}
                 >

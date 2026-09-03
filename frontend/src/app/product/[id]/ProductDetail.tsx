@@ -4,24 +4,22 @@ import type { MouseEvent } from 'react'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import type { Product } from '@/lib/constants'
 import { SIZES, SWATCHES } from '@/lib/constants'
 import { useCartStore, useUIStore } from '@/lib/store'
-import { formatPrice } from '@/lib/utils'
 
 export default function ProductDetail({ product }: { product: Product }) {
+  const router = useRouter()
   const addItem = useCartStore((state) => state.addItem)
   const selectedSize = useUIStore((state) => state.selectedSize)
   const activeSwatch = useUIStore((state) => state.activeSwatch)
-  const deliveryChecked = useUIStore((state) => state.deliveryChecked)
   const setSelectedSize = useUIStore((state) => state.setSelectedSize)
   const setActiveSwatch = useUIStore((state) => state.setActiveSwatch)
-  const setDeliveryChecked = useUIStore((state) => state.setDeliveryChecked)
   const showToast = useUIStore((state) => state.showToast)
   const openOverlay = useUIStore((state) => state.openOverlay)
 
   const [added, setAdded] = useState(false)
-  const [pincode, setPincode] = useState('')
 
   useEffect(() => {
     void useUIStore.persist.rehydrate()
@@ -38,7 +36,7 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   function handleBuyNow() {
     addItem(product.id, selectedSize)
-    openOverlay('cart')
+    router.push('/checkout')
   }
 
   function handleSizeGuide(e: MouseEvent<HTMLAnchorElement>) {
@@ -46,16 +44,6 @@ export default function ProductDetail({ product }: { product: Product }) {
     showToast(
       'Size Guide: 28 (28" Waist) · 30 (30" Waist) · 32 (32" Waist) · 34 (34" Waist) · 36 (36" Waist)'
     )
-  }
-
-  function handlePincodeCheck(e: React.FormEvent) {
-    e.preventDefault()
-    if (!pincode || pincode.trim().length < 6) {
-      showToast('Please enter a valid 6-digit pincode')
-      return
-    }
-    setDeliveryChecked(true)
-    showToast(`Pincode ${pincode} verified · Express Delivery Available`)
   }
 
   return (
@@ -104,16 +92,12 @@ export default function ProductDetail({ product }: { product: Product }) {
             </span>
             <h1 className="pdp-headline">{product.name}</h1>
 
-            <div className="pdp-rating-row">
-              <span className="pdp-stars">★★★★★</span>
-              <span className="pdp-reviews-count">4.9 (126 reviews)</span>
-              <span className="pdp-stock-indicator">✓ In Stock, Ready to Ship</span>
+            <div className="pdp-stock-row">
+              <span className="pdp-stock-indicator">In Stock, Ready to Ship</span>
             </div>
 
             <div className="pdp-pricing-block">
               <span className="pdp-current-price">{product.price}</span>
-              <s className="pdp-orig-price">{formatPrice(product.priceNum + 500)}</s>
-              <span className="pdp-discount-pill">Special Edition</span>
             </div>
           </div>
 
@@ -187,34 +171,16 @@ export default function ProductDetail({ product }: { product: Product }) {
             </button>
           </div>
 
-          {/* Pincode & Delivery Checker */}
-          <form className="pdp-pincode-card" onSubmit={handlePincodeCheck}>
-            <div className="pincode-header">
-              <span className="pincode-icon">⌖</span>
-              <span className="pincode-title">Check Delivery &amp; COD Availability</span>
+          {/* Honest Delivery Information */}
+          <div className="pdp-delivery-card">
+            <div className="delivery-card-header">
+              <span className="delivery-icon">✦</span>
+              <span className="delivery-title">Delivery and Dispatch</span>
             </div>
-            <div className="pincode-input-row">
-              <input
-                type="text"
-                placeholder="Enter 6-digit pincode"
-                maxLength={6}
-                value={pincode}
-                onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
-                className="pincode-field"
-              />
-              <button type="submit" className="pincode-submit-btn">
-                Check
-              </button>
-            </div>
-            {deliveryChecked ? (
-              <div className="pincode-success-msg">
-                <span className="check-icon">✓</span>
-                <span>Express 2–4 Day Delivery &amp; COD available for this area</span>
-              </div>
-            ) : (
-              <p className="pincode-note">Orders dispatched within 24 hours from Mumbai facility.</p>
-            )}
-          </form>
+            <p className="delivery-detail">
+              Orders dispatch within 24 hours from our Mumbai facility. Standard transit takes 2 to 4 business days across India. Free shipping on all orders above ₹1,499.
+            </p>
+          </div>
 
           {/* Collapsible Accordions */}
           <div className="pdp-accordions">

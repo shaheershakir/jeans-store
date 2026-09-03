@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect } from 'react'
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@/lib/constants'
 import { cartCount, cartSubtotal, useCartStore, useUIStore } from '@/lib/store'
@@ -12,7 +13,6 @@ export default function CartDrawer() {
   const closeOverlay = useUIStore((state) => state.closeOverlay)
   const updateQty = useCartStore((state) => state.updateQty)
   const removeItem = useCartStore((state) => state.removeItem)
-  const showToast = useUIStore((state) => state.showToast)
 
   useEffect(() => {
     void useCartStore.persist.rehydrate()
@@ -133,13 +133,13 @@ export default function CartDrawer() {
                 <span>{formatPrice(subtotal + shipping)}</span>
               </div>
             </div>
-            <button
+            <Link
+              href="/checkout"
               className="button primary checkout-btn"
-              type="button"
-              onClick={() => showToast('Checkout is not wired up yet — backend coming soon')}
+              onClick={closeOverlay}
             >
               Proceed to Checkout <i>↗</i>
-            </button>
+            </Link>
             <p className="cart-guarantee">✦ Free 7-day exchanges · COD available across India</p>
           </div>
         )}
