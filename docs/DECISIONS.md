@@ -106,3 +106,25 @@ We load fonts via preconnected links in `frontend/src/app/layout.tsx` and suppre
 
 - Positive: Preserves existing visual hierarchy and font rendering without requiring complex multi-font CSS variable rewiring in `next/font`.
 - Negative: Fonts depend on Google Fonts CDN availability rather than self-hosting within the build bundle.
+
+---
+
+## ADR 7: Google Cloud Run deployment with Neon PostgreSQL and Drizzle ORM
+
+### Context
+
+The original test deployment relied on Render free tier (with 40s cold starts) and Vercel hobby tier with in-memory backend storage. For production readiness, the platform requires multi-instance auto-scaling, persistent ACID database storage, authenticated API mutations, and zero cold-start latency for shoppers.
+
+### Decision
+
+1. Deploy all three services (`frontend`, `backend`, `admin`) as multi-stage container images on Google Cloud Run.
+2. Persist catalog products and customer orders to Neon PostgreSQL using Drizzle ORM, with an in-memory/seed fallback when `DATABASE_URL` is absent (for offline CI builds).
+3. Secure backend mutations (`POST`, `PUT`, `DELETE /api/products` and `GET /api/orders`) using shared `X-API-Key` authentication, `@fastify/helmet`, and `@fastify/rate-limit`.
+4. Implement Next.js On-Demand ISR via `/api/revalidate`, allowing backend catalog edits to trigger immediate cache invalidation on the storefront.
+5. Persist submitted customer orders to `/api/orders` prior to WhatsApp/mailto concierge redirection.
+
+### Consequences
+
+- Positive: Auto-scales to zero when idle; instant response times; persistent multi-instance database; end-to-end security; audit log of all customer orders.
+- Negative: Requires managed container builds and Secret Manager configuration for production deployments.
+

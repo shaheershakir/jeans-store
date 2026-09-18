@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - '4000:4000'
+    environment:
+      - PORT=4000
+      - HOST=0.0.0.0
+      - NODE_ENV=development
+      - CORS_ORIGIN=*
+      - DATABASE_URL=${DATABASE_URL:-}
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-admin-secret-dev-key}
+      - FRONTEND_URL=http://frontend:3000
+      - REVALIDATION_SECRET=${REVALIDATION_SECRET:-revalidate-secret-dev-key}
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:4000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - BACKEND_URL=http://backend:4000
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
+      - REVALIDATION_SECRET=${REVALIDATION_SECRET:-revalidate-secret-dev-key}
+      - NEXT_PUBLIC_WHATSAPP_NUMBER=${NEXT_PUBLIC_WHATSAPP_NUMBER:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    ports:
+      - '3001:3001'
+    environment:
+      - PORT=3001
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
+      - NEXT_PUBLIC_ADMIN_API_KEY=${ADMIN_API_KEY:-admin-secret-dev-key}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped

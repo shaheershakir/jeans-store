@@ -1,0 +1,110 @@
+name: Deploy to Google Cloud Run
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'admin/**'
+      - '.github/workflows/deploy-gcp.yml'
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GAR_LOCATION: ${{ secrets.GCP_REGION || 'asia-south1' }}
+  GAR_REPOSITORY: ${{ secrets.GAR_REPOSITORY || 'infit' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.repository == 'shaheershakir/jeans-store'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
+        run: |
+          gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+
+      # -------------------------------------------------------------
+      # 1. Backend Service
+      # -------------------------------------------------------------
+      - name: Build & Push Backend Container
+        if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
+        run: |
+          IMAGE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:${{ github.sha }}"
+          docker build -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:latest" ./backend
+          docker push "$IMAGE"
+          docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:latest"
+
+      - name: Deploy Backend to Cloud Run
+        if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
+        run: |
+          gcloud run deploy infit-backend \
+            --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:${{ github.sha }}" \
+            --region="${{ env.GAR_LOCATION }}" \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=4000 \
+            --set-env-vars="NODE_ENV=production" \
+            --set-secrets="DATABASE_URL=infit-database-url:latest,ADMIN_API_KEY=infit-admin-api-key:latest,REVALIDATION_SECRET=infit-revalidation-secret:latest"
+
+      # -------------------------------------------------------------
+      # 2. Storefront Service
+      # -------------------------------------------------------------
+      - name: Build & Push Storefront Container
+        if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
+        run: |
+          IMAGE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:${{ github.sha }}"
+          docker build -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:latest" ./frontend
+          docker push "$IMAGE"
+          docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:latest"
+
+      - name: Deploy Storefront to Cloud Run
+        if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
+        run: |
+          gcloud run deploy infit-frontend \
+            --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:${{ github.sha }}" \
+            --region="${{ env.GAR_LOCATION }}" \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=3000 \
+            --set-env-vars="NODE_ENV=production" \
+            --set-secrets="BACKEND_URL=infit-backend-url:latest,NEXT_PUBLIC_API_URL=infit-backend-url:latest,REVALIDATION_SECRET=infit-revalidation-secret:latest,NEXT_PUBLIC_WHATSAPP_NUMBER=infit-whatsapp-number:latest"
+
+      # -------------------------------------------------------------
+      # 3. Admin Dashboard Service
+      # -------------------------------------------------------------
+      - name: Build & Push Admin Container
+        if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
+        run: |
+          IMAGE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:${{ github.sha }}"
+          docker build -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:latest" ./admin
+          docker push "$IMAGE"
+          docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:latest"
+
+      - name: Deploy Admin to Cloud Run
+        if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
+        run: |
+          gcloud run deploy infit-admin \
+            --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:${{ github.sha }}" \
+            --region="${{ env.GAR_LOCATION }}" \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=3001 \
+            --set-env-vars="NODE_ENV=production" \
+            --set-secrets="NEXT_PUBLIC_API_URL=infit-backend-url:latest,NEXT_PUBLIC_ADMIN_API_KEY=infit-admin-api-key:latest"

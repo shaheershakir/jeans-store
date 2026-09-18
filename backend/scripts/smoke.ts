@@ -45,9 +45,12 @@ record(
 const notFoundRes = await request('/api/products/999')
 record('GET /api/products/999 → 404', notFoundRes.status === 404, `status ${notFoundRes.status}`)
 
+const adminKey = process.env.ADMIN_API_KEY
+const authHeader = adminKey ? { 'x-api-key': adminKey } : {}
+
 const createRes = await request('/api/products', {
   method: 'POST',
-  headers: { 'content-type': 'application/json' },
+  headers: { 'content-type': 'application/json', ...authHeader },
   body: JSON.stringify({
     name: 'Smoke Test Straight',
     fit: 'Straight',
@@ -66,18 +69,42 @@ const newId = createBody.product?.id
 if (newId !== undefined) {
   const patchRes = await request(`/api/products/${newId}`, {
     method: 'PUT',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({ price: '₹1,099', priceNum: 1099 })
   })
   record('PUT /api/products/:id → 200', patchRes.status === 200, `status ${patchRes.status}`)
 
-  const deleteRes = await request(`/api/products/${newId}`, { method: 'DELETE' })
+  const deleteRes = await request(`/api/products/${newId}`, {
+    method: 'DELETE',
+    headers: { ...authHeader }
+  })
   record('DELETE /api/products/:id → 204', deleteRes.status === 204, `status ${deleteRes.status}`)
 }
 
-const invalidRes = await request('/api/products', {
+const orderRes = await request('/api/orders', {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({
+    orderNumber: `INF-SMOKE-${Date.now().toString().slice(-4)}`,
+    customerName: 'Smoke Test Customer',
+    customerPhone: '9876543210',
+    customerEmail: 'smoke@example.com',
+    address: '123 Test Street',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    pincode: '400001',
+    items: [{ id: 1, name: 'The Standard 01', size: '32', price: '₹1,499', priceNum: 1499, quantity: 1 }],
+    subtotal: 1499,
+    shipping: 0,
+    total: 1499,
+    handoffType: 'whatsapp'
+  })
+})
+record('POST /api/orders → 201', orderRes.status === 201, `status ${orderRes.status}`)
+
+const invalidRes = await request('/api/products', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', ...authHeader },
   body: JSON.stringify({ name: 'Broken' })
 })
 record('POST /api/products invalid body → 400', invalidRes.status === 400, `status ${invalidRes.status}`)

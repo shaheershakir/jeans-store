@@ -1,45 +1,119 @@
-import type { CreateProduct, Product, UpdateProduct } from '../schemas/product.js'
+import { eq } from 'drizzle-orm'
+import type { CreateProduct, Product, UpdateProduct, Fit } from '../schemas/product.js'
 import { PRODUCTS } from '../data/products.js'
+import { db, isDatabaseConfigured } from '../db/index.js'
+import { products as productsTable, type DbProduct } from '../db/schema.js'
+
+function toProduct(row: DbProduct): Product {
+  return {
+    id: row.id,
+    name: row.name,
+    fit: row.fit as Fit,
+    price: row.price,
+    priceNum: row.priceNum,
+    img: row.img,
+    img2: row.img2,
+    badge: row.badge ?? undefined,
+    desc: row.desc,
+    wash: row.wash
+  }
+}
 
 /**
- * In-memory product store. Backed by the seed dataset at boot.
- * Swap this module for a database layer when persistence is added —
- * the routes only talk to these functions.
+ * Product store backed by Neon PostgreSQL via Drizzle ORM,
+ * with an in-memory fallback when DATABASE_URL is not provided (e.g. CI / offline dev).
  */
 class ProductStore {
-  private products: Product[]
+  private memoryProducts: Product[]
 
   constructor(seed: Product[]) {
-    this.products = seed.map((product) => ({ ...product }))
+    this.memoryProducts = seed.map((product) => ({ ...product }))
   }
 
-  list(): Product[] {
-    return [...this.products]
+  async list(): Promise<Product[]> {
+    if (isDatabaseConfigured() && db) {
+      const rows = await db.select().from(productsTable)
+      return rows.map(toProduct)
+    }
+    return [...this.memoryProducts]
   }
 
-  getById(id: number): Product | undefined {
-    return this.products.find((p) => p.id === id)
+  async getById(id: number): Promise<Product | undefined> {
+    if (isDatabaseConfigured() && db) {
+      const [row] = await db.select().from(productsTable).where(eq(productsTable.id, id))
+      return row ? toProduct(row) : undefined
+    }
+    return this.memoryProducts.find((p) => p.id === id)
   }
 
-  create(input: CreateProduct): Product {
-    const id = this.products.length > 0 ? Math.max(...this.products.map((p) => p.id)) + 1 : 0
+  async create(input: CreateProduct): Promise<Product> {
+    if (isDatabaseConfigured() && db) {
+      const [row] = await db
+        .insert(productsTable)
+        .values({
+          name: input.name,
+          fit: input.fit,
+          price: input.price,
+          priceNum: input.priceNum,
+          img: input.img,
+          img2: input.img2,
+          badge: input.badge ?? null,
+          desc: input.desc,
+          wash: input.wash
+        })
+        .returning()
+      return toProduct(row)
+    }
+
+    const id = this.memoryProducts.length > 0 ? Math.max(...this.memoryProducts.map((p) => p.id)) + 1 : 0
     const product: Product = { id, ...input }
-    this.products.push(product)
+    this.memoryProducts.push(product)
     return product
   }
 
-  update(id: number, patch: UpdateProduct): Product | undefined {
-    const existing = this.getById(id)
+  async update(id: number, patch: UpdateProduct): Promise<Product | undefined> {
+    if (isDatabaseConfigured() && db) {
+      const updateData: Record<string, unknown> = {
+        updatedAt: new Date()
+      }
+      if (patch.name !== undefined) updateData.name = patch.name
+      if (patch.fit !== undefined) updateData.fit = patch.fit
+      if (patch.price !== undefined) updateData.price = patch.price
+      if (patch.priceNum !== undefined) updateData.priceNum = patch.priceNum
+      if (patch.img !== undefined) updateData.img = patch.img
+      if (patch.img2 !== undefined) updateData.img2 = patch.img2
+      if (patch.badge !== undefined) updateData.badge = patch.badge
+      if (patch.desc !== undefined) updateData.desc = patch.desc
+      if (patch.wash !== undefined) updateData.wash = patch.wash
+
+      const [row] = await db
+        .update(productsTable)
+        .set(updateData)
+        .where(eq(productsTable.id, id))
+        .returning()
+
+      return row ? toProduct(row) : undefined
+    }
+
+    const existing = this.memoryProducts.find((p) => p.id === id)
     if (!existing) return undefined
     const updated: Product = { ...existing, ...patch, id }
-    this.products = this.products.map((p) => (p.id === id ? updated : p))
+    this.memoryProducts = this.memoryProducts.map((p) => (p.id === id ? updated : p))
     return updated
   }
 
-  remove(id: number): boolean {
-    const before = this.products.length
-    this.products = this.products.filter((p) => p.id !== id)
-    return this.products.length < before
+  async remove(id: number): Promise<boolean> {
+    if (isDatabaseConfigured() && db) {
+      const [row] = await db
+        .delete(productsTable)
+        .where(eq(productsTable.id, id))
+        .returning({ id: productsTable.id })
+      return Boolean(row)
+    }
+
+    const before = this.memoryProducts.length
+    this.memoryProducts = this.memoryProducts.filter((p) => p.id !== id)
+    return this.memoryProducts.length < before
   }
 }
 

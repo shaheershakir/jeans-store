@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { productStore } from '../store/productStore.js'
 import { createProductSchema, updateProductSchema } from '../schemas/product.js'
@@ -13,6 +13,43 @@ const listQuerySchema = z.object({
   sort: z.enum(SORT_MODES).optional()
 })
 
+function verifyAdminAuth(request: FastifyRequest, reply: FastifyReply): boolean {
+  const configuredKey = process.env.ADMIN_API_KEY
+  if (configuredKey) {
+    const keyHeader = request.headers['x-api-key']
+    if (!keyHeader || keyHeader !== configuredKey) {
+      void reply.status(401).send({ error: 'Unauthorized: Missing or invalid X-API-Key' })
+      return false
+    }
+  }
+  return true
+}
+
+async function triggerFrontendRevalidation(app: FastifyInstance): Promise<void> {
+  const frontendUrl = process.env.FRONTEND_URL
+  const revalidateSecret = process.env.REVALIDATION_SECRET
+  if (!frontendUrl || !revalidateSecret) return
+
+  try {
+    const res = await fetch(`${frontendUrl}/api/revalidate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-revalidate-secret': revalidateSecret
+      },
+      body: JSON.stringify({ tag: 'products' }),
+      signal: AbortSignal.timeout(4000)
+    })
+    if (!res.ok) {
+      app.log.warn(`Frontend revalidation responded with status ${res.status}`)
+    } else {
+      app.log.info('Triggered frontend on-demand ISR revalidation successfully')
+    }
+  } catch (err) {
+    app.log.warn({ err }, 'Failed to trigger frontend revalidation (non-fatal)')
+  }
+}
+
 export async function productRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/products', async (request, reply) => {
     const parsed = listQuerySchema.safeParse(request.query)
@@ -24,7 +61,7 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const { fit, minPrice, maxPrice, q, sort = 'featured' } = parsed.data
-    let list = productStore.list()
+    let list = await productStore.list()
 
     if (fit && fit !== 'all') {
       list = list.filter((p) => p.fit.toLowerCase() === fit.toLowerCase())
@@ -65,7 +102,7 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
     if (!Number.isInteger(numericId) || numericId < 0) {
       return reply.status(400).send({ error: 'Product id must be a non-negative integer' })
     }
-    const product = productStore.getById(numericId)
+    const product = await productStore.getById(numericId)
     if (!product) {
       return reply.status(404).send({ error: `Product ${numericId} not found` })
     }
@@ -73,6 +110,8 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
   })
 
   app.post('/api/products', async (request, reply) => {
+    if (!verifyAdminAuth(request, reply)) return
+
     const parsed = createProductSchema.safeParse(request.body)
     if (!parsed.success) {
       return reply.status(400).send({
@@ -80,11 +119,14 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
         details: z.treeifyError(parsed.error)
       })
     }
-    const product = productStore.create(parsed.data)
+    const product = await productStore.create(parsed.data)
+    void triggerFrontendRevalidation(app)
     return reply.status(201).send({ product })
   })
 
   app.put('/api/products/:id', async (request, reply) => {
+    if (!verifyAdminAuth(request, reply)) return
+
     const { id } = request.params as { id: string }
     const numericId = Number(id)
     if (!Number.isInteger(numericId) || numericId < 0) {
@@ -97,23 +139,27 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
         details: z.treeifyError(parsed.error)
       })
     }
-    const product = productStore.update(numericId, parsed.data)
+    const product = await productStore.update(numericId, parsed.data)
     if (!product) {
       return reply.status(404).send({ error: `Product ${numericId} not found` })
     }
+    void triggerFrontendRevalidation(app)
     return reply.send({ product })
   })
 
   app.delete('/api/products/:id', async (request, reply) => {
+    if (!verifyAdminAuth(request, reply)) return
+
     const { id } = request.params as { id: string }
     const numericId = Number(id)
     if (!Number.isInteger(numericId) || numericId < 0) {
       return reply.status(400).send({ error: 'Product id must be a non-negative integer' })
     }
-    const removed = productStore.remove(numericId)
+    const removed = await productStore.remove(numericId)
     if (!removed) {
       return reply.status(404).send({ error: `Product ${numericId} not found` })
     }
+    void triggerFrontendRevalidation(app)
     return reply.status(204).send()
   })
 }

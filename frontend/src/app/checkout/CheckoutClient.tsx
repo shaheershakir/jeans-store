@@ -129,6 +129,41 @@ export default function CheckoutClient() {
       window.open(mailtoUrl, '_blank')
     }
 
+    // Persist order manifest to backend database
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:4000'
+    void fetch(`${backendUrl}/api/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderNumber: orderId,
+        customerName: form.name.trim(),
+        customerPhone: form.phone.trim(),
+        customerEmail: form.email.trim(),
+        address: form.address.trim(),
+        apartment: form.apartment.trim() || undefined,
+        city: form.city.trim(),
+        state: form.state.trim(),
+        pincode: form.pincode.trim(),
+        notes: form.notes.trim() || undefined,
+        items: items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          fit: item.fit,
+          size: String(item.size),
+          price: item.price,
+          priceNum: item.priceNum,
+          quantity: item.qty,
+          img: item.img
+        })),
+        subtotal,
+        shipping,
+        total,
+        handoffType
+      })
+    }).catch((err) => {
+      console.warn('[INFIT] Order persistence note:', err)
+    })
+
     setSubmittedOrder({
       orderId,
       summary: messageLines,

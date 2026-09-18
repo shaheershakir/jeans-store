@@ -8,34 +8,37 @@ The repository is structured as three independent applications with no shared ro
 
 ```
 .
-├── frontend/    Next.js 15 App Router storefront (deployed to Vercel)
-├── backend/     Fastify REST API (deployed to Render free tier)
-├── admin/       Next.js 15 operational dashboard
-├── render.yaml  Render deployment blueprint for backend
-└── docs/        System documentation and task briefs
+├── frontend/             Next.js 15 App Router storefront (Cloud Run / Vercel)
+├── backend/              Fastify REST API & Neon PostgreSQL persistence (Cloud Run / Render)
+├── admin/                Next.js 15 operational dashboard (Cloud Run)
+├── docker-compose.yml    Local multi-container development environment
+├── docs/                 System documentation and deployment runbooks
+│   └── GCP_DEPLOYMENT.md Google Cloud Platform production deployment guide
+└── render.yaml           Render deployment blueprint (legacy test tier)
 ```
 
 ### 1. Storefront (`frontend/`)
 
 - Built with Next.js 15, React 19, TypeScript, and Zustand.
-- Hosted on Vercel Hobby tier.
-- Statically generated at build time (`/`, `/checkout`, and `/product/[id]`).
-- The storefront never makes HTTP calls to the backend at runtime. Shoppers never encounter Render cold starts.
+- Containerized via multi-stage Dockerfile and deployed to **Google Cloud Run** (or Vercel).
+- Statically generated at build time with On-Demand Incremental Static Regeneration (ISR) via `/api/revalidate`.
+- The storefront never makes slow blocking backend calls during shopper page loads.
 - Client state (shopping bag, fit preferences, and UI overlays) is managed via Zustand stores persisted in `localStorage`.
+- Checkout manifests are recorded in the backend database before handoff to WhatsApp/email.
 
 ### 2. Backend API (`backend/`)
 
 - Built with Fastify, Zod, and TypeScript.
-- Hosted on the Render free web service tier using `render.yaml`.
-- Provides REST endpoints under `/api/products` for listing, reading, and updating the product catalog.
-- Seeded with the 8 INFIT denim silhouettes in `backend/src/data/products.ts`.
-- Serves as the source of truth for catalog updates during future administrative workflows.
+- Containerized via multi-stage Dockerfile and deployed to **Google Cloud Run**.
+- Persisted to **Neon PostgreSQL** via **Drizzle ORM** (`products` and `orders` tables).
+- Protected with `X-API-Key` authentication for mutations, `@fastify/helmet`, and `@fastify/rate-limit`.
+- Auto-seeds the initial 8 denim silhouettes if the database is newly provisioned.
 
 ### 3. Admin dashboard (`admin/`)
 
 - Built with Next.js 15, React 19, Tailwind CSS v4, and Lucide React.
-- Provides views for products, inventory, orders, analytics, and marketing.
-- Currently runs using mock data and local state. It does not communicate with the frontend directly.
+- Containerized via multi-stage Dockerfile and deployed to **Google Cloud Run**.
+- Connected to the live Fastify backend via `admin/src/services/api.ts` with authenticated endpoints.
 
 ## Product contract
 

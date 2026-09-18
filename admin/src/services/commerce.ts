@@ -82,3 +82,14 @@ export async function processRefund(refundId: number, fail = false): Promise<voi
   await simulateLatency()
   useAdminStore.getState().processRefund(refundId, fail)
 }
+
+export async function fetchBackendOrders(): Promise<any[]> {
+  try {
+    const { apiFetch } = await import('./api')
+    const data = await apiFetch<{ count: number; orders: any[] }>('/api/orders')
+    return data.orders || []
+  } catch (err) {
+    console.warn('[Admin] Failed to fetch backend orders:', err)
+    return []
+  }
+}

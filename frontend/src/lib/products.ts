@@ -10,7 +10,7 @@ export async function getProducts(): Promise<Product[]> {
 
     const res = await fetch(`${BACKEND_URL}/api/products`, {
       signal: controller.signal,
-      next: { revalidate: false }
+      next: { tags: ['products'], revalidate: 3600 }
     })
     clearTimeout(timeoutId)
 

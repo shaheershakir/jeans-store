@@ -9,6 +9,7 @@ import { Button, Card, Input, Select } from '@/components/ui/primitives'
 import { OrderBadge, PaymentBadge } from '@/components/ui/status'
 import { formatINR } from '@/lib/format'
 import type { FulfillmentStatus } from '@/lib/types'
+import { fetchBackendOrders } from '@/services/commerce'
 
 const STATUS_TABS: { label: string; value: string }[] = [
   { label: 'All Orders', value: 'all' },
@@ -28,6 +29,10 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = React.useState('all')
   const [query, setQuery] = React.useState('')
   const [paymentFilter, setPaymentFilter] = React.useState('all')
+
+  React.useEffect(() => {
+    void fetchBackendOrders()
+  }, [])
 
   const filteredOrders = React.useMemo(() => {
     return orders.filter((order) => {
