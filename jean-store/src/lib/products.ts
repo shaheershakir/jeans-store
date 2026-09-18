@@ -8,7 +8,7 @@ export async function getProducts(): Promise<Product[]> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 3000)
 
-    const res = await fetch(`${BACKEND_URL}/api/products`, {
+    const res = await fetch(`${BACKEND_URL}/api/products?store=jean-store`, {
       signal: controller.signal,
       next: { tags: ['products'], revalidate: 3600 }
     })

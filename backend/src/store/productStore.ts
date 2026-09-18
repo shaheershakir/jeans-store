@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import type { CreateProduct, Product, UpdateProduct, Fit } from '../schemas/product.js'
+import type { CreateProduct, Product, UpdateProduct, Fit, StoreType } from '../schemas/product.js'
 import { PRODUCTS } from '../data/products.js'
 import { db, isDatabaseConfigured } from '../db/index.js'
 import { products as productsTable, type DbProduct } from '../db/schema.js'
@@ -7,15 +7,18 @@ import { products as productsTable, type DbProduct } from '../db/schema.js'
 function toProduct(row: DbProduct): Product {
   return {
     id: row.id,
+    store: (row.store as StoreType) || 'jean-store',
+    category: row.category || 'jeans',
     name: row.name,
-    fit: row.fit as Fit,
+    fit: (row.fit as Fit) || undefined,
     price: row.price,
     priceNum: row.priceNum,
     img: row.img,
     img2: row.img2,
     badge: row.badge ?? undefined,
     desc: row.desc,
-    wash: row.wash
+    wash: row.wash ?? undefined,
+    sizes: (row.sizes as string[]) ?? undefined
   }
 }
 
@@ -30,12 +33,23 @@ class ProductStore {
     this.memoryProducts = seed.map((product) => ({ ...product }))
   }
 
-  async list(): Promise<Product[]> {
+  async list(filters?: { store?: string; category?: string }): Promise<Product[]> {
+    let list: Product[]
     if (isDatabaseConfigured() && db) {
       const rows = await db.select().from(productsTable)
-      return rows.map(toProduct)
+      list = rows.map(toProduct)
+    } else {
+      list = [...this.memoryProducts]
     }
-    return [...this.memoryProducts]
+
+    if (filters?.store && filters.store !== 'all') {
+      list = list.filter((p) => p.store === filters.store)
+    }
+    if (filters?.category && filters.category !== 'all') {
+      list = list.filter((p) => p.category?.toLowerCase() === filters.category?.toLowerCase())
+    }
+
+    return list
   }
 
   async getById(id: number): Promise<Product | undefined> {
@@ -51,15 +65,18 @@ class ProductStore {
       const [row] = await db
         .insert(productsTable)
         .values({
+          store: input.store || 'jean-store',
+          category: input.category || 'jeans',
           name: input.name,
-          fit: input.fit,
+          fit: input.fit ?? null,
           price: input.price,
           priceNum: input.priceNum,
           img: input.img,
           img2: input.img2,
           badge: input.badge ?? null,
           desc: input.desc,
-          wash: input.wash
+          wash: input.wash ?? null,
+          sizes: input.sizes ?? null
         })
         .returning()
       return toProduct(row)
@@ -76,6 +93,8 @@ class ProductStore {
       const updateData: Record<string, unknown> = {
         updatedAt: new Date()
       }
+      if (patch.store !== undefined) updateData.store = patch.store
+      if (patch.category !== undefined) updateData.category = patch.category
       if (patch.name !== undefined) updateData.name = patch.name
       if (patch.fit !== undefined) updateData.fit = patch.fit
       if (patch.price !== undefined) updateData.price = patch.price
@@ -85,6 +104,7 @@ class ProductStore {
       if (patch.badge !== undefined) updateData.badge = patch.badge
       if (patch.desc !== undefined) updateData.desc = patch.desc
       if (patch.wash !== undefined) updateData.wash = patch.wash
+      if (patch.sizes !== undefined) updateData.sizes = patch.sizes
 
       const [row] = await db
         .update(productsTable)

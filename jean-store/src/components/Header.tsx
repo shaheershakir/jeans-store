@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { cartCount, useCartStore, useUIStore, useFilterStore } from '@/lib/store'
+import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore } from '@/lib/store'
 
 const NAV_LINKS: { label: string; href: string; fit: 'all' | 'Straight' | 'Baggy' | 'Wide' | 'Relaxed' | 'Bootcut' }[] = [
   { label: 'All Silhouettes', href: '/', fit: 'all' },
@@ -15,12 +15,18 @@ export default function Header() {
   const items = useCartStore((state) => state.items)
   const openOverlay = useUIStore((state) => state.openOverlay)
   const setFit = useFilterStoreSync()
+  const user = useAuthStore((state) => state.user)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const logout = useAuthStore((state) => state.logout)
+  const [mounted, setMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     void useCartStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
+    void useAuthStore.persist.rehydrate()
 
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
@@ -93,6 +99,37 @@ export default function Header() {
               <span className="action-btn-text">Search</span>
             </button>
 
+            {mounted && isAuthenticated && user ? (
+              <button
+                type="button"
+                className="action-icon-btn account-btn"
+                title={`Signed in as ${user.name}. Click to sign out.`}
+                onClick={() => {
+                  if (window.confirm(`Sign out from ${user.name}?`)) {
+                    logout()
+                  }
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="action-btn-text">{user.name.split(' ')[0]}</span>
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="action-icon-btn account-btn"
+                title="Sign in or create account"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="action-btn-text">Sign In</span>
+              </Link>
+            )}
+
             <button
               className="header-cart-btn"
               type="button"
@@ -128,6 +165,29 @@ export default function Header() {
                   {link.label}
                 </Link>
               ))}
+              {mounted && isAuthenticated && user ? (
+                <button
+                  type="button"
+                  className="mobile-nav-item"
+                  style={{ textAlign: 'left', background: 'none', border: 'none', font: 'inherit', cursor: 'pointer' }}
+                  onClick={() => {
+                    if (window.confirm(`Sign out from ${user.name}?`)) {
+                      logout()
+                      setMenuOpen(false)
+                    }
+                  }}
+                >
+                  Sign Out ({user.name.split(' ')[0]})
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="mobile-nav-item"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Sign In / Create Account
+                </Link>
+              )}
               <div className="mobile-nav-meta">
                 <span>Direct Studio Support</span>
                 <a href="mailto:concierge@infit.in">concierge@infit.in</a>

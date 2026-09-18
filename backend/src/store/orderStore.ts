@@ -7,6 +7,7 @@ function toOrder(row: DbOrder): Order {
   return {
     id: row.id,
     orderNumber: row.orderNumber,
+    store: (row.store as 'jean-store' | 'clothing-store') || 'jean-store',
     customerName: row.customerName,
     customerPhone: row.customerPhone,
     customerEmail: row.customerEmail,
@@ -59,6 +60,7 @@ class OrderStore {
         .insert(ordersTable)
         .values({
           orderNumber: input.orderNumber,
+          store: input.store || 'jean-store',
           customerName: input.customerName,
           customerPhone: input.customerPhone,
           customerEmail: input.customerEmail,
@@ -83,6 +85,7 @@ class OrderStore {
     const order: Order = {
       id,
       ...input,
+      store: input.store || 'jean-store',
       status: 'pending',
       createdAt: new Date()
     }

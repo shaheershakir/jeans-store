@@ -6,6 +6,8 @@ import { createProductSchema, updateProductSchema } from '../schemas/product.js'
 const SORT_MODES = ['featured', 'price-asc', 'price-desc'] as const
 
 const listQuerySchema = z.object({
+  store: z.enum(['jean-store', 'clothing-store', 'all']).optional(),
+  category: z.string().optional(),
   fit: z.string().optional(),
   minPrice: z.coerce.number().nonnegative().optional(),
   maxPrice: z.coerce.number().nonnegative().optional(),
@@ -25,28 +27,40 @@ function verifyAdminAuth(request: FastifyRequest, reply: FastifyReply): boolean 
   return true
 }
 
-async function triggerFrontendRevalidation(app: FastifyInstance): Promise<void> {
-  const frontendUrl = process.env.FRONTEND_URL
+async function triggerFrontendRevalidation(app: FastifyInstance, store?: string): Promise<void> {
   const revalidateSecret = process.env.REVALIDATION_SECRET
-  if (!frontendUrl || !revalidateSecret) return
+  if (!revalidateSecret) return
 
-  try {
-    const res = await fetch(`${frontendUrl}/api/revalidate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-revalidate-secret': revalidateSecret
-      },
-      body: JSON.stringify({ tag: 'products' }),
-      signal: AbortSignal.timeout(4000)
-    })
-    if (!res.ok) {
-      app.log.warn(`Frontend revalidation responded with status ${res.status}`)
-    } else {
-      app.log.info('Triggered frontend on-demand ISR revalidation successfully')
+  const urls: string[] = []
+  const jeanStoreUrl = process.env.JEAN_STORE_URL || process.env.FRONTEND_URL
+  const clothingStoreUrl = process.env.CLOTHING_STORE_URL
+
+  if (!store || store === 'jean-store' || store === 'all') {
+    if (jeanStoreUrl) urls.push(jeanStoreUrl)
+  }
+  if (!store || store === 'clothing-store' || store === 'all') {
+    if (clothingStoreUrl) urls.push(clothingStoreUrl)
+  }
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(`${url}/api/revalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-revalidate-secret': revalidateSecret
+        },
+        body: JSON.stringify({ tag: 'products' }),
+        signal: AbortSignal.timeout(4000)
+      })
+      if (!res.ok) {
+        app.log.warn(`Revalidation for ${url} responded with status ${res.status}`)
+      } else {
+        app.log.info(`Triggered ISR revalidation successfully for ${url}`)
+      }
+    } catch (err) {
+      app.log.warn({ err }, `Failed to trigger revalidation for ${url} (non-fatal)`)
     }
-  } catch (err) {
-    app.log.warn({ err }, 'Failed to trigger frontend revalidation (non-fatal)')
   }
 }
 
@@ -60,11 +74,11 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
       })
     }
 
-    const { fit, minPrice, maxPrice, q, sort = 'featured' } = parsed.data
-    let list = await productStore.list()
+    const { store, category, fit, minPrice, maxPrice, q, sort = 'featured' } = parsed.data
+    let list = await productStore.list({ store, category })
 
     if (fit && fit !== 'all') {
-      list = list.filter((p) => p.fit.toLowerCase() === fit.toLowerCase())
+      list = list.filter((p) => p.fit?.toLowerCase() === fit.toLowerCase())
     }
     if (minPrice !== undefined) {
       list = list.filter((p) => p.priceNum >= minPrice)
@@ -78,8 +92,9 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
         list = list.filter(
           (p) =>
             p.name.toLowerCase().includes(clean) ||
-            p.fit.toLowerCase().includes(clean) ||
-            p.wash.toLowerCase().includes(clean) ||
+            (p.fit && p.fit.toLowerCase().includes(clean)) ||
+            (p.wash && p.wash.toLowerCase().includes(clean)) ||
+            (p.category && p.category.toLowerCase().includes(clean)) ||
             p.desc.toLowerCase().includes(clean)
         )
       }
@@ -120,7 +135,7 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
       })
     }
     const product = await productStore.create(parsed.data)
-    void triggerFrontendRevalidation(app)
+    void triggerFrontendRevalidation(app, product.store)
     return reply.status(201).send({ product })
   })
 
@@ -143,7 +158,7 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
     if (!product) {
       return reply.status(404).send({ error: `Product ${numericId} not found` })
     }
-    void triggerFrontendRevalidation(app)
+    void triggerFrontendRevalidation(app, product.store)
     return reply.send({ product })
   })
 
@@ -155,11 +170,12 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
     if (!Number.isInteger(numericId) || numericId < 0) {
       return reply.status(400).send({ error: 'Product id must be a non-negative integer' })
     }
+    const existing = await productStore.getById(numericId)
     const removed = await productStore.remove(numericId)
     if (!removed) {
       return reply.status(404).send({ error: `Product ${numericId} not found` })
     }
-    void triggerFrontendRevalidation(app)
+    void triggerFrontendRevalidation(app, existing?.store)
     return reply.status(204).send()
   })
 }

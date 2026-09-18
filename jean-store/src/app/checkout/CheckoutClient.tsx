@@ -136,6 +136,7 @@ export default function CheckoutClient() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         orderNumber: orderId,
+        store: 'jean-store',
         customerName: form.name.trim(),
         customerPhone: form.phone.trim(),
         customerEmail: form.email.trim(),

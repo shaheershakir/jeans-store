@@ -13,6 +13,7 @@ export const orderItemSchema = z.object({
 
 export const createOrderSchema = z.object({
   orderNumber: z.string().min(1),
+  store: z.enum(['jean-store', 'clothing-store']).default('jean-store'),
   customerName: z.string().min(1),
   customerPhone: z.string().min(10),
   customerEmail: z.string().email(),

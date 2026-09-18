@@ -2,6 +2,19 @@ import type { Fit, Product } from './constants'
 import type { SortMode } from './store'
 import { PRODUCTS } from './constants'
 
+export function cn(...inputs: (string | undefined | null | false | Record<string, boolean>)[]) {
+  return inputs
+    .flatMap((input) => {
+      if (!input) return []
+      if (typeof input === 'string') return input.split(' ')
+      return Object.entries(input)
+        .filter(([, value]) => Boolean(value))
+        .map(([key]) => key)
+    })
+    .filter(Boolean)
+    .join(' ')
+}
+
 export function getProductById(id: number, catalog: Product[] = PRODUCTS): Product | undefined {
   return catalog.find((p) => p.id === id)
 }
@@ -50,8 +63,8 @@ export function searchProducts(query: string, catalog: Product[] = PRODUCTS): Pr
   return catalog.filter(
     (p) =>
       p.name.toLowerCase().includes(clean) ||
-      p.fit.toLowerCase().includes(clean) ||
-      p.wash.toLowerCase().includes(clean) ||
+      (p.fit && p.fit.toLowerCase().includes(clean)) ||
+      (p.wash && p.wash.toLowerCase().includes(clean)) ||
       p.desc.toLowerCase().includes(clean) ||
       p.price.toLowerCase().includes(clean)
   )

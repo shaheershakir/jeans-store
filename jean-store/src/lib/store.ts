@@ -172,3 +172,35 @@ export const useUIStore = create<UIState>()(
     }
   )
 )
+
+export interface AuthUser {
+  id: number
+  uid: string
+  email: string
+  name: string
+  provider?: string
+}
+
+interface AuthState {
+  user: AuthUser | null
+  token: string | null
+  isAuthenticated: boolean
+  setAuth: (user: AuthUser, token: string) => void
+  logout: () => void
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      setAuth: (user, token) => set({ user, token, isAuthenticated: true }),
+      logout: () => set({ user: null, token: null, isAuthenticated: false })
+    }),
+    {
+      name: 'infit-auth',
+      skipHydration: true
+    }
+  )
+)

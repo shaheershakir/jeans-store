@@ -4,6 +4,7 @@ import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
 import { productRoutes } from './routes/products.js'
 import { orderRoutes } from './routes/orders.js'
+import { authRoutes } from './routes/auth.js'
 
 export interface BuildAppOptions {
   corsOrigin?: string | string[] | boolean
@@ -55,6 +56,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
 
   void app.register(productRoutes)
   void app.register(orderRoutes)
+  void app.register(authRoutes)
 
   return app
 }

@@ -109,6 +109,56 @@ const invalidRes = await request('/api/products', {
 })
 record('POST /api/products invalid body → 400', invalidRes.status === 400, `status ${invalidRes.status}`)
 
+// --- Auth Smoke Tests ---
+const testUserEmail = `smoke_user_${Date.now()}@example.com`
+const registerRes = await request('/api/auth/register', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({
+    name: 'Smoke Tester',
+    email: testUserEmail,
+    password: 'Password123!'
+  })
+})
+const registerBody = (await registerRes.json()) as { user?: { email: string }; token?: string }
+record(
+  'POST /api/auth/register → 201',
+  registerRes.status === 201 && registerBody.user?.email === testUserEmail && Boolean(registerBody.token),
+  `status ${registerRes.status}, token issued: ${Boolean(registerBody.token)}`
+)
+
+const loginRes = await request('/api/auth/login', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({
+    email: testUserEmail,
+    password: 'Password123!'
+  })
+})
+const loginBody = (await loginRes.json()) as { token?: string; user?: { name: string } }
+record(
+  'POST /api/auth/login → 200',
+  loginRes.status === 200 && Boolean(loginBody.token) && loginBody.user?.name === 'Smoke Tester',
+  `status ${loginRes.status}, user: ${loginBody.user?.name}`
+)
+
+if (loginBody.token) {
+  const meRes = await request('/api/auth/me', {
+    headers: { Authorization: `Bearer ${loginBody.token}` }
+  })
+  const meBody = (await meRes.json()) as { user?: { email: string } }
+  record(
+    'GET /api/auth/me with Bearer token → 200',
+    meRes.status === 200 && meBody.user?.email === testUserEmail,
+    `status ${meRes.status}, email: ${meBody.user?.email}`
+  )
+}
+
+const badAuthRes = await request('/api/auth/me', {
+  headers: { Authorization: 'Bearer invalid.cloud.token' }
+})
+record('GET /api/auth/me with invalid token → 401', badAuthRes.status === 401, `status ${badAuthRes.status}`)
+
 let failed = 0
 for (const check of checks) {
   if (!check.ok) failed++

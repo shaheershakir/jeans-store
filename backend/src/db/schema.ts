@@ -2,15 +2,18 @@ import { pgTable, serial, text, integer, timestamp, jsonb, varchar } from 'drizz
 
 export const products = pgTable('products', {
   id: serial('id').primaryKey(),
+  store: varchar('store', { length: 50 }).default('jean-store').notNull(),
+  category: varchar('category', { length: 50 }).default('jeans').notNull(),
   name: varchar('name', { length: 255 }).notNull(),
-  fit: varchar('fit', { length: 50 }).notNull(),
+  fit: varchar('fit', { length: 50 }),
   price: varchar('price', { length: 50 }).notNull(),
   priceNum: integer('price_num').notNull(),
   img: text('img').notNull(),
   img2: text('img2').notNull(),
   badge: varchar('badge', { length: 50 }),
   desc: text('desc').notNull(),
-  wash: varchar('wash', { length: 100 }).notNull(),
+  wash: varchar('wash', { length: 100 }),
+  sizes: jsonb('sizes'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
@@ -18,6 +21,7 @@ export const products = pgTable('products', {
 export const orders = pgTable('orders', {
   id: serial('id').primaryKey(),
   orderNumber: varchar('order_number', { length: 50 }).notNull().unique(),
+  store: varchar('store', { length: 50 }).default('jean-store').notNull(),
   customerName: varchar('customer_name', { length: 255 }).notNull(),
   customerPhone: varchar('customer_phone', { length: 50 }).notNull(),
   customerEmail: varchar('customer_email', { length: 255 }).notNull(),
@@ -36,7 +40,20 @@ export const orders = pgTable('orders', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 })
 
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  uid: varchar('uid', { length: 128 }).notNull().unique(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  name: varchar('name', { length: 255 }).notNull(),
+  passwordHash: text('password_hash'),
+  provider: varchar('provider', { length: 50 }).default('cloud-iam').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+})
+
 export type DbProduct = typeof products.$inferSelect
 export type DbNewProduct = typeof products.$inferInsert
 export type DbOrder = typeof orders.$inferSelect
 export type DbNewOrder = typeof orders.$inferInsert
+export type DbUser = typeof users.$inferSelect
+export type DbNewUser = typeof users.$inferInsert

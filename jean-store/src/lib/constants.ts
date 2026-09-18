@@ -2,6 +2,8 @@ export type Fit = 'Straight' | 'Baggy' | 'Wide' | 'Relaxed' | 'Bootcut'
 
 export interface Product {
   id: number
+  store?: 'jean-store' | 'clothing-store'
+  category?: string
   name: string
   fit: Fit
   price: string
@@ -11,6 +13,7 @@ export interface Product {
   badge?: string
   desc: string
   wash: string
+  sizes?: string[]
 }
 
 export const PRODUCTS: Product[] = [
