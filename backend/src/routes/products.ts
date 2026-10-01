@@ -6,7 +6,7 @@ import { createProductSchema, updateProductSchema } from '../schemas/product.js'
 const SORT_MODES = ['featured', 'price-asc', 'price-desc'] as const
 
 const listQuerySchema = z.object({
-  store: z.enum(['jean-store', 'clothing-store', 'all']).optional(),
+  store: z.string().optional(),
   category: z.string().optional(),
   fit: z.string().optional(),
   minPrice: z.coerce.number().nonnegative().optional(),

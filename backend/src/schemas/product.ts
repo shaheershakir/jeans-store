@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const STORES = ['jean-store', 'clothing-store'] as const
+export const STORES = ['infit', 'jean-store', 'clothing-store', 'frontend'] as const
 export type StoreType = (typeof STORES)[number]
 
 export const FITS = ['Straight', 'Baggy', 'Wide', 'Relaxed', 'Bootcut'] as const
@@ -12,11 +12,11 @@ export const CATEGORIES = ['jeans', 'shirts', 't-shirts', 'hoodies', 'hats', 'ac
 export type Category = (typeof CATEGORIES)[number]
 
 /**
- * Shared Product model across backend, jean-store, clothing-store, and admin.
+ * Shared Product model across backend, frontend, and admin.
  */
 export const productSchema = z.object({
   id: z.number().int().nonnegative(),
-  store: z.enum(STORES).default('jean-store'),
+  store: z.string().default('infit'),
   category: z.string().default('jeans'),
   name: z.string().min(1),
   fit: z.enum(FITS).optional(),

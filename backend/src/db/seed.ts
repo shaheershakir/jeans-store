@@ -18,6 +18,8 @@ export async function seedIfEmpty(): Promise<boolean> {
     for (const p of PRODUCTS) {
       await db.insert(products).values({
         id: p.id,
+        store: p.store || 'infit',
+        category: p.category || 'jeans',
         name: p.name,
         fit: p.fit,
         price: p.price,
@@ -26,7 +28,8 @@ export async function seedIfEmpty(): Promise<boolean> {
         img2: p.img2,
         badge: p.badge,
         desc: p.desc,
-        wash: p.wash
+        wash: p.wash,
+        sizes: p.sizes ?? null
       })
     }
     console.log('Database seeded successfully.')
