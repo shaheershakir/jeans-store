@@ -1,7 +1,9 @@
 'use client'
 
+import * as React from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from './button'
 
 export function Pagination({
   page,
@@ -20,48 +22,54 @@ export function Pagination({
   const to = Math.min(page * pageSize, total)
 
   return (
-    <div className="flex items-center justify-between gap-2 border-t border-divider px-4 py-3 text-xs text-ink-2">
-      <span className="tnum">
-        {from}–{to} of {total}
+    <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground">
+      <span className="tnum font-medium">
+        Showing {from}–{to} of {total}
       </span>
       <div className="flex items-center gap-1">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="icon"
           onClick={() => onPage(page - 1)}
           disabled={page <= 1}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-line transition-colors hover:bg-surface-subtle disabled:opacity-40"
+          className="h-8 w-8"
           aria-label="Previous page"
         >
-          <ChevronLeft className="h-3.5 w-3.5" />
-        </button>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
         {pageNumbers(page, pages).map((p, i) =>
           p === '…' ? (
-            <span key={`e${i}`} className="px-1 text-ink-4">
+            <span key={`e${i}`} className="px-1.5 text-muted-foreground/60 select-none">
               …
             </span>
           ) : (
-            <button
+            <Button
               key={p}
               type="button"
+              variant={p === page ? 'default' : 'ghost'}
+              size="icon"
               onClick={() => onPage(p as number)}
               className={cn(
-                'h-7 w-7 rounded-md text-[13px] transition-colors',
-                p === page ? 'bg-primary text-white' : 'hover:bg-surface-subtle'
+                'h-8 w-8 text-xs',
+                p === page ? 'shadow-xs font-semibold' : 'text-foreground'
               )}
             >
               {p}
-            </button>
+            </Button>
           )
         )}
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="icon"
           onClick={() => onPage(page + 1)}
           disabled={page >= pages}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-line transition-colors hover:bg-surface-subtle disabled:opacity-40"
+          className="h-8 w-8"
           aria-label="Next page"
         >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </button>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   )

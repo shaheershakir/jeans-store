@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import {
   Area,
   AreaChart,
@@ -19,8 +20,8 @@ import {
 } from 'recharts'
 import { formatINR } from '@/lib/format'
 
-const AXIS = { fill: '#98a2b3', fontSize: 11 }
-const GRID = '#eaecf0'
+const AXIS = { fill: 'var(--muted-foreground, #98a2b3)', fontSize: 11 }
+const GRID = 'var(--border, #eaecf0)'
 
 function ChartTooltip({
   active,
@@ -33,13 +34,13 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg border border-line bg-surface px-3 py-2 text-xs shadow-pop">
-      <div className="mb-1 font-medium text-ink">{String(label ?? '')}</div>
+    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
+      <div className="mb-1 font-semibold text-foreground">{String(label ?? '')}</div>
       {payload.map((p, i) => (
-        <div key={i} className="flex items-center gap-2 text-ink-2">
-          <span className="h-2 w-2 rounded-full" style={{ background: p.color ?? '#4f46e5' }} />
-          <span>{p.name}</span>
-          <span className="tnum font-medium text-ink">
+        <div key={i} className="flex items-center gap-2 text-muted-foreground">
+          <span className="h-2 w-2 rounded-full shrink-0" style={{ background: p.color ?? 'var(--primary, #4f46e5)' }} />
+          <span className="truncate">{p.name}</span>
+          <span className="tnum ml-auto font-semibold text-foreground">
             {typeof p.value === 'number' ? formatINR(p.value) : String(p.value)}
           </span>
         </div>
@@ -54,7 +55,7 @@ export function RevenueAreaChart({ data }: { data: { label: string; revenue: num
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#4f46e5" stopOpacity={0.18} />
+            <stop offset="0%" stopColor="#4f46e5" stopOpacity={0.25} />
             <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.02} />
           </linearGradient>
         </defs>
@@ -114,7 +115,6 @@ export function DonutChart({
   colorMap: Record<string, string>
   centerLabel?: string
 }) {
-  const total = data.reduce((s, d) => s + d.value, 0)
   return (
     <ResponsiveContainer width="100%" height={240}>
       <PieChart>
@@ -130,17 +130,17 @@ export function DonutChart({
           stroke="none"
         >
           {data.map((d) => (
-            <Cell key={d.key} fill={colorMap[d.key] ?? '#c7d2fe'} />
+            <Cell key={d.key} fill={colorMap[d.key] ?? '#6366f1'} />
           ))}
         </Pie>
         <Tooltip content={<ChartTooltip />} />
         <Legend
           iconType="circle"
           iconSize={8}
-          formatter={(value: string) => <span className="text-xs text-ink-2">{value}</span>}
+          formatter={(value: string) => <span className="text-xs text-muted-foreground">{value}</span>}
         />
         {centerLabel && (
-          <text x="50%" y="47%" textAnchor="middle" className="fill-ink text-sm font-semibold">
+          <text x="50%" y="47%" textAnchor="middle" className="fill-foreground text-sm font-semibold">
             {centerLabel}
           </text>
         )}
@@ -163,13 +163,13 @@ export function DonutSummary({
     <div className="space-y-1.5">
       {data.map((d) => (
         <div key={d.key} className="flex items-center justify-between gap-3 text-[13px]">
-          <span className="flex items-center gap-2 text-ink-2">
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: colorMap[d.key] ?? '#c7d2fe' }} />
+          <span className="flex items-center gap-2 text-muted-foreground">
+            <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: colorMap[d.key] ?? '#6366f1' }} />
             {d.key}
           </span>
-          <span className="tnum font-medium text-ink">
+          <span className="tnum font-medium text-foreground">
             {fmt(d.value)}
-            <span className="ml-1 text-ink-4">· {((d.value / total) * 100).toFixed(0)}%</span>
+            <span className="ml-1 text-muted-foreground/60">· {((d.value / total) * 100).toFixed(0)}%</span>
           </span>
         </div>
       ))}

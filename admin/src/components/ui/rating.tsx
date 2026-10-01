@@ -11,7 +11,9 @@ export function Rating({ value, size = 'sm' }: { value: number; size?: 'sm' | 'm
           key={i}
           className={cn(
             size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4',
-            i <= Math.round(value) ? 'fill-warning text-warning' : 'fill-ink-4/25 text-ink-4/25'
+            i <= Math.round(value)
+              ? 'fill-amber-400 text-amber-400 dark:fill-amber-400 dark:text-amber-400'
+              : 'fill-muted text-muted-foreground/30'
           )}
           aria-hidden="true"
         />
@@ -30,10 +32,13 @@ export function StarInput({ value, onChange }: { value: number; onChange: (v: nu
           role="radio"
           aria-checked={value === i}
           onClick={() => onChange(i)}
-          className="p-0.5"
+          className="p-0.5 cursor-pointer hover:scale-110 transition-transform"
         >
           <Star
-            className={cn('h-5 w-5 transition-colors', i <= value ? 'fill-warning text-warning' : 'text-ink-4')}
+            className={cn(
+              'h-5 w-5 transition-colors',
+              i <= value ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/40 hover:text-amber-300'
+            )}
           />
         </button>
       ))}

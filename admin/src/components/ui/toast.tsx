@@ -56,17 +56,17 @@ export function ToastViewport() {
           key={t.id}
           role="status"
           className={cn(
-            'pointer-events-auto flex items-start gap-2 rounded-lg border bg-surface px-3.5 py-3 text-sm shadow-modal',
-            t.kind === 'success' && 'border-success/25',
-            t.kind === 'error' && 'border-danger/25',
-            t.kind === 'info' && 'border-line'
+            'pointer-events-auto flex items-start gap-2.5 rounded-lg border bg-card px-4 py-3 text-sm text-card-foreground shadow-lg backdrop-blur-xs transition-all animate-in slide-in-from-bottom-2',
+            t.kind === 'success' && 'border-emerald-500/30 text-emerald-900 dark:text-emerald-100',
+            t.kind === 'error' && 'border-destructive/30 text-destructive',
+            t.kind === 'info' && 'border-border'
           )}
         >
-          {t.kind === 'success' && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />}
-          {t.kind === 'error' && <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />}
-          {t.kind === 'info' && <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />}
-          <span className="flex-1 text-[13px] text-ink">{t.message}</span>
-          <button onClick={() => dismiss(t.id)} className="text-ink-3 hover:text-ink" aria-label="Dismiss">
+          {t.kind === 'success' && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />}
+          {t.kind === 'error' && <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />}
+          {t.kind === 'info' && <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />}
+          <span className="flex-1 text-xs font-medium text-foreground">{t.message}</span>
+          <button onClick={() => dismiss(t.id)} className="text-muted-foreground hover:text-foreground" aria-label="Dismiss">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>

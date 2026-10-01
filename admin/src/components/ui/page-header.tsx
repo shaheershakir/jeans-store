@@ -19,18 +19,18 @@ export function PageHeader({
   breadcrumbs?: { label: string; href?: string }[]
 }) {
   return (
-    <div className="flex flex-col gap-3 border-b border-divider bg-surface px-4 py-5 sm:px-6 sm:py-6">
+    <div className="flex flex-col gap-3 border-b border-border bg-background px-4 py-5 sm:px-6 sm:py-6">
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-ink-3">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {breadcrumbs.map((b, i) => (
             <React.Fragment key={i}>
-              {i > 0 && <ChevronRight className="h-3 w-3 text-ink-4" />}
+              {i > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground/60" />}
               {b.href ? (
-                <Link href={b.href} className="transition-colors hover:text-ink">
+                <Link href={b.href} className="transition-colors hover:text-foreground">
                   {b.label}
                 </Link>
               ) : (
-                <span className="font-medium text-ink-2">{b.label}</span>
+                <span className="font-medium text-foreground">{b.label}</span>
               )}
             </React.Fragment>
           ))}
@@ -38,8 +38,8 @@ export function PageHeader({
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">{title}</h1>
-          {description && <p className="mt-1 text-[13px] text-ink-2">{description}</p>}
+          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">{title}</h1>
+          {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
         </div>
         {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
       </div>
@@ -52,5 +52,5 @@ export function StatusBadge({ label, tone }: { label: string; tone: Tone }) {
 }
 
 export function PageContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('mx-auto w-full max-w-[1400px] space-y-4 p-4 sm:p-6', className)} {...props} />
+  return <div className={cn('mx-auto w-full max-w-[1400px] space-y-6 p-4 sm:p-6', className)} {...props} />
 }
