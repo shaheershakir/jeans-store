@@ -95,10 +95,12 @@ interface FilterState {
   fit: Fit | 'all'
   prices: PriceRange[]
   sort: SortMode
+  searchQuery: string
   setCategory: (category: string | 'all') => void
   setFit: (fit: Fit | 'all') => void
   togglePrice: (range: PriceRange) => void
   setSort: (sort: SortMode) => void
+  setSearchQuery: (query: string) => void
   reset: () => void
 }
 
@@ -109,6 +111,7 @@ export const useFilterStore = create<FilterState>()(
       fit: 'all',
       prices: [],
       sort: 'featured',
+      searchQuery: '',
       setCategory: (category) => set({ category }),
       setFit: (fit) => set({ fit }),
       togglePrice: (range) =>
@@ -118,7 +121,8 @@ export const useFilterStore = create<FilterState>()(
             : [...state.prices, range]
         })),
       setSort: (sort) => set({ sort }),
-      reset: () => set({ category: 'all', fit: 'all', prices: [], sort: 'featured' })
+      setSearchQuery: (searchQuery) => set({ searchQuery }),
+      reset: () => set({ category: 'all', fit: 'all', prices: [], sort: 'featured', searchQuery: '' })
     }),
     {
       name: 'infit-filters',

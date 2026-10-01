@@ -67,41 +67,752 @@ button {
 /* ==========================================================================
    1. STICKY HEADER (Glassmorphic & Clean)
    ========================================================================== */
-.site-header {
+/* ==========================================================================
+   1. MACY'S TWO-TIER STICKY HEADER & INTEGRATED SEARCH
+   ========================================================================== */
+.macy-header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--line);
-  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.site-header.scrolled {
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-  border-bottom-color: var(--line-strong);
+.macy-header.scrolled {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
-.header-container {
+/* Tier 1: Main Header (Logo, Centered Search Bar, Actions) */
+.macy-header-main {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+}
+
+.macy-header-main-inner {
   max-width: 1440px;
   margin: 0 auto;
-  height: var(--header-height);
-  padding: 0 4%;
+  height: 70px;
+  padding: 0 3%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 32px;
+  gap: 20px;
 }
 
-/* Brand Wordmark */
-.site-brand {
+.macy-mobile-toggle {
+  display: none;
+  background: none;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  padding: 6px;
+  color: #111827;
+  cursor: pointer;
+}
+
+.macy-brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   text-decoration: none;
-  color: var(--ink);
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+
+.macy-brand:hover {
+  opacity: 0.88;
+}
+
+.macy-brand .brand-logo-img {
+  height: 42px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Centered Search Bar Container */
+.macy-search-container {
+  flex: 1;
+  max-width: 580px;
+  margin: 0 16px;
+  position: relative;
+}
+
+.macy-search-form {
+  position: relative;
+  width: 100%;
+}
+
+.macy-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  width: 17px;
+  height: 17px;
+  pointer-events: none;
+}
+
+.macy-search-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 38px 0 44px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 13.5px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.macy-search-input::placeholder {
+  color: #6b7280;
+}
+
+.macy-search-input:focus {
+  border-color: #0c0e12;
+  box-shadow: 0 0 0 3px rgba(12, 14, 18, 0.08);
+}
+
+.macy-search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  color: #9ca3af;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s ease;
+}
+
+.macy-search-clear:hover {
+  color: #111827;
+}
+
+/* Instant Search Dropdown */
+.macy-search-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  overflow: hidden;
+  max-height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+
+.macy-search-dropdown-header {
+  padding: 10px 16px;
+  background: #f9fafb;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  letter-spacing: 0.05em;
+}
+
+.macy-search-dropdown-close {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.macy-search-dropdown-close:hover {
+  color: #111827;
+}
+
+.macy-search-no-results {
+  padding: 24px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.macy-search-results-list {
+  overflow-y: auto;
+  max-height: 340px;
+}
+
+.macy-search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f9fafb;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s ease;
+}
+
+.macy-search-result-item:hover {
+  background: #f9fafb;
+}
+
+.macy-search-item-thumb {
+  width: 44px;
+  height: 55px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #f3f4f6;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.macy-search-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.macy-search-item-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.macy-search-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.macy-search-item-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.macy-search-item-price {
+  font-weight: 700;
+  color: #111827;
+}
+
+.macy-search-view-all {
+  width: 100%;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: none;
+  border-top: 1px solid #f3f4f6;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #111827;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s ease;
+}
+
+.macy-search-view-all:hover {
+  background: #f3f4f6;
+}
+
+/* Right Side Utilities Group */
+.macy-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.macy-account-box {
+  display: flex;
+  align-items: center;
+}
+
+.macy-account-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.macy-account-caption {
+  font-size: 10.5px;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+.macy-signin-pill {
+  background: #000000;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 3px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.macy-signin-pill:hover {
+  background: #222222;
+}
+
+.macy-signin-link.authenticated {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
+  cursor: pointer;
+  padding: 0;
+}
+
+.macy-signin-link.authenticated:hover {
+  text-decoration: underline;
+}
+
+.macy-utility-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #111827;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  padding: 6px 0;
+  transition: color 0.15s ease;
+}
+
+.macy-utility-btn:hover {
+  color: #000000;
+}
+
+.macy-bag-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #111827;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.macy-bag-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.macy-bag-count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.macy-bag-count.highlight {
+  background: #e01a2b;
+}
+
+/* Tier 2: Category Navigation Bar */
+.macy-nav-bar {
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.macy-nav-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  height: 42px;
+  padding: 0 3%;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.macy-shop-all-btn {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0c0e12;
+  cursor: pointer;
+  padding: 4px 8px 4px 0;
+  white-space: nowrap;
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
+  margin-right: 4px;
+}
+
+.macy-nav-links-scroll {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.macy-nav-links-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.macy-nav-link {
+  background: none;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #2b303a;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 4px 0;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+.macy-nav-link:hover {
+  color: #000000;
+}
+
+.macy-nav-link.sale-link {
+  color: #e01a2b !important;
+  font-weight: 700;
+}
+
+.macy-nav-badge {
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: #000000;
+  color: #ffffff;
+  margin-left: 5px;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   2. HERO CAROUSEL (Macy's 3-Panel Split Layout)
+   ========================================================================== */
+.hero-carousel-container {
+  width: 100%;
+  background: #08090b;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-carousel-track {
+  position: relative;
+  width: 100%;
+  height: 480px;
+}
+
+.hero-slide-split {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s ease;
+  pointer-events: none;
+}
+
+.hero-slide-split.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.hero-panel-image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #11141a;
+}
+
+.hero-img-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.hero-panel-center {
+  background: #000000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 28px;
+  text-align: center;
+  z-index: 2;
+}
+
+.hero-center-content {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.hero-center-eyebrow {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: #f3f4f6;
+  letter-spacing: 0.04em;
+  margin-bottom: 14px;
+}
+
+.hero-center-title {
+  font-family: var(--serif);
+  font-size: 52px;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-bottom: 14px;
+}
+
+.hero-center-desc {
+  font-size: 15px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.82);
+  margin-bottom: 24px;
+}
+
+.hero-center-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.hero-pill-btn {
+  background: #ffffff;
+  color: #000000;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 32px;
+  border-radius: 4px;
+  border: 1px solid #ffffff;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.hero-pill-btn:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.carousel-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  color: #111827;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.carousel-nav-btn:hover {
+  background: #ffffff;
+  transform: translateY(-50%) scale(1.06);
+}
+
+.carousel-prev {
+  left: 20px;
+}
+
+.carousel-next {
+  right: 20px;
+}
+
+.carousel-indicators {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.carousel-dot.active {
+  width: 24px;
+  background: #ffffff;
+}
+
+/* Active Search Banner */
+.search-active-pill-bar {
+  max-width: 1440px;
+  margin: 16px auto 0;
+  padding: 10px 4%;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.search-active-pill-text {
+  font-size: 13px;
+  color: #374151;
+}
+
+.search-active-clear-btn {
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.search-active-clear-btn:hover {
+  background: #374151;
+}
+
+/* Responsive Media Queries for Header & Hero */
+@media (max-width: 1024px) {
+  .hero-slide-split {
+    grid-template-columns: 1fr 1.4fr 1fr;
+  }
+
+  .hero-center-title {
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 820px) {
+  .macy-utility-text,
+  .macy-account-caption {
+    display: none;
+  }
+
+  .macy-actions-group {
+    gap: 14px;
+  }
+
+  .hero-slide-split {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-panel-left,
+  .hero-panel-right {
+    display: none;
+  }
+
+  .hero-panel-center {
+    padding: 48px 24px;
+  }
+
+  .hero-carousel-track {
+    height: 380px;
+  }
+}
+
+@media (max-width: 640px) {
+  .macy-mobile-toggle {
+    display: flex;
+  }
+
+  .macy-header-main-inner {
+    height: 60px;
+    gap: 10px;
+  }
+
+  .macy-brand .brand-logo-img {
+    height: 32px;
+    max-width: 100px;
+  }
+
+  .macy-search-container {
+    margin: 0;
+  }
+
+  .macy-search-input {
+    height: 36px;
+    font-size: 12px;
+    padding: 0 28px 0 34px;
+  }
+
+  .macy-search-icon {
+    left: 12px;
+    width: 14px;
+    height: 14px;
+  }
+
+  .macy-utility-btn {
+    display: none;
+  }
+
+  .hero-center-title {
+    font-size: 32px;
+  }
+
+  .carousel-nav-btn {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 .brand-name {
@@ -119,142 +830,39 @@ button {
   color: var(--ink-secondary);
 }
 
-/* Desktop Navigation */
-.desktop-nav {
+.mobile-nav-panel {
+  display: block;
+  background: #ffffff;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 16px 4% 24px;
+}
+
+.mobile-nav-links {
   display: flex;
-  align-items: center;
-  gap: 28px;
-  margin: 0 auto;
-}
-
-.nav-item-link {
-  font: 500 12px var(--mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-secondary);
-  position: relative;
-  padding: 6px 0;
-  transition: color 0.18s ease;
-}
-
-.nav-item-link::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 1.5px;
-  background: var(--ink);
-  transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.nav-item-link:hover {
-  color: var(--ink);
-}
-
-.nav-item-link:hover::after {
-  width: 100%;
-}
-
-.nav-item-badge {
-  display: inline-block;
-  font: 700 9px var(--mono);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  background: var(--ink);
-  color: var(--canvas);
-  padding: 1px 5px;
-  border-radius: 2px;
-  margin-left: 6px;
-  vertical-align: middle;
-  line-height: 1.2;
-}
-
-.mobile-nav-item .nav-item-badge {
-  margin-left: 8px;
-}
-
-/* Header Actions */
-.header-actions {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
 }
 
-.action-icon-btn {
-  display: inline-flex;
+.mobile-nav-item {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  text-decoration: none;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  background: none;
-  border: 1px solid transparent;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--ink);
-  font: 500 12px var(--mono);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  transition: background 0.15s, border-color 0.15s;
+  justify-content: space-between;
 }
 
-.action-icon-btn:hover {
-  background: var(--bone);
-  border-color: var(--line);
-}
-
-.action-icon-btn svg {
-  stroke-width: 2;
-}
-
-.header-cart-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--ink);
-  color: var(--paper);
-  border: 1px solid var(--ink);
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font: 500 12px var(--mono);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-}
-
-.header-cart-btn:hover {
-  background: #1e2530;
-  box-shadow: 0 4px 12px rgba(12, 14, 18, 0.15);
-  transform: translateY(-1px);
-}
-
-.cart-count-pill {
-  background: rgba(255, 255, 255, 0.2);
-  color: var(--paper);
-  font: 700 11px/1.2 var(--mono);
-  padding: 2px 6px;
-  border-radius: 10px;
-  min-width: 18px;
-  text-align: center;
-}
-
-.cart-count-pill.highlight {
-  background: #ffffff;
-  color: var(--ink);
-}
-
-.mobile-menu-btn {
-  display: none;
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 8px;
-  cursor: pointer;
-  color: var(--ink);
-}
-
-.mobile-nav-panel {
-  display: none;
+.mobile-nav-meta {
+  margin-top: 12px;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 /* ==========================================================================

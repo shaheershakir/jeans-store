@@ -1,6 +1,19 @@
 import { revalidateTag, revalidatePath } from 'next/cache'
 import { NextRequest, NextResponse } from 'next/server'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, x-revalidate-secret'
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders
+  })
+}
+
 export async function POST(request: NextRequest) {
   const secretHeader = request.headers.get('x-revalidate-secret')
   const secretQuery = request.nextUrl.searchParams.get('secret')
@@ -10,7 +23,10 @@ export async function POST(request: NextRequest) {
 
   // If a secret is configured in the environment, enforce it
   if (expectedSecret && secret !== expectedSecret) {
-    return NextResponse.json({ error: 'Invalid revalidation secret' }, { status: 401 })
+    return NextResponse.json(
+      { error: 'Invalid revalidation secret' },
+      { status: 401, headers: corsHeaders }
+    )
   }
 
   let tag = 'products'
@@ -26,9 +42,13 @@ export async function POST(request: NextRequest) {
   revalidatePath('/')
   revalidatePath('/checkout')
 
-  return NextResponse.json({
-    revalidated: true,
-    tag,
-    timestamp: Date.now()
-  })
+  return NextResponse.json(
+    {
+      revalidated: true,
+      tag,
+      timestamp: Date.now()
+    },
+    { headers: corsHeaders }
+  )
 }
+

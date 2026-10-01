@@ -1,9 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import {
+  Search,
+  X,
+  Menu,
+  ShoppingBag,
+  Store,
+  Gift,
+  User,
+  Sparkles,
+  ArrowRight
+} from 'lucide-react'
 import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore } from '@/lib/store'
-import { DEFAULT_NAV_LINKS, type NavigationItem, type Fit } from '@/lib/constants'
+import { DEFAULT_NAV_LINKS, type NavigationItem, type Fit, PRODUCTS } from '@/lib/constants'
+import { searchProducts } from '@/lib/utils'
 
 interface HeaderProps {
   initialNavItems?: NavigationItem[]
@@ -12,16 +26,24 @@ interface HeaderProps {
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
 export default function Header({ initialNavItems }: HeaderProps) {
+  const router = useRouter()
   const items = useCartStore((state) => state.items)
   const openOverlay = useUIStore((state) => state.openOverlay)
   const setFit = useFilterStoreSync()
   const setCategory = useFilterStore((state) => state.setCategory)
+  const searchQuery = useFilterStore((state) => state.searchQuery)
+  const setSearchQuery = useFilterStore((state) => state.setSearchQuery)
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const logout = useAuthStore((state) => state.logout)
+
   const [mounted, setMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [localQuery, setLocalQuery] = useState(searchQuery || '')
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const searchWrapRef = useRef<HTMLDivElement>(null)
+
   const [navLinks, setNavLinks] = useState<NavigationItem[]>(
     initialNavItems && initialNavItems.length > 0 ? initialNavItems : DEFAULT_NAV_LINKS
   )
@@ -37,27 +59,43 @@ export default function Header({ initialNavItems }: HeaderProps) {
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
 
-    // Client sync for local live updates
+    // Client sync for live updates from admin/backend
     const syncNav = () => {
-      fetch(`${BACKEND_URL}/api/navigation?t=${Date.now()}`, { cache: 'no-store' })
+      const backendEndpoint =
+        typeof window !== 'undefined' && window.location.origin.includes(':3000')
+          ? window.location.origin.replace(':3000', ':4000')
+          : BACKEND_URL
+      fetch(`${backendEndpoint}/api/navigation?t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && Array.isArray(data.navigation) && data.navigation.length > 0) {
             setNavLinks(data.navigation)
           }
         })
-        .catch(() => {
-          // Silently use server-rendered navLinks on network fallback
-        })
+        .catch(() => {})
     }
 
     syncNav()
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') syncNav()
+    }
     window.addEventListener('focus', syncNav)
-    const interval = setInterval(syncNav, 3000)
+    document.addEventListener('visibilitychange', handleVisibility)
+    const interval = setInterval(syncNav, 2000)
+
+    // Click outside search dropdown
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
 
     return () => {
       window.removeEventListener('scroll', handleScroll)
       window.removeEventListener('focus', syncNav)
+      document.removeEventListener('visibilitychange', handleVisibility)
+      document.removeEventListener('mousedown', handleClickOutside)
       clearInterval(interval)
     }
   }, [])
@@ -68,156 +106,310 @@ export default function Header({ initialNavItems }: HeaderProps) {
     }
   }, [initialNavItems])
 
-  const handleNavClick = (link: NavigationItem) => {
+  useEffect(() => {
+    setLocalQuery(searchQuery)
+  }, [searchQuery])
+
+  const handleNavClick = (link: NavigationItem, e?: React.MouseEvent) => {
     if (link.type === 'fit') {
+      if (e) e.preventDefault()
       const target = (link.targetValue || 'all') as Fit | 'all'
       setFit(target)
+      scrollToCatalog()
     } else if (link.type === 'category') {
+      if (e) e.preventDefault()
       const target = link.targetValue || 'all'
       setCategory(target)
       if (target !== 'all' && target !== 'jeans') {
         setFit('all')
       }
+      scrollToCatalog()
+    } else if (link.href === '/' || link.href.startsWith('/#')) {
+      if (e) e.preventDefault()
+      scrollToCatalog()
     }
+  }
+
+  const handleShopAllClick = () => {
+    setCategory('all')
+    setFit('all')
+    setSearchQuery('')
+    setLocalQuery('')
+    scrollToCatalog()
+  }
+
+  const scrollToCatalog = () => {
+    const catalog = document.getElementById('catalog') || document.querySelector('.collection-toolbar-wrapper')
+    if (catalog) {
+      catalog.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSearchFocused(false)
+    setSearchQuery(localQuery)
+
+    if (window.location.pathname !== '/') {
+      router.push(`/?q=${encodeURIComponent(localQuery)}`)
+    } else {
+      scrollToCatalog()
+    }
+  }
+
+  const handleSearchChange = (val: string) => {
+    setLocalQuery(val)
+    setSearchQuery(val)
+    if (!isSearchFocused) setIsSearchFocused(true)
+  }
+
+  const handleClearSearch = () => {
+    setLocalQuery('')
+    setSearchQuery('')
+    setIsSearchFocused(false)
   }
 
   const count = cartCount(items)
   const activeLinks = navLinks.filter((l) => l.isActive)
+  const matchingResults = localQuery.trim() ? searchProducts(localQuery, PRODUCTS).slice(0, 5) : []
 
   return (
     <>
-      <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
-        <div className="header-container">
-          {/* Mobile Menu Toggle */}
-          <button
-            className="mobile-menu-btn"
-            type="button"
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            {menuOpen ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            )}
-          </button>
-
-          {/* Elevated Wordmark */}
-          <Link className="site-brand" href="/" aria-label="INFIT Homepage">
-            <span className="brand-name">INFIT</span>
-            <span className="brand-badge">ARCHIVE</span>
-          </Link>
-
-          {/* Desktop Navigation Links */}
-          <nav className="desktop-nav" aria-label="Main Navigation">
-            {activeLinks.map((link) => (
-              <Link
-                key={link.id || link.label}
-                href={link.href}
-                className="nav-item-link"
-                target={link.openInNewTab ? '_blank' : undefined}
-                rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
-                onClick={() => handleNavClick(link)}
-              >
-                <span>{link.label}</span>
-                {link.badge && <span className="nav-item-badge">{link.badge}</span>}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Action Tools */}
-          <div className="header-actions">
+      <header className={`macy-header ${scrolled ? 'scrolled' : ''}`}>
+        {/* Tier 1: Main Brand, Wide Search Bar & Customer Action Utilities */}
+        <div className="macy-header-main">
+          <div className="macy-header-main-inner">
+            {/* Mobile Menu Hamburger */}
             <button
-              className="action-icon-btn search-trigger"
+              className="macy-mobile-toggle"
               type="button"
-              aria-label="Search catalog"
-              title="Search products"
-              onClick={() => openOverlay('search')}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <span className="action-btn-text">Search</span>
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
 
-            {mounted && isAuthenticated && user ? (
+            {/* Brand Logo */}
+            <Link className="macy-brand" href="/" aria-label="TEESGARAGE Homepage">
+              <Image
+                src="/teesgarage_logo.svg"
+                alt="TEESGARAGE"
+                width={124}
+                height={50}
+                priority
+                className="brand-logo-img"
+              />
+            </Link>
+
+            {/* Centered Reworked Search Bar with Shadcn/Lucide Search Icon */}
+            <div className="macy-search-container" ref={searchWrapRef}>
+              <form className="macy-search-form" onSubmit={handleSearchSubmit} role="search">
+                <Search className="macy-search-icon" aria-hidden="true" />
+                <input
+                  type="text"
+                  className="macy-search-input"
+                  placeholder="What are you looking for?"
+                  value={localQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  aria-label="What are you looking for?"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                {localQuery && (
+                  <button
+                    type="button"
+                    className="macy-search-clear"
+                    onClick={handleClearSearch}
+                    aria-label="Clear search text"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </form>
+
+              {/* Instant Search Suggestions Dropdown */}
+              {isSearchFocused && localQuery.trim().length > 0 && (
+                <div className="macy-search-dropdown">
+                  <div className="macy-search-dropdown-header">
+                    <span>MATCHING PRODUCTS ({matchingResults.length})</span>
+                    <button
+                      type="button"
+                      className="macy-search-dropdown-close"
+                      onClick={() => setIsSearchFocused(false)}
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  {matchingResults.length === 0 ? (
+                    <div className="macy-search-no-results">
+                      No products found matching “{localQuery}”.
+                    </div>
+                  ) : (
+                    <div className="macy-search-results-list">
+                      {matchingResults.map((product) => (
+                        <Link
+                          key={product.id}
+                          href={`/product/${product.id}`}
+                          className="macy-search-result-item"
+                          onClick={() => {
+                            setIsSearchFocused(false)
+                          }}
+                        >
+                          <div className="macy-search-item-thumb">
+                            <Image
+                              src={product.img}
+                              alt={product.name}
+                              width={44}
+                              height={55}
+                              className="macy-search-thumb-img"
+                            />
+                          </div>
+                          <div className="macy-search-item-details">
+                            <h4 className="macy-search-item-title">{product.name}</h4>
+                            <p className="macy-search-item-meta">
+                              {product.fit ? `${product.fit} fit` : product.category} ·{' '}
+                              <span className="macy-search-item-price">{product.price}</span>
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+
+                      <button
+                        type="button"
+                        className="macy-search-view-all"
+                        onClick={handleSearchSubmit}
+                      >
+                        <span>View all matching results for &ldquo;{localQuery}&rdquo;</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Right Action Utilities (Sign In, Your Store, Gift Registry, Bag) */}
+            <div className="macy-actions-group">
+              {/* Account Sign In Section */}
+              <div className="macy-account-box">
+                <div className="macy-account-meta">
+                  <span className="macy-account-caption">See more of what you love</span>
+                  {mounted && isAuthenticated && user ? (
+                    <button
+                      type="button"
+                      className="macy-signin-link authenticated"
+                      title={`Signed in as ${user.name}. Click to sign out.`}
+                      onClick={() => {
+                        if (window.confirm(`Sign out from ${user.name}?`)) {
+                          logout()
+                        }
+                      }}
+                    >
+                      <User className="h-3.5 w-3.5 mr-1" />
+                      <span>{user.name.split(' ')[0]}</span>
+                    </button>
+                  ) : (
+                    <Link href="/login" className="macy-signin-pill">
+                      Sign In
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+
+        
+
+              {/* Shopping Bag Button with Badge */}
               <button
+                className="macy-bag-btn"
                 type="button"
-                className="action-icon-btn account-btn"
-                title={`Signed in as ${user.name}. Click to sign out.`}
-                onClick={() => {
-                  if (window.confirm(`Sign out from ${user.name}?`)) {
-                    logout()
-                  }
-                }}
+                aria-label={`Shopping bag with ${count} items`}
+                title="View shopping bag"
+                onClick={() => openOverlay('cart')}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                <span className="action-btn-text">{user.name.split(' ')[0]}</span>
+                <div className="macy-bag-icon-wrap">
+                  <ShoppingBag className="h-5 w-5" />
+                  <span className={`macy-bag-count ${count > 0 ? 'highlight' : ''}`}>{count}</span>
+                </div>
               </button>
-            ) : (
-              <Link
-                href="/login"
-                className="action-icon-btn account-btn"
-                title="Sign in or create account"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                <span className="action-btn-text">Sign In</span>
-              </Link>
-            )}
-
-            <button
-              className="header-cart-btn"
-              type="button"
-              aria-label={`Shopping bag with ${count} items`}
-              title="View shopping bag"
-              onClick={() => openOverlay('cart')}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
-              <span className="cart-label">Bag</span>
-              <span className={`cart-count-pill ${count > 0 ? 'highlight' : ''}`}>{count}</span>
-            </button>
+            </div>
           </div>
         </div>
+
+        {/* Tier 2: Category Navigation Bar (Shop All, Categories, Silhouettes, and Sale) */}
+        <nav className="macy-nav-bar" aria-label="Department and Category Navigation">
+          <div className="macy-nav-container">
+            {/* Shop All Menu Trigger */}
+            <button
+              type="button"
+              className="macy-shop-all-btn"
+              onClick={handleShopAllClick}
+            >
+              <Menu className="h-3.5 w-3.5 mr-1.5" />
+              <span>Shop All</span>
+            </button>
+
+            {/* Department & Category Links (Dynamically configured via Admin) */}
+            <div className="macy-nav-links-scroll">
+              {activeLinks.map((link) => {
+                const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
+                return (
+                  <Link
+                    key={link.id || link.label}
+                    href={link.href}
+                    className={`macy-nav-link ${isSale ? 'sale-link' : ''}`}
+                    target={link.openInNewTab ? '_blank' : undefined}
+                    rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
+                    onClick={(e) => handleNavClick(link, e)}
+                  >
+                    <span>{link.label}</span>
+                    {link.badge && <span className="macy-nav-badge">{link.badge}</span>}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </nav>
 
         {/* Mobile Navigation Drawer */}
         {menuOpen && (
           <div className="mobile-nav-panel">
             <div className="mobile-nav-links">
-              {activeLinks.map((link) => (
-                <Link
-                  key={link.id || link.label}
-                  href={link.href}
-                  className="mobile-nav-item"
-                  target={link.openInNewTab ? '_blank' : undefined}
-                  rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
-                  onClick={() => {
-                    handleNavClick(link)
-                    setMenuOpen(false)
-                  }}
-                >
-                  <span>{link.label}</span>
-                  {link.badge && <span className="nav-item-badge">{link.badge}</span>}
-                </Link>
-              ))}
+              <button
+                type="button"
+                className="mobile-nav-item"
+                style={{ textAlign: 'left', background: 'none', border: 'none', font: 'inherit', cursor: 'pointer', fontWeight: 700 }}
+                onClick={() => {
+                  handleShopAllClick()
+                  setMenuOpen(false)
+                }}
+              >
+                Shop All Garments
+              </button>
+
+              {activeLinks.map((link) => {
+                const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
+                return (
+                  <Link
+                    key={link.id || link.label}
+                    href={link.href}
+                    className={`mobile-nav-item ${isSale ? 'sale-link' : ''}`}
+                    target={link.openInNewTab ? '_blank' : undefined}
+                    rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
+                    onClick={(e) => {
+                      handleNavClick(link, e)
+                      setMenuOpen(false)
+                    }}
+                  >
+                    <span>{link.label}</span>
+                    {link.badge && <span className="nav-item-badge">{link.badge}</span>}
+                  </Link>
+                )
+              })}
+
               {mounted && isAuthenticated && user ? (
                 <button
                   type="button"
@@ -241,6 +433,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                   Sign In / Create Account
                 </Link>
               )}
+
               <div className="mobile-nav-meta">
                 <span>Direct Studio Support</span>
                 <a href="mailto:concierge@infit.in">concierge@infit.in</a>

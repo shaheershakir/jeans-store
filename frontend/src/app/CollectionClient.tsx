@@ -7,6 +7,7 @@ import type { PriceRange, SortMode } from '@/lib/store'
 import { useCartStore, useFilterStore } from '@/lib/store'
 import { filterAndSortProducts } from '@/lib/utils'
 import ProductCard from '@/components/ProductCard'
+import HeroCarousel from '@/components/HeroCarousel'
 
 const PRICE_LABELS: Record<PriceRange, string> = {
   'under-1500': 'Under ₹1,500',
@@ -29,10 +30,12 @@ export default function CollectionClient({ initialProducts = PRODUCTS }: Collect
   const fit = useFilterStore((state) => state.fit)
   const prices = useFilterStore((state) => state.prices)
   const sort = useFilterStore((state) => state.sort)
+  const searchQuery = useFilterStore((state) => state.searchQuery)
   const setCategory = useFilterStore((state) => state.setCategory)
   const setFit = useFilterStore((state) => state.setFit)
   const togglePrice = useFilterStore((state) => state.togglePrice)
   const setSort = useFilterStore((state) => state.setSort)
+  const setSearchQuery = useFilterStore((state) => state.setSearchQuery)
   const reset = useFilterStore((state) => state.reset)
   const [filtersOpen, setFiltersOpen] = useState(false)
 
@@ -41,29 +44,19 @@ export default function CollectionClient({ initialProducts = PRODUCTS }: Collect
     void useCartStore.persist.rehydrate()
   }, [])
 
-  const products = filterAndSortProducts(fit, prices, sort, initialProducts, category)
-  const activeFilterCount = (category !== 'all' ? 1 : 0) + (fit !== 'all' ? 1 : 0) + prices.length
+  const products = filterAndSortProducts(fit, prices, sort, initialProducts, category, searchQuery)
+  const activeFilterCount =
+    (category !== 'all' ? 1 : 0) + (fit !== 'all' ? 1 : 0) + prices.length + (searchQuery.trim() ? 1 : 0)
 
   const showFitFilter = category === 'all' || category === 'jeans'
 
   return (
     <>
-      {/* Editorial Collection Hero Banner */}
-      <section className="collection-hero">
-        <div className="collection-hero-inner">
-          <div className="hero-tagline">
-            <span className="hero-dot"></span>
-            <span className="hero-eyebrow">HEAVYWEIGHT DENIM & APPAREL // V26</span>
-          </div>
-          <h1 className="hero-title">Crafted for permanence. Cut for movement.</h1>
-          <p className="hero-subtitle">
-            13.5oz to 14.5oz shuttle loom denim, 450 GSM French terry hoodies, and heavyweight streetwear basics. Free shipping across India.
-          </p>
-        </div>
-      </section>
+      {/* Promotional Split Hero Carousel */}
+      <HeroCarousel onSelectCategory={setCategory} onSelectFit={setFit} />
 
       {/* Interactive Sticky Toolbar */}
-      <header className="collection-toolbar-wrapper">
+      <header className="collection-toolbar-wrapper" id="catalog">
         {/* Category Filter Tabs */}
         <div className="category-tabs-bar">
           <div className="category-tabs-scroll" role="tablist" aria-label="Filter by wardrobe category">
@@ -200,6 +193,23 @@ export default function CollectionClient({ initialProducts = PRODUCTS }: Collect
           </div>
         )}
       </header>
+
+      {/* Active Search Banner if query is active */}
+      {searchQuery.trim() && (
+        <div className="search-active-pill-bar">
+          <span className="search-active-pill-text">
+            Showing results for <strong>“{searchQuery}”</strong> ({products.length}{' '}
+            {products.length === 1 ? 'style' : 'styles'})
+          </span>
+          <button
+            type="button"
+            className="search-active-clear-btn"
+            onClick={() => setSearchQuery('')}
+          >
+            Clear Search ✕
+          </button>
+        </div>
+      )}
 
       {/* Main Grid */}
       <section className="catalog-section">

@@ -28,9 +28,23 @@ export function filterAndSortProducts(
   prices: string[],
   sort: SortMode,
   catalog: Product[] = PRODUCTS,
-  category: string | 'all' = 'all'
+  category: string | 'all' = 'all',
+  searchQuery: string = ''
 ): Product[] {
   let list = [...catalog]
+
+  if (searchQuery && searchQuery.trim()) {
+    const clean = searchQuery.trim().toLowerCase()
+    list = list.filter(
+      (p) =>
+        p.name.toLowerCase().includes(clean) ||
+        (p.fit && p.fit.toLowerCase().includes(clean)) ||
+        (p.wash && p.wash.toLowerCase().includes(clean)) ||
+        p.desc.toLowerCase().includes(clean) ||
+        (p.category && p.category.toLowerCase().includes(clean)) ||
+        p.price.toLowerCase().includes(clean)
+    )
+  }
 
   if (category && category !== 'all') {
     if (category === 'jeans') {
