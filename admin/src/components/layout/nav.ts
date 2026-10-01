@@ -23,6 +23,7 @@ import {
   Users,
   Warehouse,
   Banknote,
+  LayoutTemplate,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Permission } from '@/lib/permissions'
@@ -89,10 +90,11 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Settings',
     perm: 'settings.read',
     items: [
+      { label: 'Store Settings', href: '/settings/store', icon: Building2, perm: 'settings.read' },
+      { label: 'Homepage Layout', href: '/settings/homepage', icon: LayoutTemplate, perm: 'settings.read' },
+      { label: 'Storefront Navigation', href: '/settings/navigation', icon: Compass, perm: 'settings.read' },
       { label: 'Admin Users', href: '/settings/users', icon: ShieldCheck, perm: 'admin.read' },
       { label: 'Roles & Permissions', href: '/settings/roles', icon: KeyRound, perm: 'admin.read' },
-      { label: 'Store Settings', href: '/settings/store', icon: Building2, perm: 'settings.read' },
-      { label: 'Storefront Navigation', href: '/settings/navigation', icon: Compass, perm: 'settings.read' },
       { label: 'Audit Logs', href: '/settings/audit', icon: ScrollText, perm: 'audit.read' },
     ],
   },

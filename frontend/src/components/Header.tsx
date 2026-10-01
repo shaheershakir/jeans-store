@@ -111,6 +111,18 @@ export default function Header({ initialNavItems }: HeaderProps) {
   }, [searchQuery])
 
   const handleNavClick = (link: NavigationItem, e?: React.MouseEvent) => {
+    // If it's a real /category/* route, let Next.js handle navigation normally
+    if (link.href.startsWith('/category/')) {
+      // Set the filter state in parallel so the category page reads the right value
+      if (link.type === 'category') {
+        const target = link.targetValue || 'all'
+        setCategory(target)
+        if (target !== 'all' && target !== 'jeans') setFit('all')
+      }
+      // Allow the <Link> to navigate — don't preventDefault
+      return
+    }
+
     if (link.type === 'fit') {
       if (e) e.preventDefault()
       const target = (link.targetValue || 'all') as Fit | 'all'
@@ -129,6 +141,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
       scrollToCatalog()
     }
   }
+
 
   const handleShopAllClick = () => {
     setCategory('all')
@@ -381,7 +394,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
               <button
                 type="button"
                 className="mobile-nav-item"
-                style={{ textAlign: 'left', background: 'none', border: 'none', font: 'inherit', cursor: 'pointer', fontWeight: 700 }}
+                style={{ textAlign: 'left', background: 'none', border: 'none', font: 'inherit', cursor: 'pointer', fontWeight: 600 }}
                 onClick={() => {
                   handleShopAllClick()
                   setMenuOpen(false)

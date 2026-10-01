@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist, type PersistOptions } from 'zustand/middleware'
-import { createDbState, DATA_VERSION, DEFAULT_NAVIGATION_ITEMS } from '@/data/seed'
+import { createDbState, DATA_VERSION, DEFAULT_NAVIGATION_ITEMS, DEFAULT_HOMEPAGE_CONFIG } from '@/data/seed'
 import { nextPaymentOnTransition, transitionError, computeTotals } from '@/lib/order-machine'
 import type {
   AdminUser,
@@ -21,6 +21,8 @@ import type {
   Material,
   NavigationItem,
   NavItemType,
+  HomepageConfig,
+  HomepageSectionType,
   Order,
   PaymentMethod,
   PaymentStatus,
@@ -192,6 +194,12 @@ interface AdminState {
   toggleNavigationItem: (id: string) => void
   resetNavigationToDefault: () => void
   setNavigation: (items: NavigationItem[]) => void
+
+  setHomepageConfig: (config: HomepageConfig) => void
+  updateHomepageSection: <K extends keyof HomepageConfig>(section: K, value: HomepageConfig[K]) => void
+  reorderHomepageSections: (order: HomepageSectionType[]) => void
+  toggleHomepageSection: (section: HomepageSectionType) => void
+  resetHomepageConfig: () => void
 }
 
 export const useAdminStore = create<AdminState>()(
@@ -1169,11 +1177,44 @@ export const useAdminStore = create<AdminState>()(
           const indexed = items.map((it, idx) => ({ ...it, order: idx }))
           set({ data: { ...get().data, navigation: indexed } })
         },
+
+        setHomepageConfig: (config) => {
+          set({ data: { ...get().data, homepage: config } })
+          get().log('Updated homepage config', 'Storefront', 'Homepage', 'Updated homepage layout and content')
+        },
+
+        updateHomepageSection: (section, value) => {
+          const current = get().data.homepage || DEFAULT_HOMEPAGE_CONFIG
+          const updated = { ...current, [section]: value }
+          set({ data: { ...get().data, homepage: updated } })
+          get().log('Updated homepage section', 'Storefront', String(section), `Updated section ${String(section)}`)
+        },
+
+        reorderHomepageSections: (order) => {
+          const current = get().data.homepage || DEFAULT_HOMEPAGE_CONFIG
+          const updated = { ...current, sectionsOrder: order }
+          set({ data: { ...get().data, homepage: updated } })
+          get().log('Reordered homepage sections', 'Storefront', 'Homepage', `Order: ${order.join(', ')}`)
+        },
+
+        toggleHomepageSection: (section) => {
+          const current = get().data.homepage || DEFAULT_HOMEPAGE_CONFIG
+          const enabledMap = { ...current.sectionsEnabled }
+          enabledMap[section] = !enabledMap[section]
+          const updated = { ...current, sectionsEnabled: enabledMap }
+          set({ data: { ...get().data, homepage: updated } })
+          get().log('Toggled homepage section', 'Storefront', section, `Enabled: ${enabledMap[section]}`)
+        },
+
+        resetHomepageConfig: () => {
+          set({ data: { ...get().data, homepage: JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG)) } })
+          get().log('Reset homepage config', 'Storefront', 'Homepage', 'Reset homepage layout to factory defaults')
+        },
       }
     },
     {
       name: 'infit-admin',
-      version: 3,
+      version: 4,
       partialize: (s) => ({ data: s.data, session: s.session }),
       merge: (persisted, current) => {
         const p = persisted as Partial<AdminState> | undefined
@@ -1184,7 +1225,10 @@ export const useAdminStore = create<AdminState>()(
         const nav = Array.isArray(p.data.navigation) && p.data.navigation.length > 0
           ? p.data.navigation
           : createDbState().navigation
-        return { ...current, data: { ...p.data, navigation: nav }, session: p.session ?? null }
+        const hp = p.data.homepage && Array.isArray(p.data.homepage.sectionsOrder)
+          ? p.data.homepage
+          : createDbState().homepage
+        return { ...current, data: { ...p.data, navigation: nav, homepage: hp }, session: p.session ?? null }
       },
       onRehydrateStorage: () => (state) => {
         state?.setHydrated()

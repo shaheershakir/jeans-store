@@ -13,6 +13,7 @@ import {
   Sparkles,
   TrendingUp,
   Warehouse,
+  LayoutTemplate,
 } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
 import { PageContent, PageHeader } from '@/components/ui/page-header'
@@ -42,6 +43,11 @@ export default function DashboardPage() {
         title="Dashboard"
         description="Overview of INFIT store performance, orders, inventory and fulfillment"
       >
+        <Link href="/settings/homepage">
+          <Button variant="outline" size="sm">
+            <LayoutTemplate className="h-4 w-4 mr-1.5 text-primary" /> Edit Homepage
+          </Button>
+        </Link>
         <Link href="/products/new">
           <Button size="sm">
             <Plus className="h-4 w-4" /> Add Product

@@ -461,4 +461,143 @@ export interface DbState {
   notifications: AppNotification[]
   settings: StoreSettings
   navigation: NavigationItem[]
+  homepage: HomepageConfig
 }
+
+export type HomepageSectionType =
+  | 'announcement'
+  | 'hero'
+  | 'categories'
+  | 'new_arrivals'
+  | 'featured_collection'
+  | 'best_sellers'
+  | 'brand_story'
+  | 'looks'
+  | 'instagram'
+  | 'reviews'
+  | 'trust_bar'
+  | 'catalog'
+
+export interface HomepageCategoryItem {
+  id: string
+  label: string
+  icon: string
+  img: string
+  count: string
+}
+
+export interface HomepageLookItem {
+  id: number
+  title: string
+  tag: string
+  img: string
+  link?: string
+}
+
+export interface HomepageReviewItem {
+  id: number
+  name: string
+  location: string
+  stars: number
+  text: string
+  product: string
+}
+
+export interface HomepageTrustItem {
+  id: string
+  title: string
+  subtitle?: string
+  icon?: string
+}
+
+export interface HomepageConfig {
+  sectionsOrder: HomepageSectionType[]
+  sectionsEnabled: Record<string, boolean>
+  announcement: {
+    enabled: boolean
+    messages: string[]
+    intervalSeconds: number
+  }
+  hero: {
+    enabled: boolean
+    eyebrow: string
+    title: string
+    subtitle: string
+    primaryCtaText: string
+    primaryCtaLink: string
+    secondaryCtaText: string
+    secondaryCtaLink: string
+    imageUrl: string
+    trustBadges: string[]
+  }
+  categories: {
+    enabled: boolean
+    eyebrow: string
+    title: string
+    items: HomepageCategoryItem[]
+  }
+  new_arrivals: {
+    enabled: boolean
+    eyebrow: string
+    title: string
+    limit: number
+    ctaText: string
+    ctaLink: string
+  }
+  featured_collection: {
+    enabled: boolean
+    eyebrow: string
+    title: string
+    description: string
+    ctaText: string
+    ctaLink: string
+    imageUrl: string
+  }
+  best_sellers: {
+    enabled: boolean
+    eyebrow: string
+    title: string
+    subtitle: string
+    limit: number
+  }
+  brand_story: {
+    enabled: boolean
+    eyebrow: string
+    title: string
+    paragraphs: string[]
+    imageUrl: string
+    stats: Array<{ num: string; label: string }>
+    ctaText: string
+    ctaLink: string
+  }
+  looks: {
+    enabled: boolean
+    eyebrow: string
+    title: string
+    subtitle: string
+    items: HomepageLookItem[]
+  }
+  instagram: {
+    enabled: boolean
+    eyebrow: string
+    title: string
+    subtitle: string
+    instagramUrl: string
+    photos: string[]
+  }
+  reviews: {
+    enabled: boolean
+    title: string
+    ratingText: string
+    items: HomepageReviewItem[]
+  }
+  trust_bar: {
+    enabled: boolean
+    items: HomepageTrustItem[]
+  }
+  catalog: {
+    enabled: boolean
+    title: string
+    showFilters: boolean
+  }
+}

@@ -1,13 +1,24 @@
 'use client'
 
 import type { MouseEvent } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { Product } from '@/lib/constants'
 import { SIZES, SWATCHES } from '@/lib/constants'
 import { useCartStore, useUIStore } from '@/lib/store'
+
+// Map category ID → breadcrumb label + route
+const CATEGORY_META: Record<string, { label: string; href: string }> = {
+  jeans: { label: 'Denim', href: '/category/jeans' },
+  'jeans-fit': { label: 'Denim', href: '/category/jeans' },
+  tops: { label: 'Tops & T-Shirts', href: '/category/tops' },
+  't-shirts': { label: 'Tops & T-Shirts', href: '/category/tops' },
+  shirts: { label: 'Shirts', href: '/category/shirts' },
+  hoodies: { label: 'Hoodies', href: '/category/hoodies' },
+  hats: { label: 'Accessories', href: '/category/accessories' },
+}
 
 export default function ProductDetail({ product }: { product: Product }) {
   const router = useRouter()
@@ -22,7 +33,15 @@ export default function ProductDetail({ product }: { product: Product }) {
   const availableSizes = product.sizes && product.sizes.length > 0 ? product.sizes : SIZES
   const isNumeric = availableSizes.every((s) => /^\d+$/.test(s))
 
+  // Build image list — main + alternate
+  const images = [product.img, product.img2].filter(Boolean) as string[]
+  const [activeImg, setActiveImg] = useState(0)
   const [added, setAdded] = useState(false)
+
+  const catMeta =
+    (product.category ? CATEGORY_META[product.category] : null) ??
+    (product.fit ? CATEGORY_META['jeans'] : null) ??
+    { label: 'All Styles', href: '/category/all' }
 
   useEffect(() => {
     void useUIStore.persist.rehydrate()
@@ -31,6 +50,15 @@ export default function ProductDetail({ product }: { product: Product }) {
       setSelectedSize(availableSizes[0] || '32')
     }
   }, [availableSizes, selectedSize, setSelectedSize])
+
+  // Arrow navigation on gallery
+  const prevImg = useCallback(() => {
+    setActiveImg((i) => (i - 1 + images.length) % images.length)
+  }, [images.length])
+
+  const nextImg = useCallback(() => {
+    setActiveImg((i) => (i + 1) % images.length)
+  }, [images.length])
 
   function handleAddToCart() {
     addItem(product.id, selectedSize)
@@ -49,54 +77,121 @@ export default function ProductDetail({ product }: { product: Product }) {
     e.preventDefault()
     showToast(
       isNumeric
-        ? 'Size Guide: 28 (28" Waist) · 30 (30" Waist) · 32 (32" Waist) · 34 (34" Waist) · 36 (36" Waist)'
-        : 'Apparel Size Guide: S (36-38") · M (38-40") · L (40-42") · XL (42-44")'
+        ? 'Size Guide: 28 (28″ Waist) · 30 (30″ Waist) · 32 (32″ Waist) · 34 (34″ Waist) · 36 (36″ Waist)'
+        : 'Apparel Size Guide: S (36-38″) · M (38-40″) · L (40-42″) · XL (42-44″)'
     )
   }
 
   return (
     <div className="pdp-container">
-      {/* Breadcrumb Navigation */}
+      {/* ── Breadcrumb ── */}
       <nav className="pdp-breadcrumb" aria-label="Breadcrumb">
-        <Link href="/">Archive</Link>
-        <span className="crumb-sep">/</span>
-        <Link href="/">Denim</Link>
-        <span className="crumb-sep">/</span>
+        <Link href="/" className="pdp-crumb-link">Home</Link>
+        <span className="crumb-sep" aria-hidden="true">/</span>
+        <Link href={catMeta.href} className="pdp-crumb-link">{catMeta.label}</Link>
+        <span className="crumb-sep" aria-hidden="true">/</span>
         <span className="crumb-current">{product.name}</span>
       </nav>
 
       <div className="pdp-layout">
-        {/* Gallery Column */}
+        {/* ── Gallery Column ── */}
         <div className="pdp-gallery">
-          <div className="pdp-image-frame main-image">
-            <Image
-              src={product.img}
-              alt={product.name}
-              width={900}
-              height={1100}
-              priority
-              className="pdp-img"
-            />
-            {product.badge && <span className="pdp-badge">{product.badge}</span>}
-          </div>
-          {product.img2 && (
-            <div className="pdp-image-frame alt-image">
-              <Image
-                src={product.img2}
-                alt={`${product.name} alternate view`}
-                width={900}
-                height={1100}
-                className="pdp-img"
-              />
+          {/* Thumbnail strip */}
+          {images.length > 1 && (
+            <div className="pdp-thumb-strip" aria-label="Product images">
+              {images.map((src, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`pdp-thumb-btn ${i === activeImg ? 'active' : ''}`}
+                  onClick={() => setActiveImg(i)}
+                  aria-label={`View image ${i + 1}`}
+                  aria-pressed={i === activeImg}
+                >
+                  <Image
+                    src={src}
+                    alt={`${product.name} view ${i + 1}`}
+                    width={80}
+                    height={100}
+                    className="pdp-thumb-img"
+                  />
+                </button>
+              ))}
             </div>
           )}
+
+          {/* Main image + arrow nav */}
+          <div className="pdp-main-img-wrap">
+            {images.map((src, i) => (
+              <div
+                key={i}
+                className={`pdp-main-img-slide ${i === activeImg ? 'active' : ''}`}
+                aria-hidden={i !== activeImg}
+              >
+                <Image
+                  src={src}
+                  alt={i === 0 ? product.name : `${product.name} alternate view`}
+                  width={900}
+                  height={1100}
+                  priority={i === 0}
+                  className="pdp-img"
+                />
+              </div>
+            ))}
+
+            {product.badge && (
+              <span className="pdp-badge">{product.badge}</span>
+            )}
+
+            {/* Arrow navigation — only shown when more than 1 image */}
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="pdp-img-arrow pdp-img-prev"
+                  aria-label="Previous image"
+                  onClick={prevImg}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="pdp-img-arrow pdp-img-next"
+                  aria-label="Next image"
+                  onClick={nextImg}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+
+                {/* Dot indicators */}
+                <div className="pdp-img-dots" aria-label="Image navigation">
+                  {images.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`pdp-img-dot ${i === activeImg ? 'active' : ''}`}
+                      onClick={() => setActiveImg(i)}
+                      aria-label={`Go to image ${i + 1}`}
+                      aria-pressed={i === activeImg}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Product Details & Actions Column */}
+        {/* ── Product Details & Actions Column ── */}
         <div className="pdp-sidebar">
           <div className="pdp-meta-header">
             <span className="pdp-category-eyebrow">
-              {product.fit ? `${product.fit} Cut · 14oz Shuttle Loom Denim` : (product.category?.toUpperCase() || 'WARDROBE ESSENTIAL')}
+              {product.fit
+                ? `${product.fit} Cut · 14oz Shuttle Loom Denim`
+                : (product.category?.toUpperCase() ?? 'WARDROBE ESSENTIAL')}
             </span>
             <h1 className="pdp-headline">{product.name}</h1>
 
@@ -111,7 +206,7 @@ export default function ProductDetail({ product }: { product: Product }) {
 
           <p className="pdp-narrative">{product.desc}</p>
 
-          {/* Wash Switcher (Displayed for Denim) */}
+          {/* Wash Switcher (for Denim) */}
           {(product.wash || product.category === 'jeans') && (
             <div className="pdp-option-section">
               <div className="option-label-row">
@@ -138,7 +233,8 @@ export default function ProductDetail({ product }: { product: Product }) {
           <div className="pdp-option-section">
             <div className="option-label-row">
               <span className="option-title">
-                Select {isNumeric ? 'Waist' : 'Size'}: <strong className="option-value">{selectedSize}{isNumeric ? '"' : ''}</strong>
+                Select {isNumeric ? 'Waist' : 'Size'}:{' '}
+                <strong className="option-value">{selectedSize}{isNumeric ? '"' : ''}</strong>
               </span>
               <a href="#size-guide" className="pdp-size-guide-link" onClick={handleSizeGuide}>
                 Size Guide ↗
@@ -159,7 +255,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
           </div>
 
-          {/* Full Width Action CTAs */}
+          {/* CTAs */}
           <div className="pdp-actions-group">
             <button
               type="button"
@@ -181,7 +277,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             </button>
           </div>
 
-          {/* Honest Delivery Information */}
+          {/* Delivery info */}
           <div className="pdp-delivery-card">
             <div className="delivery-card-header">
               <span className="delivery-icon">✦</span>
@@ -192,7 +288,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             </p>
           </div>
 
-          {/* Collapsible Accordions */}
+          {/* Accordions */}
           <div className="pdp-accordions">
             <details className="pdp-details-item" open>
               <summary className="pdp-summary">

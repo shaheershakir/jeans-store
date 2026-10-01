@@ -6,6 +6,7 @@ import { productRoutes } from './routes/products.js'
 import { orderRoutes } from './routes/orders.js'
 import { authRoutes } from './routes/auth.js'
 import { navigationRoutes } from './routes/navigation.js'
+import { homepageRoutes } from './routes/homepage.js'
 
 export interface BuildAppOptions {
   corsOrigin?: string | string[] | boolean
@@ -59,6 +60,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   void app.register(orderRoutes)
   void app.register(authRoutes)
   void app.register(navigationRoutes)
+  void app.register(homepageRoutes)
 
   return app
 }

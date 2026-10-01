@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { Save, Building2, Compass } from 'lucide-react'
+import { Save, Building2, Compass, LayoutTemplate } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
 import { updateSettings } from '@/services/admin'
 import { PageContent, PageHeader } from '@/components/ui/page-header'
@@ -50,6 +50,11 @@ export default function StoreSettingsPage() {
         title="Store Settings"
         description="General store configuration, contact details, and tax defaults"
       >
+        <Link href="/settings/homepage">
+          <Button variant="outline" size="sm">
+            <LayoutTemplate className="h-3.5 w-3.5 mr-1" /> Homepage Layout
+          </Button>
+        </Link>
         <Link href="/settings/navigation">
           <Button variant="outline" size="sm">
             <Compass className="h-3.5 w-3.5 mr-1" /> Storefront Navigation

@@ -126,12 +126,13 @@ export default function HeroCarousel({ onSelectCategory, onSelectFit }: HeroCaro
     setCurrentSlide((prev) => (prev - 1 + CAROUSEL_SLIDES.length) % CAROUSEL_SLIDES.length)
   }, [])
 
-  // Auto-play timer
+  // Auto-play timer — 5 s per slide
   useEffect(() => {
     if (isPaused) return
-    const interval = setInterval(nextSlide, 7000)
+    const interval = setInterval(nextSlide, 5000)
     return () => clearInterval(interval)
   }, [isPaused, nextSlide])
+
 
   const handleButtonClick = (btn: CarouselSlide['buttons'][0]) => {
     if (btn.category && onSelectCategory) {
