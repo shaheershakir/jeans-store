@@ -423,6 +423,20 @@ export interface InventoryMovement {
   createdAt: string
 }
 
+export type NavItemType = 'fit' | 'category' | 'custom'
+
+export interface NavigationItem {
+  id: string
+  label: string
+  href: string
+  type: NavItemType
+  targetValue?: string
+  badge?: string
+  order: number
+  isActive: boolean
+  openInNewTab: boolean
+}
+
 export interface DbState {
   version: number
   products: Product[]
@@ -446,4 +460,5 @@ export interface DbState {
   auditLog: AuditLogEntry[]
   notifications: AppNotification[]
   settings: StoreSettings
+  navigation: NavigationItem[]
 }

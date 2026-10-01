@@ -3,24 +3,28 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore } from '@/lib/store'
+import { DEFAULT_NAV_LINKS, type NavigationItem, type Fit } from '@/lib/constants'
 
-const NAV_LINKS: { label: string; href: string; fit: 'all' | 'Straight' | 'Baggy' | 'Wide' | 'Relaxed' | 'Bootcut' }[] = [
-  { label: 'All Silhouettes', href: '/', fit: 'all' },
-  { label: 'Straight', href: '/', fit: 'Straight' },
-  { label: 'Baggy & Wide', href: '/', fit: 'Baggy' },
-  { label: 'Relaxed', href: '/', fit: 'Relaxed' }
-]
+interface HeaderProps {
+  initialNavItems?: NavigationItem[]
+}
 
-export default function Header() {
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+
+export default function Header({ initialNavItems }: HeaderProps) {
   const items = useCartStore((state) => state.items)
   const openOverlay = useUIStore((state) => state.openOverlay)
   const setFit = useFilterStoreSync()
+  const setCategory = useFilterStore((state) => state.setCategory)
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const logout = useAuthStore((state) => state.logout)
   const [mounted, setMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [navLinks, setNavLinks] = useState<NavigationItem[]>(
+    initialNavItems && initialNavItems.length > 0 ? initialNavItems : DEFAULT_NAV_LINKS
+  )
 
   useEffect(() => {
     setMounted(true)
@@ -32,10 +36,53 @@ export default function Header() {
       setScrolled(window.scrollY > 20)
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
+
+    // Client sync for local live updates
+    const syncNav = () => {
+      fetch(`${BACKEND_URL}/api/navigation?t=${Date.now()}`, { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && Array.isArray(data.navigation) && data.navigation.length > 0) {
+            setNavLinks(data.navigation)
+          }
+        })
+        .catch(() => {
+          // Silently use server-rendered navLinks on network fallback
+        })
+    }
+
+    syncNav()
+    window.addEventListener('focus', syncNav)
+    const interval = setInterval(syncNav, 3000)
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('focus', syncNav)
+      clearInterval(interval)
+    }
   }, [])
 
+  useEffect(() => {
+    if (initialNavItems && initialNavItems.length > 0) {
+      setNavLinks(initialNavItems)
+    }
+  }, [initialNavItems])
+
+  const handleNavClick = (link: NavigationItem) => {
+    if (link.type === 'fit') {
+      const target = (link.targetValue || 'all') as Fit | 'all'
+      setFit(target)
+    } else if (link.type === 'category') {
+      const target = link.targetValue || 'all'
+      setCategory(target)
+      if (target !== 'all' && target !== 'jeans') {
+        setFit('all')
+      }
+    }
+  }
+
   const count = cartCount(items)
+  const activeLinks = navLinks.filter((l) => l.isActive)
 
   return (
     <>
@@ -71,14 +118,17 @@ export default function Header() {
 
           {/* Desktop Navigation Links */}
           <nav className="desktop-nav" aria-label="Main Navigation">
-            {NAV_LINKS.map((link) => (
+            {activeLinks.map((link) => (
               <Link
-                key={link.label}
+                key={link.id || link.label}
                 href={link.href}
                 className="nav-item-link"
-                onClick={() => setFit(link.fit)}
+                target={link.openInNewTab ? '_blank' : undefined}
+                rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
+                onClick={() => handleNavClick(link)}
               >
-                {link.label}
+                <span>{link.label}</span>
+                {link.badge && <span className="nav-item-badge">{link.badge}</span>}
               </Link>
             ))}
           </nav>
@@ -152,17 +202,20 @@ export default function Header() {
         {menuOpen && (
           <div className="mobile-nav-panel">
             <div className="mobile-nav-links">
-              {NAV_LINKS.map((link) => (
+              {activeLinks.map((link) => (
                 <Link
-                  key={link.label}
+                  key={link.id || link.label}
                   href={link.href}
                   className="mobile-nav-item"
+                  target={link.openInNewTab ? '_blank' : undefined}
+                  rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
                   onClick={() => {
-                    setFit(link.fit)
+                    handleNavClick(link)
                     setMenuOpen(false)
                   }}
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  {link.badge && <span className="nav-item-badge">{link.badge}</span>}
                 </Link>
               ))}
               {mounted && isAuthenticated && user ? (

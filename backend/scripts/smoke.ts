@@ -159,6 +159,44 @@ const badAuthRes = await request('/api/auth/me', {
 })
 record('GET /api/auth/me with invalid token → 401', badAuthRes.status === 401, `status ${badAuthRes.status}`)
 
+// Navigation Smoke Checks
+const navRes = await request('/api/navigation')
+const navBody = (await navRes.json()) as { count: number; navigation: Array<{ label: string }> }
+record(
+  'GET /api/navigation returns navigation items',
+  navRes.status === 200 && navBody.count >= 4 && Array.isArray(navBody.navigation),
+  `status ${navRes.status}, count ${navBody.count}`
+)
+
+const navUpdateRes = await request('/api/navigation', {
+  method: 'PUT',
+  headers: { 'content-type': 'application/json', ...authHeader },
+  body: JSON.stringify({
+    navigation: [
+      { id: 'nav-1', label: 'All Silhouettes', href: '/', type: 'fit', targetValue: 'all', order: 0, isActive: true, openInNewTab: false },
+      { id: 'nav-2', label: 'Straight', href: '/?fit=Straight', type: 'fit', targetValue: 'Straight', order: 1, isActive: true, openInNewTab: false },
+      { id: 'nav-smoke', label: 'Smoke Test Link', href: '/test', type: 'custom', order: 2, isActive: true, openInNewTab: false }
+    ]
+  })
+})
+const navUpdateBody = (await navUpdateRes.json()) as { count: number }
+record(
+  'PUT /api/navigation updates navigation items',
+  navUpdateRes.status === 200 && navUpdateBody.count === 3,
+  `status ${navUpdateRes.status}, count ${navUpdateBody.count}`
+)
+
+const navResetRes = await request('/api/navigation/reset', {
+  method: 'POST',
+  headers: { ...authHeader }
+})
+const navResetBody = (await navResetRes.json()) as { count: number }
+record(
+  'POST /api/navigation/reset resets items to default',
+  navResetRes.status === 200 && navResetBody.count === 4,
+  `status ${navResetRes.status}, count ${navResetBody.count}`
+)
+
 let failed = 0
 for (const check of checks) {
   if (!check.ok) failed++

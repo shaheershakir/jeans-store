@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, jsonb, varchar } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, integer, timestamp, jsonb, varchar, boolean } from 'drizzle-orm/pg-core'
 
 export const products = pgTable('products', {
   id: serial('id').primaryKey(),
@@ -51,9 +51,25 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
 
+export const navigationItems = pgTable('navigation_items', {
+  id: varchar('id', { length: 64 }).primaryKey(),
+  label: varchar('label', { length: 100 }).notNull(),
+  href: varchar('href', { length: 255 }).notNull(),
+  type: varchar('type', { length: 50 }).default('custom').notNull(),
+  targetValue: varchar('target_value', { length: 100 }),
+  badge: varchar('badge', { length: 50 }),
+  order: integer('order').notNull().default(0),
+  isActive: boolean('is_active').default(true).notNull(),
+  openInNewTab: boolean('open_in_new_tab').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+})
+
 export type DbProduct = typeof products.$inferSelect
 export type DbNewProduct = typeof products.$inferInsert
 export type DbOrder = typeof orders.$inferSelect
 export type DbNewOrder = typeof orders.$inferInsert
 export type DbUser = typeof users.$inferSelect
 export type DbNewUser = typeof users.$inferInsert
+export type DbNavigationItem = typeof navigationItems.$inferSelect
+export type DbNewNavigationItem = typeof navigationItems.$inferInsert

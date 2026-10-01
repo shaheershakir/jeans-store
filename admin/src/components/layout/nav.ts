@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Building2,
+  Compass,
   CreditCard,
   FolderTree,
   Image as ImageIcon,
@@ -91,6 +92,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Admin Users', href: '/settings/users', icon: ShieldCheck, perm: 'admin.read' },
       { label: 'Roles & Permissions', href: '/settings/roles', icon: KeyRound, perm: 'admin.read' },
       { label: 'Store Settings', href: '/settings/store', icon: Building2, perm: 'settings.read' },
+      { label: 'Storefront Navigation', href: '/settings/navigation', icon: Compass, perm: 'settings.read' },
       { label: 'Audit Logs', href: '/settings/audit', icon: ScrollText, perm: 'audit.read' },
     ],
   },

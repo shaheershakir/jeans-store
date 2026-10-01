@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist, type PersistOptions } from 'zustand/middleware'
-import { createDbState, DATA_VERSION } from '@/data/seed'
+import { createDbState, DATA_VERSION, DEFAULT_NAVIGATION_ITEMS } from '@/data/seed'
 import { nextPaymentOnTransition, transitionError, computeTotals } from '@/lib/order-machine'
 import type {
   AdminUser,
@@ -19,6 +19,8 @@ import type {
   FulfillmentStatus,
   Gender,
   Material,
+  NavigationItem,
+  NavItemType,
   Order,
   PaymentMethod,
   PaymentStatus,
@@ -183,6 +185,13 @@ interface AdminState {
   saveShippingZone: (z: ShippingZone) => void
   deleteShippingMethod: (methodId: number) => void
   updateSettings: (patch: Partial<StoreSettings>) => void
+
+  saveNavigationItem: (item: Partial<NavigationItem> & { label: string; href: string }) => NavigationItem
+  deleteNavigationItem: (id: string) => void
+  reorderNavigationItems: (items: NavigationItem[]) => void
+  toggleNavigationItem: (id: string) => void
+  resetNavigationToDefault: () => void
+  setNavigation: (items: NavigationItem[]) => void
 }
 
 export const useAdminStore = create<AdminState>()(
@@ -1093,6 +1102,73 @@ export const useAdminStore = create<AdminState>()(
           set({ data: { ...get().data, shippingZones: zones } })
           get().log('Deleted shipping method', 'Shipping', String(methodId), 'Removed shipping method')
         },
+
+        saveNavigationItem: (input) => {
+          const items = get().data.navigation ? [...get().data.navigation] : []
+          const isNew = !input.id || !items.some((x) => x.id === input.id)
+          const id = input.id || `nav-${Date.now()}`
+          const order = input.order ?? (isNew ? items.length : (items.find((x) => x.id === id)?.order ?? 0))
+
+          const fullItem: NavigationItem = {
+            id,
+            label: input.label.trim(),
+            href: input.href.trim(),
+            type: input.type || 'custom',
+            targetValue: input.targetValue?.trim() || undefined,
+            badge: input.badge?.trim() || undefined,
+            order,
+            isActive: input.isActive ?? true,
+            openInNewTab: input.openInNewTab ?? false,
+          }
+
+          const updated = isNew
+            ? [...items, fullItem]
+            : items.map((x) => (x.id === id ? fullItem : x))
+
+          updated.sort((a, b) => a.order - b.order)
+          const indexed = updated.map((it, idx) => ({ ...it, order: idx }))
+
+          set({ data: { ...get().data, navigation: indexed } })
+          get().log(
+            isNew ? 'Created nav item' : 'Updated nav item',
+            'Navigation',
+            fullItem.label,
+            `${fullItem.label} (${fullItem.type})`
+          )
+          return fullItem
+        },
+
+        deleteNavigationItem: (id) => {
+          const items = (get().data.navigation || []).filter((x) => x.id !== id)
+          const indexed = items.map((it, idx) => ({ ...it, order: idx }))
+          set({ data: { ...get().data, navigation: indexed } })
+          get().log('Deleted nav item', 'Navigation', id, `Removed nav item ${id}`)
+        },
+
+        reorderNavigationItems: (items) => {
+          const indexed = items.map((it, idx) => ({ ...it, order: idx }))
+          set({ data: { ...get().data, navigation: indexed } })
+          get().log('Reordered navigation', 'Navigation', 'Storefront', `Reordered ${items.length} navigation links`)
+        },
+
+        toggleNavigationItem: (id) => {
+          const items = (get().data.navigation || []).map((x) =>
+            x.id === id ? { ...x, isActive: !x.isActive } : x
+          )
+          set({ data: { ...get().data, navigation: items } })
+          const item = items.find((x) => x.id === id)
+          get().log('Toggled nav item', 'Navigation', item?.label ?? id, `Active: ${item?.isActive}`)
+        },
+
+        resetNavigationToDefault: () => {
+          set({ data: { ...get().data, navigation: DEFAULT_NAVIGATION_ITEMS.map((item) => ({ ...item })) } })
+          get().log('Reset navigation', 'Navigation', 'Storefront', 'Reset navigation to default silhouettes')
+        },
+
+        setNavigation: (items) => {
+          const indexed = items.map((it, idx) => ({ ...it, order: idx }))
+          set({ data: { ...get().data, navigation: indexed } })
+        },
       }
     },
     {
@@ -1105,7 +1181,10 @@ export const useAdminStore = create<AdminState>()(
           // Seed data is stale — rebuild the dataset from scratch.
           return { ...current, data: createDbState() }
         }
-        return { ...current, data: p.data, session: p.session ?? null }
+        const nav = Array.isArray(p.data.navigation) && p.data.navigation.length > 0
+          ? p.data.navigation
+          : createDbState().navigation
+        return { ...current, data: { ...p.data, navigation: nav }, session: p.session ?? null }
       },
       onRehydrateStorage: () => (state) => {
         state?.setHydrated()

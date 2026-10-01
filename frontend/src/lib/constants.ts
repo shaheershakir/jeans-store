@@ -1,5 +1,26 @@
 export type Fit = 'Straight' | 'Baggy' | 'Wide' | 'Relaxed' | 'Bootcut'
 
+export type NavItemType = 'fit' | 'category' | 'custom'
+
+export interface NavigationItem {
+  id: string
+  label: string
+  href: string
+  type: NavItemType
+  targetValue?: string
+  badge?: string
+  order: number
+  isActive: boolean
+  openInNewTab: boolean
+}
+
+export const DEFAULT_NAV_LINKS: NavigationItem[] = [
+  { id: 'nav-1', label: 'All Silhouettes', href: '/', type: 'fit', targetValue: 'all', order: 0, isActive: true, openInNewTab: false },
+  { id: 'nav-2', label: 'Straight', href: '/', type: 'fit', targetValue: 'Straight', order: 1, isActive: true, openInNewTab: false },
+  { id: 'nav-3', label: 'Baggy & Wide', href: '/', type: 'fit', targetValue: 'Baggy', order: 2, isActive: true, openInNewTab: false },
+  { id: 'nav-4', label: 'Relaxed', href: '/', type: 'fit', targetValue: 'Relaxed', order: 3, isActive: true, openInNewTab: false }
+]
+
 export interface Product {
   id: number
   store?: string

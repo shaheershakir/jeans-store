@@ -1,7 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { Save, Building2 } from 'lucide-react'
+import Link from 'next/link'
+import { Save, Building2, Compass } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
 import { updateSettings } from '@/services/admin'
 import { PageContent, PageHeader } from '@/components/ui/page-header'
@@ -45,7 +46,16 @@ export default function StoreSettingsPage() {
 
   return (
     <div>
-      <PageHeader title="Store Settings" description="General store configuration, contact details, and tax defaults" />
+      <PageHeader
+        title="Store Settings"
+        description="General store configuration, contact details, and tax defaults"
+      >
+        <Link href="/settings/navigation">
+          <Button variant="outline" size="sm">
+            <Compass className="h-3.5 w-3.5 mr-1" /> Storefront Navigation
+          </Button>
+        </Link>
+      </PageHeader>
 
       <PageContent>
         <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">

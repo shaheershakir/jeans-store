@@ -4,7 +4,17 @@ import { seedIfEmpty } from './db/seed.js'
 
 const PORT = Number(process.env.PORT ?? 4000)
 const HOST = process.env.HOST ?? '0.0.0.0'
-const CORS_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:3000'
+
+const DEFAULT_ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+]
+
+const CORS_ORIGIN = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
+  : DEFAULT_ALLOWED_ORIGINS
 
 const app = buildApp({ corsOrigin: CORS_ORIGIN })
 

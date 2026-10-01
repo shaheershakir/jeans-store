@@ -26,6 +26,7 @@ import type {
   StoreSettings,
   Variant,
   MovementType,
+  NavigationItem,
 } from '@/lib/types'
 import { ROLE_DEFS } from '@/lib/permissions'
 import { mulberry32, pick, randInt, isoDaysAgo, isoDaysAhead } from '@/lib/utils'
@@ -1011,5 +1012,13 @@ export function createDbState(): DbState {
     auditLog: ops.auditLog,
     notifications: ops.notifications,
     settings: ops.settings,
+    navigation: DEFAULT_NAVIGATION_ITEMS.map((item) => ({ ...item })),
   }
 }
+
+export const DEFAULT_NAVIGATION_ITEMS: NavigationItem[] = [
+  { id: 'nav-1', label: 'All Silhouettes', href: '/', type: 'fit', targetValue: 'all', order: 0, isActive: true, openInNewTab: false },
+  { id: 'nav-2', label: 'Straight', href: '/', type: 'fit', targetValue: 'Straight', order: 1, isActive: true, openInNewTab: false },
+  { id: 'nav-3', label: 'Baggy & Wide', href: '/', type: 'fit', targetValue: 'Baggy', order: 2, isActive: true, openInNewTab: false },
+  { id: 'nav-4', label: 'Relaxed', href: '/', type: 'fit', targetValue: 'Relaxed', order: 3, isActive: true, openInNewTab: false },
+]

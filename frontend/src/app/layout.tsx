@@ -5,6 +5,7 @@ import Footer from '@/components/Footer'
 import CartDrawer from '@/components/CartDrawer'
 import SearchOverlay from '@/components/SearchOverlay'
 import Toast from '@/components/Toast'
+import { getNavigationItems } from '@/lib/navigation'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -27,7 +28,9 @@ export const metadata: Metadata = {
   }
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const navItems = await getNavigationItems()
+
   return (
     <html lang="en">
       <head>
@@ -41,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <main className="site-shell">
-          <Header />
+          <Header initialNavItems={navItems} />
           {children}
           <Footer />
         </main>
