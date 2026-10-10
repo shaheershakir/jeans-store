@@ -6,15 +6,15 @@ This guide details the database architecture, environment separation, connection
 
 ## 1. Neon Project & Branch Layout
 
-The database infrastructure is powered by **Neon PostgreSQL 16 Serverless**.
+The database infrastructure is powered by **Neon PostgreSQL 17 Serverless** (version 17.11).
 
 - **Organization**: `org-noisy-frog-81454637` (Shaheer shakir)
-- **Project ID**: `little-bonus-52546827`
-- **Project Name**: `search`
+- **Project ID**: `cool-mountain-88112782`
+- **Project Name**: `clothing-store`
 - **Region**: `aws-ap-southeast-1` (AWS Singapore)
-- **Database Engine**: PostgreSQL 16
-- **Database Name**: `search`
-- **Role**: `search_owner`
+- **Database Engine**: PostgreSQL 17
+- **Database Name**: `neondb`
+- **Role**: `neondb_owner`
 
 ### Branch Separation
 
@@ -22,8 +22,8 @@ Neon provides copy-on-write storage branching, allowing complete physical data a
 
 | Environment | Branch Name | Branch ID | Primary / Default | Compute Endpoint Host (Pooled) | Purpose |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Production** | `main` | `br-snowy-wind-a1pu6ks9` | Yes (`default`) | `ep-shrill-moon-a1a3b6ud-pooler.ap-southeast-1.aws.neon.tech` | Live customer traffic and operational catalog. **Protected**. |
-| **Test / Development** | `test` | `br-proud-wind-a15qw953` | No | `ep-proud-credit-a14u7f92-pooler.ap-southeast-1.aws.neon.tech` | Local engineering, CI/CD, testing, and migration verification. |
+| **Production** | `main` | `br-green-dust-b3hfqhuk` | Yes (`default`) | `ep-red-butterfly-b326lzxz-pooler.c-4.ap-southeast-1.aws.neon.tech` | Live customer traffic and operational catalog. **Protected**. |
+| **Test / Development** | `test` | `br-quiet-unit-b31epzpl` | No | `ep-blue-math-b3rx2nmp-pooler.c-4.ap-southeast-1.aws.neon.tech` | Local engineering, CI/CD, testing, and migration verification. |
 
 > [!IMPORTANT]
 > - Never reset, delete, or recreate the `main` production branch.
@@ -40,17 +40,17 @@ Database connection strings are injected via the `DATABASE_URL` environment vari
 
 #### Local Development (`backend/.env`)
 ```env
-DATABASE_URL=postgresql://search_owner:[PASSWORD]@ep-proud-credit-a14u7f92-pooler.ap-southeast-1.aws.neon.tech/search?sslmode=require
+DATABASE_URL=postgresql://neondb_owner:[PASSWORD]@ep-blue-math-b3rx2nmp-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
 ```
 
 #### Test / Staging Deployment
 ```env
-DATABASE_URL=postgresql://search_owner:[PASSWORD]@ep-proud-credit-a14u7f92-pooler.ap-southeast-1.aws.neon.tech/search?sslmode=require
+DATABASE_URL=postgresql://neondb_owner:[PASSWORD]@ep-blue-math-b3rx2nmp-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
 ```
 
 #### Production Deployment
 ```env
-DATABASE_URL=postgresql://search_owner:[PASSWORD]@ep-shrill-moon-a1a3b6ud-pooler.ap-southeast-1.aws.neon.tech/search?sslmode=require
+DATABASE_URL=postgresql://neondb_owner:[PASSWORD]@ep-red-butterfly-b326lzxz-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
 ```
 
 ### Security & Isolation Rules
@@ -108,13 +108,13 @@ Fastly Compute applications isolate secrets using **Fastly Secret Store**:
    fastly secret-store-entry create \
      --store-id="<TEST_STORE_ID>" \
      --name="DATABASE_URL" \
-     --secret="postgresql://search_owner:[PASSWORD]@ep-proud-credit-a14u7f92-pooler.ap-southeast-1.aws.neon.tech/search?sslmode=require"
+     --secret="postgresql://neondb_owner:[PASSWORD]@ep-blue-math-b3rx2nmp-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 
    # Production Environment
    fastly secret-store-entry create \
      --store-id="<PROD_STORE_ID>" \
      --name="DATABASE_URL" \
-     --secret="postgresql://search_owner:[PASSWORD]@ep-shrill-moon-a1a3b6ud-pooler.ap-southeast-1.aws.neon.tech/search?sslmode=require"
+     --secret="postgresql://neondb_owner:[PASSWORD]@ep-red-butterfly-b326lzxz-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
    ```
 
 3. **Link Store in Service Manifest (`fastly.toml`)**:
