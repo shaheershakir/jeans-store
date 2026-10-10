@@ -152,19 +152,6 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
     void usePreferencesStore.persist.rehydrate()
   }, [])
 
-  // Auto-open for first-time visitors who haven't completed or skipped onboarding
-  useEffect(() => {
-    if (!mounted || standalone || pathname === '/onboarding') return
-    const hasSeen = hasCompletedOnboarding || hasSkippedOnboarding
-    if (!hasSeen) {
-      // Gentle delay for non-jarring entrance
-      const timer = setTimeout(() => {
-        useOnboardingStore.getState().openOnboarding(1)
-      }, 700)
-      return () => clearTimeout(timer)
-    }
-  }, [mounted, standalone, pathname, hasCompletedOnboarding, hasSkippedOnboarding])
-
   const handleGlobalSkip = React.useCallback(() => {
     skipOnboarding()
     showToast('Setup skipped. You can update address & sizing anytime in your Profile.')

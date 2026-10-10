@@ -404,9 +404,11 @@ export const usePreferencesStore = create<PreferencesState>()(
 export interface OnboardingState {
   hasCompletedOnboarding: boolean
   hasSkippedOnboarding: boolean
+  hasPromptedAfterRegister: boolean
   isOpen: boolean
   step: 1 | 2
   openOnboarding: (step?: 1 | 2) => void
+  triggerAfterRegister: () => void
   closeOnboarding: () => void
   completeOnboarding: () => void
   skipOnboarding: () => void
@@ -419,15 +421,30 @@ export const useOnboardingStore = create<OnboardingState>()(
     (set) => ({
       hasCompletedOnboarding: false,
       hasSkippedOnboarding: false,
+      hasPromptedAfterRegister: false,
       isOpen: false,
       step: 1,
       openOnboarding: (step = 1) => set({ isOpen: true, step }),
+      triggerAfterRegister: () =>
+        set((state) => {
+          if (state.hasCompletedOnboarding || state.hasSkippedOnboarding || state.hasPromptedAfterRegister) {
+            return state
+          }
+          return { hasPromptedAfterRegister: true, isOpen: true, step: 1 }
+        }),
       closeOnboarding: () => set({ isOpen: false }),
-      completeOnboarding: () => set({ hasCompletedOnboarding: true, isOpen: false }),
-      skipOnboarding: () => set({ hasSkippedOnboarding: true, isOpen: false }),
+      completeOnboarding: () =>
+        set({ hasCompletedOnboarding: true, hasPromptedAfterRegister: true, isOpen: false }),
+      skipOnboarding: () =>
+        set({ hasSkippedOnboarding: true, hasPromptedAfterRegister: true, isOpen: false }),
       setStep: (step) => set({ step }),
       resetOnboarding: () =>
-        set({ hasCompletedOnboarding: false, hasSkippedOnboarding: false, step: 1 })
+        set({
+          hasCompletedOnboarding: false,
+          hasSkippedOnboarding: false,
+          hasPromptedAfterRegister: false,
+          step: 1
+        })
     }),
     {
       name: 'teesgarage-onboarding',

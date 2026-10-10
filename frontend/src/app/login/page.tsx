@@ -17,7 +17,7 @@ import {
   ShieldCheck
 } from 'lucide-react'
 import { signUp, signIn } from '@/lib/auth'
-import { useAuthStore, useUIStore } from '@/lib/store'
+import { useAuthStore, useUIStore, useOnboardingStore } from '@/lib/store'
 
 function LoginForm() {
   const router = useRouter()
@@ -77,7 +77,20 @@ function LoginForm() {
           password
         })
         setAuth(res.user, res.token)
-        showToast(`Welcome to INFIT, ${res.user.name}!`)
+        showToast(`Welcome to TEESGARAGE, ${res.user.name}!`)
+
+        // Onboarding asks only once after register
+        const onboarding = useOnboardingStore.getState()
+        if (!onboarding.hasCompletedOnboarding && !onboarding.hasSkippedOnboarding && !onboarding.hasPromptedAfterRegister) {
+          onboarding.triggerAfterRegister()
+          const redirect = searchParams.get('redirect')
+          if (redirect && redirect !== '/') {
+            router.push(redirect)
+          } else {
+            router.push('/onboarding')
+          }
+          return
+        }
       } else {
         const res = await signIn({
           email: email.trim(),
@@ -100,18 +113,35 @@ function LoginForm() {
     setError(null)
     setLoading(true)
     try {
+      let isNewRegistration = false
       const res = await signIn({
-        email: 'member@infit.in',
+        email: 'member@teesgarage.in',
         password: 'GoogleUserPassword2026!'
       }).catch(async () => {
+        isNewRegistration = true
         return await signUp({
           name: 'Arjun Mehta',
-          email: 'member@infit.in',
+          email: 'member@teesgarage.in',
           password: 'GoogleUserPassword2026!'
         })
       })
       setAuth(res.user, res.token)
       showToast(`Signed in with Google as ${res.user.name}`)
+
+      if (isNewRegistration) {
+        const onboarding = useOnboardingStore.getState()
+        if (!onboarding.hasCompletedOnboarding && !onboarding.hasSkippedOnboarding && !onboarding.hasPromptedAfterRegister) {
+          onboarding.triggerAfterRegister()
+          const redirect = searchParams.get('redirect')
+          if (redirect && redirect !== '/') {
+            router.push(redirect)
+          } else {
+            router.push('/onboarding')
+          }
+          return
+        }
+      }
+
       const redirect = searchParams.get('redirect') || '/'
       router.push(redirect)
     } catch (err: any) {
@@ -122,7 +152,7 @@ function LoginForm() {
   }
 
   const handleFillDemo = () => {
-    setEmail('demo.member@infit.in')
+    setEmail('demo.member@teesgarage.in')
     setPassword('DemoMemberPass2026!')
     if (mode === 'signup') {
       setName('Devon Vance')

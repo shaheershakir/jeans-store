@@ -56,6 +56,8 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-x: auto;
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -65,7 +67,9 @@ body {
   font-size: 14px;
   font-weight: 400;
   line-height: 1.5;
-  overflow-x: hidden;
+  overflow-x: clip;
+  overscroll-behavior-x: auto;
+  overscroll-behavior-y: none;
 }
 
 /* Headings: Space Grotesk hierarchy */
@@ -10086,10 +10090,11 @@ html {
   -webkit-text-size-adjust: 100%; /* no font inflation in landscape */
 }
 
-/* Prevent pull-to-refresh from stealing app scroll */
+/* Prevent pull-to-refresh from stealing app scroll while keeping browser native two-finger horizontal swipe back/forward enabled */
 html,
 body {
-  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  overscroll-behavior-x: auto;
 }
 
 /* Eliminate 300 ms click delay + long-press text selection on controls */
