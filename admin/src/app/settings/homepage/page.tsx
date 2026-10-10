@@ -1280,7 +1280,7 @@ export default function StorefrontHomepagePage() {
                 {/* Storefront Header Mock */}
                 <div className="border-b border-white/10 px-4 py-2.5 flex items-center justify-between bg-black/40 backdrop-blur-md sticky top-0 z-20">
                   <div className="flex items-center gap-2">
-                    <span className="font-extrabold tracking-tight text-white font-sans text-xs">INFIT</span>
+                    <span className="font-extrabold tracking-tight text-white font-sans text-xs">TEESGARAGE</span>
                     <span className="text-[8px] px-1 py-0.2 rounded bg-white/20 text-white font-mono">DENIM</span>
                   </div>
                   <div className="flex items-center gap-3 text-[10px] text-white/50 font-mono">

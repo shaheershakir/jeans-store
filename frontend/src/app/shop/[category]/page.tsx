@@ -14,7 +14,7 @@ const SLUG_TO_CONFIG: Record<
   all: {
     category: 'all',
     title: 'All Garments',
-    desc: 'The complete INFIT archive. Heavyweight fabrics, honest washes, and cuts that last.',
+    desc: 'The complete TEESGARAGE archive. Heavyweight fabrics, honest washes, and cuts that last.',
   },
   jeans: {
     category: 'jeans',
@@ -100,9 +100,9 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params
   const config = SLUG_TO_CONFIG[category.toLowerCase()]
-  if (!config) return { title: 'Not Found — INFIT' }
+  if (!config) return { title: 'Not Found — TEESGARAGE' }
   return {
-    title: `${config.title} — INFIT`,
+    title: `${config.title} — TEESGARAGE`,
     description: config.desc,
   }
 }

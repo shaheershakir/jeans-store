@@ -16,7 +16,7 @@ export async function getProducts(): Promise<Product[]> {
 
     if (!res.ok) {
       console.warn(
-        `[INFIT] Backend responded with status ${res.status}. Falling back to bundled product snapshot.`
+        `[TEESGARAGE] Backend responded with status ${res.status}. Falling back to bundled product snapshot.`
       )
       return SNAPSHOT_PRODUCTS
     }
@@ -26,11 +26,11 @@ export async function getProducts(): Promise<Product[]> {
       return data.products
     }
 
-    console.warn('[INFIT] Backend returned empty products payload. Falling back to bundled snapshot.')
+    console.warn('[TEESGARAGE] Backend returned empty products payload. Falling back to bundled snapshot.')
     return SNAPSHOT_PRODUCTS
   } catch {
     console.warn(
-      `[INFIT] Backend unreachable at ${BACKEND_URL}. Using bundled product snapshot for static generation.`
+      `[TEESGARAGE] Backend unreachable at ${BACKEND_URL}. Using bundled product snapshot for static generation.`
     )
     return SNAPSHOT_PRODUCTS
   }

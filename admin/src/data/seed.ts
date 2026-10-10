@@ -59,7 +59,7 @@ function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
-const BRAND_CODE: Record<string, string> = { INFIT: 'INF', 'INDIGO WORKS': 'IWK', 'RETRO DENIM CO.': 'RDC' }
+const BRAND_CODE: Record<string, string> = { TEESGARAGE: 'TG', INFIT: 'TG', 'INDIGO WORKS': 'IWK', 'RETRO DENIM CO.': 'RDC' }
 const COLOR_CODE: Record<string, string> = {
   Blue: 'BLU',
   'Dark Blue': 'DBL',
@@ -815,14 +815,14 @@ function buildOpsSeed(): {
   settings: StoreSettings
 } {
   const adminUsers: AdminUser[] = [
-    { id: 1, name: 'Rahul Mehta', email: 'rahul@infit.in', roleId: 1, status: 'Active', lastLoginAt: null },
-    { id: 2, name: 'Ananya Iyer', email: 'ananya@infit.in', roleId: 2, status: 'Active', lastLoginAt: null },
-    { id: 3, name: 'Rohan Kapoor', email: 'rohan@infit.in', roleId: 3, status: 'Active', lastLoginAt: null },
-    { id: 4, name: 'Meena Krishnan', email: 'meena@infit.in', roleId: 4, status: 'Active', lastLoginAt: null },
-    { id: 5, name: 'Arjun Nair', email: 'arjun@infit.in', roleId: 5, status: 'Active', lastLoginAt: null },
-    { id: 6, name: 'Priya Anand', email: 'priya@infit.in', roleId: 6, status: 'Active', lastLoginAt: null },
-    { id: 7, name: 'Kabir Shaikh', email: 'kabir@infit.in', roleId: 7, status: 'Active', lastLoginAt: null },
-    { id: 8, name: 'Sofia D’Souza', email: 'sofia@infit.in', roleId: 2, status: 'Inactive', lastLoginAt: null },
+    { id: 1, name: 'Rahul Mehta', email: 'rahul@teesgarage.in', roleId: 1, status: 'Active', lastLoginAt: null },
+    { id: 2, name: 'Ananya Iyer', email: 'ananya@teesgarage.in', roleId: 2, status: 'Active', lastLoginAt: null },
+    { id: 3, name: 'Rohan Kapoor', email: 'rohan@teesgarage.in', roleId: 3, status: 'Active', lastLoginAt: null },
+    { id: 4, name: 'Meena Krishnan', email: 'meena@teesgarage.in', roleId: 4, status: 'Active', lastLoginAt: null },
+    { id: 5, name: 'Arjun Nair', email: 'arjun@teesgarage.in', roleId: 5, status: 'Active', lastLoginAt: null },
+    { id: 6, name: 'Priya Anand', email: 'priya@teesgarage.in', roleId: 6, status: 'Active', lastLoginAt: null },
+    { id: 7, name: 'Kabir Shaikh', email: 'kabir@teesgarage.in', roleId: 7, status: 'Active', lastLoginAt: null },
+    { id: 8, name: 'Sofia D’Souza', email: 'sofia@teesgarage.in', roleId: 2, status: 'Inactive', lastLoginAt: null },
   ]
 
   const auditLog: AuditLogEntry[] = [
@@ -846,13 +846,13 @@ function buildOpsSeed(): {
   ]
 
   const settings: StoreSettings = {
-    storeName: 'INFIT',
-    supportEmail: 'support@infit.in',
+    storeName: 'TEESGARAGE',
+    supportEmail: 'support@teesgarage.in',
     supportPhone: '+91 73900 12345',
     address: '12-A, Linking Road, Bandra West, Mumbai 400050',
     currency: 'INR',
     taxRate: 18,
-    orderPrefix: 'IN',
+    orderPrefix: 'TG',
     returnWindowDays: 7,
     cancellationAllowedAfter: 'Processing',
     defaultShippingMethod: 'Standard',
@@ -1150,7 +1150,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     eyebrow: 'Our Story',
     title: 'Made for your\neveryday.',
     paragraphs: [
-      'INFIT started with a simple question: why is it so hard to find jeans that fit, last, and feel honest? We’re a Mumbai-based label obsessed with getting denim right — from the weight of the fabric to the arc of the seat.',
+      'TEESGARAGE started with a simple question: why is it so hard to find jeans that fit, last, and feel honest? We’re a Mumbai-based label obsessed with getting denim right — from the weight of the fabric to the arc of the seat.',
       'No fast fashion. No compromise. Just weighty, considered denim built to outlast the trends.'
     ],
     imageUrl: '/brand-editorial.jpg',
@@ -1160,7 +1160,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
       { num: '24h', label: 'Mumbai dispatch' }
     ],
     ctaText: 'Get in Touch',
-    ctaLink: 'mailto:concierge@infit.in'
+    ctaLink: 'mailto:concierge@teesgarage.in'
   },
   looks: {
     enabled: true,
@@ -1200,7 +1200,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   },
   instagram: {
     enabled: true,
-    eyebrow: '@infit.in',
+    eyebrow: '@teesgarage.in',
     title: 'Follow Our Story',
     subtitle: 'Real people, real fits — tag us in yours.',
     instagramUrl: 'https://instagram.com',

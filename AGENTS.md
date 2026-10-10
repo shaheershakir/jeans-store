@@ -1,6 +1,6 @@
 # AGENTS.md
 
-INFIT is a premium denim e-commerce platform. This repository contains three independent applications: `frontend/`, `backend/`, and `admin/`.
+TEESGARAGE is a premium denim e-commerce platform. This repository contains three independent applications: `frontend/`, `backend/`, and `admin/`.
 
 ## Application layout
 

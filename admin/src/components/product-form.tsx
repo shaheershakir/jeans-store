@@ -33,7 +33,7 @@ export function ProductForm({ product }: { product?: Product }) {
   const [slug, setSlug] = React.useState(product?.slug ?? '')
   const [sku, setSku] = React.useState(product?.sku ?? '')
   const [description, setDescription] = React.useState(product?.description ?? '')
-  const [brand, setBrand] = React.useState(product?.brand ?? 'INFIT')
+  const [brand, setBrand] = React.useState(product?.brand ?? 'TEESGARAGE')
   const [categoryId, setCategoryId] = React.useState(product?.categoryId ?? categories[0]?.id ?? 1)
   const [collectionId, setCollectionId] = React.useState(product?.collectionId ?? collections[0]?.id ?? 1)
   const [fit, setFit] = React.useState<Fit>(product?.fit ?? 'Straight')

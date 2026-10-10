@@ -5,7 +5,7 @@ import type { Product } from '../schemas/product.js'
  * This file is now the single source of truth for the product catalog.
  */
 export const PRODUCTS: Product[] = [
-  // --- INFIT Jeans (jean-store) ---
+  // --- TEESGARAGE Jeans (jean-store) ---
   {
     id: 0,
     store: 'jean-store',
@@ -66,7 +66,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 4,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'jeans',
     name: 'Dark Indigo Bootcut',
     fit: 'Bootcut',
@@ -81,7 +81,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 5,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'jeans',
     name: 'Washed Grey Straight',
     fit: 'Straight',

@@ -17,9 +17,12 @@ import {
   MessageCircle,
   LogOut,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Heart,
+  Settings,
+  ChevronRight
 } from 'lucide-react'
-import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore } from '@/lib/store'
+import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore, useFavoriteStore } from '@/lib/store'
 import { DEFAULT_NAV_LINKS, type NavigationItem, type Fit, PRODUCTS } from '@/lib/constants'
 import { searchProducts } from '@/lib/utils'
 import UserOrdersModal from '@/components/UserOrdersModal'
@@ -42,6 +45,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const logout = useAuthStore((state) => state.logout)
+  const favorites = useFavoriteStore((state) => state.favorites)
 
   const [mounted, setMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -62,6 +66,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
     void useCartStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
     void useAuthStore.persist.rehydrate()
+    void useFavoriteStore.persist.rehydrate()
 
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
@@ -224,12 +229,12 @@ export default function Header({ initialNavItems }: HeaderProps) {
             </button>
 
             {/* Brand Logo */}
-            <Link className="macy-brand" href="/" aria-label="INFIT Homepage">
+            <Link className="macy-brand" href="/" aria-label="TEESGARAGE Homepage">
               <Image
-                src="/infit_logo.svg"
-                alt="INFIT"
+                src="/teesgarage_logo.svg"
+                alt="TEESGARAGE"
                 width={140}
-                height={36}
+                height={62}
                 priority
                 className="brand-logo-img"
               />
@@ -346,30 +351,51 @@ export default function Header({ initialNavItems }: HeaderProps) {
                   {/* User Controls Dropdown Popover */}
                   {userMenuOpen && (
                     <div className="apple-user-popover">
-                      <div className="apple-popover-profile">
+                      <Link
+                        href="/profile"
+                        className="apple-popover-profile clickable"
+                        onClick={() => setUserMenuOpen(false)}
+                        title="Go to Profile & Account Settings"
+                      >
                         <div className="apple-popover-avatar">{user.name.charAt(0).toUpperCase()}</div>
                         <div className="apple-popover-user-info">
                           <h4 className="apple-popover-name">{user.name}</h4>
-                          <p className="apple-popover-email">{user.email}</p>
-                          <span className="apple-popover-badge">INFIT STUDIO MEMBER</span>
+                          <span className="apple-popover-subtext">Manage Profile &amp; Account</span>
                         </div>
-                      </div>
+                        <ChevronRight className="h-4 w-4 apple-popover-arrow" />
+                      </Link>
 
                       <div className="apple-popover-divider" />
 
                       <div className="apple-popover-actions">
-                        <button
-                          type="button"
+                        <Link
+                          href="/orders"
                           className="apple-popover-item"
-                          onClick={() => {
-                            setUserMenuOpen(false)
-                            setOrdersModalOpen(true)
-                          }}
+                          onClick={() => setUserMenuOpen(false)}
                         >
                           <Package className="h-4 w-4 mr-2.5 text-zinc-700" />
                           <span>My Orders &amp; Tracking</span>
                           <span className="apple-popover-pill">Active</span>
-                        </button>
+                        </Link>
+
+                        <Link
+                          href="/profile"
+                          className="apple-popover-item"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <Settings className="h-4 w-4 mr-2.5 text-zinc-700" />
+                          <span>Profile &amp; Addresses</span>
+                        </Link>
+
+                        <Link
+                          href="/profile?tab=favorites"
+                          className="apple-popover-item"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <Heart className="h-4 w-4 mr-2.5 text-rose-500" />
+                          <span>Favorites &amp; Saved Fits</span>
+                          {favorites.length > 0 && <span className="apple-popover-pill">{favorites.length}</span>}
+                        </Link>
 
                         <button
                           type="button"
@@ -394,7 +420,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                         </Link>
 
                         <a
-                          href="https://wa.me/919876543210?text=Hi%20INFIT%20Studio%2C%20I%20have%20an%20inquiry%20regarding%20my%20account"
+                          href="https://wa.me/919876543210?text=Hi%20TEESGARAGE%20Studio%2C%20I%20have%20an%20inquiry%20regarding%20my%20account"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="apple-popover-item"
@@ -522,19 +548,45 @@ export default function Header({ initialNavItems }: HeaderProps) {
               })}
 
               {mounted && isAuthenticated && user ? (
-                <button
-                  type="button"
-                  className="mobile-nav-item"
-                  style={{ textAlign: 'left', background: 'none', border: 'none', font: 'inherit', cursor: 'pointer' }}
-                  onClick={() => {
-                    if (window.confirm(`Sign out from ${user.name}?`)) {
-                      logout()
-                      setMenuOpen(false)
-                    }
-                  }}
-                >
-                  Sign Out ({user.name.split(' ')[0]})
-                </button>
+                <>
+                  <Link
+                    href="/orders"
+                    className="mobile-nav-item"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    My Orders &amp; Tracking
+                  </Link>
+
+                  <Link
+                    href="/profile"
+                    className="mobile-nav-item"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Profile &amp; Addresses
+                  </Link>
+
+                  <Link
+                    href="/profile?tab=favorites"
+                    className="mobile-nav-item"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Saved Favorites ({favorites.length})
+                  </Link>
+
+                  <button
+                    type="button"
+                    className="mobile-nav-item text-red-600"
+                    style={{ textAlign: 'left', background: 'none', border: 'none', font: 'inherit', cursor: 'pointer' }}
+                    onClick={() => {
+                      if (window.confirm(`Sign out from ${user.name}?`)) {
+                        logout()
+                        setMenuOpen(false)
+                      }
+                    }}
+                  >
+                    Sign Out ({user.name.split(' ')[0]})
+                  </button>
+                </>
               ) : (
                 <Link
                   href="/login"
@@ -547,7 +599,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
               <div className="mobile-nav-meta">
                 <span>Direct Studio Support</span>
-                <a href="mailto:concierge@infit.in">concierge@infit.in</a>
+                <a href="mailto:concierge@teesgarage.in">concierge@teesgarage.in</a>
               </div>
             </div>
           </div>

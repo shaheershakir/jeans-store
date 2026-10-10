@@ -40,7 +40,7 @@ export interface StoredOrder {
 }
 
 const DEFAULT_SAMPLE_ORDER: StoredOrder = {
-  orderId: 'INF-782910',
+  orderId: 'TG-782910',
   date: 'Yesterday, 4:15 PM',
   status: 'Dispatched',
   expectedDelivery: 'Tomorrow, by 8:00 PM',
@@ -86,7 +86,7 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
-      const stored = localStorage.getItem('infit-orders')
+      const stored = localStorage.getItem('teesgarage-orders') || localStorage.getItem('infit-orders')
       if (stored) {
         const parsed = JSON.parse(stored) as StoredOrder[]
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -281,7 +281,7 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
                     <div className="apple-order-card-actions">
                       <a
                         href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=${encodeURIComponent(
-                          `Hi INFIT, I need help tracking my order ${order.orderId}`
+                          `Hi TEESGARAGE, I need help tracking my order ${order.orderId}`
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"

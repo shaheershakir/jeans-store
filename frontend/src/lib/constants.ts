@@ -48,10 +48,10 @@ export const CATEGORY_FILTERS = [
 ] as const
 
 export const PRODUCTS: Product[] = [
-  // --- Signature INFIT Denim ---
+  // --- Signature TEESGARAGE Denim ---
   {
     id: 0,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'jeans',
     name: 'Classic Straight Indigo',
     fit: 'Straight',
@@ -66,7 +66,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 1,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'jeans',
     name: 'Heavy Wash Baggy',
     fit: 'Baggy',
@@ -81,7 +81,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 2,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'jeans',
     name: 'Vintage Blue Wide Leg',
     fit: 'Wide',
@@ -95,7 +95,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 3,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'jeans',
     name: 'Relaxed Black Denim',
     fit: 'Relaxed',
@@ -109,7 +109,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 4,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'jeans',
     name: 'Dark Indigo Bootcut',
     fit: 'Bootcut',
@@ -124,7 +124,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 5,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'jeans',
     name: 'Washed Grey Straight',
     fit: 'Straight',
@@ -139,7 +139,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 6,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'jeans',
     name: 'Raw Denim Relaxed',
     fit: 'Relaxed',
@@ -153,7 +153,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 7,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'jeans',
     name: 'Faded Blue Baggy',
     fit: 'Baggy',
@@ -169,7 +169,7 @@ export const PRODUCTS: Product[] = [
   // --- Curated Wardrobe Essentials ---
   {
     id: 8,
-    store: 'infit',
+    store: 'teesgarage',
     category: 't-shirts',
     name: 'Boxy Heavyweight Tee - Vintage Black',
     price: '₹999',
@@ -183,7 +183,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 9,
-    store: 'infit',
+    store: 'teesgarage',
     category: 't-shirts',
     name: 'Oversized Washed Graphic Tee',
     price: '₹1,199',
@@ -197,7 +197,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 10,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'shirts',
     name: 'Relaxed Oxford Button-Down Shirt',
     price: '₹1,599',
@@ -211,7 +211,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 11,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'shirts',
     name: 'Utility Canvas Overshirt',
     price: '₹2,299',
@@ -225,7 +225,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 12,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'hoodies',
     name: 'Heavy French Terry Pullover Hoodie',
     price: '₹2,499',
@@ -239,7 +239,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 13,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'hoodies',
     name: 'Washed Street Zip Hoodie',
     price: '₹2,799',
@@ -252,7 +252,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 14,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'hats',
     name: 'Vintage Washed Cotton Dad Cap',
     price: '₹799',
@@ -266,7 +266,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 15,
-    store: 'infit',
+    store: 'teesgarage',
     category: 'hats',
     name: 'Ripstop Streetwear Bucket Hat',
     price: '₹899',
@@ -556,7 +556,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     eyebrow: 'Our Story',
     title: 'Made for your\neveryday.',
     paragraphs: [
-      'INFIT started with a simple question: why is it so hard to find jeans that fit, last, and feel honest? We’re a Mumbai-based label obsessed with getting denim right — from the weight of the fabric to the arc of the seat.',
+      'TEESGARAGE started with a simple question: why is it so hard to find jeans that fit, last, and feel honest? We’re a Mumbai-based label obsessed with getting denim right — from the weight of the fabric to the arc of the seat.',
       'No fast fashion. No compromise. Just weighty, considered denim built to outlast the trends.'
     ],
     imageUrl: '/brand-editorial.jpg',
@@ -566,7 +566,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
       { num: '24h', label: 'Mumbai dispatch' }
     ],
     ctaText: 'Get in Touch',
-    ctaLink: 'mailto:concierge@infit.in'
+    ctaLink: 'mailto:concierge@teesgarage.in'
   },
   looks: {
     enabled: true,
@@ -606,7 +606,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   },
   instagram: {
     enabled: true,
-    eyebrow: '@infit.in',
+    eyebrow: '@teesgarage.in',
     title: 'Follow Our Story',
     subtitle: 'Real people, real fits — tag us in yours.',
     instagramUrl: 'https://instagram.com',

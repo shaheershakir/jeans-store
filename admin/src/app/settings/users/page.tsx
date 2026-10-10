@@ -118,7 +118,7 @@ export default function AdminUsersPage() {
                 </Field>
 
                 <Field label="Email Address" required>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="sarah@infitjeans.com" />
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="sarah@teesgarage.in" />
                 </Field>
 
                 <Field label="Assigned Role">

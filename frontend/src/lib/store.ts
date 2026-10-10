@@ -5,6 +5,27 @@ import { persist } from 'zustand/middleware'
 import type { Fit } from './constants'
 import { PRODUCTS } from './constants'
 
+if (typeof window !== 'undefined') {
+  const migrations = [
+    ['infit-cart', 'teesgarage-cart'],
+    ['infit-filters', 'teesgarage-filters'],
+    ['infit-ui', 'teesgarage-ui'],
+    ['infit-auth', 'teesgarage-auth'],
+    ['infit-favorites', 'teesgarage-favorites'],
+    ['infit-orders', 'teesgarage-orders'],
+  ]
+  for (const [oldK, newK] of migrations) {
+    try {
+      const oldVal = localStorage.getItem(oldK)
+      if (oldVal && !localStorage.getItem(newK)) {
+        localStorage.setItem(newK, oldVal)
+      }
+    } catch {
+      // Ignore storage access errors
+    }
+  }
+}
+
 export interface CartItem {
   id: number
   name: string
@@ -73,7 +94,7 @@ export const useCartStore = create<CartState>()(
       clearCart: () => set({ items: [] })
     }),
     {
-      name: 'infit-cart',
+      name: 'teesgarage-cart',
       skipHydration: true
     }
   )
@@ -125,7 +146,7 @@ export const useFilterStore = create<FilterState>()(
       reset: () => set({ category: 'all', fit: 'all', prices: [], sort: 'featured', searchQuery: '' })
     }),
     {
-      name: 'infit-filters',
+      name: 'teesgarage-filters',
       skipHydration: true
     }
   )
@@ -174,18 +195,30 @@ export const useUIStore = create<UIState>()(
       }
     }),
     {
-      name: 'infit-ui',
+      name: 'teesgarage-ui',
       skipHydration: true,
       partialize: (state) => ({ selectedSize: state.selectedSize })
     }
   )
 )
 
+export interface UserAddress {
+  id: string
+  fullName: string
+  phone: string
+  addressLine: string
+  city: string
+  state: string
+  pincode: string
+  isDefault?: boolean
+}
+
 export interface AuthUser {
   id: number
   uid: string
   email: string
   name: string
+  phone?: string
   provider?: string
 }
 
@@ -193,9 +226,28 @@ interface AuthState {
   user: AuthUser | null
   token: string | null
   isAuthenticated: boolean
+  addresses: UserAddress[]
   setAuth: (user: AuthUser, token: string) => void
+  updateProfile: (updated: { name?: string; email?: string; phone?: string }) => void
+  addAddress: (addr: Omit<UserAddress, 'id'>) => void
+  updateAddress: (id: string, addr: Partial<UserAddress>) => void
+  deleteAddress: (id: string) => void
+  setDefaultAddress: (id: string) => void
   logout: () => void
 }
+
+const DEFAULT_SAMPLE_ADDRESSES: UserAddress[] = [
+  {
+    id: 'addr_default_1',
+    fullName: 'Devon Vance',
+    phone: '+91 98201 44521',
+    addressLine: 'Flat 402, Sea Green Apts, Perry Cross Road, Bandra West',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    pincode: '400050',
+    isDefault: true
+  }
+]
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -203,11 +255,81 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      addresses: DEFAULT_SAMPLE_ADDRESSES,
       setAuth: (user, token) => set({ user, token, isAuthenticated: true }),
+      updateProfile: (updated) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...updated } : null
+        })),
+      addAddress: (newAddr) =>
+        set((state) => {
+          const id = `addr_${Date.now()}`
+          const isFirst = state.addresses.length === 0
+          const created: UserAddress = {
+            ...newAddr,
+            id,
+            isDefault: isFirst || Boolean(newAddr.isDefault)
+          }
+          const existing = newAddr.isDefault
+            ? state.addresses.map((a) => ({ ...a, isDefault: false }))
+            : state.addresses
+          return { addresses: [created, ...existing] }
+        }),
+      updateAddress: (id, partial) =>
+        set((state) => ({
+          addresses: state.addresses.map((addr) => {
+            if (addr.id !== id) {
+              return partial.isDefault ? { ...addr, isDefault: false } : addr
+            }
+            return { ...addr, ...partial }
+          })
+        })),
+      deleteAddress: (id) =>
+        set((state) => {
+          const filtered = state.addresses.filter((a) => a.id !== id)
+          if (filtered.length > 0 && !filtered.some((a) => a.isDefault)) {
+            filtered[0].isDefault = true
+          }
+          return { addresses: filtered }
+        }),
+      setDefaultAddress: (id) =>
+        set((state) => ({
+          addresses: state.addresses.map((addr) => ({
+            ...addr,
+            isDefault: addr.id === id
+          }))
+        })),
       logout: () => set({ user: null, token: null, isAuthenticated: false })
     }),
     {
-      name: 'infit-auth',
+      name: 'teesgarage-auth',
+      skipHydration: true
+    }
+  )
+)
+
+interface FavoriteState {
+  favorites: number[]
+  toggleFavorite: (productId: number) => void
+  isFavorite: (productId: number) => boolean
+  clearFavorites: () => void
+}
+
+export const useFavoriteStore = create<FavoriteState>()(
+  persist(
+    (set, get) => ({
+      favorites: [0, 4], // Pre-populate with two sample favorites for rich UX
+      toggleFavorite: (productId) =>
+        set((state) => ({
+          favorites: state.favorites.includes(productId)
+            ? state.favorites.filter((id) => id !== productId)
+            : [...state.favorites, productId]
+        })),
+      isFavorite: (productId) => get().favorites.includes(productId),
+      clearFavorites: () => set({ favorites: [] })
+    }),
+    {
+      name: 'teesgarage-favorites',
       skipHydration: true
     }
   )

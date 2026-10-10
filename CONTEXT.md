@@ -1,6 +1,6 @@
-# INFIT Context
+# TEESGARAGE Context
 
-INFIT is a premium e-commerce apparel label centering denim as the hero craft, complemented by curated contemporary wardrobe essentials.
+TEESGARAGE is a premium e-commerce apparel label centering denim as the hero craft, complemented by curated contemporary wardrobe essentials.
 
 ## Language
 

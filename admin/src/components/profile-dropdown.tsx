@@ -53,7 +53,7 @@ export function ProfileDropdown() {
               {session?.userName ?? 'Admin'}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {session?.userEmail ?? 'admin@infit.store'}
+              {session?.userEmail ?? 'admin@teesgarage.in'}
             </p>
             <div className="mt-1 flex items-center gap-1.5">
               <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">

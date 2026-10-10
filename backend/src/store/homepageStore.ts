@@ -130,7 +130,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     eyebrow: 'Our Story',
     title: 'Made for your\neveryday.',
     paragraphs: [
-      'INFIT started with a simple question: why is it so hard to find jeans that fit, last, and feel honest? We’re a Mumbai-based label obsessed with getting denim right — from the weight of the fabric to the arc of the seat.',
+      'TEESGARAGE started with a simple question: why is it so hard to find jeans that fit, last, and feel honest? We’re a Mumbai-based label obsessed with getting denim right — from the weight of the fabric to the arc of the seat.',
       'No fast fashion. No compromise. Just weighty, considered denim built to outlast the trends.'
     ],
     imageUrl: '/brand-editorial.jpg',
@@ -140,7 +140,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
       { num: '24h', label: 'Mumbai dispatch' }
     ],
     ctaText: 'Get in Touch',
-    ctaLink: 'mailto:concierge@infit.in'
+    ctaLink: 'mailto:concierge@teesgarage.in'
   },
   looks: {
     enabled: true,
@@ -180,7 +180,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   },
   instagram: {
     enabled: true,
-    eyebrow: '@infit.in',
+    eyebrow: '@teesgarage.in',
     title: 'Follow Our Story',
     subtitle: 'Real people, real fits — tag us in yours.',
     instagramUrl: 'https://instagram.com',

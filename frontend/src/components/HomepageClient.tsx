@@ -138,7 +138,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
             <div className="hp-hero-media">
               <Image
                 src={h.imageUrl || '/hero-man.jpg'}
-                alt={h.title || 'INFIT — Built for everyday denim'}
+                alt={h.title || 'TEESGARAGE — Built for everyday denim'}
                 fill
                 priority
                 className="hp-hero-img"
@@ -367,7 +367,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
                   </div>
                 )}
                 {bs.ctaText && (
-                  <a href={bs.ctaLink || 'mailto:concierge@infit.in'} className="hp-brand-cta">
+                  <a href={bs.ctaLink || 'mailto:concierge@teesgarage.in'} className="hp-brand-cta">
                     {bs.ctaText}
                   </a>
                 )}
@@ -437,7 +437,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
                 >
                   <Image
                     src={src}
-                    alt={`INFIT look ${i + 1}`}
+                    alt={`TEESGARAGE look ${i + 1}`}
                     fill
                     className="hp-ig-img"
                     sizes="(max-width: 768px) 33vw, 16vw"

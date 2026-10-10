@@ -125,8 +125,8 @@ export default function CheckoutClient() {
       window.open(waUrl, '_blank')
     } else {
       handoffType = 'email'
-      const mailtoUrl = `mailto:orders@infit.in?subject=${encodeURIComponent(
-        `INFIT Order ${orderId} - ${form.name.trim()}`
+      const mailtoUrl = `mailto:orders@teesgarage.in?subject=${encodeURIComponent(
+        `TEESGARAGE Order ${orderId} - ${form.name.trim()}`
       )}&body=${encodeURIComponent(messageLines)}`
       window.open(mailtoUrl, '_blank')
     }
@@ -138,7 +138,7 @@ export default function CheckoutClient() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         orderNumber: orderId,
-        store: 'infit',
+        store: 'teesgarage',
         customerName: form.name.trim(),
         customerPhone: form.phone.trim(),
         customerEmail: form.email.trim(),
@@ -164,12 +164,15 @@ export default function CheckoutClient() {
         handoffType
       })
     }).catch((err) => {
-      console.warn('[INFIT] Order persistence note:', err)
+      console.warn('[TEESGARAGE] Order persistence note:', err)
     })
 
     // Save to local storage for user order history
     try {
-      const existingOrdersStr = typeof window !== 'undefined' ? localStorage.getItem('infit-orders') : null
+      const existingOrdersStr =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('teesgarage-orders') || localStorage.getItem('infit-orders')
+          : null
       const existingOrders = existingOrdersStr ? JSON.parse(existingOrdersStr) : []
       const newStoredOrder = {
         orderId,
@@ -182,6 +185,7 @@ export default function CheckoutClient() {
         total,
         shippingAddress: `${form.address.trim()}, ${form.city.trim()}, ${form.state.trim()} · ${form.pincode.trim()}`
       }
+      localStorage.setItem('teesgarage-orders', JSON.stringify([newStoredOrder, ...existingOrders]))
       localStorage.setItem('infit-orders', JSON.stringify([newStoredOrder, ...existingOrders]))
     } catch (e) {
       console.warn('Failed to store order locally', e)

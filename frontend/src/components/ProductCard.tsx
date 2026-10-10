@@ -3,45 +3,37 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Heart } from 'lucide-react'
 import type { Product } from '@/lib/constants'
-import { SIZES } from '@/lib/constants'
-import { useCartStore, useUIStore } from '@/lib/store'
+import { useCartStore, useUIStore, useFavoriteStore } from '@/lib/store'
 
 export default function ProductCard({ product }: { product: Product }) {
   const addItem = useCartStore((state) => state.addItem)
-  const globalSelectedSize = useUIStore((state) => state.selectedSize)
   const openOverlay = useUIStore((state) => state.openOverlay)
   const showToast = useUIStore((state) => state.showToast)
+  const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite)
+  const isFavorite = useFavoriteStore((state) => state.isFavorite(product.id))
 
-  const availableSizes = product.sizes && product.sizes.length > 0 ? product.sizes : SIZES
-  const isNumeric = availableSizes.every((s) => /^\d+$/.test(s))
-
-  const [cardSize, setCardSize] = useState<string>(() => {
-    if (globalSelectedSize && availableSizes.includes(globalSelectedSize)) {
-      return globalSelectedSize
-    }
-    return availableSizes[0] || '32'
-  })
+  const [mounted, setMounted] = useState<boolean>(false)
   const [isAdded, setIsAdded] = useState<boolean>(false)
+  const [favAnimate, setFavAnimate] = useState<boolean>(false)
 
   useEffect(() => {
+    setMounted(true)
     void useCartStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
+    void useFavoriteStore.persist.rehydrate()
   }, [])
-
-  useEffect(() => {
-    if (globalSelectedSize && availableSizes.includes(globalSelectedSize)) {
-      setCardSize(globalSelectedSize)
-    }
-  }, [globalSelectedSize, availableSizes])
 
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
 
-    addItem(product.id, cardSize)
+    // Default size is first size or '32'
+    const defaultSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : '32'
+    addItem(product.id, defaultSize)
     setIsAdded(true)
-    showToast(`Added ${product.name} (${isNumeric ? `Waist ${cardSize}"` : `Size ${cardSize}`}) to bag`)
+    showToast(`Added ${product.name} to bag`)
 
     setTimeout(() => {
       setIsAdded(false)
@@ -50,87 +42,82 @@ export default function ProductCard({ product }: { product: Product }) {
     openOverlay('cart')
   }
 
-    const rating = (4.3 + ((product.id * 13) % 6) / 10).toFixed(1)
-    const ratingCount = Math.round(150 + ((product.id * 317) % 850))
-    const originalPriceNum = Math.round(product.priceNum * 1.38)
-    const discountPct = Math.round(((originalPriceNum - product.priceNum) / originalPriceNum) * 100)
+  function handleFavoriteClick(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
 
-    return (
-      <article className="product-card">
-        <div className="product-image-container">
-          <Link href={`/product/${product.id}`} className="product-image-link" aria-label={product.name}>
-            <div className="image-wrapper">
-              <Image
-                src={product.img}
-                alt={product.name}
-                width={600}
-                height={780}
-                className="primary-img"
-                loading="lazy"
-              />
-              {product.img2 && (
-                <Image
-                  src={product.img2}
-                  alt={`${product.name} alt view`}
-                  width={600}
-                  height={780}
-                  className="secondary-img"
-                  loading="lazy"
-                />
-              )}
-            </div>
-            {product.badge && <span className="product-badge">{product.badge}</span>}
-            <div className="product-rating-pill">
-              <span className="rating-score">{rating} ★</span>
-              <span className="rating-divider">|</span>
-              <span className="rating-reviews">{ratingCount}</span>
-            </div>
-          </Link>
+    toggleFavorite(product.id)
+    setFavAnimate(true)
+    setTimeout(() => setFavAnimate(false), 400)
+
+    const nextState = !isFavorite
+    showToast(nextState ? `Saved ${product.name} to favorites` : `Removed from favorites`)
+  }
+
+  const rating = (4.3 + ((product.id * 13) % 6) / 10).toFixed(1)
+  const ratingCount = Math.round(150 + ((product.id * 317) % 850))
+  const originalPriceNum = Math.round(product.priceNum * 1.38)
+  const discountPct = Math.round(((originalPriceNum - product.priceNum) / originalPriceNum) * 100)
+
+  return (
+    <article className="product-card">
+      <div className="product-image-container">
+        {/* Top-Left Love/Favourite Icon Button */}
+        <button
+          type="button"
+          className={`product-fav-btn ${mounted && isFavorite ? 'active' : ''} ${favAnimate ? 'pop' : ''}`}
+          onClick={handleFavoriteClick}
+          aria-label={mounted && isFavorite ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`}
+          title={mounted && isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <Heart
+            className={`fav-heart-icon ${mounted && isFavorite ? 'filled' : ''}`}
+            fill={mounted && isFavorite ? '#e11d48' : 'none'}
+            stroke={mounted && isFavorite ? '#e11d48' : 'currentColor'}
+          />
+        </button>
+
+        <Link href={`/product/${product.id}`} className="product-image-link" aria-label={product.name}>
+          <div className="image-wrapper">
+            <Image
+              src={product.img}
+              alt={product.name}
+              width={600}
+              height={780}
+              className="primary-img"
+              loading="lazy"
+            />
+          </div>
+          {product.badge && <span className="product-badge top-right">{product.badge}</span>}
+          <div className="product-rating-pill">
+            <span className="rating-score">{rating} ★</span>
+            <span className="rating-divider">|</span>
+            <span className="rating-reviews">{ratingCount}</span>
+          </div>
+        </Link>
+      </div>
+
+      <div className="product-info-wrap">
+        <div className="product-brand-name">{product.store && product.store.toLowerCase() === 'jean-store' ? 'JEAN-STORE' : 'TEESGARAGE'}</div>
+
+        <Link href={`/product/${product.id}`} className="product-title-link">
+          <h3 className="product-title">{product.name}</h3>
+        </Link>
+
+        <div className="product-price-row">
+          <span className="product-price">{product.price}</span>
+          <span className="product-orig-price">₹{originalPriceNum.toLocaleString('en-IN')}</span>
+          <span className="product-discount">({discountPct}% OFF)</span>
         </div>
 
-        <div className="product-info-wrap">
-          <div className="product-brand-name">INFIT STUDIO</div>
+        <p className="product-wash-label">{product.wash || product.desc.slice(0, 50) + '...'}</p>
 
-          <Link href={`/product/${product.id}`} className="product-title-link">
-            <h3 className="product-title">{product.name}</h3>
-          </Link>
-
-          <div className="product-price-row">
-            <span className="product-price">{product.price}</span>
-            <span className="product-orig-price">₹{originalPriceNum.toLocaleString('en-IN')}</span>
-            <span className="product-discount">({discountPct}% OFF)</span>
-          </div>
-
-          <p className="product-wash-label">{product.wash || product.desc.slice(0, 50) + '...'}</p>
-
-        {/* Inline Size Picker */}
-        <div className="card-size-selector">
-          <span className="size-guide-mini-label">{isNumeric ? 'Waist:' : 'Size:'}</span>
-          <div className="card-size-pills">
-            {availableSizes.map((size) => (
-              <button
-                key={size}
-                type="button"
-                className={`card-size-btn ${cardSize === size ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setCardSize(size)
-                }}
-                aria-label={`Select size ${size}`}
-              >
-                {size}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Full Width Add to Bag Button */}
+        {/* Full Width Clean Add to Bag Button (Sizes removed from card per request) */}
         <button
           type="button"
           className={`card-add-btn ${isAdded ? 'added' : ''}`}
           onClick={handleAddToCart}
-          aria-label={`Add ${product.name} size ${cardSize} to bag`}
+          aria-label={`Add ${product.name} to bag`}
         >
           {isAdded ? (
             <>
@@ -146,7 +133,7 @@ export default function ProductCard({ product }: { product: Product }) {
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <path d="M16 10a4 4 0 0 1-8 0" />
               </svg>
-              <span>Add to Bag — {isNumeric ? `${cardSize}"` : cardSize}</span>
+              <span>Add to Bag</span>
             </>
           )}
         </button>

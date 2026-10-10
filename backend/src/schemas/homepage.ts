@@ -93,7 +93,7 @@ export const brandStorySectionSchema = z.object({
   imageUrl: z.string().default('/brand-editorial.jpg'),
   stats: z.array(brandStatSchema).default([]),
   ctaText: z.string().default('Get in Touch'),
-  ctaLink: z.string().default('mailto:concierge@infit.in')
+  ctaLink: z.string().default('mailto:concierge@teesgarage.in')
 })
 
 export const lookItemSchema = z.object({
@@ -114,7 +114,7 @@ export const looksSectionSchema = z.object({
 
 export const instagramSectionSchema = z.object({
   enabled: z.boolean().default(true),
-  eyebrow: z.string().default('@infit.in'),
+  eyebrow: z.string().default('@teesgarage.in'),
   title: z.string().default('Follow Our Story'),
   subtitle: z.string().default('Real people, real fits — tag us in yours.'),
   instagramUrl: z.string().default('https://instagram.com'),

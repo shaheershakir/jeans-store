@@ -178,7 +178,8 @@ export default function ShopClient({
       list = list.filter((p) =>
         selectedBrands.some(
           (b) =>
-            (p.store || 'INFIT').toUpperCase().includes(b.toUpperCase()) ||
+            (p.store || 'TEESGARAGE').toUpperCase().includes(b.toUpperCase()) ||
+            (b.toUpperCase() === 'TEESGARAGE' && (!p.store || p.store.toLowerCase() === 'infit' || p.store.toLowerCase() === 'teesgarage')) ||
             p.name.toUpperCase().includes(b.toUpperCase())
         )
       )
@@ -304,7 +305,9 @@ export default function ShopClient({
 
   const brandCounts = useMemo(
     () => ({
-      INFIT: initialProducts.filter((p) => !p.store || p.store.toLowerCase() === 'infit').length,
+      TEESGARAGE: initialProducts.filter(
+        (p) => !p.store || p.store.toLowerCase() === 'teesgarage' || p.store.toLowerCase() === 'infit'
+      ).length,
       'JEAN-STORE': initialProducts.filter(
         (p) => p.store && p.store.toLowerCase() === 'jean-store'
       ).length,
@@ -897,7 +900,7 @@ export default function ShopClient({
 
             {activeMobileTab === 'brand' && (
               <div>
-                {['INFIT', 'JEAN-STORE'].map((brand) => {
+                {['TEESGARAGE', 'JEAN-STORE'].map((brand) => {
                   const isSelected = selectedBrands.includes(brand)
                   const count = brandCounts[brand as keyof typeof brandCounts] ?? 0
                   return (

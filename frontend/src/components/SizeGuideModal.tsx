@@ -269,7 +269,7 @@ export default function SizeGuideModal({
               <div className="apple-fit-callout">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <strong>INFIT Fit Guarantee:</strong> If the size isn&apos;t flawless, we provide free 7-day doorstep exchanges across India. Simply message our concierge via WhatsApp.
+                  <strong>TEESGARAGE Fit Guarantee:</strong> If the size isn&apos;t flawless, we provide free 7-day doorstep exchanges across India. Simply message our concierge via WhatsApp.
                 </div>
               </div>
             </div>

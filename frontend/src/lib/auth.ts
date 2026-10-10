@@ -88,7 +88,7 @@ export async function signIn(data: {
         id: 101,
         uid: 'usr_demo_8829',
         email: data.email,
-        name: data.email.includes('demo') ? 'Devon Vance' : (formattedName || 'INFIT Member'),
+        name: data.email.includes('demo') ? 'Devon Vance' : (formattedName || 'TEESGARAGE Member'),
         provider: 'local',
         createdAt: new Date().toISOString()
       }
@@ -124,7 +124,7 @@ export async function fetchProfile(token: string): Promise<UserProfile> {
       return {
         id: 101,
         uid: 'usr_demo_8829',
-        email: 'demo.member@infit.in',
+        email: 'demo.member@teesgarage.in',
         name: 'Devon Vance',
         provider: 'local',
         createdAt: new Date().toISOString()

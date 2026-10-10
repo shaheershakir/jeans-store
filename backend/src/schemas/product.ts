@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const STORES = ['infit', 'jean-store', 'clothing-store', 'frontend'] as const
+export const STORES = ['teesgarage', 'infit', 'jean-store', 'clothing-store', 'frontend'] as const
 export type StoreType = (typeof STORES)[number]
 
 export const FITS = ['Straight', 'Baggy', 'Wide', 'Relaxed', 'Bootcut'] as const
@@ -16,7 +16,7 @@ export type Category = (typeof CATEGORIES)[number]
  */
 export const productSchema = z.object({
   id: z.number().int().nonnegative(),
-  store: z.string().default('infit'),
+  store: z.string().default('teesgarage'),
   category: z.string().default('jeans'),
   name: z.string().min(1),
   fit: z.enum(FITS).optional(),

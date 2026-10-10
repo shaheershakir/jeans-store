@@ -24,7 +24,7 @@ export default function Footer() {
               <Link href="/checkout">Order Checkout</Link>
             </li>
             <li>
-              <a href="mailto:concierge@infit.in">Direct Studio Support</a>
+              <a href="mailto:concierge@teesgarage.in">Direct Studio Support</a>
             </li>
           </ul>
         </div>
@@ -51,7 +51,7 @@ export default function Footer() {
           <h3 className="footer-heading">STUDIO &amp; CONTACT</h3>
           <ul className="footer-list">
             <li>
-              <a href="mailto:concierge@infit.in">concierge@infit.in</a>
+              <a href="mailto:concierge@teesgarage.in">concierge@teesgarage.in</a>
             </li>
             <li>
               <span>Monday to Saturday, 10:00 to 19:00 IST</span>
@@ -63,7 +63,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="footer-bottom-bar">
-        <span>© 2026 INFIT® CLOTHING. ALL RIGHTS RESERVED.</span>
+        <span>© 2026 TEESGARAGE® CLOTHING. ALL RIGHTS RESERVED.</span>
         <span>DENIM CRAFTED FOR THE REAL WORLD</span>
       </div>
     </footer>

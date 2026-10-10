@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -9,8 +9,8 @@ import { getNavigationItems } from '@/lib/navigation'
 import './globals.css'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://infit.in'),
-  title: 'INFIT — Denim for the real world',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://teesgarage.in'),
+  title: 'TEESGARAGE — Denim for the real world',
   description:
     'Weighty denim, honest washes, and fits that get better with every wear. Free shipping above ₹1,499.',
   manifest: '/site.webmanifest',
@@ -18,14 +18,25 @@ export const metadata: Metadata = {
     icon: '/icon.svg'
   },
   openGraph: {
-    title: 'INFIT — Denim for the real world',
+    title: 'TEESGARAGE — Denim for the real world',
     description:
       'Weighty denim, honest washes, and fits that get better with every wear. Free shipping above ₹1,499.',
-    url: 'https://infit.in',
-    siteName: 'INFIT',
+    url: 'https://teesgarage.in',
+    siteName: 'TEESGARAGE',
     locale: 'en_IN',
     type: 'website'
   }
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  interactiveWidget: 'resizes-content',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' }
+  ]
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -52,7 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SearchOverlay />
         <Toast />
         <noscript>
-          <Link href="/">INFIT</Link>
+          <Link href="/">TEESGARAGE</Link>
         </noscript>
       </body>
     </html>

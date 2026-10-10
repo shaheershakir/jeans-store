@@ -444,7 +444,7 @@ export default function StorefrontNavigationPage() {
                 <div className="rounded-lg border border-border bg-[#0d0d0d] text-white p-4 overflow-x-auto shadow-inner">
                   <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-extrabold tracking-tight text-sm text-white font-sans">INFIT</span>
+                      <span className="font-extrabold tracking-tight text-sm text-white font-sans">TEESGARAGE</span>
                       <span className="text-[9px] px-1 py-0.2 rounded bg-white/20 text-white font-mono">ARCHIVE</span>
                     </div>
 

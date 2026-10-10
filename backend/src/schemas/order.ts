@@ -13,7 +13,7 @@ export const orderItemSchema = z.object({
 
 export const createOrderSchema = z.object({
   orderNumber: z.string().min(1),
-  store: z.string().default('infit'),
+  store: z.string().default('teesgarage'),
   customerName: z.string().min(1),
   customerPhone: z.string().min(10),
   customerEmail: z.string().email(),
