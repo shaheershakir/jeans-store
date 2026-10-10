@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import {
   Search,
   X,
@@ -27,6 +27,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
 export default function Header({ initialNavItems }: HeaderProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const items = useCartStore((state) => state.items)
   const openOverlay = useUIStore((state) => state.openOverlay)
   const setFit = useFilterStoreSync()
@@ -110,16 +111,23 @@ export default function Header({ initialNavItems }: HeaderProps) {
     setLocalQuery(searchQuery)
   }, [searchQuery])
 
+  const isLinkActive = (href: string) => {
+    if (href === '/shop') {
+      return pathname === '/shop'
+    }
+    return pathname === href || pathname.startsWith(`${href}/`)
+  }
+
   const handleNavClick = (link: NavigationItem, e?: React.MouseEvent) => {
-    // If it's a real /category/* route, let Next.js handle navigation normally
-    if (link.href.startsWith('/category/')) {
-      // Set the filter state in parallel so the category page reads the right value
+    if (link.href.startsWith('/shop') || link.href.startsWith('/category/')) {
       if (link.type === 'category') {
         const target = link.targetValue || 'all'
         setCategory(target)
         if (target !== 'all' && target !== 'jeans') setFit('all')
+      } else if (link.type === 'fit') {
+        const target = (link.targetValue || 'all') as Fit | 'all'
+        setFit(target)
       }
-      // Allow the <Link> to navigate — don't preventDefault
       return
     }
 
@@ -127,7 +135,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
       if (e) e.preventDefault()
       const target = (link.targetValue || 'all') as Fit | 'all'
       setFit(target)
-      scrollToCatalog()
+      router.push(`/shop/jeans?fit=${target}`)
     } else if (link.type === 'category') {
       if (e) e.preventDefault()
       const target = link.targetValue || 'all'
@@ -135,20 +143,23 @@ export default function Header({ initialNavItems }: HeaderProps) {
       if (target !== 'all' && target !== 'jeans') {
         setFit('all')
       }
-      scrollToCatalog()
+      router.push(target === 'all' ? '/shop' : `/shop/${target}`)
     } else if (link.href === '/' || link.href.startsWith('/#')) {
-      if (e) e.preventDefault()
-      scrollToCatalog()
+      if (pathname !== '/') {
+        router.push(link.href)
+      } else {
+        if (e) e.preventDefault()
+        scrollToCatalog()
+      }
     }
   }
-
 
   const handleShopAllClick = () => {
     setCategory('all')
     setFit('all')
     setSearchQuery('')
     setLocalQuery('')
-    scrollToCatalog()
+    router.push('/shop')
   }
 
   const scrollToCatalog = () => {
@@ -163,10 +174,8 @@ export default function Header({ initialNavItems }: HeaderProps) {
     setIsSearchFocused(false)
     setSearchQuery(localQuery)
 
-    if (window.location.pathname !== '/') {
-      router.push(`/?q=${encodeURIComponent(localQuery)}`)
-    } else {
-      scrollToCatalog()
+    if (pathname !== '/shop' && !pathname.startsWith('/shop/')) {
+      router.push(`/shop?q=${encodeURIComponent(localQuery)}`)
     }
   }
 
@@ -204,12 +213,12 @@ export default function Header({ initialNavItems }: HeaderProps) {
             </button>
 
             {/* Brand Logo */}
-            <Link className="macy-brand" href="/" aria-label="TEESGARAGE Homepage">
+            <Link className="macy-brand" href="/" aria-label="INFIT Homepage">
               <Image
-                src="/teesgarage_logo.svg"
-                alt="TEESGARAGE"
-                width={124}
-                height={50}
+                src="/infit_logo.svg"
+                alt="INFIT"
+                width={140}
+                height={36}
                 priority
                 className="brand-logo-img"
               />
@@ -358,7 +367,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
             {/* Shop All Menu Trigger */}
             <button
               type="button"
-              className="macy-shop-all-btn"
+              className={`macy-shop-all-btn ${pathname === '/shop' ? 'active' : ''}`}
               onClick={handleShopAllClick}
             >
               <Menu className="h-3.5 w-3.5 mr-1.5" />
@@ -369,11 +378,12 @@ export default function Header({ initialNavItems }: HeaderProps) {
             <div className="macy-nav-links-scroll">
               {activeLinks.map((link) => {
                 const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
+                const isActive = isLinkActive(link.href)
                 return (
                   <Link
                     key={link.id || link.label}
                     href={link.href}
-                    className={`macy-nav-link ${isSale ? 'sale-link' : ''}`}
+                    className={`macy-nav-link ${isSale ? 'sale-link' : ''} ${isActive ? 'active' : ''}`}
                     target={link.openInNewTab ? '_blank' : undefined}
                     rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
                     onClick={(e) => handleNavClick(link, e)}
@@ -393,7 +403,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
             <div className="mobile-nav-links">
               <button
                 type="button"
-                className="mobile-nav-item"
+                className={`mobile-nav-item ${pathname === '/shop' ? 'active' : ''}`}
                 style={{ textAlign: 'left', background: 'none', border: 'none', font: 'inherit', cursor: 'pointer', fontWeight: 600 }}
                 onClick={() => {
                   handleShopAllClick()
@@ -405,11 +415,12 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
               {activeLinks.map((link) => {
                 const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
+                const isActive = isLinkActive(link.href)
                 return (
                   <Link
                     key={link.id || link.label}
                     href={link.href}
-                    className={`mobile-nav-item ${isSale ? 'sale-link' : ''}`}
+                    className={`mobile-nav-item ${isSale ? 'sale-link' : ''} ${isActive ? 'active' : ''}`}
                     target={link.openInNewTab ? '_blank' : undefined}
                     rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
                     onClick={(e) => {

@@ -15,12 +15,12 @@ export interface NavigationItem {
 }
 
 export const DEFAULT_NAV_LINKS: NavigationItem[] = [
-  { id: 'nav-1', label: 'All Styles', href: '/category/all', type: 'category', targetValue: 'all', order: 0, isActive: true, openInNewTab: false },
-  { id: 'nav-2', label: 'Denim', href: '/category/jeans', type: 'category', targetValue: 'jeans', order: 1, isActive: true, openInNewTab: false },
-  { id: 'nav-3', label: 'Tops & T-Shirts', href: '/category/tops', type: 'category', targetValue: 'tops', order: 2, isActive: true, openInNewTab: false },
-  { id: 'nav-4', label: 'Shirts', href: '/category/shirts', type: 'category', targetValue: 'shirts', order: 3, isActive: true, openInNewTab: false },
-  { id: 'nav-5', label: 'Hoodies', href: '/category/hoodies', type: 'category', targetValue: 'hoodies', order: 4, isActive: true, openInNewTab: false },
-  { id: 'nav-6', label: 'Accessories', href: '/category/accessories', type: 'category', targetValue: 'hats', order: 5, isActive: true, openInNewTab: false },
+  { id: 'nav-1', label: 'All Styles', href: '/shop', type: 'category', targetValue: 'all', order: 0, isActive: true, openInNewTab: false },
+  { id: 'nav-2', label: 'Denim', href: '/shop/jeans', type: 'category', targetValue: 'jeans', order: 1, isActive: true, openInNewTab: false },
+  { id: 'nav-3', label: 'Tops & T-Shirts', href: '/shop/tops', type: 'category', targetValue: 'tops', order: 2, isActive: true, openInNewTab: false },
+  { id: 'nav-4', label: 'Shirts', href: '/shop/shirts', type: 'category', targetValue: 'shirts', order: 3, isActive: true, openInNewTab: false },
+  { id: 'nav-5', label: 'Hoodies', href: '/shop/hoodies', type: 'category', targetValue: 'hoodies', order: 4, isActive: true, openInNewTab: false },
+  { id: 'nav-6', label: 'Accessories', href: '/shop/accessories', type: 'category', targetValue: 'hats', order: 5, isActive: true, openInNewTab: false },
 ]
 
 export interface Product {
@@ -130,7 +130,7 @@ export const PRODUCTS: Product[] = [
     fit: 'Straight',
     price: '₹1,499',
     priceNum: 1499,
-    img: 'https://images.unsplash.com/photo-1584370848010-d7fe6bc767ec?auto=format&fit=crop&w=800&q=80',
+    img: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=800&q=80',
     img2: 'https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&w=800&q=80',
     badge: 'Sale',
     desc: 'Clean straight leg in an overdyed slate grey with subtle hand-scraping on thighs.',

@@ -8,16 +8,21 @@ import { useRouter } from 'next/navigation'
 import type { Product } from '@/lib/constants'
 import { SIZES, SWATCHES } from '@/lib/constants'
 import { useCartStore, useUIStore } from '@/lib/store'
+import SizeGuideModal from '@/components/SizeGuideModal'
+import ProductReviews from '@/components/ProductReviews'
+import RelatedProducts from '@/components/RelatedProducts'
+import StickyPdpBar from '@/components/StickyPdpBar'
 
 // Map category ID → breadcrumb label + route
 const CATEGORY_META: Record<string, { label: string; href: string }> = {
-  jeans: { label: 'Denim', href: '/category/jeans' },
-  'jeans-fit': { label: 'Denim', href: '/category/jeans' },
-  tops: { label: 'Tops & T-Shirts', href: '/category/tops' },
-  't-shirts': { label: 'Tops & T-Shirts', href: '/category/tops' },
-  shirts: { label: 'Shirts', href: '/category/shirts' },
-  hoodies: { label: 'Hoodies', href: '/category/hoodies' },
-  hats: { label: 'Accessories', href: '/category/accessories' },
+  jeans: { label: 'Denim', href: '/shop/jeans' },
+  'jeans-fit': { label: 'Denim', href: '/shop/jeans' },
+  tops: { label: 'Tops & T-Shirts', href: '/shop/tops' },
+  't-shirts': { label: 'Tops & T-Shirts', href: '/shop/tops' },
+  shirts: { label: 'Shirts', href: '/shop/shirts' },
+  hoodies: { label: 'Hoodies', href: '/shop/hoodies' },
+  hats: { label: 'Accessories', href: '/shop/accessories' },
+  accessories: { label: 'Accessories', href: '/shop/accessories' },
 }
 
 export default function ProductDetail({ product }: { product: Product }) {
@@ -37,11 +42,12 @@ export default function ProductDetail({ product }: { product: Product }) {
   const images = [product.img, product.img2].filter(Boolean) as string[]
   const [activeImg, setActiveImg] = useState(0)
   const [added, setAdded] = useState(false)
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false)
 
   const catMeta =
     (product.category ? CATEGORY_META[product.category] : null) ??
     (product.fit ? CATEGORY_META['jeans'] : null) ??
-    { label: 'All Styles', href: '/category/all' }
+    { label: 'All Garments', href: '/shop' }
 
   useEffect(() => {
     void useUIStore.persist.rehydrate()
@@ -75,11 +81,7 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   function handleSizeGuide(e: MouseEvent<HTMLAnchorElement>) {
     e.preventDefault()
-    showToast(
-      isNumeric
-        ? 'Size Guide: 28 (28″ Waist) · 30 (30″ Waist) · 32 (32″ Waist) · 34 (34″ Waist) · 36 (36″ Waist)'
-        : 'Apparel Size Guide: S (36-38″) · M (38-40″) · L (40-42″) · XL (42-44″)'
-    )
+    setIsSizeGuideOpen(true)
   }
 
   return (
@@ -87,6 +89,8 @@ export default function ProductDetail({ product }: { product: Product }) {
       {/* ── Breadcrumb ── */}
       <nav className="pdp-breadcrumb" aria-label="Breadcrumb">
         <Link href="/" className="pdp-crumb-link">Home</Link>
+        <span className="crumb-sep" aria-hidden="true">/</span>
+        <Link href="/shop" className="pdp-crumb-link">Shop</Link>
         <span className="crumb-sep" aria-hidden="true">/</span>
         <Link href={catMeta.href} className="pdp-crumb-link">{catMeta.label}</Link>
         <span className="crumb-sep" aria-hidden="true">/</span>
@@ -328,6 +332,29 @@ export default function ProductDetail({ product }: { product: Product }) {
           </div>
         </div>
       </div>
+      
+      {/* ── Community Ratings & Customer Reviews ── */}
+      <ProductReviews productId={product.id} productName={product.name} />
+
+      {/* ── Curated Recommendations / Complete the Fit ── */}
+      <RelatedProducts currentProduct={product} />
+
+      {/* ── Sticky Quick-Order Bar on Scroll ── */}
+      <StickyPdpBar
+        product={product}
+        selectedSize={selectedSize}
+        onSizeChange={(sz) => setSelectedSize(sz)}
+        onAddToCart={handleAddToCart}
+        isAdded={added}
+      />
+
+      {/* ── Interactive Apple-style Size & Fit Guide Modal ── */}
+      <SizeGuideModal
+        isOpen={isSizeGuideOpen}
+        onClose={() => setIsSizeGuideOpen(false)}
+        productCategory={product.category}
+        productFit={product.fit}
+      />
     </div>
   )
 }

@@ -29,7 +29,9 @@ export function filterAndSortProducts(
   sort: SortMode,
   catalog: Product[] = PRODUCTS,
   category: string | 'all' = 'all',
-  searchQuery: string = ''
+  searchQuery: string = '',
+  sizes: string[] = [],
+  washes: string[] = []
 ): Product[] {
   let list = [...catalog]
 
@@ -55,6 +57,8 @@ export function filterAndSortProducts(
       list = list.filter((p) => p.category === 'hoodies')
     } else if (category === 'hats') {
       list = list.filter((p) => p.category === 'hats' || p.category === 'accessories')
+    } else if (category === 'sale') {
+      list = list.filter((p) => p.badge?.toLowerCase() === 'sale' || p.priceNum <= 1500)
     } else {
       list = list.filter((p) => p.category?.toLowerCase() === category.toLowerCase())
     }
@@ -72,6 +76,18 @@ export function filterAndSortProducts(
         if (key === 'above-2000') return p.priceNum >= 2000
         return false
       })
+    )
+  }
+
+  if (sizes.length > 0) {
+    list = list.filter((p) =>
+      p.sizes?.some((s) => sizes.includes(s))
+    )
+  }
+
+  if (washes.length > 0) {
+    list = list.filter((p) =>
+      p.wash && washes.some((w) => p.wash?.toLowerCase().includes(w.toLowerCase()))
     )
   }
 

@@ -1019,10 +1019,12 @@ export function createDbState(): DbState {
 }
 
 export const DEFAULT_NAVIGATION_ITEMS: NavigationItem[] = [
-  { id: 'nav-1', label: 'All Silhouettes', href: '/', type: 'fit', targetValue: 'all', order: 0, isActive: true, openInNewTab: false },
-  { id: 'nav-2', label: 'Straight', href: '/', type: 'fit', targetValue: 'Straight', order: 1, isActive: true, openInNewTab: false },
-  { id: 'nav-3', label: 'Baggy & Wide', href: '/', type: 'fit', targetValue: 'Baggy', order: 2, isActive: true, openInNewTab: false },
-  { id: 'nav-4', label: 'Relaxed', href: '/', type: 'fit', targetValue: 'Relaxed', order: 3, isActive: true, openInNewTab: false },
+  { id: 'nav-1', label: 'All Styles', href: '/shop', type: 'category', targetValue: 'all', order: 0, isActive: true, openInNewTab: false },
+  { id: 'nav-2', label: 'Denim', href: '/shop/jeans', type: 'category', targetValue: 'jeans', order: 1, isActive: true, openInNewTab: false },
+  { id: 'nav-3', label: 'Tops & T-Shirts', href: '/shop/tops', type: 'category', targetValue: 'tops', order: 2, isActive: true, openInNewTab: false },
+  { id: 'nav-4', label: 'Shirts', href: '/shop/shirts', type: 'category', targetValue: 'shirts', order: 3, isActive: true, openInNewTab: false },
+  { id: 'nav-5', label: 'Hoodies', href: '/shop/hoodies', type: 'category', targetValue: 'hoodies', order: 4, isActive: true, openInNewTab: false },
+  { id: 'nav-6', label: 'Accessories', href: '/shop/accessories', type: 'category', targetValue: 'hats', order: 5, isActive: true, openInNewTab: false },
 ]
 
 export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {

@@ -15,7 +15,7 @@
   ],
   "sectionsEnabled": {
     "announcement": true,
-    "hero": false,
+    "hero": true,
     "categories": true,
     "new_arrivals": true,
     "featured_collection": true,

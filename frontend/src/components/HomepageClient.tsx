@@ -207,30 +207,33 @@ export default function HomepageClient({ products, config }: HomepageClientProps
               </h2>
             </div>
             <div className="hp-categories-grid">
-              {cats.items.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href="/#catalog"
-                  className="hp-category-card"
-                  onClick={() => setCategory(cat.id as Parameters<typeof setCategory>[0])}
-                  aria-label={`Shop ${cat.label}`}
-                >
-                  <div className="hp-category-img-wrap">
-                    <Image
-                      src={cat.img}
-                      alt={cat.label}
-                      fill
-                      className="hp-category-img"
-                      sizes="(max-width: 768px) 50vw, 20vw"
-                    />
-                    <div className="hp-category-overlay" />
-                  </div>
-                  <div className="hp-category-info">
-                    <span className="hp-category-label">{cat.label}</span>
-                    <span className="hp-category-count">{cat.count}</span>
-                  </div>
-                </Link>
-              ))}
+              {cats.items.map((cat) => {
+                const targetUrl = cat.id === 'all' ? '/shop' : `/shop/${cat.id}`
+                return (
+                  <Link
+                    key={cat.id}
+                    href={targetUrl}
+                    className="hp-category-card"
+                    onClick={() => setCategory(cat.id as Parameters<typeof setCategory>[0])}
+                    aria-label={`Shop ${cat.label}`}
+                  >
+                    <div className="hp-category-img-wrap">
+                      <Image
+                        src={cat.img}
+                        alt={cat.label}
+                        fill
+                        className="hp-category-img"
+                        sizes="(max-width: 768px) 50vw, 20vw"
+                      />
+                      <div className="hp-category-overlay" />
+                    </div>
+                    <div className="hp-category-info">
+                      <span className="hp-category-label">{cat.label}</span>
+                      <span className="hp-category-count">{cat.count}</span>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </section>
         )
@@ -254,7 +257,11 @@ export default function HomepageClient({ products, config }: HomepageClientProps
             </div>
             {na.ctaText && (
               <div className="hp-section-cta-row">
-                <Link href={na.ctaLink || '/#catalog'} className="hp-view-all-btn" onClick={() => setCategory('all')}>
+                <Link
+                  href={na.ctaLink && na.ctaLink !== '/#catalog' ? na.ctaLink : '/shop'}
+                  className="hp-view-all-btn"
+                  onClick={() => setCategory('all')}
+                >
                   {na.ctaText}
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                     <path d="M5 12h14M12 5l7 7-7 7" />

@@ -50,45 +50,58 @@ export default function ProductCard({ product }: { product: Product }) {
     openOverlay('cart')
   }
 
-  return (
-    <article className="product-card">
-      <div className="product-image-container">
-        <Link href={`/product/${product.id}`} className="product-image-link" aria-label={product.name}>
-          <div className="image-wrapper">
-            <Image
-              src={product.img}
-              alt={product.name}
-              width={600}
-              height={780}
-              className="primary-img"
-              loading="lazy"
-            />
-            {product.img2 && (
+    const rating = (4.3 + ((product.id * 13) % 6) / 10).toFixed(1)
+    const ratingCount = Math.round(150 + ((product.id * 317) % 850))
+    const originalPriceNum = Math.round(product.priceNum * 1.38)
+    const discountPct = Math.round(((originalPriceNum - product.priceNum) / originalPriceNum) * 100)
+
+    return (
+      <article className="product-card">
+        <div className="product-image-container">
+          <Link href={`/product/${product.id}`} className="product-image-link" aria-label={product.name}>
+            <div className="image-wrapper">
               <Image
-                src={product.img2}
-                alt={`${product.name} alt view`}
+                src={product.img}
+                alt={product.name}
                 width={600}
                 height={780}
-                className="secondary-img"
+                className="primary-img"
                 loading="lazy"
               />
-            )}
-          </div>
-          {product.badge && <span className="product-badge">{product.badge}</span>}
-        </Link>
-      </div>
-
-      <div className="product-info-wrap">
-        <div className="product-header-row">
-          <span className="product-fit-tag">{product.fit ? `${product.fit} fit` : (product.category || 'Apparel')}</span>
-          <span className="product-price">{product.price}</span>
+              {product.img2 && (
+                <Image
+                  src={product.img2}
+                  alt={`${product.name} alt view`}
+                  width={600}
+                  height={780}
+                  className="secondary-img"
+                  loading="lazy"
+                />
+              )}
+            </div>
+            {product.badge && <span className="product-badge">{product.badge}</span>}
+            <div className="product-rating-pill">
+              <span className="rating-score">{rating} ★</span>
+              <span className="rating-divider">|</span>
+              <span className="rating-reviews">{ratingCount}</span>
+            </div>
+          </Link>
         </div>
 
-        <Link href={`/product/${product.id}`} className="product-title-link">
-          <h3 className="product-title">{product.name}</h3>
-        </Link>
+        <div className="product-info-wrap">
+          <div className="product-brand-name">INFIT STUDIO</div>
 
-        <p className="product-wash-label">{product.wash || product.desc.slice(0, 50) + '...'}</p>
+          <Link href={`/product/${product.id}`} className="product-title-link">
+            <h3 className="product-title">{product.name}</h3>
+          </Link>
+
+          <div className="product-price-row">
+            <span className="product-price">{product.price}</span>
+            <span className="product-orig-price">₹{originalPriceNum.toLocaleString('en-IN')}</span>
+            <span className="product-discount">({discountPct}% OFF)</span>
+          </div>
+
+          <p className="product-wash-label">{product.wash || product.desc.slice(0, 50) + '...'}</p>
 
         {/* Inline Size Picker */}
         <div className="card-size-selector">
