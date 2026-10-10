@@ -334,3 +334,69 @@ export const useFavoriteStore = create<FavoriteState>()(
     }
   )
 )
+
+export interface FitPreferences {
+  waistSize: string
+  topSize: string
+  preferredFit: Fit
+  inseam: string
+  comfortFit: 'true-to-size' | 'relaxed' | 'snug'
+}
+
+export const DEFAULT_PREFERENCES: FitPreferences = {
+  waistSize: '32',
+  topSize: 'M',
+  preferredFit: 'Baggy',
+  inseam: '32',
+  comfortFit: 'relaxed'
+}
+
+interface PreferencesState {
+  preferences: FitPreferences
+  updatePreferences: (patch: Partial<FitPreferences>) => void
+  resetPreferences: () => void
+  getRecommendedSize: (availableSizes: string[], category?: string) => string
+}
+
+export const usePreferencesStore = create<PreferencesState>()(
+  persist(
+    (set, get) => ({
+      preferences: DEFAULT_PREFERENCES,
+      updatePreferences: (patch) =>
+        set((state) => ({
+          preferences: { ...state.preferences, ...patch }
+        })),
+      resetPreferences: () => set({ preferences: DEFAULT_PREFERENCES }),
+      getRecommendedSize: (availableSizes, category) => {
+        if (!availableSizes || availableSizes.length === 0) return '32'
+        const prefs = get().preferences
+        const isNumeric = availableSizes.every((s) => /^\d+$/.test(s))
+
+        // Denim / Numeric Waist Sizes (e.g. 28, 30, 32, 34, 36, 38)
+        if (isNumeric) {
+          if (availableSizes.includes(prefs.waistSize)) {
+            return prefs.waistSize
+          }
+          const targetNum = parseInt(prefs.waistSize, 10)
+          if (!isNaN(targetNum)) {
+            const sorted = [...availableSizes].sort((a, b) => {
+              return Math.abs(parseInt(a, 10) - targetNum) - Math.abs(parseInt(b, 10) - targetNum)
+            })
+            return sorted[0] || availableSizes[0]
+          }
+        } else {
+          // Alpha Sizes (e.g. XS, S, M, L, XL, XXL)
+          if (availableSizes.includes(prefs.topSize)) {
+            return prefs.topSize
+          }
+        }
+        return availableSizes[0]
+      }
+    }),
+    {
+      name: 'teesgarage-preferences',
+      skipHydration: true
+    }
+  )
+)
+

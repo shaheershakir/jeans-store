@@ -24,15 +24,18 @@ import {
   ChevronRight,
   Package,
   Sparkles,
-  LogOut
+  LogOut,
+  Ruler
 } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import FitPreferencesCard from '@/components/FitPreferencesCard'
 import {
   useAuthStore,
   useFavoriteStore,
   useCartStore,
   useUIStore,
+  usePreferencesStore,
   type UserAddress
 } from '@/lib/store'
 import { PRODUCTS, type Product } from '@/lib/constants'
@@ -42,7 +45,7 @@ function ProfileContent() {
   const searchParams = useSearchParams()
   const initialTab = searchParams.get('tab') || 'info'
 
-  const [activeTab, setActiveTab] = useState<'info' | 'security' | 'addresses' | 'favorites'>(
+  const [activeTab, setActiveTab] = useState<'info' | 'security' | 'preferences' | 'addresses' | 'favorites'>(
     (initialTab as any) || 'info'
   )
 
@@ -54,6 +57,9 @@ function ProfileContent() {
   const deleteAddress = useAuthStore((s) => s.deleteAddress)
   const setDefaultAddress = useAuthStore((s) => s.setDefaultAddress)
   const logout = useAuthStore((s) => s.logout)
+
+  // Preferences store
+  const preferences = usePreferencesStore((s) => s.preferences)
 
   // Favorites store
   const favorites = useFavoriteStore((s) => s.favorites)
@@ -93,6 +99,7 @@ function ProfileContent() {
     void useFavoriteStore.persist.rehydrate()
     void useCartStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
+    void usePreferencesStore.persist.rehydrate()
   }, [])
 
   useEffect(() => {
@@ -105,7 +112,7 @@ function ProfileContent() {
 
   useEffect(() => {
     const tabParam = searchParams.get('tab')
-    if (tabParam && ['info', 'security', 'addresses', 'favorites'].includes(tabParam)) {
+    if (tabParam && ['info', 'security', 'preferences', 'addresses', 'favorites'].includes(tabParam)) {
       setActiveTab(tabParam as any)
     }
   }, [searchParams])
@@ -198,6 +205,7 @@ function ProfileContent() {
           <span className="infit-breadcrumb-current">
             {activeTab === 'info' && 'Personal Information'}
             {activeTab === 'security' && 'Sign-In & Security'}
+            {activeTab === 'preferences' && 'Fit & Size Preferences'}
             {activeTab === 'addresses' && 'Shipping Addresses'}
             {activeTab === 'favorites' && 'Saved Wishlist'}
           </span>
@@ -264,6 +272,16 @@ function ProfileContent() {
           >
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Security</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'preferences'}
+            onClick={() => setActiveTab('preferences')}
+            className={`apple-mobile-pill ${activeTab === 'preferences' ? 'active' : ''}`}
+          >
+            <Ruler className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Fit &amp; Size</span>
           </button>
           <button
             type="button"
@@ -345,6 +363,23 @@ function ProfileContent() {
                     <span>Sign-In &amp; Security</span>
                   </div>
                   <div className="apple-nav-right">
+                    <ChevronRight className="apple-nav-chevron" />
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'preferences'}
+                  onClick={() => setActiveTab('preferences')}
+                  className={`apple-nav-item ${activeTab === 'preferences' ? 'active' : ''}`}
+                >
+                  <div className="apple-nav-left">
+                    <Ruler className="apple-nav-icon text-indigo-500" />
+                    <span>Fit &amp; Size Preferences</span>
+                  </div>
+                  <div className="apple-nav-right">
+                    <span className="apple-nav-badge">{preferences.waistSize}&quot; / {preferences.topSize}</span>
                     <ChevronRight className="apple-nav-chevron" />
                   </div>
                 </button>
@@ -621,6 +656,11 @@ function ProfileContent() {
               </div>
             )}
 
+            {/* Tab: Fit & Size Preferences */}
+            {activeTab === 'preferences' && (
+              <FitPreferencesCard />
+            )}
+
             {/* Tab 3: Shipping Addresses */}
             {activeTab === 'addresses' && (
               <div className="apple-detail-card">
@@ -894,8 +934,9 @@ function ProfileContent() {
                               type="button"
                               className="wishlist-btn-add"
                               onClick={() => {
-                                addItem(product.id, '32')
-                                showToast(`Added ${product.name} to bag`)
+                                const recSize = usePreferencesStore.getState().getRecommendedSize(product.sizes || ['32'], product.category)
+                                addItem(product.id, recSize)
+                                showToast(`Added ${product.name} (Size ${recSize}) to bag`)
                                 openOverlay('cart')
                               }}
                             >

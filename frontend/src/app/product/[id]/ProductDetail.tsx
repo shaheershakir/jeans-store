@@ -5,10 +5,10 @@ import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Maximize2, X, ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import type { Product } from '@/lib/constants'
 import { SIZES, SWATCHES } from '@/lib/constants'
-import { useCartStore, useUIStore } from '@/lib/store'
+import { useCartStore, useUIStore, usePreferencesStore } from '@/lib/store'
 import SizeGuideModal from '@/components/SizeGuideModal'
 import ProductReviews from '@/components/ProductReviews'
 import RelatedProducts from '@/components/RelatedProducts'
@@ -54,13 +54,28 @@ export default function ProductDetail({ product }: { product: Product }) {
     (product.fit ? CATEGORY_META['jeans'] : null) ??
     { label: 'All Garments', href: '/shop' }
 
+  const preferences = usePreferencesStore((state) => state.preferences)
+  const getRecommendedSize = usePreferencesStore((state) => state.getRecommendedSize)
+
   useEffect(() => {
-    void useUIStore.persist.rehydrate()
-    void useCartStore.persist.rehydrate()
-    if (!availableSizes.includes(selectedSize)) {
-      setSelectedSize(availableSizes[0] || '32')
+    let isMounted = true
+    const hydrateAndSelect = async () => {
+      await Promise.all([
+        useUIStore.persist.rehydrate(),
+        useCartStore.persist.rehydrate(),
+        usePreferencesStore.persist.rehydrate()
+      ])
+      if (isMounted) {
+        // Auto-select preferred size from user's Fit & Size Profile
+        const recommended = usePreferencesStore.getState().getRecommendedSize(availableSizes, product.category)
+        setSelectedSize(recommended)
+      }
     }
-  }, [availableSizes, selectedSize, setSelectedSize])
+    void hydrateAndSelect()
+    return () => {
+      isMounted = false
+    }
+  }, [availableSizes, product.category, setSelectedSize])
 
   const openLightbox = useCallback((index: number) => {
     setLightboxIndex(index)
@@ -224,10 +239,26 @@ export default function ProductDetail({ product }: { product: Product }) {
                 Select {isNumeric ? 'Waist' : 'Size'}:{' '}
                 <strong className="option-value">{selectedSize}{isNumeric ? '"' : ''}</strong>
               </span>
-              <a href="#size-guide" className="pdp-size-guide-link" onClick={handleSizeGuide}>
-                Size Guide ↗
-              </a>
+              <div className="flex items-center gap-3">
+                <Link href="/profile?tab=preferences" className="pdp-size-guide-link !text-zinc-500 hover:!text-black">
+                  Fit Profile ⚙
+                </Link>
+                <a href="#size-guide" className="pdp-size-guide-link" onClick={handleSizeGuide}>
+                  Size Guide ↗
+                </a>
+              </div>
             </div>
+
+            {/* Preference Match Indicator Banner */}
+            {selectedSize === (isNumeric ? preferences.waistSize : preferences.topSize) && (
+              <div className="pdp-pref-match-banner">
+                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>
+                  Auto-selected from your <strong>Fit &amp; Size Profile</strong> ({isNumeric ? `Waist ${preferences.waistSize}"` : `Size ${preferences.topSize}`})
+                </span>
+              </div>
+            )}
+
             <div className="pdp-sizes-grid">
               {availableSizes.map((size) => (
                 <button
