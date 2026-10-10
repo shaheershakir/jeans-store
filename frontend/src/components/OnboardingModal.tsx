@@ -152,11 +152,23 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
     void usePreferencesStore.persist.rehydrate()
   }, [])
 
+  useEffect(() => {
+    if (user?.name && (!fullName || fullName === 'Devon Vance')) {
+      setFullName(user.name)
+    }
+    if (user?.phone && !phone) {
+      setPhone(user.phone)
+    }
+  }, [user, fullName, phone])
+
   const handleGlobalSkip = React.useCallback(() => {
     skipOnboarding()
     showToast('Setup skipped. You can update address & sizing anytime in your Profile.')
     if (standalone) {
-      router.push('/shop')
+      const redirect = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('redirect') || '/shop'
+        : '/shop'
+      router.push(redirect)
     }
   }, [skipOnboarding, showToast, standalone, router])
 
@@ -211,7 +223,10 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
     completeOnboarding()
     showToast('Size profile saved! Recommended sizes are now auto-selected.')
     if (standalone) {
-      router.push('/shop')
+      const redirect = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('redirect') || '/shop'
+        : '/shop'
+      router.push(redirect)
     }
   }
 

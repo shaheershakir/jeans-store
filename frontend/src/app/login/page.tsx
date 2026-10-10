@@ -42,7 +42,10 @@ function LoginForm() {
     void useAuthStore.persist.rehydrate()
   }, [])
 
+  const isSubmittingRef = React.useRef(false)
+
   useEffect(() => {
+    if (isSubmittingRef.current) return
     if (isAuthenticated && user) {
       const redirect = searchParams.get('redirect') || '/'
       router.push(redirect)
@@ -70,6 +73,7 @@ function LoginForm() {
 
     try {
       setLoading(true)
+      isSubmittingRef.current = true
       if (mode === 'signup') {
         const res = await signUp({
           name: name.trim(),
@@ -79,18 +83,16 @@ function LoginForm() {
         setAuth(res.user, res.token)
         showToast(`Welcome to TEESGARAGE, ${res.user.name}!`)
 
-        // Onboarding asks only once after register
+        // Direct redirection to onboarding after registration
         const onboarding = useOnboardingStore.getState()
-        if (!onboarding.hasCompletedOnboarding && !onboarding.hasSkippedOnboarding && !onboarding.hasPromptedAfterRegister) {
-          onboarding.triggerAfterRegister()
-          const redirect = searchParams.get('redirect')
-          if (redirect && redirect !== '/') {
-            router.push(redirect)
-          } else {
-            router.push('/onboarding')
-          }
-          return
-        }
+        onboarding.triggerAfterRegister()
+
+        const redirectParam = searchParams.get('redirect')
+        const target = redirectParam && redirectParam !== '/'
+          ? `/onboarding?redirect=${encodeURIComponent(redirectParam)}`
+          : '/onboarding'
+        router.push(target)
+        return
       } else {
         const res = await signIn({
           email: email.trim(),
@@ -103,6 +105,7 @@ function LoginForm() {
       const redirect = searchParams.get('redirect') || '/'
       router.push(redirect)
     } catch (err: any) {
+      isSubmittingRef.current = false
       setError(err?.message || 'Authentication failed. Please verify your credentials.')
     } finally {
       setLoading(false)
@@ -113,6 +116,7 @@ function LoginForm() {
     setError(null)
     setLoading(true)
     try {
+      isSubmittingRef.current = true
       let isNewRegistration = false
       const res = await signIn({
         email: 'member@teesgarage.in',
@@ -130,21 +134,20 @@ function LoginForm() {
 
       if (isNewRegistration) {
         const onboarding = useOnboardingStore.getState()
-        if (!onboarding.hasCompletedOnboarding && !onboarding.hasSkippedOnboarding && !onboarding.hasPromptedAfterRegister) {
-          onboarding.triggerAfterRegister()
-          const redirect = searchParams.get('redirect')
-          if (redirect && redirect !== '/') {
-            router.push(redirect)
-          } else {
-            router.push('/onboarding')
-          }
-          return
-        }
+        onboarding.triggerAfterRegister()
+
+        const redirectParam = searchParams.get('redirect')
+        const target = redirectParam && redirectParam !== '/'
+          ? `/onboarding?redirect=${encodeURIComponent(redirectParam)}`
+          : '/onboarding'
+        router.push(target)
+        return
       }
 
       const redirect = searchParams.get('redirect') || '/'
       router.push(redirect)
     } catch (err: any) {
+      isSubmittingRef.current = false
       setError(err?.message || 'Failed to sign in with Google.')
     } finally {
       setLoading(false)
@@ -209,18 +212,14 @@ function LoginForm() {
           >
             <span>Sign In</span>
           </button>
-          <button
-            type="button"
+          <Link
+            href={`/register${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`}
             role="tab"
             aria-selected={mode === 'signup'}
             className={`apple-segment-item ${mode === 'signup' ? 'active' : ''}`}
-            onClick={() => {
-              setMode('signup')
-              setError(null)
-            }}
           >
             <span>Create Account</span>
-          </button>
+          </Link>
         </div>
 
         {/* Error Alert Banner */}
@@ -393,6 +392,17 @@ function LoginForm() {
             <Sparkles className="w-3.5 h-3.5 text-amber-500 mr-1.5" />
             <span>Auto-fill Demo Credentials</span>
           </button>
+        </div>
+
+        {/* New account prompt */}
+        <div className="mt-5 text-center font-ui text-xs text-zinc-500">
+          Don&apos;t have an INFIT account?{' '}
+          <Link
+            href={`/register${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`}
+            className="text-zinc-900 font-semibold hover:underline"
+          >
+            Create an account
+          </Link>
         </div>
 
         {/* Footer Guarantee */}
