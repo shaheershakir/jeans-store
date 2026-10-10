@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Product } from '@/lib/constants'
 import { SIZES, SWATCHES } from '@/lib/constants'
 import { useCartStore, useUIStore } from '@/lib/store'
@@ -38,9 +39,13 @@ export default function ProductDetail({ product }: { product: Product }) {
   const availableSizes = product.sizes && product.sizes.length > 0 ? product.sizes : SIZES
   const isNumeric = availableSizes.every((s) => /^\d+$/.test(s))
 
-  // Build image list — main + alternate
-  const images = [product.img, product.img2].filter(Boolean) as string[]
-  const [activeImg, setActiveImg] = useState(0)
+  // Build image list — from images array or fallback [img, img2]
+  const images = (product.images && product.images.length > 0
+    ? product.images
+    : [product.img, product.img2]
+  ).filter(Boolean) as string[]
+
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [added, setAdded] = useState(false)
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false)
 
@@ -57,14 +62,37 @@ export default function ProductDetail({ product }: { product: Product }) {
     }
   }, [availableSizes, selectedSize, setSelectedSize])
 
-  // Arrow navigation on gallery
-  const prevImg = useCallback(() => {
-    setActiveImg((i) => (i - 1 + images.length) % images.length)
-  }, [images.length])
+  const openLightbox = useCallback((index: number) => {
+    setLightboxIndex(index)
+  }, [])
 
-  const nextImg = useCallback(() => {
-    setActiveImg((i) => (i + 1) % images.length)
-  }, [images.length])
+  const closeLightbox = useCallback(() => {
+    setLightboxIndex(null)
+  }, [])
+
+  // Keyboard navigation & body scroll lock for expanded lightbox
+  useEffect(() => {
+    if (lightboxIndex === null) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeLightbox()
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex((prev) => (prev !== null ? (prev - 1 + images.length) % images.length : 0))
+      } else if (e.key === 'ArrowRight') {
+        setLightboxIndex((prev) => (prev !== null ? (prev + 1) % images.length : 0))
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [lightboxIndex, images.length, closeLightbox])
 
   function handleAddToCart() {
     addItem(product.id, selectedSize)
@@ -98,95 +126,51 @@ export default function ProductDetail({ product }: { product: Product }) {
       </nav>
 
       <div className="pdp-layout">
-        {/* ── Gallery Column ── */}
-        <div className="pdp-gallery">
-          {/* Thumbnail strip */}
-          {images.length > 1 && (
-            <div className="pdp-thumb-strip" aria-label="Product images">
-              {images.map((src, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className={`pdp-thumb-btn ${i === activeImg ? 'active' : ''}`}
-                  onClick={() => setActiveImg(i)}
-                  aria-label={`View image ${i + 1}`}
-                  aria-pressed={i === activeImg}
-                >
-                  <Image
-                    src={src}
-                    alt={`${product.name} view ${i + 1}`}
-                    width={80}
-                    height={100}
-                    className="pdp-thumb-img"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
+        {/* ── 2-Column Product Gallery Grid ── */}
+        <div className="pdp-gallery-grid" aria-label="Product image gallery">
+          {images.map((src, i) => (
+            <div
+              key={i}
+              role="button"
+              tabIndex={0}
+              className={`pdp-gallery-card ${images.length === 1 ? 'single-span' : ''}`}
+              onClick={() => openLightbox(i)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  openLightbox(i)
+                }
+              }}
+              aria-label={`View enlarged ${product.name} image ${i + 1}`}
+            >
+              <Image
+                src={src}
+                alt={`${product.name} angle ${i + 1}`}
+                width={800}
+                height={1067}
+                priority={i < 2}
+                className="pdp-gallery-card-img"
+              />
 
-          {/* Main image + arrow nav */}
-          <div className="pdp-main-img-wrap">
-            {images.map((src, i) => (
-              <div
-                key={i}
-                className={`pdp-main-img-slide ${i === activeImg ? 'active' : ''}`}
-                aria-hidden={i !== activeImg}
+              {i === 0 && product.badge && (
+                <span className="pdp-badge">{product.badge}</span>
+              )}
+
+              {/* Corner Expand Action Button */}
+              <button
+                type="button"
+                className="pdp-expand-badge"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  openLightbox(i)
+                }}
+                title="Click to view full image"
+                aria-label={`Expand view of image ${i + 1}`}
               >
-                <Image
-                  src={src}
-                  alt={i === 0 ? product.name : `${product.name} alternate view`}
-                  width={900}
-                  height={1100}
-                  priority={i === 0}
-                  className="pdp-img"
-                />
-              </div>
-            ))}
-
-            {product.badge && (
-              <span className="pdp-badge">{product.badge}</span>
-            )}
-
-            {/* Arrow navigation — only shown when more than 1 image */}
-            {images.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  className="pdp-img-arrow pdp-img-prev"
-                  aria-label="Previous image"
-                  onClick={prevImg}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  className="pdp-img-arrow pdp-img-next"
-                  aria-label="Next image"
-                  onClick={nextImg}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-
-                {/* Dot indicators */}
-                <div className="pdp-img-dots" aria-label="Image navigation">
-                  {images.map((_, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      className={`pdp-img-dot ${i === activeImg ? 'active' : ''}`}
-                      onClick={() => setActiveImg(i)}
-                      aria-label={`Go to image ${i + 1}`}
-                      aria-pressed={i === activeImg}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+                <Maximize2 className="w-3.5 h-3.5 text-zinc-700" />
+              </button>
+            </div>
+          ))}
         </div>
 
         {/* ── Product Details & Actions Column ── */}
@@ -355,6 +339,100 @@ export default function ProductDetail({ product }: { product: Product }) {
         productCategory={product.category}
         productFit={product.fit}
       />
+
+      {/* ── Expanded Image Lightbox Modal ── */}
+      {lightboxIndex !== null && (
+        <div
+          className="pdp-lightbox-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Expanded product image viewer"
+          onClick={closeLightbox}
+        >
+          {/* Lightbox Top Header Bar */}
+          <div className="pdp-lightbox-header" onClick={(e) => e.stopPropagation()}>
+            <div className="pdp-lightbox-info">
+              <span className="pdp-lightbox-title">{product.name}</span>
+              <span className="pdp-lightbox-counter">
+                {lightboxIndex + 1} / {images.length}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="pdp-lightbox-close"
+              onClick={closeLightbox}
+              aria-label="Close expanded view"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Lightbox Main Stage */}
+          <div
+            className="pdp-lightbox-stage"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Previous Button */}
+            {images.length > 1 && (
+              <button
+                type="button"
+                className="pdp-lightbox-nav-btn pdp-lightbox-prev"
+                onClick={() => setLightboxIndex((prev) => (prev! - 1 + images.length) % images.length)}
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Expanded Image */}
+            <div className="pdp-lightbox-img-wrap">
+              <Image
+                src={images[lightboxIndex]}
+                alt={`${product.name} enlarged view ${lightboxIndex + 1}`}
+                fill
+                sizes="95vw"
+                className="pdp-lightbox-img"
+                priority
+              />
+            </div>
+
+            {/* Next Button */}
+            {images.length > 1 && (
+              <button
+                type="button"
+                className="pdp-lightbox-nav-btn pdp-lightbox-next"
+                onClick={() => setLightboxIndex((prev) => (prev! + 1) % images.length)}
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+          </div>
+
+          {/* Lightbox Bottom Thumbnail Bar */}
+          {images.length > 1 && (
+            <div className="pdp-lightbox-thumbs" onClick={(e) => e.stopPropagation()}>
+              {images.map((src, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`pdp-lightbox-thumb ${i === lightboxIndex ? 'active' : ''}`}
+                  onClick={() => setLightboxIndex(i)}
+                  aria-label={`Jump to image ${i + 1}`}
+                >
+                  <Image
+                    src={src}
+                    alt=""
+                    width={56}
+                    height={75}
+                    className="pdp-lightbox-thumb-img"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

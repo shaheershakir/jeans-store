@@ -24,6 +24,7 @@ export const productSchema = z.object({
   priceNum: z.number().nonnegative(),
   img: z.string().url(),
   img2: z.string().url(),
+  images: z.array(z.string().url()).optional(),
   badge: z.string().min(1).optional(),
   desc: z.string().min(1),
   wash: z.string().min(1).optional(),
