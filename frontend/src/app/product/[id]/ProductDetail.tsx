@@ -240,7 +240,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                 <strong className="option-value">{selectedSize}{isNumeric ? '"' : ''}</strong>
               </span>
               <div className="flex items-center gap-3">
-                <Link href="/profile?tab=preferences" className="pdp-size-guide-link !text-zinc-500 hover:!text-black">
+                <Link href="/preferences" className="pdp-size-guide-link !text-zinc-500 hover:!text-black">
                   Fit Profile ⚙
                 </Link>
                 <a href="#size-guide" className="pdp-size-guide-link" onClick={handleSizeGuide}>

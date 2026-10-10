@@ -25,7 +25,9 @@ import {
   Package,
   Sparkles,
   LogOut,
-  Ruler
+  Ruler,
+  Pencil,
+  X
 } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -75,6 +77,7 @@ function ProfileContent() {
   const [email, setEmail] = useState(user?.email || 'demo.member@teesgarage.in')
   const [phone, setPhone] = useState(user?.phone || '+91 98201 44521')
   const [infoSuccess, setInfoSuccess] = useState(false)
+  const [isEditingInfo, setIsEditingInfo] = useState(false)
 
   // Password Form State
   const [currentPassword, setCurrentPassword] = useState('')
@@ -112,10 +115,16 @@ function ProfileContent() {
 
   useEffect(() => {
     const tabParam = searchParams.get('tab')
-    if (tabParam && ['info', 'security', 'preferences', 'addresses', 'favorites'].includes(tabParam)) {
-      setActiveTab(tabParam as any)
+    if (tabParam === 'preferences') {
+      router.replace('/preferences')
+      return
     }
-  }, [searchParams])
+    if (tabParam && ['info', 'security', 'addresses', 'favorites'].includes(tabParam)) {
+      setActiveTab(tabParam as any)
+    } else if (!tabParam) {
+      setActiveTab('info')
+    }
+  }, [searchParams, router])
 
   const handleUpdateInfo = (e: React.FormEvent) => {
     e.preventDefault()
@@ -124,7 +133,8 @@ function ProfileContent() {
 
     updateProfile({ name: name.trim(), email: email.trim(), phone: phone.trim() })
     setInfoSuccess(true)
-    showToast('Profile changes saved')
+    setIsEditingInfo(false)
+    showToast('Personal information updated')
     setTimeout(() => setInfoSuccess(false), 3000)
   }
 
@@ -223,10 +233,6 @@ function ProfileContent() {
                 <h2 className="apple-mobile-name truncate">
                   {user?.name || name || 'Devon Vance'}
                 </h2>
-                <span className="apple-mobile-tier">
-                  <Sparkles className="w-2.5 h-2.5 text-amber-600 shrink-0" />
-                  <span>Member</span>
-                </span>
               </div>
               <p className="apple-mobile-email truncate" title={user?.email || email}>
                 {user?.email || email || 'demo.member@teesgarage.in'}
@@ -253,56 +259,49 @@ function ProfileContent() {
 
         {/* Mobile Horizontal Navigation Pills */}
         <div className="lg:hidden apple-sidebar-nav-mobile mb-4" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'info'}
+          <Link
+            href="/profile"
+            scroll={false}
             onClick={() => setActiveTab('info')}
             className={`apple-mobile-pill ${activeTab === 'info' ? 'active' : ''}`}
           >
             <User className="w-3.5 h-3.5" />
             <span>Personal Info</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'security'}
+          </Link>
+          <Link
+            href="/profile?tab=security"
+            scroll={false}
             onClick={() => setActiveTab('security')}
             className={`apple-mobile-pill ${activeTab === 'security' ? 'active' : ''}`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Security</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'preferences'}
-            onClick={() => setActiveTab('preferences')}
-            className={`apple-mobile-pill ${activeTab === 'preferences' ? 'active' : ''}`}
+          </Link>
+          <Link
+            href="/preferences"
+            className="apple-mobile-pill"
           >
             <Ruler className="w-3.5 h-3.5 text-indigo-500" />
             <span>Fit &amp; Size</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'addresses'}
+          </Link>
+          <Link
+            href="/profile?tab=addresses"
+            scroll={false}
             onClick={() => setActiveTab('addresses')}
             className={`apple-mobile-pill ${activeTab === 'addresses' ? 'active' : ''}`}
           >
             <MapPin className="w-3.5 h-3.5" />
             <span>Addresses ({addresses.length})</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'favorites'}
+          </Link>
+          <Link
+            href="/profile?tab=favorites"
+            scroll={false}
             onClick={() => setActiveTab('favorites')}
             className={`apple-mobile-pill ${activeTab === 'favorites' ? 'active' : ''}`}
           >
             <Heart className="w-3.5 h-3.5 text-rose-500" />
             <span>Wishlist ({favorites.length})</span>
-          </button>
+          </Link>
         </div>
 
         {/* Master-Detail Horizontal Split Layout */}
@@ -326,19 +325,13 @@ function ProfileContent() {
                     </p>
                   </div>
                 </div>
-
-                <div className="apple-id-tier">
-                  <Sparkles className="w-3 h-3 text-amber-600" />
-                  <span>Denim Studio Member</span>
-                </div>
               </div>
 
               {/* Apple Inset Sidebar Navigation List (Hidden on mobile, prominent on desktop) */}
               <div className="hidden lg:flex apple-sidebar-nav" role="tablist">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === 'info'}
+                <Link
+                  href="/profile"
+                  scroll={false}
                   onClick={() => setActiveTab('info')}
                   className={`apple-nav-item ${activeTab === 'info' ? 'active' : ''}`}
                 >
@@ -349,12 +342,11 @@ function ProfileContent() {
                   <div className="apple-nav-right">
                     <ChevronRight className="apple-nav-chevron" />
                   </div>
-                </button>
+                </Link>
 
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === 'security'}
+                <Link
+                  href="/profile?tab=security"
+                  scroll={false}
                   onClick={() => setActiveTab('security')}
                   className={`apple-nav-item ${activeTab === 'security' ? 'active' : ''}`}
                 >
@@ -365,14 +357,11 @@ function ProfileContent() {
                   <div className="apple-nav-right">
                     <ChevronRight className="apple-nav-chevron" />
                   </div>
-                </button>
+                </Link>
 
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === 'preferences'}
-                  onClick={() => setActiveTab('preferences')}
-                  className={`apple-nav-item ${activeTab === 'preferences' ? 'active' : ''}`}
+                <Link
+                  href="/preferences"
+                  className="apple-nav-item"
                 >
                   <div className="apple-nav-left">
                     <Ruler className="apple-nav-icon text-indigo-500" />
@@ -382,12 +371,11 @@ function ProfileContent() {
                     <span className="apple-nav-badge">{preferences.waistSize}&quot; / {preferences.topSize}</span>
                     <ChevronRight className="apple-nav-chevron" />
                   </div>
-                </button>
+                </Link>
 
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === 'addresses'}
+                <Link
+                  href="/profile?tab=addresses"
+                  scroll={false}
                   onClick={() => setActiveTab('addresses')}
                   className={`apple-nav-item ${activeTab === 'addresses' ? 'active' : ''}`}
                 >
@@ -399,12 +387,11 @@ function ProfileContent() {
                     <span className="apple-nav-badge">{addresses.length}</span>
                     <ChevronRight className="apple-nav-chevron" />
                   </div>
-                </button>
+                </Link>
 
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === 'favorites'}
+                <Link
+                  href="/profile?tab=favorites"
+                  scroll={false}
                   onClick={() => setActiveTab('favorites')}
                   className={`apple-nav-item ${activeTab === 'favorites' ? 'active' : ''}`}
                 >
@@ -416,7 +403,7 @@ function ProfileContent() {
                     <span className="apple-nav-badge">{favorites.length}</span>
                     <ChevronRight className="apple-nav-chevron" />
                   </div>
-                </button>
+                </Link>
               </div>
 
               {/* Sidebar Actions */}
@@ -443,11 +430,42 @@ function ProfileContent() {
             {/* Tab 1: Personal Information */}
             {activeTab === 'info' && (
               <div className="apple-detail-card">
-                <div className="apple-card-header">
-                  <h1 className="apple-card-title">Personal Information</h1>
-                  <p className="apple-card-subtitle">
-                    Manage your verified identity, display credentials, and primary dispatch contact details.
-                  </p>
+                <div className="apple-card-header apple-card-header-split">
+                  <div className="min-w-0 flex-1">
+                    <h1 className="apple-card-title">Personal Information</h1>
+                    <p className="apple-card-subtitle">
+                      Manage your verified identity, display credentials, and primary dispatch contact details.
+                    </p>
+                  </div>
+
+                  {!isEditingInfo ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingInfo(true)}
+                      className="apple-edit-btn"
+                      aria-label="Edit personal information"
+                    >
+                      <Pencil className="w-3.5 h-3.5 mr-1.5 text-zinc-600" />
+                      <span>Edit</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingInfo(false)
+                        if (user) {
+                          setName(user.name)
+                          setEmail(user.email)
+                          if (user.phone) setPhone(user.phone)
+                        }
+                      }}
+                      className="apple-edit-btn text-zinc-600 hover:text-black"
+                      aria-label="Cancel editing"
+                    >
+                      <X className="w-3.5 h-3.5 mr-1.5" />
+                      <span>Cancel</span>
+                    </button>
+                  )}
                 </div>
 
                 {infoSuccess && (
@@ -457,92 +475,163 @@ function ProfileContent() {
                   </div>
                 )}
 
-                <form onSubmit={handleUpdateInfo} className="space-y-6">
-                  {/* Horizontal 2-Column Form Row */}
-                  <div className="apple-form-grid apple-form-grid-2col">
-                    <div className="apple-input-wrapper">
-                      <label className="apple-input-label">Full Name</label>
-                      <div className="apple-input-shell">
-                        <input
-                          type="text"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          required
-                          placeholder="Your full name"
-                          className="apple-input"
-                        />
-                        <User className="apple-input-icon" />
-                      </div>
-                    </div>
-
-                    <div className="apple-input-wrapper">
-                      <label className="apple-input-label">Contact Phone</label>
-                      <div className="apple-input-shell">
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="+91 98201 44521"
-                          className="apple-input"
-                        />
-                        <Phone className="apple-input-icon" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Horizontal 2-Column Form Row for Email & Account Tier */}
-                  <div className="apple-form-grid apple-form-grid-2col">
-                    <div className="apple-input-wrapper">
-                      <label className="apple-input-label">Email Address</label>
-                      <div className="apple-input-shell">
-                        <input
-                          type="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                          placeholder="name@example.com"
-                          className="apple-input"
-                        />
-                        <Mail className="apple-input-icon" />
-                      </div>
-                    </div>
-
-                    <div className="apple-input-wrapper">
-                      <label className="apple-input-label">Account Membership</label>
-                      <div className="apple-grouped-box !py-2.5 !px-3.5 !rounded-[13px] border-[#e4e4e7] bg-[#fbfbfa]">
-                        <div className="flex items-center gap-2">
-                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                          <span className="font-ui text-xs font-semibold text-zinc-900">
-                            Verified Member
-                          </span>
+                {!isEditingInfo ? (
+                  /* ── Clean Display View Mode ── */
+                  <div className="apple-info-display-container">
+                    <div className="apple-info-display-grid">
+                      <div className="apple-info-display-item">
+                        <span className="apple-info-label">Full Name</span>
+                        <div className="apple-info-value-row">
+                          <User className="apple-info-icon" />
+                          <span className="apple-info-value">{name}</span>
                         </div>
-                        <span className="text-[11px] font-mono text-zinc-500">ID #TG-2026</span>
+                      </div>
+
+                      <div className="apple-info-display-item">
+                        <span className="apple-info-label">Contact Phone</span>
+                        <div className="apple-info-value-row">
+                          <Phone className="apple-info-icon" />
+                          <span className="apple-info-value">{phone || '+91 98201 44521'}</span>
+                        </div>
+                      </div>
+
+                      <div className="apple-info-display-item">
+                        <span className="apple-info-label">Email Address</span>
+                        <div className="apple-info-value-row">
+                          <Mail className="apple-info-icon" />
+                          <span className="apple-info-value">{email}</span>
+                        </div>
+                      </div>
+
+                      <div className="apple-info-display-item">
+                        <span className="apple-info-label">Account Membership</span>
+                        <div className="apple-info-value-row">
+                          <ShieldCheck className="apple-info-icon text-emerald-600" />
+                          <span className="apple-info-value">Verified Member</span>
+                          <span className="text-[11px] font-mono text-zinc-500 ml-auto">ID #TG-2026</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Apple Inset Grouped Callout */}
-                  <div className="apple-grouped-box">
-                    <div className="space-y-0.5">
-                      <p className="font-ui text-xs font-semibold text-zinc-900">
-                        Dispatch Notifications &amp; Order Alerts
-                      </p>
-                      <p className="font-ui text-[12px] text-zinc-500">
-                        Your phone number receives live courier tracking updates via WhatsApp and SMS upon shipment.
-                      </p>
+                    {/* Apple Inset Grouped Callout */}
+                    <div className="apple-grouped-box mt-3">
+                      <div className="space-y-0.5">
+                        <p className="font-ui text-xs font-semibold text-zinc-900">
+                          Dispatch Notifications &amp; Order Alerts
+                        </p>
+                        <p className="font-ui text-[12px] text-zinc-500">
+                          Your phone number receives live courier tracking updates via WhatsApp and SMS upon shipment.
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Active
+                      </span>
                     </div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Active
-                    </span>
                   </div>
+                ) : (
+                  /* ── Interactive Editable Form ── */
+                  <form onSubmit={handleUpdateInfo} className="space-y-4">
+                    {/* Horizontal 2-Column Form Row */}
+                    <div className="apple-form-grid apple-form-grid-2col">
+                      <div className="apple-input-wrapper">
+                        <label className="apple-input-label">Full Name</label>
+                        <div className="apple-input-shell">
+                          <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                            placeholder="Your full name"
+                            className="apple-input"
+                            autoFocus
+                          />
+                          <User className="apple-input-icon" />
+                        </div>
+                      </div>
 
-                  <div className="flex items-center justify-end pt-2">
-                    <button type="submit" className="apple-btn-primary">
-                      <Check className="w-4 h-4" />
-                      <span>Save Changes</span>
-                    </button>
-                  </div>
-                </form>
+                      <div className="apple-input-wrapper">
+                        <label className="apple-input-label">Contact Phone</label>
+                        <div className="apple-input-shell">
+                          <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="+91 98201 44521"
+                            className="apple-input"
+                          />
+                          <Phone className="apple-input-icon" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Horizontal 2-Column Form Row for Email & Account Tier */}
+                    <div className="apple-form-grid apple-form-grid-2col">
+                      <div className="apple-input-wrapper">
+                        <label className="apple-input-label">Email Address</label>
+                        <div className="apple-input-shell">
+                          <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            placeholder="name@example.com"
+                            className="apple-input"
+                          />
+                          <Mail className="apple-input-icon" />
+                        </div>
+                      </div>
+
+                      <div className="apple-input-wrapper">
+                        <label className="apple-input-label">Account Membership</label>
+                        <div className="apple-grouped-box !py-2.5 !px-3.5 !rounded-[13px] border-[#e4e4e7] bg-[#fbfbfa]">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                            <span className="font-ui text-xs font-semibold text-zinc-900">
+                              Verified Member
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-mono text-zinc-500">ID #TG-2026</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Apple Inset Grouped Callout */}
+                    <div className="apple-grouped-box">
+                      <div className="space-y-0.5">
+                        <p className="font-ui text-xs font-semibold text-zinc-900">
+                          Dispatch Notifications &amp; Order Alerts
+                        </p>
+                        <p className="font-ui text-[12px] text-zinc-500">
+                          Your phone number receives live courier tracking updates via WhatsApp and SMS upon shipment.
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Active
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditingInfo(false)
+                          if (user) {
+                            setName(user.name)
+                            setEmail(user.email)
+                            if (user.phone) setPhone(user.phone)
+                          }
+                        }}
+                        className="apple-btn-secondary !w-auto !h-10 !px-5 !text-xs font-semibold"
+                      >
+                        Cancel
+                      </button>
+                      <button type="submit" className="apple-btn-primary !w-auto !h-10 !px-5 !text-xs font-semibold">
+                        <Check className="w-4 h-4 mr-1.5" />
+                        <span>Save Changes</span>
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
             )}
 
