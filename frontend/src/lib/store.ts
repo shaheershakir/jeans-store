@@ -13,6 +13,7 @@ if (typeof window !== 'undefined') {
     ['infit-auth', 'teesgarage-auth'],
     ['infit-favorites', 'teesgarage-favorites'],
     ['infit-orders', 'teesgarage-orders'],
+    ['infit-onboarding', 'teesgarage-onboarding'],
   ]
   for (const [oldK, newK] of migrations) {
     try {
@@ -399,4 +400,40 @@ export const usePreferencesStore = create<PreferencesState>()(
     }
   )
 )
+
+export interface OnboardingState {
+  hasCompletedOnboarding: boolean
+  hasSkippedOnboarding: boolean
+  isOpen: boolean
+  step: 1 | 2
+  openOnboarding: (step?: 1 | 2) => void
+  closeOnboarding: () => void
+  completeOnboarding: () => void
+  skipOnboarding: () => void
+  setStep: (step: 1 | 2) => void
+  resetOnboarding: () => void
+}
+
+export const useOnboardingStore = create<OnboardingState>()(
+  persist(
+    (set) => ({
+      hasCompletedOnboarding: false,
+      hasSkippedOnboarding: false,
+      isOpen: false,
+      step: 1,
+      openOnboarding: (step = 1) => set({ isOpen: true, step }),
+      closeOnboarding: () => set({ isOpen: false }),
+      completeOnboarding: () => set({ hasCompletedOnboarding: true, isOpen: false }),
+      skipOnboarding: () => set({ hasSkippedOnboarding: true, isOpen: false }),
+      setStep: (step) => set({ step }),
+      resetOnboarding: () =>
+        set({ hasCompletedOnboarding: false, hasSkippedOnboarding: false, step: 1 })
+    }),
+    {
+      name: 'teesgarage-onboarding',
+      skipHydration: true
+    }
+  )
+)
+
 

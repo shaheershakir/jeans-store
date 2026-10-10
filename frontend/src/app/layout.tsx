@@ -5,6 +5,7 @@ import Footer from '@/components/Footer'
 import CartDrawer from '@/components/CartDrawer'
 import SearchOverlay from '@/components/SearchOverlay'
 import Toast from '@/components/Toast'
+import OnboardingModal from '@/components/OnboardingModal'
 import { getNavigationItems } from '@/lib/navigation'
 import './globals.css'
 
@@ -62,6 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <CartDrawer />
         <SearchOverlay />
         <Toast />
+        <OnboardingModal />
         <noscript>
           <Link href="/">TEESGARAGE</Link>
         </noscript>
