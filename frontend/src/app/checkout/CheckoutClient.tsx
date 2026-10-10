@@ -167,6 +167,26 @@ export default function CheckoutClient() {
       console.warn('[INFIT] Order persistence note:', err)
     })
 
+    // Save to local storage for user order history
+    try {
+      const existingOrdersStr = typeof window !== 'undefined' ? localStorage.getItem('infit-orders') : null
+      const existingOrders = existingOrdersStr ? JSON.parse(existingOrdersStr) : []
+      const newStoredOrder = {
+        orderId,
+        date: 'Today, Just now',
+        status: 'Confirmed',
+        expectedDelivery: 'In 2–4 business days',
+        items: items.map((i) => ({ ...i })),
+        subtotal,
+        shipping,
+        total,
+        shippingAddress: `${form.address.trim()}, ${form.city.trim()}, ${form.state.trim()} · ${form.pincode.trim()}`
+      }
+      localStorage.setItem('infit-orders', JSON.stringify([newStoredOrder, ...existingOrders]))
+    } catch (e) {
+      console.warn('Failed to store order locally', e)
+    }
+
     setSubmittedOrder({
       orderId,
       summary: messageLines,

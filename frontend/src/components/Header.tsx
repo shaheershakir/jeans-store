@@ -12,12 +12,17 @@ import {
   Store,
   Gift,
   User,
+  ChevronDown,
+  Package,
+  MessageCircle,
+  LogOut,
   Sparkles,
   ArrowRight
 } from 'lucide-react'
 import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore } from '@/lib/store'
 import { DEFAULT_NAV_LINKS, type NavigationItem, type Fit, PRODUCTS } from '@/lib/constants'
 import { searchProducts } from '@/lib/utils'
+import UserOrdersModal from '@/components/UserOrdersModal'
 
 interface HeaderProps {
   initialNavItems?: NavigationItem[]
@@ -43,7 +48,10 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false)
   const [localQuery, setLocalQuery] = useState(searchQuery || '')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [ordersModalOpen, setOrdersModalOpen] = useState(false)
   const searchWrapRef = useRef<HTMLDivElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
 
   const [navLinks, setNavLinks] = useState<NavigationItem[]>(
     initialNavItems && initialNavItems.length > 0 ? initialNavItems : DEFAULT_NAV_LINKS
@@ -84,10 +92,13 @@ export default function Header({ initialNavItems }: HeaderProps) {
     document.addEventListener('visibilitychange', handleVisibility)
     const interval = setInterval(syncNav, 2000)
 
-    // Click outside search dropdown
+    // Click outside search dropdown & user menu popover
     const handleClickOutside = (e: MouseEvent) => {
       if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
         setIsSearchFocused(false)
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -313,33 +324,109 @@ export default function Header({ initialNavItems }: HeaderProps) {
               )}
             </div>
 
-            {/* Right Action Utilities (Sign In, Your Store, Gift Registry, Bag) */}
+            {/* Right Action Utilities (Sign In / User Popover & Bag) */}
             <div className="macy-actions-group">
-              {/* Account Sign In Section */}
-              <div className="macy-account-box">
-                <div className="macy-account-meta">
-                  <span className="macy-account-caption">See more of what you love</span>
-                  {mounted && isAuthenticated && user ? (
-                    <button
-                      type="button"
-                      className="macy-signin-link authenticated"
-                      title={`Signed in as ${user.name}. Click to sign out.`}
-                      onClick={() => {
-                        if (window.confirm(`Sign out from ${user.name}?`)) {
+              {/* Account Sign In / User Control Section */}
+              {mounted && isAuthenticated && user ? (
+                <div className="apple-user-menu-wrap" ref={userMenuRef}>
+                  <button
+                    type="button"
+                    className={`apple-header-user-btn ${userMenuOpen ? 'active' : ''}`}
+                    onClick={() => setUserMenuOpen((v) => !v)}
+                    aria-expanded={userMenuOpen}
+                    aria-label={`Account menu for ${user.name}`}
+                  >
+                    <div className="apple-user-avatar-circle">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="apple-user-name-label">{user.name.split(' ')[0]}</span>
+                    <ChevronDown className={`h-3 w-3 apple-chevron ${userMenuOpen ? 'open' : ''}`} />
+                  </button>
+
+                  {/* User Controls Dropdown Popover */}
+                  {userMenuOpen && (
+                    <div className="apple-user-popover">
+                      <div className="apple-popover-profile">
+                        <div className="apple-popover-avatar">{user.name.charAt(0).toUpperCase()}</div>
+                        <div className="apple-popover-user-info">
+                          <h4 className="apple-popover-name">{user.name}</h4>
+                          <p className="apple-popover-email">{user.email}</p>
+                          <span className="apple-popover-badge">INFIT STUDIO MEMBER</span>
+                        </div>
+                      </div>
+
+                      <div className="apple-popover-divider" />
+
+                      <div className="apple-popover-actions">
+                        <button
+                          type="button"
+                          className="apple-popover-item"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            setOrdersModalOpen(true)
+                          }}
+                        >
+                          <Package className="h-4 w-4 mr-2.5 text-zinc-700" />
+                          <span>My Orders &amp; Tracking</span>
+                          <span className="apple-popover-pill">Active</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="apple-popover-item"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            openOverlay('cart')
+                          }}
+                        >
+                          <ShoppingBag className="h-4 w-4 mr-2.5 text-zinc-700" />
+                          <span>Shopping Bag</span>
+                          {count > 0 && <span className="apple-popover-pill">{count}</span>}
+                        </button>
+
+                        <Link
+                          href="/shop"
+                          className="apple-popover-item"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <Sparkles className="h-4 w-4 mr-2.5 text-amber-600" />
+                          <span>Fit &amp; Size Preferences</span>
+                        </Link>
+
+                        <a
+                          href="https://wa.me/919876543210?text=Hi%20INFIT%20Studio%2C%20I%20have%20an%20inquiry%20regarding%20my%20account"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="apple-popover-item"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2.5 text-emerald-600" />
+                          <span>Concierge WhatsApp</span>
+                        </a>
+                      </div>
+
+                      <div className="apple-popover-divider" />
+
+                      <button
+                        type="button"
+                        className="apple-popover-item logout"
+                        onClick={() => {
+                          setUserMenuOpen(false)
                           logout()
-                        }
-                      }}
-                    >
-                      <User className="h-3.5 w-3.5 mr-1" />
-                      <span>{user.name.split(' ')[0]}</span>
-                    </button>
-                  ) : (
-                    <Link href="/login" className="macy-signin-pill">
-                      Sign In
-                    </Link>
+                        }}
+                      >
+                        <LogOut className="h-4 w-4 mr-2.5 text-red-600" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
                   )}
                 </div>
-              </div>
+              ) : (
+                <Link href="/login" className="apple-header-account-btn" aria-label="Sign in to your account">
+                  <User className="h-3.5 w-3.5 mr-1.5" />
+                  <span>Sign In</span>
+                </Link>
+              )}
 
 
         
@@ -465,6 +552,13 @@ export default function Header({ initialNavItems }: HeaderProps) {
             </div>
           </div>
         )}
+
+        {/* User Orders & Tracking Modal */}
+        <UserOrdersModal
+          isOpen={ordersModalOpen}
+          onClose={() => setOrdersModalOpen(false)}
+          userEmail={user?.email}
+        />
       </header>
     </>
   )
