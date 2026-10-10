@@ -115,16 +115,12 @@ function ProfileContent() {
 
   useEffect(() => {
     const tabParam = searchParams.get('tab')
-    if (tabParam === 'preferences') {
-      router.replace('/preferences')
-      return
-    }
-    if (tabParam && ['info', 'security', 'addresses', 'favorites'].includes(tabParam)) {
+    if (tabParam && ['info', 'security', 'preferences', 'addresses', 'favorites'].includes(tabParam)) {
       setActiveTab(tabParam as any)
     } else if (!tabParam) {
       setActiveTab('info')
     }
-  }, [searchParams, router])
+  }, [searchParams])
 
   const handleUpdateInfo = (e: React.FormEvent) => {
     e.preventDefault()
@@ -278,8 +274,10 @@ function ProfileContent() {
             <span>Security</span>
           </Link>
           <Link
-            href="/preferences"
-            className="apple-mobile-pill"
+            href="/profile?tab=preferences"
+            scroll={false}
+            onClick={() => setActiveTab('preferences')}
+            className={`apple-mobile-pill ${activeTab === 'preferences' ? 'active' : ''}`}
           >
             <Ruler className="w-3.5 h-3.5 text-indigo-500" />
             <span>Fit &amp; Size</span>
@@ -360,8 +358,10 @@ function ProfileContent() {
                 </Link>
 
                 <Link
-                  href="/preferences"
-                  className="apple-nav-item"
+                  href="/profile?tab=preferences"
+                  scroll={false}
+                  onClick={() => setActiveTab('preferences')}
+                  className={`apple-nav-item ${activeTab === 'preferences' ? 'active' : ''}`}
                 >
                   <div className="apple-nav-left">
                     <Ruler className="apple-nav-icon text-indigo-500" />

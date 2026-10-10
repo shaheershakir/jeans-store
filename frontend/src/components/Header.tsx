@@ -411,7 +411,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                         </button>
 
                         <Link
-                          href="/preferences"
+                          href="/profile?tab=preferences"
                           className="apple-popover-item"
                           onClick={() => setUserMenuOpen(false)}
                         >
