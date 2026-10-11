@@ -159,6 +159,15 @@ const badAuthRes = await request('/api/auth/me', {
 })
 record('GET /api/auth/me with invalid token → 401', badAuthRes.status === 401, `status ${badAuthRes.status}`)
 
+// Google OAuth endpoint check
+const googleUrlRes = await request('/api/auth/google/url')
+const googleUrlBody = (await googleUrlRes.json()) as { url?: string; clientId?: string }
+record(
+  'GET /api/auth/google/url returns OAuth URL & Client ID',
+  googleUrlRes.status === 200 && Boolean(googleUrlBody.url?.includes('accounts.google.com')) && Boolean(googleUrlBody.clientId),
+  `status ${googleUrlRes.status}, clientId ${googleUrlBody.clientId?.slice(0, 15)}...`
+)
+
 // Navigation Smoke Checks
 const navRes = await request('/api/navigation')
 const navBody = (await navRes.json()) as { count: number; navigation: Array<{ label: string }> }

@@ -16,7 +16,7 @@ import {
   ShieldCheck,
   Check
 } from 'lucide-react'
-import { signUp, signIn } from '@/lib/auth'
+import { signUp, signIn, googleAuth, getGoogleOAuthUrl } from '@/lib/auth'
 import { useAuthStore, useUIStore, useOnboardingStore } from '@/lib/store'
 
 function RegisterForm() {
@@ -113,45 +113,84 @@ function RegisterForm() {
     }
   }
 
-  const handleGoogleSignUp = async () => {
+  // Initialize Google Identity Services (One Tap & Credential API) if available
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com'
+    if (!clientId) return
+
+    const handleCredentialResponse = async (response: any) => {
+      if (!response?.credential) return
+      setLoading(true)
+      try {
+        isSubmittingRef.current = true
+        const res = await googleAuth({ credential: response.credential })
+        setAuth(res.user, res.token)
+        showToast(`Signed up with Google as ${res.user.name}`)
+
+        if (res.isNewUser) {
+          const onboarding = useOnboardingStore.getState()
+          onboarding.triggerAfterRegister()
+
+          const redirectParam = searchParams.get('redirect')
+          const target = redirectParam && redirectParam !== '/'
+            ? `/onboarding?redirect=${encodeURIComponent(redirectParam)}`
+            : '/onboarding'
+          router.push(target)
+          return
+        }
+
+        const redirect = searchParams.get('redirect') || '/'
+        router.push(redirect)
+      } catch (err: any) {
+        isSubmittingRef.current = false
+        setError(err?.message || 'Google authentication failed.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    script.onload = () => {
+      try {
+        // @ts-ignore
+        if (window.google?.accounts?.id) {
+          // @ts-ignore
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: handleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true
+          })
+        }
+      } catch {
+        // Safe fallback
+      }
+    }
+    document.body.appendChild(script)
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script)
+      }
+    }
+  }, [router, searchParams, setAuth, showToast])
+
+  const handleGoogleSignUp = () => {
     setError(null)
     setLoading(true)
     try {
       isSubmittingRef.current = true
-      let isNew = false
-      const res = await signUp({
-        name: 'Arjun Mehta',
-        email: 'member@teesgarage.in',
-        password: 'GoogleUserPassword2026!'
-      }).catch(async () => {
-        // If already exists, sign in
-        return await signIn({
-          email: 'member@teesgarage.in',
-          password: 'GoogleUserPassword2026!'
-        })
-      })
-
-      if (res.user.name === 'Arjun Mehta') {
-        isNew = true
-      }
-
-      setAuth(res.user, res.token)
-      showToast(`Signed up with Google as ${res.user.name}`)
-
-      const onboarding = useOnboardingStore.getState()
-      onboarding.triggerAfterRegister()
-
-      const redirectParam = searchParams.get('redirect')
-      const target = redirectParam && redirectParam !== '/'
-        ? `/onboarding?redirect=${encodeURIComponent(redirectParam)}`
-        : '/onboarding'
-
-      router.push(target)
+      const redirectParam = searchParams.get('redirect') || '/'
+      const oauthUrl = getGoogleOAuthUrl(undefined, redirectParam)
+      window.location.href = oauthUrl
     } catch (err: any) {
       isSubmittingRef.current = false
-      setError(err?.message || 'Failed to authenticate with Google.')
-    } finally {
       setLoading(false)
+      setError(err?.message || 'Failed to initiate Google sign up.')
     }
   }
 

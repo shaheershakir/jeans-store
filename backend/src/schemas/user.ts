@@ -15,6 +15,18 @@ export const verifyTokenSchema = z.object({
   token: z.string().min(1, 'Token is required')
 })
 
+export const googleAuthSchema = z
+  .object({
+    credential: z.string().optional(),
+    code: z.string().optional(),
+    redirectUri: z.string().optional()
+  })
+  .refine((data) => Boolean(data.credential || data.code), {
+    message: 'Either Google ID Token credential or authorization code is required'
+  })
+
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>
+
 export interface UserProfile {
   id: number
   uid: string

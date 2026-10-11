@@ -1,8 +1,21 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
-import { registerSchema, loginSchema, verifyTokenSchema, type UserProfile } from '../schemas/user.js'
+import {
+  registerSchema,
+  loginSchema,
+  verifyTokenSchema,
+  googleAuthSchema,
+  type UserProfile
+} from '../schemas/user.js'
 import { userStore } from '../store/userStore.js'
 import { createCloudIamToken, verifyCloudIamToken, verifyPassword } from '../services/cloudIam.js'
+import {
+  getGoogleAuthUrl,
+  getGoogleClientId,
+  verifyGoogleIdToken,
+  exchangeGoogleAuthCode,
+  type GoogleUserPayload
+} from '../services/googleAuth.js'
 import type { DbUser } from '../db/schema.js'
 
 function formatProfile(user: DbUser): UserProfile {
@@ -160,5 +173,79 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       valid: true,
       claims
     })
+  })
+
+  // 5. Google OAuth Authorization URL (/api/auth/google/url)
+  app.get('/api/auth/google/url', async (request: FastifyRequest, reply: FastifyReply) => {
+    const query = request.query as { redirect_uri?: string; state?: string }
+    const defaultRedirect = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/callback`
+    const redirectUri = query.redirect_uri || defaultRedirect
+    const url = getGoogleAuthUrl(redirectUri, query.state)
+
+    return reply.send({
+      url,
+      clientId: getGoogleClientId(),
+      redirectUri
+    })
+  })
+
+  // 6. Google OAuth Sign-in / Sign-up (/api/auth/google)
+  app.post('/api/auth/google', async (request: FastifyRequest, reply: FastifyReply) => {
+    const parsed = googleAuthSchema.safeParse(request.body)
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: 'Invalid Google authentication parameters',
+        details: z.treeifyError(parsed.error)
+      })
+    }
+
+    const { credential, code, redirectUri } = parsed.data
+
+    try {
+      let googleUser: GoogleUserPayload
+      if (credential) {
+        googleUser = await verifyGoogleIdToken(credential)
+      } else if (code) {
+        const defaultRedirect = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/callback`
+        const targetRedirect = redirectUri || defaultRedirect
+        googleUser = await exchangeGoogleAuthCode(code, targetRedirect)
+      } else {
+        return reply.status(400).send({ error: 'Missing credential or authorization code' })
+      }
+
+      let user = await userStore.findByEmail(googleUser.email)
+      let isNewUser = false
+
+      if (!user) {
+        user = await userStore.create({
+          uid: `google_${googleUser.sub}`,
+          email: googleUser.email,
+          name: googleUser.name || googleUser.email.split('@')[0],
+          provider: 'google'
+        })
+        isNewUser = true
+        app.log.info({ email: user.email, uid: user.uid }, 'New user account registered via Google OAuth 2.0')
+      } else {
+        app.log.info({ email: user.email, uid: user.uid }, 'Existing user authenticated via Google OAuth 2.0')
+      }
+
+      const { token, expiresIn } = createCloudIamToken({
+        uid: user.uid,
+        email: user.email,
+        name: user.name
+      })
+
+      return reply.send({
+        user: formatProfile(user),
+        token,
+        expiresIn,
+        isNewUser
+      })
+    } catch (err: any) {
+      app.log.error({ err }, 'Google OAuth authentication failed')
+      return reply.status(400).send({
+        error: err.message || 'Failed to authenticate with Google'
+      })
+    }
   })
 }
