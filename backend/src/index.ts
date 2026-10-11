@@ -26,7 +26,7 @@ void seedIfEmpty().catch((err) => {
 app
   .listen({ port: PORT, host: HOST })
   .then((address) => {
-    app.log.info(`TEESGARAGE backend listening at ${address} (CORS origin: ${CORS_ORIGIN})`)
+    console.log(`✓ TEESGARAGE backend listening at ${address}`)
   })
   .catch((err) => {
     app.log.error(err)

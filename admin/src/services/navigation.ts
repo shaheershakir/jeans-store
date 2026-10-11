@@ -31,7 +31,10 @@ export async function saveNavigationList(items: NavigationItem[]): Promise<void>
     throw err
   }
 
-  // Trigger storefront revalidation if reachable
+  await triggerStorefrontRevalidate()
+}
+
+async function triggerStorefrontRevalidate(): Promise<void> {
   try {
     const storefrontUrl =
       process.env.NEXT_PUBLIC_STOREFRONT_URL ||
@@ -54,6 +57,7 @@ export async function resetBackendNavigation(): Promise<NavigationItem[]> {
     const res = await apiFetch<{ navigation: NavigationItem[] }>('/api/navigation/reset', {
       method: 'POST'
     })
+    await triggerStorefrontRevalidate()
     if (res && Array.isArray(res.navigation)) {
       useAdminStore.getState().setNavigation(res.navigation)
       return res.navigation

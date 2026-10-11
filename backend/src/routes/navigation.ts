@@ -18,11 +18,12 @@ function verifyAdminAuth(request: FastifyRequest, reply: FastifyReply): boolean 
 export async function navigationRoutes(app: FastifyInstance): Promise<void> {
   // Public: List navigation items for storefront (or all items for admin with ?all=true)
   app.get('/api/navigation', async (request, reply) => {
-    const { all } = (request.query || {}) as { all?: string }
+    const { all, fresh } = (request.query || {}) as { all?: string; fresh?: string }
     const includeInactive = all === 'true' || all === '1'
+    const forceRefresh = fresh === 'true' || fresh === '1'
 
     try {
-      const items = await navigationStore.list(includeInactive)
+      const items = await navigationStore.list(includeInactive, forceRefresh)
       return reply.send({ count: items.length, navigation: items })
     } catch (err) {
       app.log.error({ err }, 'Failed to fetch navigation items')

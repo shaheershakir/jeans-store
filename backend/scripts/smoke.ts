@@ -1,3 +1,5 @@
+import 'dotenv/config'
+
 /**
  * Live smoke test against a running backend (default http://localhost:4000).
  * Run: npm run smoke   (start the server first: npm run dev)

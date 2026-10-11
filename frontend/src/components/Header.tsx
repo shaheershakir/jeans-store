@@ -32,8 +32,6 @@ interface HeaderProps {
   initialNavItems?: NavigationItem[]
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-
 export default function Header({ initialNavItems }: HeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -74,30 +72,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
 
-    // Client sync for live updates from admin/backend
-    const syncNav = () => {
-      const backendEndpoint =
-        typeof window !== 'undefined' && window.location.origin.includes(':3000')
-          ? window.location.origin.replace(':3000', ':4000')
-          : BACKEND_URL
-      fetch(`${backendEndpoint}/api/navigation?t=${Date.now()}`, { cache: 'no-store' })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data && Array.isArray(data.navigation) && data.navigation.length > 0) {
-            setNavLinks(data.navigation)
-          }
-        })
-        .catch(() => {})
-    }
-
-    syncNav()
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') syncNav()
-    }
-    window.addEventListener('focus', syncNav)
-    document.addEventListener('visibilitychange', handleVisibility)
-    const interval = setInterval(syncNav, 2000)
-
     // Click outside search dropdown & user menu popover
     const handleClickOutside = (e: MouseEvent) => {
       if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
@@ -111,10 +85,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
     return () => {
       window.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('focus', syncNav)
-      document.removeEventListener('visibilitychange', handleVisibility)
       document.removeEventListener('mousedown', handleClickOutside)
-      clearInterval(interval)
     }
   }, [])
 

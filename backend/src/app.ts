@@ -15,11 +15,12 @@ export interface BuildAppOptions {
 
 export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   const isProd = process.env.NODE_ENV === 'production'
+  const logLevel = process.env.LOG_LEVEL || 'warn'
 
   const defaultLogger = isProd
-    ? { level: 'info' }
+    ? { level: logLevel }
     : {
-        level: 'info',
+        level: logLevel,
         transport: {
           target: 'pino-pretty',
           options: { colorize: true }

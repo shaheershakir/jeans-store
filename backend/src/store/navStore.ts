@@ -82,28 +82,47 @@ function toNavigationItem(row: DbNavigationItem): NavigationItem {
 
 class NavigationStore {
   private memoryItems: NavigationItem[] = DEFAULT_NAV_ITEMS.map((item) => ({ ...item }))
+  private cachedDbItems: NavigationItem[] | null = null
+  private lastFetchedAt = 0
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes TTL fallback
 
-  async list(includeInactive = false): Promise<NavigationItem[]> {
-    if (isDatabaseConfigured() && db) {
-      const rows = await db.select().from(navTable).orderBy(asc(navTable.order))
-      const items = rows.map(toNavigationItem)
-      if (items.length > 0) {
-        return includeInactive ? items : items.filter((item) => item.isActive)
+  /**
+   * Retrieves navigation items from cache or database.
+   * If cache is fresh, returns instantly without performing any DB query.
+   */
+  async list(includeInactive = false, forceRefresh = false): Promise<NavigationItem[]> {
+    const now = Date.now()
+    const isCacheExpired = now - this.lastFetchedAt > this.CACHE_TTL_MS
+
+    if (isDatabaseConfigured() && db && (!this.cachedDbItems || isCacheExpired || forceRefresh)) {
+      try {
+        const rows = await db.select().from(navTable).orderBy(asc(navTable.order))
+        if (rows.length > 0) {
+          this.cachedDbItems = rows.map(toNavigationItem)
+          this.lastFetchedAt = now
+        } else {
+          // If the DB table is empty on first boot, initialize with defaults
+          const seeded = await this.bulkSave(DEFAULT_NAV_ITEMS)
+          return includeInactive ? seeded : seeded.filter((item) => item.isActive)
+        }
+      } catch (err) {
+        console.error('[NavigationStore] Failed to query database, serving fallback cache/memory items:', err)
       }
     }
 
-    const items = [...this.memoryItems].sort((a, b) => a.order - b.order)
-    return includeInactive ? items : items.filter((item) => item.isActive)
+    const items = this.cachedDbItems ?? this.memoryItems
+    const sorted = [...items].sort((a, b) => a.order - b.order)
+    return includeInactive ? sorted : sorted.filter((item) => item.isActive)
   }
 
   async getById(id: string): Promise<NavigationItem | undefined> {
-    if (isDatabaseConfigured() && db) {
-      const [row] = await db.select().from(navTable).where(eq(navTable.id, id))
-      return row ? toNavigationItem(row) : undefined
-    }
-    return this.memoryItems.find((item) => item.id === id)
+    const items = await this.list(true)
+    return items.find((item) => item.id === id)
   }
 
+  /**
+   * Saves updated navigation items to the database and refreshes the cache immediately.
+   */
   async bulkSave(items: NavigationItem[]): Promise<NavigationItem[]> {
     // Re-index orders cleanly
     const indexed = items.map((item, index) => ({
@@ -131,12 +150,20 @@ class NavigationStore {
       }
     }
 
-    this.memoryItems = indexed.map((item) => ({ ...item }))
-    return this.memoryItems
+    const cloned = indexed.map((item) => ({ ...item }))
+    this.cachedDbItems = cloned
+    this.memoryItems = cloned
+    this.lastFetchedAt = Date.now()
+    return this.cachedDbItems
   }
 
   async resetToDefaults(): Promise<NavigationItem[]> {
     return this.bulkSave(DEFAULT_NAV_ITEMS)
+  }
+
+  invalidateCache(): void {
+    this.cachedDbItems = null
+    this.lastFetchedAt = 0
   }
 }
 
