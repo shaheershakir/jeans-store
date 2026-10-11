@@ -213,12 +213,12 @@ function RegisterForm() {
             <span>Storefront</span>
           </Link>
 
-          <Link href="/" aria-label="INFIT Home">
+          <Link href="/" aria-label="TEESGARAGE Home">
             <Image
-              src="/infit_logo.svg"
-              alt="INFIT"
-              width={105}
-              height={26}
+              src="/teesgarage_logo.svg"
+              alt="TEESGARAGE"
+              width={140}
+              height={40}
               priority
               className="apple-auth-brand-logo"
             />
@@ -227,9 +227,9 @@ function RegisterForm() {
 
         {/* Title Group */}
         <div className="apple-auth-title-group">
-          <h1 className="apple-auth-title">Create your INFIT account</h1>
+          <h1 className="apple-auth-title">Create your TEESGARAGE account</h1>
           <p className="apple-auth-subtitle">
-            Sign up for personalized denim fits, fast express checkout, and tracked dispatch.
+            Sign up for personalized streetwear fits, fast express checkout, and tracked dispatch.
           </p>
         </div>
 
@@ -438,7 +438,7 @@ function RegisterForm() {
 
         {/* Existing account prompt */}
         <div className="mt-5 text-center font-ui text-xs text-zinc-500">
-          Already have an INFIT account?{' '}
+          Already have a TEESGARAGE account?{' '}
           <Link
             href={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`}
             className="text-zinc-900 font-semibold hover:underline"
@@ -449,7 +449,7 @@ function RegisterForm() {
 
         {/* Footer Guarantee */}
         <p className="apple-auth-footer-note">
-          By registering, you agree to INFIT&apos;s Terms of Service and Privacy Policy.
+          By registering, you agree to TEESGARAGE&apos;s Terms of Service and Privacy Policy.
         </p>
       </div>
     </div>

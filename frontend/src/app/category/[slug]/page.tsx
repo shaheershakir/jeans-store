@@ -5,21 +5,16 @@ interface Props {
 }
 
 const SLUGS = [
-  'jeans',
-  'denim',
-  'tops',
-  't-shirts',
-  'shirts',
-  'hoodies',
-  'hats',
-  'accessories',
   'all',
+  'stripes',
+  'fullsleeve',
+  'drsleeve',
+  'printed-tees',
+  'ringer-tees',
+  'henley',
+  'trackpants',
+  'sweatpants',
   'sale',
-  'straight',
-  'baggy',
-  'wide',
-  'relaxed',
-  'bootcut',
 ]
 
 export async function generateStaticParams() {

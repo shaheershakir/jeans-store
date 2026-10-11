@@ -77,7 +77,7 @@ export default function CheckoutClient() {
     e.preventDefault()
     if (!validate()) return
 
-    const orderId = `INF-${Date.now().toString().slice(-6)}`
+    const orderId = `TGE-${Date.now().toString().slice(-6)}`
     const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '')
 
     const itemLines = items
@@ -90,7 +90,7 @@ export default function CheckoutClient() {
       .join('\n')
 
     const messageLines = [
-      `*INFIT ORDER REQUEST [${orderId}]*`,
+      `*TEESGARAGE ORDER REQUEST [${orderId}]*`,
       '--------------------------------',
       '*Customer Information:*',
       `Name: ${form.name.trim()}`,

@@ -12,24 +12,6 @@ interface SizeGuideModalProps {
 
 type Unit = 'in' | 'cm'
 
-interface DenimSizeRow {
-  size: string
-  waistIn: number
-  inseamIn: number
-  thighIn: number
-  riseIn: number
-  legOpeningIn: number
-}
-
-const DENIM_MEASUREMENTS: DenimSizeRow[] = [
-  { size: '28', waistIn: 29.0, inseamIn: 32.0, thighIn: 23.5, riseIn: 11.0, legOpeningIn: 16.5 },
-  { size: '30', waistIn: 31.0, inseamIn: 32.0, thighIn: 24.5, riseIn: 11.5, legOpeningIn: 17.0 },
-  { size: '32', waistIn: 33.0, inseamIn: 32.5, thighIn: 25.5, riseIn: 12.0, legOpeningIn: 17.5 },
-  { size: '34', waistIn: 35.0, inseamIn: 33.0, thighIn: 26.5, riseIn: 12.5, legOpeningIn: 18.0 },
-  { size: '36', waistIn: 37.0, inseamIn: 33.0, thighIn: 27.5, riseIn: 13.0, legOpeningIn: 18.5 },
-  { size: '38', waistIn: 39.0, inseamIn: 33.0, thighIn: 28.5, riseIn: 13.5, legOpeningIn: 19.0 },
-]
-
 interface TopSizeRow {
   size: string
   chestIn: number
@@ -38,56 +20,81 @@ interface TopSizeRow {
   sleeveIn: number
 }
 
+interface BottomSizeRow {
+  size: string
+  waistIn: string
+  lengthIn: number
+  inseamIn: number
+  hipIn: number
+}
+
 const TOPS_MEASUREMENTS: TopSizeRow[] = [
   { size: 'S', chestIn: 40.0, shoulderIn: 18.5, lengthIn: 28.0, sleeveIn: 8.5 },
   { size: 'M', chestIn: 42.0, shoulderIn: 19.5, lengthIn: 29.0, sleeveIn: 9.0 },
   { size: 'L', chestIn: 44.0, shoulderIn: 20.5, lengthIn: 30.0, sleeveIn: 9.5 },
   { size: 'XL', chestIn: 47.0, shoulderIn: 21.5, lengthIn: 31.0, sleeveIn: 10.0 },
+  { size: 'XXL', chestIn: 50.0, shoulderIn: 22.5, lengthIn: 32.0, sleeveIn: 10.5 },
+]
+
+const BOTTOMS_MEASUREMENTS: BottomSizeRow[] = [
+  { size: 'S', waistIn: '28 - 30', lengthIn: 39.0, inseamIn: 29.5, hipIn: 39.0 },
+  { size: 'M', waistIn: '31 - 33', lengthIn: 40.0, inseamIn: 30.0, hipIn: 41.5 },
+  { size: 'L', waistIn: '34 - 36', lengthIn: 41.0, inseamIn: 30.5, hipIn: 44.0 },
+  { size: 'XL', waistIn: '37 - 39', lengthIn: 42.0, inseamIn: 31.0, hipIn: 46.5 },
+  { size: 'XXL', waistIn: '40 - 42', lengthIn: 42.5, inseamIn: 31.5, hipIn: 49.0 },
 ]
 
 const FITS_EXPLANATION = [
   {
-    name: 'Straight Fit',
-    rise: 'Mid-to-High Rise',
-    silhouette: 'Parallel line from hip to hem with zero taper.',
-    vibe: 'Timeless, clean silhouette that balances boots and low-profile sneakers.',
+    name: 'Drop Shoulder / Boxy',
+    category: 'T-Shirts',
+    cut: 'Oversized Silhouette',
+    silhouette: 'Dropped shoulder seams with wider body and generous drape.',
+    vibe: 'Modern streetwear fit, crafted from substantial 240+ GSM combed cotton.',
   },
   {
-    name: 'Baggy Fit',
-    rise: 'Relaxed Mid Rise',
-    silhouette: 'Extra volume throughout thigh and calf with pronounced pooling.',
-    vibe: '90s skate-inspired drape designed for effortless casual streetwear.',
+    name: 'Classic Relaxed',
+    category: 'T-Shirts',
+    cut: 'Standard Fit',
+    silhouette: 'True-to-shoulder cut with comfortable ease through chest and waist.',
+    vibe: 'The quintessential daily tee. Structured collar that stays crisp wash after wash.',
   },
   {
-    name: 'Wide Leg',
-    rise: 'High Rise',
-    silhouette: 'Architectural column cut falling straight from the hip.',
-    vibe: 'Bold, structured aesthetic crafted from weighty 14oz+ ring-spun denim.',
+    name: 'Heavyweight Fullsleeve',
+    category: 'T-Shirts',
+    cut: 'Engineered Ribbed Fit',
+    silhouette: 'Roomy body with snug ribbed cuffs and reinforced neckline.',
+    vibe: 'Year-round layering staple built from dense 260 GSM single jersey.',
   },
   {
-    name: 'Relaxed Fit',
-    rise: 'Mid Rise',
-    silhouette: 'Comfortable ease through thigh with a subtle, gentle taper.',
-    vibe: 'The ultimate daily driver with freedom of movement and clean drape.',
+    name: 'Tapered Trackpant',
+    category: 'Bottomwear',
+    cut: 'Athletic Taper',
+    silhouette: 'Room through seat and thighs narrowing sharply at the ankle.',
+    vibe: 'Engineered for clean sneaker stacking with deep zippered pocketing.',
   },
   {
-    name: 'Bootcut Fit',
-    rise: 'Mid Rise',
-    silhouette: 'Sculpted thigh with an engineered flare below the knee.',
-    vibe: 'Elongates the silhouette, designed to fall cleanly over footwear.',
+    name: 'Heavy Fleece Sweatpant',
+    category: 'Bottomwear',
+    cut: 'Relaxed Cuffed Cut',
+    silhouette: 'Plush 360 GSM French terry with elasticated ankle cuffs and drawcord.',
+    vibe: 'Ultimate lounge and off-duty luxury silhouette with premium drape.',
   },
 ]
 
 export default function SizeGuideModal({
   isOpen,
   onClose,
-  productCategory = 'jeans',
+  productCategory = 'printed-tees',
   productFit,
 }: SizeGuideModalProps) {
   const [unit, setUnit] = useState<Unit>('in')
   const [activeTab, setActiveTab] = useState<'chart' | 'fits' | 'how-to'>('chart')
 
-  const isTops = productCategory === 'tops' || productCategory === 't-shirts' || productCategory === 'shirts' || productCategory === 'hoodies'
+  const isBottomwear =
+    productCategory === 'trackpants' ||
+    productCategory === 'sweatpants' ||
+    productCategory === 'bottomwear'
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -157,17 +164,15 @@ export default function SizeGuideModal({
               <Ruler className="w-3.5 h-3.5 mr-1.5" />
               <span>Measurements</span>
             </button>
-            {!isTops && (
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'fits'}
-                className={`apple-segment-item ${activeTab === 'fits' ? 'active' : ''}`}
-                onClick={() => setActiveTab('fits')}
-              >
-                <span>Silhouette Guide</span>
-              </button>
-            )}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'fits'}
+              className={`apple-segment-item ${activeTab === 'fits' ? 'active' : ''}`}
+              onClick={() => setActiveTab('fits')}
+            >
+              <span>Silhouette Guide</span>
+            </button>
             <button
               type="button"
               role="tab"
@@ -205,33 +210,37 @@ export default function SizeGuideModal({
           {activeTab === 'chart' && (
             <div className="apple-size-table-wrap">
               <p className="apple-size-hint">
-                All measurements reflect garment dimensions laid flat. Our heavyweight denim is designed to soften and form to your silhouette over 5–7 wears.
+                All measurements reflect garment dimensions laid flat. TEESGARAGE heavyweight fabrics are pre-shrunk for consistent fit wash after wash.
               </p>
 
-              {!isTops ? (
+              {isBottomwear ? (
                 <div className="apple-table-container">
                   <table className="apple-size-table">
                     <thead>
                       <tr>
-                        <th>Waist Size</th>
-                        <th>Waist Circumference</th>
-                        <th>Inseam Length</th>
-                        <th>Thigh (at crotch)</th>
-                        <th>Front Rise</th>
-                        <th>Leg Opening</th>
+                        <th>Size</th>
+                        <th>Waist Range ({unit})</th>
+                        <th>Total Length</th>
+                        <th>Inseam</th>
+                        <th>Hip Circumference</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {DENIM_MEASUREMENTS.map((row) => (
+                      {BOTTOMS_MEASUREMENTS.map((row) => (
                         <tr key={row.size}>
                           <td className="size-primary-cell">
                             <strong>{row.size}</strong>
                           </td>
-                          <td>{formatVal(row.waistIn)}</td>
+                          <td>
+                            {unit === 'in'
+                              ? `${row.waistIn}"`
+                              : `${Math.round(28 * 2.54)} - ${Math.round(
+                                  parseInt(row.waistIn.split('-')[1]?.trim() ?? '30', 10) * 2.54
+                                )} cm`}
+                          </td>
+                          <td>{formatVal(row.lengthIn)}</td>
                           <td>{formatVal(row.inseamIn)}</td>
-                          <td>{formatVal(row.thighIn)}</td>
-                          <td>{formatVal(row.riseIn)}</td>
-                          <td>{formatVal(row.legOpeningIn)}</td>
+                          <td>{formatVal(row.hipIn)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -269,25 +278,32 @@ export default function SizeGuideModal({
               <div className="apple-fit-callout">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <strong>TEESGARAGE Fit Guarantee:</strong> If the size isn&apos;t flawless, we provide free 7-day doorstep exchanges across India. Simply message our concierge via WhatsApp.
+                  <strong>TEESGARAGE Fit Guarantee:</strong> If the fit isn&apos;t dialed in, we provide free 7-day doorstep exchanges across India. Simply message our concierge via WhatsApp.
                 </div>
               </div>
             </div>
           )}
 
-          {activeTab === 'fits' && !isTops && (
+          {activeTab === 'fits' && (
             <div className="apple-fits-grid">
               {FITS_EXPLANATION.map((fit) => {
-                const isCurrent = productFit && productFit.toLowerCase() === fit.name.toLowerCase().split(' ')[0]
+                const isCurrent =
+                  productFit &&
+                  fit.name.toLowerCase().includes(productFit.toLowerCase().split(' ')[0] ?? '')
                 return (
                   <div key={fit.name} className={`apple-fit-card ${isCurrent ? 'current' : ''}`}>
                     <div className="apple-fit-card-header">
-                      <h4 className="apple-fit-card-title">{fit.name}</h4>
+                      <div>
+                        <span className="text-[10px] uppercase font-mono tracking-wider text-muted block mb-0.5">
+                          {fit.category}
+                        </span>
+                        <h4 className="apple-fit-card-title">{fit.name}</h4>
+                      </div>
                       {isCurrent && <span className="apple-fit-badge">Current Product</span>}
                     </div>
                     <div className="apple-fit-prop">
-                      <span className="prop-label">Rise:</span>
-                      <span className="prop-val">{fit.rise}</span>
+                      <span className="prop-label">Cut:</span>
+                      <span className="prop-val">{fit.cut}</span>
                     </div>
                     <p className="apple-fit-desc">{fit.silhouette}</p>
                     <p className="apple-fit-vibe">{fit.vibe}</p>
@@ -299,45 +315,91 @@ export default function SizeGuideModal({
 
           {activeTab === 'how-to' && (
             <div className="apple-how-to-guide">
-              <div className="how-to-step">
-                <span className="step-num">01</span>
-                <div>
-                  <h4 className="step-title">Lay flat your best-fitting pair</h4>
-                  <p className="step-desc">
-                    Button and zip your best-fitting jeans. Smooth out any wrinkles and lay them completely flat on a firm surface (table or floor).
-                  </p>
-                </div>
-              </div>
+              {isBottomwear ? (
+                <>
+                  <div className="how-to-step">
+                    <span className="step-num">01</span>
+                    <div>
+                      <h4 className="step-title">Waist</h4>
+                      <p className="step-desc">
+                        Measure around your natural waistline, where you typically wear trackpants or sweatpants. Keep the tape comfortably loose.
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="how-to-step">
-                <span className="step-num">02</span>
-                <div>
-                  <h4 className="step-title">Measure the Waist</h4>
-                  <p className="step-desc">
-                    Pull the waistband taut so the front and back align straight across. Measure from edge to edge and double the number.
-                  </p>
-                </div>
-              </div>
+                  <div className="how-to-step">
+                    <span className="step-num">02</span>
+                    <div>
+                      <h4 className="step-title">Inseam</h4>
+                      <p className="step-desc">
+                        Measure along the inner leg seam from crotch to the bottom hem or ankle cuff.
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="how-to-step">
-                <span className="step-num">03</span>
-                <div>
-                  <h4 className="step-title">Measure the Inseam</h4>
-                  <p className="step-desc">
-                    Start at the lowest point of the crotch seam and run your tape straight down the inside leg all the way to the bottom hem.
-                  </p>
-                </div>
-              </div>
+                  <div className="how-to-step">
+                    <span className="step-num">03</span>
+                    <div>
+                      <h4 className="step-title">Hip / Seat</h4>
+                      <p className="step-desc">
+                        Measure around the fullest point of your hips with feet together to ensure comfortable drape and stretch.
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="how-to-step">
-                <span className="step-num">04</span>
-                <div>
-                  <h4 className="step-title">Thigh &amp; Leg Opening</h4>
-                  <p className="step-desc">
-                    For the thigh, measure 1 inch below the crotch straight across. For leg opening, measure across the bottom hem opening.
-                  </p>
-                </div>
-              </div>
+                  <div className="how-to-step">
+                    <span className="step-num">04</span>
+                    <div>
+                      <h4 className="step-title">Total Length</h4>
+                      <p className="step-desc">
+                        Measure vertically along the outer seam from the waistband down to the bottom cuff opening.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="how-to-step">
+                    <span className="step-num">01</span>
+                    <div>
+                      <h4 className="step-title">Chest Width</h4>
+                      <p className="step-desc">
+                        Lay your best-fitting t-shirt flat. Measure across the chest from armpit seam to armpit seam, 1 inch below the armhole.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="how-to-step">
+                    <span className="step-num">02</span>
+                    <div>
+                      <h4 className="step-title">Body Length</h4>
+                      <p className="step-desc">
+                        Measure straight down from the highest point of the shoulder seam (next to the collar) to the bottom hem.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="how-to-step">
+                    <span className="step-num">03</span>
+                    <div>
+                      <h4 className="step-title">Shoulder Width</h4>
+                      <p className="step-desc">
+                        Measure straight across the back from shoulder seam point to shoulder seam point.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="how-to-step">
+                    <span className="step-num">04</span>
+                    <div>
+                      <h4 className="step-title">Sleeve Length</h4>
+                      <p className="step-desc">
+                        Measure from the top shoulder seam down to the outer edge of the sleeve cuff.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

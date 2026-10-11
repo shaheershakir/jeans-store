@@ -16,10 +16,10 @@ export async function generateMetadata({
   const { id } = await params
   const product = await getProduct(Number(id))
   if (!product) {
-    return { title: 'Not found — INFIT' }
+    return { title: 'Not found — TEESGARAGE' }
   }
   return {
-    title: `${product.name} — INFIT`,
+    title: `${product.name} — TEESGARAGE`,
     description: product.desc
   }
 }

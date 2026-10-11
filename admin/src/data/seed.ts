@@ -70,9 +70,14 @@ const COLOR_CODE: Record<string, string> = {
 }
 
 const CATEGORIES: Category[] = [
-  { id: 1, name: "Men's Jeans", slug: 'mens-jeans', description: 'Denim cuts for men across five fits.', parentId: null },
-  { id: 2, name: "Women's Jeans", slug: 'womens-jeans', description: 'Denim cuts for women across five fits.', parentId: null },
-  { id: 3, name: 'Unisex Jeans', slug: 'unisex-jeans', description: 'Gender-neutral denim styles.', parentId: null },
+  { id: 1, name: 'Stripes', slug: 'stripes', description: 'Classic horizontal and vertical striped t-shirts.', parentId: null },
+  { id: 2, name: 'Fullsleeve', slug: 'fullsleeve', description: 'Full sleeve heavyweight and ribbed t-shirts.', parentId: null },
+  { id: 3, name: 'Drsleeve', slug: 'drsleeve', description: 'Drop shoulder loose and boxy cut tees.', parentId: null },
+  { id: 4, name: 'Printed tees', slug: 'printed-tees', description: 'Screen printed and graphic streetwear tees.', parentId: null },
+  { id: 5, name: 'Ringer tees', slug: 'ringer-tees', description: 'Vintage style contrast rib collar and cuff tees.', parentId: null },
+  { id: 6, name: 'Henley', slug: 'henley', description: 'Button placket waffle and jersey knit tees.', parentId: null },
+  { id: 7, name: 'Trackpants', slug: 'trackpants', description: 'Athletic, training and tapered trackpants.', parentId: null },
+  { id: 8, name: 'Sweatpants', slug: 'sweatpants', description: 'Heavyweight fleece and French terry sweatpants.', parentId: null },
 ]
 
 const COLLECTIONS: Collection[] = [
@@ -102,7 +107,7 @@ function buildProduct(
   const status: ProductStatus = index % 9 === 7 ? 'Draft' : index % 13 === 11 ? 'Archived' : 'Active'
   const sizes = sizeRangeFor(spec.gender, spec.fit)
   const colors = [spec.color, alternateColor(spec.color)]
-  const brand3 = BRAND_CODE[spec.brand] ?? 'INF'
+  const brand3 = BRAND_CODE[spec.brand] ?? 'TGE'
   const productId = index + 1
   const variants: Variant[] = []
 
@@ -826,12 +831,12 @@ function buildOpsSeed(): {
   ]
 
   const auditLog: AuditLogEntry[] = [
-    { id: 1, userId: 4, userName: 'Meena Krishnan', action: 'Adjusted stock', entity: 'Variant', entityId: 'INF-109-32-BLK', detail: 'SKU INF-109-32-BLK: 12 → 25 (restock)', at: isoDaysAgo(0.08) },
-    { id: 2, userId: 3, userName: 'Rohan Kapoor', action: 'Updated product', entity: 'Product', entityId: 'Selvedge 14oz Raw Straight', detail: 'Changed price ₹3,499 → ₹3,999', at: isoDaysAgo(0.5) },
-    { id: 3, userId: 5, userName: 'Arjun Nair', action: 'Marked order shipped', entity: 'Order', entityId: 'IN-2140', detail: 'Handed to Delhivery — tracking IN00010042', at: isoDaysAgo(1) },
+    { id: 1, userId: 4, userName: 'Meena Krishnan', action: 'Adjusted stock', entity: 'Variant', entityId: 'TGE-109-32-BLK', detail: 'SKU TGE-109-32-BLK: 12 → 25 (restock)', at: isoDaysAgo(0.08) },
+    { id: 2, userId: 3, userName: 'Rohan Kapoor', action: 'Updated product', entity: 'Product', entityId: 'Classic Breton Striped Tee', detail: 'Changed price ₹1,199 → ₹1,299', at: isoDaysAgo(0.5) },
+    { id: 3, userId: 5, userName: 'Arjun Nair', action: 'Marked order shipped', entity: 'Order', entityId: 'TGE-2140', detail: 'Handed to Delhivery — tracking IN00010042', at: isoDaysAgo(1) },
     { id: 4, userId: 6, userName: 'Priya Anand', action: 'Created coupon', entity: 'Coupon', entityId: 'FESTIVE15', detail: '15% off, max ₹749', at: isoDaysAgo(1.2) },
     { id: 5, userId: 2, userName: 'Ananya Iyer', action: 'Approved return', entity: 'Return', entityId: 'RTN-401', detail: 'Approved — size not fitting', at: isoDaysAgo(2) },
-    { id: 6, userId: 4, userName: 'Meena Krishnan', action: 'Adjusted stock', entity: 'Variant', entityId: 'INF-120-34-BLU', detail: 'SKU INF-120-34-BLU: 4 → 32 (purchase order PO-8821)', at: isoDaysAgo(3) },
+    { id: 6, userId: 4, userName: 'Meena Krishnan', action: 'Adjusted stock', entity: 'Variant', entityId: 'TGE-120-34-BLU', detail: 'SKU TGE-120-34-BLU: 4 → 32 (purchase order PO-8821)', at: isoDaysAgo(3) },
     { id: 7, userId: 3, userName: 'Rohan Kapoor', action: 'Created product', entity: 'Product', entityId: 'Combat Cargo Slim Black', detail: 'New listing in Men’s Jeans', at: isoDaysAgo(4) },
     { id: 8, userId: 7, userName: 'Kabir Shaikh', action: 'Replied to review', entity: 'Review', entityId: '#104', detail: 'Posted merchant response', at: isoDaysAgo(5) },
   ]
@@ -935,9 +940,9 @@ function buildInventoryMovements(
 
   // A few manual adjustments & restocks for realism.
   const spotChecks: { sku: string; delta: number; reason: string; type: MovementType }[] = [
-    { sku: 'INF-112-34-BLU', delta: -2, reason: 'Cycle count variance', type: 'ADJUSTMENT' },
-    { sku: 'INF-119-30-GRY', delta: -3, reason: 'Damaged in transit (claim filed)', type: 'ADJUSTMENT' },
-    { sku: 'INF-105-36-BLK', delta: 24, reason: 'Fresh stock from godown', type: 'PURCHASE' },
+    { sku: 'TGE-112-34-BLU', delta: -2, reason: 'Cycle count variance', type: 'ADJUSTMENT' },
+    { sku: 'TGE-119-30-GRY', delta: -3, reason: 'Damaged in transit (claim filed)', type: 'ADJUSTMENT' },
+    { sku: 'TGE-105-36-BLK', delta: 24, reason: 'Fresh stock from godown', type: 'PURCHASE' },
   ]
   for (const spot of spotChecks) {
     let target: { p: Product; v: Variant } | null = null
@@ -1019,12 +1024,14 @@ export function createDbState(): DbState {
 }
 
 export const DEFAULT_NAVIGATION_ITEMS: NavigationItem[] = [
-  { id: 'nav-1', label: 'All Styles', href: '/shop', type: 'category', targetValue: 'all', order: 0, isActive: true, openInNewTab: false },
-  { id: 'nav-2', label: 'Denim', href: '/shop/jeans', type: 'category', targetValue: 'jeans', order: 1, isActive: true, openInNewTab: false },
-  { id: 'nav-3', label: 'Tops & T-Shirts', href: '/shop/tops', type: 'category', targetValue: 'tops', order: 2, isActive: true, openInNewTab: false },
-  { id: 'nav-4', label: 'Shirts', href: '/shop/shirts', type: 'category', targetValue: 'shirts', order: 3, isActive: true, openInNewTab: false },
-  { id: 'nav-5', label: 'Hoodies', href: '/shop/hoodies', type: 'category', targetValue: 'hoodies', order: 4, isActive: true, openInNewTab: false },
-  { id: 'nav-6', label: 'Accessories', href: '/shop/accessories', type: 'category', targetValue: 'hats', order: 5, isActive: true, openInNewTab: false },
+  { id: 'nav-1', label: 'Stripes', href: '/shop/stripes', type: 'category', targetValue: 'stripes', order: 0, isActive: true, openInNewTab: false },
+  { id: 'nav-2', label: 'Fullsleeve', href: '/shop/fullsleeve', type: 'category', targetValue: 'fullsleeve', order: 1, isActive: true, openInNewTab: false },
+  { id: 'nav-3', label: 'Drsleeve', href: '/shop/drsleeve', type: 'category', targetValue: 'drsleeve', order: 2, isActive: true, openInNewTab: false },
+  { id: 'nav-4', label: 'Printed tees', href: '/shop/printed-tees', type: 'category', targetValue: 'printed-tees', order: 3, isActive: true, openInNewTab: false },
+  { id: 'nav-5', label: 'Ringer tees', href: '/shop/ringer-tees', type: 'category', targetValue: 'ringer-tees', order: 4, isActive: true, openInNewTab: false },
+  { id: 'nav-6', label: 'Henley', href: '/shop/henley', type: 'category', targetValue: 'henley', order: 5, isActive: true, openInNewTab: false },
+  { id: 'nav-7', label: 'Trackpants', href: '/shop/trackpants', type: 'category', targetValue: 'trackpants', order: 6, isActive: true, openInNewTab: false },
+  { id: 'nav-8', label: 'Sweatpants', href: '/shop/sweatpants', type: 'category', targetValue: 'sweatpants', order: 7, isActive: true, openInNewTab: false },
 ]
 
 export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {

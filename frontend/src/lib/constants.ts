@@ -1,4 +1,13 @@
-export type Fit = 'Straight' | 'Baggy' | 'Wide' | 'Relaxed' | 'Bootcut'
+export type Fit =
+  | 'Oversized'
+  | 'Boxy'
+  | 'Relaxed'
+  | 'Regular'
+  | 'Straight'
+  | 'Baggy'
+  | 'Wide'
+  | 'Bootcut'
+  | 'Slim'
 
 export type NavItemType = 'fit' | 'category' | 'custom'
 
@@ -15,12 +24,14 @@ export interface NavigationItem {
 }
 
 export const DEFAULT_NAV_LINKS: NavigationItem[] = [
-  { id: 'nav-1', label: 'All Styles', href: '/shop', type: 'category', targetValue: 'all', order: 0, isActive: true, openInNewTab: false },
-  { id: 'nav-2', label: 'Denim', href: '/shop/jeans', type: 'category', targetValue: 'jeans', order: 1, isActive: true, openInNewTab: false },
-  { id: 'nav-3', label: 'Tops & T-Shirts', href: '/shop/tops', type: 'category', targetValue: 'tops', order: 2, isActive: true, openInNewTab: false },
-  { id: 'nav-4', label: 'Shirts', href: '/shop/shirts', type: 'category', targetValue: 'shirts', order: 3, isActive: true, openInNewTab: false },
-  { id: 'nav-5', label: 'Hoodies', href: '/shop/hoodies', type: 'category', targetValue: 'hoodies', order: 4, isActive: true, openInNewTab: false },
-  { id: 'nav-6', label: 'Accessories', href: '/shop/accessories', type: 'category', targetValue: 'hats', order: 5, isActive: true, openInNewTab: false },
+  { id: 'nav-1', label: 'Stripes', href: '/shop/stripes', type: 'category', targetValue: 'stripes', order: 0, isActive: true, openInNewTab: false },
+  { id: 'nav-2', label: 'Fullsleeve', href: '/shop/fullsleeve', type: 'category', targetValue: 'fullsleeve', order: 1, isActive: true, openInNewTab: false },
+  { id: 'nav-3', label: 'Drsleeve', href: '/shop/drsleeve', type: 'category', targetValue: 'drsleeve', order: 2, isActive: true, openInNewTab: false },
+  { id: 'nav-4', label: 'Printed tees', href: '/shop/printed-tees', type: 'category', targetValue: 'printed-tees', order: 3, isActive: true, openInNewTab: false },
+  { id: 'nav-5', label: 'Ringer tees', href: '/shop/ringer-tees', type: 'category', targetValue: 'ringer-tees', order: 4, isActive: true, openInNewTab: false },
+  { id: 'nav-6', label: 'Henley', href: '/shop/henley', type: 'category', targetValue: 'henley', order: 5, isActive: true, openInNewTab: false },
+  { id: 'nav-7', label: 'Trackpants', href: '/shop/trackpants', type: 'category', targetValue: 'trackpants', order: 6, isActive: true, openInNewTab: false },
+  { id: 'nav-8', label: 'Sweatpants', href: '/shop/sweatpants', type: 'category', targetValue: 'sweatpants', order: 7, isActive: true, openInNewTab: false },
 ]
 
 export interface Product {
@@ -42,277 +53,541 @@ export interface Product {
 
 export const CATEGORY_FILTERS = [
   { id: 'all', label: 'All Garments' },
-  { id: 'jeans', label: 'Denim' },
-  { id: 'tops', label: 'Tops & Shirts' },
-  { id: 'hoodies', label: 'Hoodies' },
-  { id: 'hats', label: 'Accessories' }
+  { id: 'stripes', label: 'Stripes' },
+  { id: 'fullsleeve', label: 'Fullsleeve' },
+  { id: 'drsleeve', label: 'Drsleeve' },
+  { id: 'printed-tees', label: 'Printed Tees' },
+  { id: 'ringer-tees', label: 'Ringer Tees' },
+  { id: 'henley', label: 'Henley' },
+  { id: 'trackpants', label: 'Trackpants' },
+  { id: 'sweatpants', label: 'Sweatpants' },
 ] as const
 
 export const PRODUCTS: Product[] = [
-  // --- Signature TEESGARAGE Denim ---
+  // ─── 1. STRIPES (Striped T-Shirts) ──────────────────────────────────────────
   {
     id: 0,
     store: 'teesgarage',
-    category: 'jeans',
-    name: 'Classic Straight Indigo',
-    fit: 'Straight',
-    price: '₹1,699',
-    priceNum: 1699,
-    img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80',
+    category: 'stripes',
+    name: 'Classic Breton Heavyweight Striped Tee',
+    fit: 'Boxy',
+    price: '₹1,199',
+    priceNum: 1199,
+    img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
     images: [
-      'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'New',
-    desc: 'Your dependable, everyday pair. A structured mid-weight denim with a straight leg and a lived-in indigo wash.',
-    wash: 'Classic Indigo',
-    sizes: ['28', '30', '32', '34', '36', '38']
+    badge: 'Bestseller',
+    desc: '260 GSM combed cotton featuring traditional Breton nautical stripes, sturdy 1.25" ribbed collar, and relaxed drop-shoulder drape.',
+    wash: 'Ecru / Navy',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
   {
     id: 1,
     store: 'teesgarage',
-    category: 'jeans',
-    name: 'Heavy Wash Baggy',
-    fit: 'Baggy',
-    price: '₹1,899',
-    priceNum: 1899,
-    img: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80',
+    category: 'stripes',
+    name: 'Vintage Skate Micro-Stripe Tee',
+    fit: 'Relaxed',
+    price: '₹1,249',
+    priceNum: 1249,
+    img: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=800&q=80',
     images: [
-      'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'Bestseller',
-    desc: 'Wide volume through thigh and knee with heavy stone wash fading and vintage whiskering.',
-    wash: 'Heavy Stonewash',
-    sizes: ['28', '30', '32', '34', '36', '38']
+    badge: 'New',
+    desc: 'Fine gauge horizontal micro-stripes knit from yarn-dyed ring-spun cotton. Pre-shrunk with a soft vintage silicone wash.',
+    wash: 'Washed Black / Ash',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
   {
     id: 2,
     store: 'teesgarage',
-    category: 'jeans',
-    name: 'Vintage Blue Wide Leg',
-    fit: 'Wide',
-    price: '₹1,999',
-    priceNum: 1999,
-    img: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
+    category: 'stripes',
+    name: 'Bold Block Stripe Oversized Tee',
+    fit: 'Oversized',
+    price: '₹1,299',
+    priceNum: 1299,
+    img: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
     images: [
-      'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=80'
     ],
-    desc: 'Relaxed dramatic drape cut from 14oz Japanese-style ring-spun cotton denim.',
-    wash: 'Vintage Blue',
-    sizes: ['28', '30', '32', '34', '36', '38']
+    desc: 'Wide horizontal contrast block stripes with reinforced twin-needle hems and an ultra-relaxed streetwear silhouette.',
+    wash: 'Forest Green / Cream',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
+
+  // ─── 2. FULLSLEEVE (Full Sleeve T-Shirts) ──────────────────────────────────
   {
     id: 3,
     store: 'teesgarage',
-    category: 'jeans',
-    name: 'Relaxed Black Denim',
-    fit: 'Relaxed',
-    price: '₹1,699',
-    priceNum: 1699,
-    img: 'https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=800&q=80',
+    category: 'fullsleeve',
+    name: 'Thermal Waffle Knit Fullsleeve',
+    fit: 'Regular',
+    price: '₹1,399',
+    priceNum: 1399,
+    img: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=800&q=80',
     images: [
-      'https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80'
     ],
-    desc: 'Sulphur-dyed deep matte black that fades into subtle charcoal highlights with prolonged wear.',
-    wash: 'Washed Black',
-    sizes: ['28', '30', '32', '34', '36', '38']
+    badge: 'Essential',
+    desc: 'Heavyweight 320 GSM honeycomb waffle knit providing natural warmth, stretch recovery, and ribbed storm cuffs.',
+    wash: 'Heather Charcoal',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
   {
     id: 4,
     store: 'teesgarage',
-    category: 'jeans',
-    name: 'Dark Indigo Bootcut',
-    fit: 'Bootcut',
-    price: '₹2,199',
-    priceNum: 2199,
-    img: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80',
-    badge: 'New',
-    desc: 'Fitted through the hip with a slight flare below the knee for an elongated, retro profile.',
-    wash: 'Dark Indigo',
-    sizes: ['28', '30', '32', '34', '36', '38']
+    category: 'fullsleeve',
+    name: 'Heavy Combed Cotton Fullsleeve',
+    fit: 'Relaxed',
+    price: '₹1,299',
+    priceNum: 1299,
+    img: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'Core',
+    desc: 'Clean, dense 260 GSM single jersey full sleeve tee with thick 1.25" neck ribbing and tapered wrist cuffs.',
+    wash: 'Pitch Black',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
   {
     id: 5,
     store: 'teesgarage',
-    category: 'jeans',
-    name: 'Washed Grey Straight',
-    fit: 'Straight',
-    price: '₹1,499',
-    priceNum: 1499,
-    img: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&w=800&q=80',
-    badge: 'Sale',
-    desc: 'Clean straight leg in an overdyed slate grey with subtle hand-scraping on thighs.',
-    wash: 'Slate Grey',
-    sizes: ['28', '30', '32', '34', '36', '38']
+    category: 'fullsleeve',
+    name: 'Vintage Washed Raglan Fullsleeve',
+    fit: 'Boxy',
+    price: '₹1,349',
+    priceNum: 1349,
+    img: 'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?auto=format&fit=crop&w=1200&q=80'
+    ],
+    desc: 'Raglan sleeve construction for unrestricted mobility, finished in an authentic sun-bleached pigment wash with soft vintage patina.',
+    wash: 'Washed Olive / Sand',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
+
+  // ─── 3. DRSLEEVE (Drop Sleeve / Drop Shoulder Tees) ────────────────────────
   {
     id: 6,
     store: 'teesgarage',
-    category: 'jeans',
-    name: 'Raw Denim Relaxed',
-    fit: 'Relaxed',
-    price: '₹1,899',
-    priceNum: 1899,
-    img: 'https://images.unsplash.com/photo-1508427953056-b00b8d78ebf5?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80',
-    desc: 'Unwashed 14.5oz rigid raw selvedge denim built to break in and mold uniquely to your body.',
-    wash: 'Rigid Raw Denim',
-    sizes: ['28', '30', '32', '34', '36', '38']
+    category: 'drsleeve',
+    name: 'Raw Edge Drop Shoulder Heavy Tee',
+    fit: 'Boxy',
+    price: '₹1,199',
+    priceNum: 1199,
+    img: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'Bestseller',
+    desc: 'Dropped shoulder seams with elbow-length sleeves, wide boxy body, and subtle raw-edge bottom hem details.',
+    wash: 'Washed Charcoal',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
   {
     id: 7,
     store: 'teesgarage',
-    category: 'jeans',
-    name: 'Faded Blue Baggy',
-    fit: 'Baggy',
-    price: '₹1,799',
-    priceNum: 1799,
-    img: 'https://images.unsplash.com/photo-1509551388413-e18d0ac5d495?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80',
-    desc: 'Late 90s skater cut with generous leg room and authentic vintage sun-bleach wash.',
-    wash: 'Sun Faded Blue',
-    sizes: ['28', '30', '32', '34', '36', '38']
+    category: 'drsleeve',
+    name: 'Oversized Streetwear Drsleeve Tee',
+    fit: 'Oversized',
+    price: '₹1,299',
+    priceNum: 1299,
+    img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'Hot',
+    desc: 'Ultra-relaxed drape with extended 12" drop shoulder sleeves, tight mock neck ribbing, and 260 GSM combed cotton.',
+    wash: 'Concrete Slate',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
-
-  // --- Curated Wardrobe Essentials ---
   {
     id: 8,
     store: 'teesgarage',
-    category: 't-shirts',
-    name: 'Boxy Heavyweight Tee - Vintage Black',
-    price: '₹999',
-    priceNum: 999,
-    img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
-    badge: 'Essential',
-    desc: '260 GSM combed cotton with dropped shoulders, tight mock neck ribbing, and an effortless streetwear drape.',
-    wash: 'Vintage Black',
-    sizes: ['S', 'M', 'L', 'XL']
+    category: 'drsleeve',
+    name: 'Minimalist Heavyweight Drop Shoulder',
+    fit: 'Oversized',
+    price: '₹1,249',
+    priceNum: 1249,
+    img: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=80'
+    ],
+    desc: 'Clean 280 GSM luxury combed cotton with seamless dropped shoulders, double-stitched armholes, and zero side-twist construction.',
+    wash: 'Bone White',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
+
+  // ─── 4. PRINTED TEES (Graphic / Printed T-Shirts) ──────────────────────────
   {
     id: 9,
     store: 'teesgarage',
-    category: 't-shirts',
-    name: 'Oversized Washed Graphic Tee',
-    price: '₹1,199',
-    priceNum: 1199,
+    category: 'printed-tees',
+    name: 'Tokyo Cyber Garage Graphic Tee',
+    fit: 'Oversized',
+    price: '₹1,299',
+    priceNum: 1299,
     img: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
-    badge: 'New',
-    desc: 'Acid-washed streetwear tee featuring distressed typography and an oversized vintage silhouette.',
-    wash: 'Mineral Wash',
-    sizes: ['S', 'M', 'L', 'XL']
+    img2: 'https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'Trending',
+    desc: 'High-density puff screen print featuring distressed garage typography and cyber automotive mechanics graphics.',
+    wash: 'Vintage Acid Black',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
   {
     id: 10,
     store: 'teesgarage',
-    category: 'shirts',
-    name: 'Relaxed Oxford Button-Down Shirt',
-    price: '₹1,599',
-    priceNum: 1599,
-    img: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80',
-    badge: 'Essential',
-    desc: 'Garment-dyed structured cotton Oxford shirt with curved hem, pearl buttons, and a clean relaxed fit.',
-    wash: 'Garment Dyed White',
-    sizes: ['S', 'M', 'L', 'XL']
+    category: 'printed-tees',
+    name: 'Archival Sunburst Botanical Tee',
+    fit: 'Relaxed',
+    price: '₹1,199',
+    priceNum: 1199,
+    img: 'https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=80'
+    ],
+    desc: 'Hand-pulled water-based screenprint on 240 GSM organic cotton. Breathable print surface that softens with each wash.',
+    wash: 'Washed Ecru',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
   {
     id: 11,
     store: 'teesgarage',
-    category: 'shirts',
-    name: 'Utility Canvas Overshirt',
-    price: '₹2,299',
-    priceNum: 2299,
-    img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80',
-    badge: 'Bestseller',
-    desc: 'Durable cotton canvas shacket with dual chest utility pockets and custom matte metal hardware.',
-    wash: 'Olive Canvas',
-    sizes: ['S', 'M', 'L', 'XL']
+    category: 'printed-tees',
+    name: 'Garage Speed Division Distressed Tee',
+    fit: 'Boxy',
+    price: '₹1,249',
+    priceNum: 1249,
+    img: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'New',
+    desc: 'Heritage motor club back graphic with subtle front chest crest, enzyme washed for an authentic vintage soft-hand feel.',
+    wash: 'Faded Burgundy',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
+
+  // ─── 5. RINGER TEES (Retro Contrast Ribbed Tees) ───────────────────────────
   {
     id: 12,
     store: 'teesgarage',
-    category: 'hoodies',
-    name: 'Heavy French Terry Pullover Hoodie',
-    price: '₹2,499',
-    priceNum: 2499,
-    img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80',
-    badge: 'Heavyweight',
-    desc: '450 GSM heavyweight organic French terry hoodie with double-layered hood, no drawstrings, and deep kangaroo pocket.',
-    wash: 'Heather Concrete',
-    sizes: ['S', 'M', 'L', 'XL']
+    category: 'ringer-tees',
+    name: '70s Retro Contrast Ribbed Ringer Tee',
+    fit: 'Regular',
+    price: '₹999',
+    priceNum: 999,
+    img: 'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'Classic',
+    desc: 'Timeless retro ringer silhouette with contrast 1" binding along neck and sleeve cuffs. 100% fine combed cotton.',
+    wash: 'Off-White / Cobalt',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
   {
     id: 13,
     store: 'teesgarage',
-    category: 'hoodies',
-    name: 'Washed Street Zip Hoodie',
-    price: '₹2,799',
-    priceNum: 2799,
-    img: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
-    desc: 'Sun-faded vintage mineral wash with custom two-way metal zipper and ribbed side gussets.',
-    wash: 'Washed Charcoal',
-    sizes: ['S', 'M', 'L', 'XL']
+    category: 'ringer-tees',
+    name: 'Collegiate Athletic Ringer Tee',
+    fit: 'Regular',
+    price: '₹1,049',
+    priceNum: 1049,
+    img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'New',
+    desc: 'Vintage varsity styling with heavyweight two-tone ribbing and an engineered tailored drape.',
+    wash: 'Forest Green / Cream',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
   {
     id: 14,
     store: 'teesgarage',
-    category: 'hats',
-    name: 'Vintage Washed Cotton Dad Cap',
-    price: '₹799',
-    priceNum: 799,
-    img: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1575428652377-a2d80e2277fc?auto=format&fit=crop&w=800&q=80',
-    badge: 'Accessory',
-    desc: 'Unstructured 6-panel low profile cotton twill cap with brass buckle strap closure and subtle embroidery.',
-    wash: 'Forest Green',
-    sizes: ['One Size']
+    category: 'ringer-tees',
+    name: 'Heritage Dual-Tone Contrast Ringer',
+    fit: 'Boxy',
+    price: '₹1,099',
+    priceNum: 1099,
+    img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=80'
+    ],
+    desc: 'Warm earthy contrast trims on structured mid-weight cotton jersey. Built to hold neckline shape wear after wear.',
+    wash: 'Mustard / Chocolate',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   },
+
+  // ─── 6. HENLEY (Buttoned Placket Tees) ─────────────────────────────────────
   {
     id: 15,
     store: 'teesgarage',
-    category: 'hats',
-    name: 'Ripstop Streetwear Bucket Hat',
-    price: '₹899',
-    priceNum: 899,
-    img: 'https://images.unsplash.com/photo-1575428652377-a2d80e2277fc?auto=format&fit=crop&w=800&q=80',
-    img2: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=800&q=80',
-    badge: 'Weather Resistant',
-    desc: 'Technical water-resistant ripstop fabric with 360-degree brim and internal sweatband.',
-    wash: 'Matte Black',
-    sizes: ['One Size']
+    category: 'henley',
+    name: '3-Button Slub Cotton Waffle Henley',
+    fit: 'Regular',
+    price: '₹1,399',
+    priceNum: 1399,
+    img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'Bestseller',
+    desc: 'Authentic 3-button placket featuring real corozo nut buttons, slub texture, and durable flatlock seam detailing.',
+    wash: 'Heather Grey',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+  },
+  {
+    id: 16,
+    store: 'teesgarage',
+    category: 'henley',
+    name: 'Heavy Mineral Washed Rugged Henley',
+    fit: 'Relaxed',
+    price: '₹1,499',
+    priceNum: 1499,
+    img: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'Warm',
+    desc: 'Heavyweight 280 GSM cotton jersey with garment mineral wash, double-layer front placket, and raw-cut hem finish.',
+    wash: 'Mineral Washed Black',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+  },
+  {
+    id: 17,
+    store: 'teesgarage',
+    category: 'henley',
+    name: 'Short Sleeve Summer Slub Henley',
+    fit: 'Relaxed',
+    price: '₹1,299',
+    priceNum: 1299,
+    img: 'https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=80'
+    ],
+    desc: 'Lightweight breathable cotton slub with mother-of-pearl buttons, curved hem, and effortless warm-weather drape.',
+    wash: 'Washed Sage',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+  },
+
+  // ─── 7. TRACKPANTS (Bottomwear: Trackpants) ────────────────────────────────
+  {
+    id: 18,
+    store: 'teesgarage',
+    category: 'trackpants',
+    name: 'Urban Utility Cargo Trackpants',
+    fit: 'Relaxed',
+    price: '₹1,899',
+    priceNum: 1899,
+    img: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'Hot',
+    desc: 'Durable nylon-cotton blend trackpants with dual bellowed cargo pockets, bungee adjustable ankle toggles, and elastic drawcord waistband.',
+    wash: 'Matte Onyx Black',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+  },
+  {
+    id: 19,
+    store: 'teesgarage',
+    category: 'trackpants',
+    name: 'Retro Side-Piping Straight Trackpants',
+    fit: 'Straight',
+    price: '₹1,799',
+    priceNum: 1799,
+    img: 'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'Classic',
+    desc: 'Classic poly-tricot trackpants with contrast side seam piping, zippered hand pockets, and zippered leg gussets for clean sneaker stacking.',
+    wash: 'Deep Navy / Off-White',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+  },
+  {
+    id: 20,
+    store: 'teesgarage',
+    category: 'trackpants',
+    name: 'Baggy Streetwear Shell Trackpants',
+    fit: 'Baggy',
+    price: '₹1,999',
+    priceNum: 1999,
+    img: 'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'New',
+    desc: 'Wide skate-inspired volume cut from crinkled matte taslan nylon with breathable mesh lining and articulated knee darting.',
+    wash: 'Graphite Grey',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+  },
+
+  // ─── 8. SWEATPANTS (Bottomwear: Sweatpants) ────────────────────────────────
+  {
+    id: 21,
+    store: 'teesgarage',
+    category: 'sweatpants',
+    name: '450 GSM Heavy French Terry Sweatpants',
+    fit: 'Relaxed',
+    price: '₹2,199',
+    priceNum: 2199,
+    img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'Heavyweight',
+    desc: 'Ultra-heavy 450 GSM combed cotton French terry with thick elastic waistband, hidden drawstrings, and deep slash pockets.',
+    wash: 'Washed Black',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+  },
+  {
+    id: 22,
+    store: 'teesgarage',
+    category: 'sweatpants',
+    name: 'Sun-Faded Vintage Cuffed Sweatpants',
+    fit: 'Regular',
+    price: '₹1,999',
+    priceNum: 1999,
+    img: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'Essential',
+    desc: 'Enzyme sun-faded wash on fleece back jersey with ribbed ankle cuffs and heavy cotton flat-braided drawcords.',
+    wash: 'Vintage Taupe',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+  },
+  {
+    id: 23,
+    store: 'teesgarage',
+    category: 'sweatpants',
+    name: 'Open-Hem Baggy Fleece Sweatpants',
+    fit: 'Baggy',
+    price: '₹2,099',
+    priceNum: 2099,
+    img: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
+    img2: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=1200&q=80'
+    ],
+    badge: 'New',
+    desc: 'Relaxed open bottom hem designed to stack cleanly over sneakers, crafted from 400 GSM brushed organic fleece.',
+    wash: 'Heather Grey',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL']
   }
 ]
 
-export const FITS: Fit[] = ['Straight', 'Baggy', 'Wide', 'Relaxed', 'Bootcut']
+export const FITS: Fit[] = ['Oversized', 'Boxy', 'Relaxed', 'Regular', 'Straight', 'Baggy']
 
-export const SIZES = ['28', '30', '32', '34', '36']
+export const SIZES = ['S', 'M', 'L', 'XL', 'XXL']
 
 export const SWATCHES = [
-  { name: 'Classic Indigo', className: 'indigo' },
-  { name: 'Washed Black', className: 'black' },
-  { name: 'Vintage Blue', className: 'blue' }
+  { name: 'Pitch Black', className: 'black' },
+  { name: 'Heather Charcoal', className: 'charcoal' },
+  { name: 'Forest Green', className: 'green' },
+  { name: 'Ecru / Navy', className: 'ecru' }
 ]
 
 export const FREE_SHIPPING_THRESHOLD = 1499
@@ -347,7 +622,7 @@ export interface HomepageLookItem {
   title: string
   tag: string
   img: string
-  link?: string
+  link: string
 }
 
 export interface HomepageReviewItem {
@@ -362,13 +637,12 @@ export interface HomepageReviewItem {
 export interface HomepageTrustItem {
   id: string
   title: string
-  subtitle?: string
-  icon?: string
+  icon: 'truck' | 'repeat' | 'package' | 'shield'
 }
 
 export interface HomepageConfig {
   sectionsOrder: HomepageSectionType[]
-  sectionsEnabled: Record<string, boolean>
+  sectionsEnabled: Record<HomepageSectionType, boolean>
   announcement: {
     enabled: boolean
     messages: string[]
@@ -422,7 +696,7 @@ export interface HomepageConfig {
     title: string
     paragraphs: string[]
     imageUrl: string
-    stats: Array<{ num: string; label: string }>
+    stats: { num: string; label: string }[]
     ctaText: string
     ctaLink: string
   }
@@ -501,8 +775,8 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     enabled: true,
     eyebrow: 'New Season — SS 2026',
     title: 'Built for\neveryday.',
-    subtitle: 'Heavyweight denim. Honest washes.\nCuts that get better with every wear.',
-    primaryCtaText: 'Shop Denim',
+    subtitle: 'Heavyweight T-shirts. Engineered bottomwear.\nCuts that hold their shape with every wear.',
+    primaryCtaText: 'Shop Collection',
     primaryCtaLink: '/#catalog',
     secondaryCtaText: 'All Styles',
     secondaryCtaLink: '/#catalog',
@@ -515,39 +789,60 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     title: 'Shop by Category',
     items: [
       {
-        id: 'jeans',
-        label: 'Denim',
-        icon: '👖',
-        img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=600&q=80',
-        count: '8 styles'
-      },
-      {
-        id: 't-shirts',
-        label: 'T-Shirts',
-        icon: '👕',
-        img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
-        count: '4 styles'
-      },
-      {
-        id: 'shirts',
-        label: 'Shirts',
-        icon: '👔',
-        img: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=600&q=80',
+        id: 'stripes',
+        label: 'Stripes',
+        icon: '💈',
+        img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80',
         count: '3 styles'
       },
       {
-        id: 'hoodies',
-        label: 'Hoodies',
+        id: 'fullsleeve',
+        label: 'Fullsleeve',
         icon: '🧥',
-        img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80',
-        count: '2 styles'
+        img: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
       },
       {
-        id: 'hats',
-        label: 'Accessories',
-        icon: '🧢',
-        img: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
-        count: '2 styles'
+        id: 'drsleeve',
+        label: 'Drsleeve',
+        icon: '👕',
+        img: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
+      },
+      {
+        id: 'printed-tees',
+        label: 'Printed Tees',
+        icon: '🎨',
+        img: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
+      },
+      {
+        id: 'ringer-tees',
+        label: 'Ringer Tees',
+        icon: '⚡',
+        img: 'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
+      },
+      {
+        id: 'henley',
+        label: 'Henley',
+        icon: '👔',
+        img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
+      },
+      {
+        id: 'trackpants',
+        label: 'Trackpants',
+        icon: '👖',
+        img: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
+      },
+      {
+        id: 'sweatpants',
+        label: 'Sweatpants',
+        icon: '🩳',
+        img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
       }
     ]
   },
@@ -562,9 +857,9 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   featured_collection: {
     enabled: true,
     eyebrow: 'Featured Collection',
-    title: 'The Essentials\nCollection',
+    title: 'The Heavyweight\nCollection',
     description:
-      'Every piece designed to live in your rotation forever. Heavyweight fabrics, considered washes, and silhouettes that hold their shape.',
+      'Every piece designed to live in your everyday rotation. Heavyweight 260+ GSM combed cotton, structured French terry, and boxy fits that hold their shape.',
     ctaText: 'Shop Collection',
     ctaLink: '/#catalog',
     imageUrl: '/featured-collection.jpg'
@@ -581,13 +876,13 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     eyebrow: 'Our Story',
     title: 'Made for your\neveryday.',
     paragraphs: [
-      'TEESGARAGE started with a simple question: why is it so hard to find jeans that fit, last, and feel honest? We’re a Mumbai-based label obsessed with getting denim right — from the weight of the fabric to the arc of the seat.',
-      'No fast fashion. No compromise. Just weighty, considered denim built to outlast the trends.'
+      'TEESGARAGE started with a simple question: why is it so hard to find heavyweight tees and bottomwear that fit right, last, and feel honest? We’re a Mumbai-based label obsessed with getting everyday essentials right — from 260+ GSM combed cotton to structured French terry.',
+      'No fast fashion. No compromise. Just weighty, considered garments built to outlast trends.'
     ],
     imageUrl: '/brand-editorial.jpg',
     stats: [
-      { num: '14oz', label: 'Fabric weight' },
-      { num: '5+', label: 'Signature fits' },
+      { num: '280 GSM', label: 'Cotton weight' },
+      { num: '8', label: 'Signature cuts' },
       { num: '24h', label: 'Mumbai dispatch' }
     ],
     ctaText: 'Get in Touch',
@@ -602,29 +897,29 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
       {
         id: 1,
         title: 'The Daily Driver',
-        tag: 'Straight + Tee',
-        img: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?auto=format&fit=crop&w=600&q=80',
+        tag: 'Drsleeve + Trackpants',
+        img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
         link: '/#catalog'
       },
       {
         id: 2,
         title: 'Street Ready',
-        tag: 'Baggy + Hoodie',
-        img: 'https://images.unsplash.com/photo-1509551388413-e18d0ac5d495?auto=format&fit=crop&w=600&q=80',
+        tag: 'Printed Tee + Sweatpants',
+        img: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
         link: '/#catalog'
       },
       {
         id: 3,
         title: 'Clean & Classic',
-        tag: 'Relaxed + Oxford',
-        img: 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=600&q=80',
+        tag: 'Stripes + Cargo',
+        img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80',
         link: '/#catalog'
       },
       {
         id: 4,
-        title: 'Night Out',
-        tag: 'Dark Indigo + Jacket',
-        img: 'https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=600&q=80',
+        title: 'Minimal Thermal',
+        tag: 'Fullsleeve + Shell Pants',
+        img: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=600&q=80',
         link: '/#catalog'
       }
     ]
@@ -636,12 +931,12 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     subtitle: 'Real people, real fits — tag us in yours.',
     instagramUrl: 'https://instagram.com',
     photos: [
-      'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=400&q=80',
       'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1554412933-514a83d2f3c8?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=400&q=80'
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80'
     ]
   },
   reviews: {
@@ -654,24 +949,24 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
         name: 'Aryan S.',
         location: 'Mumbai',
         stars: 5,
-        text: 'Best jeans I’ve ever owned. The indigo wash is incredible and the fit is exactly right — not too tight, not loose. Worth every rupee.',
-        product: 'Classic Straight Indigo'
+        text: 'Best oversized tee I’ve owned. The 280 GSM combed cotton has real structural weight and doesn\'t bacon at the neck after multiple washes.',
+        product: 'Tokyo Cyber Garage Graphic Tee'
       },
       {
         id: 2,
         name: 'Karan M.',
         location: 'Delhi',
         stars: 5,
-        text: 'Ordered the Baggy Heavy Wash and it exceeded my expectations. The denim weight is perfect for Mumbai winters. Already ordered a second pair.',
-        product: 'Heavy Wash Baggy'
+        text: 'The 450 GSM French terry sweatpants exceeded all my expectations. Heavy, soft, and the cuff stacks perfectly over my sneakers. Ordered a second pair.',
+        product: '450 GSM Heavy French Terry Sweatpants'
       },
       {
         id: 3,
         name: 'Rahul T.',
         location: 'Bangalore',
         stars: 5,
-        text: 'Finally a brand that gets streetwear proportions. The wide leg sits exactly how it should — generously cut but still clean. Top quality.',
-        product: 'Vintage Blue Wide Leg'
+        text: 'Finally a brand that gets streetwear drop-shoulder cuts right. Wide boxy body without being too long. Top quality craftsmanship.',
+        product: 'Raw Edge Drop Shoulder Heavy Tee'
       }
     ]
   },
@@ -686,7 +981,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   },
   catalog: {
     enabled: true,
-    title: 'All Products',
+    title: 'All Garments',
     showFilters: true
   }
 }

@@ -111,7 +111,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
       if (link.type === 'category') {
         const target = link.targetValue || 'all'
         setCategory(target)
-        if (target !== 'all' && target !== 'jeans') setFit('all')
       } else if (link.type === 'fit') {
         const target = (link.targetValue || 'all') as Fit | 'all'
         setFit(target)
@@ -123,14 +122,11 @@ export default function Header({ initialNavItems }: HeaderProps) {
       if (e) e.preventDefault()
       const target = (link.targetValue || 'all') as Fit | 'all'
       setFit(target)
-      router.push(`/shop/jeans?fit=${target}`)
+      router.push(`/shop?fit=${target}`)
     } else if (link.type === 'category') {
       if (e) e.preventDefault()
       const target = link.targetValue || 'all'
       setCategory(target)
-      if (target !== 'all' && target !== 'jeans') {
-        setFit('all')
-      }
       router.push(target === 'all' ? '/shop' : `/shop/${target}`)
     } else if (link.href === '/' || link.href.startsWith('/#')) {
       if (pathname !== '/') {

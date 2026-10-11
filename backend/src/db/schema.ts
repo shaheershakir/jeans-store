@@ -2,8 +2,8 @@ import { pgTable, serial, text, integer, timestamp, jsonb, varchar, boolean } fr
 
 export const products = pgTable('products', {
   id: serial('id').primaryKey(),
-  store: varchar('store', { length: 50 }).default('jean-store').notNull(),
-  category: varchar('category', { length: 50 }).default('jeans').notNull(),
+  store: varchar('store', { length: 50 }).default('teesgarage').notNull(),
+  category: varchar('category', { length: 50 }).default('printed-tees').notNull(),
   name: varchar('name', { length: 255 }).notNull(),
   fit: varchar('fit', { length: 50 }),
   price: varchar('price', { length: 50 }).notNull(),
@@ -21,7 +21,7 @@ export const products = pgTable('products', {
 export const orders = pgTable('orders', {
   id: serial('id').primaryKey(),
   orderNumber: varchar('order_number', { length: 50 }).notNull().unique(),
-  store: varchar('store', { length: 50 }).default('jean-store').notNull(),
+  store: varchar('store', { length: 50 }).default('teesgarage').notNull(),
   customerName: varchar('customer_name', { length: 255 }).notNull(),
   customerPhone: varchar('customer_phone', { length: 50 }).notNull(),
   customerEmail: varchar('customer_email', { length: 255 }).notNull(),

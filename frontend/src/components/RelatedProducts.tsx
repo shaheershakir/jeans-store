@@ -17,14 +17,15 @@ export default function RelatedProducts({ currentProduct }: RelatedProductsProps
   const openOverlay = useUIStore((state) => state.openOverlay)
   const showToast = useUIStore((state) => state.showToast)
 
-  // Find complementary products: if current is jeans, recommend tops/hoodies/shirts.
-  // If current is tops, recommend jeans.
+  // Find complementary products: if current is bottomwear, recommend t-shirts.
+  // If current is t-shirt, recommend bottomwear or complementary t-shirt styles.
+  const isBottomwear = currentProduct.category === 'trackpants' || currentProduct.category === 'sweatpants'
   const relatedList: Product[] = PRODUCTS.filter((p) => {
     if (p.id === currentProduct.id) return false
-    if (currentProduct.category === 'jeans') {
-      return p.category !== 'jeans' || p.fit !== currentProduct.fit
+    if (isBottomwear) {
+      return p.category !== 'trackpants' && p.category !== 'sweatpants'
     }
-    return p.category === 'jeans' || p.id !== currentProduct.id
+    return p.category === 'trackpants' || p.category === 'sweatpants' || p.category !== currentProduct.category
   }).slice(0, 4)
 
   const [addedId, setAddedId] = useState<number | null>(null)

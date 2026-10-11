@@ -76,7 +76,7 @@ const FIT_OPTIONS: Array<{
 const INSEAM_OPTIONS = [
   { length: '30', label: '30" (Crop / Under 5\'8")', desc: 'Clean zero-break hem' },
   { length: '32', label: '32" (Standard / 5\'8"–6\'1")', desc: 'Subtle classic break' },
-  { length: '34', label: '34" (Stacked / 6\'1"+)', desc: 'Pronounced denim stacking' }
+  { length: '34', label: '34" (Stacked / 6\'1"+)', desc: 'Pronounced ankle stacking' }
 ]
 
 const COMFORT_OPTIONS: Array<{
@@ -430,7 +430,7 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
               <div>
                 <h2 className="onboarding-title">Your Signature Fit &amp; Size Preference</h2>
                 <p className="onboarding-desc">
-                  Select your size profile. We will automatically pre-select these options when browsing jeans and apparel.
+                  Select your size profile. We will automatically pre-select these options when browsing tees and bottomwear.
                 </p>
               </div>
             </div>
@@ -439,7 +439,7 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
               {/* Waist Size Options */}
               <div className="onboarding-pref-section">
                 <div className="onboarding-pref-header">
-                  <span className="onboarding-pref-title">Denim Waist Size</span>
+                  <span className="onboarding-pref-title">Bottomwear Waist Size</span>
                   <span className="onboarding-pref-cur">Selected: {waistSize}&quot;</span>
                 </div>
                 <div className="onboarding-chips-grid">
@@ -478,10 +478,10 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
                 </div>
               </div>
 
-              {/* Denim Silhouette */}
+              {/* Silhouette */}
               <div className="onboarding-pref-section">
                 <div className="onboarding-pref-header">
-                  <span className="onboarding-pref-title">Signature Denim Silhouette</span>
+                  <span className="onboarding-pref-title">Signature Silhouette</span>
                   <span className="onboarding-pref-cur">Cut: {preferredFit}</span>
                 </div>
                 <div className="onboarding-cuts-grid">

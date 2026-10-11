@@ -14,82 +14,52 @@ const SLUG_TO_CONFIG: Record<
   all: {
     category: 'all',
     title: 'All Garments',
-    desc: 'The complete TEESGARAGE archive. Heavyweight fabrics, honest washes, and cuts that last.',
+    desc: 'The complete TEESGARAGE archive. Heavyweight tees, drop shoulders, trackpants and sweatpants built to last.',
   },
-  jeans: {
-    category: 'jeans',
-    title: 'Denim Collection',
-    desc: 'Rigid selvedge and premium washed denim crafted for lifetime wear.',
+  stripes: {
+    category: 'stripes',
+    title: 'Stripes Collection',
+    desc: 'Classic Breton, micro-stripes, and yarn-dyed horizontal block striped heavyweight tees.',
   },
-  denim: {
-    category: 'jeans',
-    title: 'Denim Collection',
-    desc: 'Rigid selvedge and premium washed denim crafted for lifetime wear.',
+  fullsleeve: {
+    category: 'fullsleeve',
+    title: 'Fullsleeve Tees',
+    desc: 'Thermal honeycomb waffle knits, 260 GSM combed cotton, and raglan full sleeve tees.',
   },
-  tops: {
-    category: 'tops',
-    title: 'Tops & T-Shirts',
-    desc: 'Heavyweight combed cotton tees, vintage washes, and streetwear cuts.',
+  drsleeve: {
+    category: 'drsleeve',
+    title: 'Drop Sleeve Tees',
+    desc: 'Elbow-length drop shoulder cuts, boxy streetwear proportions, and raw edge hems.',
   },
-  't-shirts': {
-    category: 'tops',
-    title: 'Tops & T-Shirts',
-    desc: 'Heavyweight combed cotton tees, vintage washes, and streetwear cuts.',
+  'printed-tees': {
+    category: 'printed-tees',
+    title: 'Printed Tees',
+    desc: 'Distressed automotive garage typography, cyberpunk prints, and archival botanical tees.',
   },
-  shirts: {
-    category: 'shirts',
-    title: 'Shirts & Overshirts',
-    desc: 'Tailored Oxfords, heavy cotton canvas shackets, and utility layers.',
+  'ringer-tees': {
+    category: 'ringer-tees',
+    title: 'Ringer Tees',
+    desc: '70s retro contrast ribbing, collegiate varsity accents, and vintage athletic styling.',
   },
-  hoodies: {
-    category: 'hoodies',
-    title: 'Hoodies & Sweatshirts',
-    desc: '450 GSM organic French terry and custom double-needle fleece.',
+  henley: {
+    category: 'henley',
+    title: 'Henley Tees',
+    desc: 'Multi-button plackets, textured slub cotton, and mineral washed rugged thermal henleys.',
   },
-  accessories: {
-    category: 'hats',
-    title: 'Accessories & Headwear',
-    desc: 'Curated 6-panel twill dad caps, water-resistant bucket hats, and daily essentials.',
+  trackpants: {
+    category: 'trackpants',
+    title: 'Trackpants',
+    desc: 'Urban cargo trackpants, side-piping retro joggers, and baggy nylon streetwear shells.',
   },
-  hats: {
-    category: 'hats',
-    title: 'Accessories & Headwear',
-    desc: 'Curated 6-panel twill dad caps, water-resistant bucket hats, and daily essentials.',
+  sweatpants: {
+    category: 'sweatpants',
+    title: 'Sweatpants',
+    desc: '450 GSM ultra-heavy French terry, sun-faded fleece, and open-hem stacking sweatpants.',
   },
   sale: {
     category: 'sale',
-    title: 'Sale & Archive Drop',
-    desc: 'Special edition archive pieces, limited runs, and seasonal markdowns.',
-  },
-  straight: {
-    category: 'jeans',
-    fit: 'Straight',
-    title: 'Straight Leg Denim',
-    desc: 'Structured mid-weight denim with a balanced straight leg from hip to ankle.',
-  },
-  baggy: {
-    category: 'jeans',
-    fit: 'Baggy',
-    title: 'Baggy Fit Denim',
-    desc: 'Generous volume through thigh and knee with authentic vintage fades.',
-  },
-  wide: {
-    category: 'jeans',
-    fit: 'Wide',
-    title: 'Wide Leg Denim',
-    desc: 'Dramatic drape cut from heavy Japanese-style ring-spun cotton denim.',
-  },
-  relaxed: {
-    category: 'jeans',
-    fit: 'Relaxed',
-    title: 'Relaxed Fit Denim',
-    desc: 'Easy-wearing comfortable seat with clean stacking over footwear.',
-  },
-  bootcut: {
-    category: 'jeans',
-    fit: 'Bootcut',
-    title: 'Bootcut Denim',
-    desc: 'Fitted through the hip with a subtle flare below the knee for an elongated profile.',
+    title: 'Archive Drops & Sale',
+    desc: 'Special edition archive releases, limited edition runs, and seasonal markdowns.',
   },
 }
 

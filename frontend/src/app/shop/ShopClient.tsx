@@ -32,33 +32,41 @@ const SORT_OPTIONS: { mode: SortMode; label: string }[] = [
 
 const SHOP_CATEGORIES = [
   { id: 'all', slug: 'all', href: '/shop', label: 'All Garments' },
-  { id: 'jeans', slug: 'jeans', href: '/shop/jeans', label: 'Denim' },
-  { id: 'tops', slug: 'tops', href: '/shop/tops', label: 'Tops & T-Shirts' },
-  { id: 'shirts', slug: 'shirts', href: '/shop/shirts', label: 'Shirts' },
-  { id: 'hoodies', slug: 'hoodies', href: '/shop/hoodies', label: 'Hoodies' },
-  { id: 'accessories', slug: 'accessories', href: '/shop/accessories', label: 'Accessories' },
+  { id: 'stripes', slug: 'stripes', href: '/shop/stripes', label: 'Stripes' },
+  { id: 'fullsleeve', slug: 'fullsleeve', href: '/shop/fullsleeve', label: 'Fullsleeve' },
+  { id: 'drsleeve', slug: 'drsleeve', href: '/shop/drsleeve', label: 'Drsleeve' },
+  { id: 'printed-tees', slug: 'printed-tees', href: '/shop/printed-tees', label: 'Printed Tees' },
+  { id: 'ringer-tees', slug: 'ringer-tees', href: '/shop/ringer-tees', label: 'Ringer Tees' },
+  { id: 'henley', slug: 'henley', href: '/shop/henley', label: 'Henley' },
+  { id: 'trackpants', slug: 'trackpants', href: '/shop/trackpants', label: 'Trackpants' },
+  { id: 'sweatpants', slug: 'sweatpants', href: '/shop/sweatpants', label: 'Sweatpants' },
   { id: 'sale', slug: 'sale', href: '/shop/sale', label: 'Sale & Archive' },
 ]
 
-const ALL_SIZES = ['28', '30', '32', '34', '36', '38', 'S', 'M', 'L', 'XL']
+const ALL_SIZES = ['S', 'M', 'L', 'XL', 'XXL']
 
 const COLOR_DOTS: Record<string, string> = {
-  'Classic Indigo': '#2e445b',
-  'Heavy Stonewash': '#68829e',
-  'Vintage Blue': '#4682b4',
-  'Washed Black': '#27272a',
-  'Dark Indigo': '#1a2738',
-  'Slate Grey': '#64748b',
-  'Rigid Raw Denim': '#0f172a',
-  'Sun Faded Blue': '#93c5fd',
-  'Vintage Black': '#18181b',
-  'Mineral Wash': '#52525b',
-  'Garment Dyed White': '#f4f4f5',
-  'Olive Canvas': '#4d5d53',
-  'Heather Concrete': '#cbd5e1',
+  'Ecru / Navy': '#1e293b',
+  'Washed Black / Ash': '#334155',
+  'Forest Green / Cream': '#166534',
+  'Heather Charcoal': '#475569',
+  'Pitch Black': '#09090b',
+  'Washed Olive / Sand': '#57534e',
   'Washed Charcoal': '#3f3f46',
-  'Forest Green': '#166534',
-  'Matte Black': '#09090b',
+  'Concrete Slate': '#64748b',
+  'Bone White': '#f8fafc',
+  'Vintage Acid Black': '#27272a',
+  'Washed Ecru': '#e2e8f0',
+  'Faded Burgundy': '#831843',
+  'Off-White / Cobalt': '#1d4ed8',
+  'Mustard / Chocolate': '#b45309',
+  'Heather Grey': '#94a3b8',
+  'Mineral Washed Black': '#18181b',
+  'Washed Sage': '#4d7c0f',
+  'Matte Onyx Black': '#0f172a',
+  'Deep Navy / Off-White': '#1e3a8a',
+  'Graphite Grey': '#52525b',
+  'Vintage Taupe': '#78716c',
 }
 
 interface ShopClientProps {
@@ -275,21 +283,22 @@ export default function ShopClient({
   }
 
   const categoryCounts = useMemo(() => {
-    return {
+    const map: Record<string, number> = {
       all: initialProducts.length,
-      jeans: initialProducts.filter((p) => p.category === 'jeans' || p.fit).length,
-      tops: initialProducts.filter((p) => p.category === 't-shirts' || p.category === 'shirts').length,
-      shirts: initialProducts.filter((p) => p.category === 'shirts').length,
-      hoodies: initialProducts.filter((p) => p.category === 'hoodies').length,
-      accessories: initialProducts.filter((p) => p.category === 'accessories' || p.category === 'hats').length,
       sale: initialProducts.filter((p) => p.badge?.toLowerCase() === 'sale' || p.priceNum <= 1500).length,
-    } as Record<string, number>
+    }
+    SHOP_CATEGORIES.forEach((c) => {
+      if (c.slug !== 'all' && c.slug !== 'sale') {
+        map[c.slug] = initialProducts.filter((p) => p.category?.toLowerCase() === c.slug).length
+      }
+    })
+    return map
   }, [initialProducts])
 
   const sizeCounts = useMemo(() => {
     const map: Record<string, number> = {}
     ALL_SIZES.forEach((sz) => {
-      map[sz] = initialProducts.filter((p) => p.sizes?.includes(sz)).length || (sz === '32' ? 8 : 4)
+      map[sz] = initialProducts.filter((p) => p.sizes?.includes(sz)).length || (sz === 'L' ? 8 : 4)
     })
     return map
   }, [initialProducts])
@@ -307,9 +316,6 @@ export default function ShopClient({
     () => ({
       TEESGARAGE: initialProducts.filter(
         (p) => !p.store || p.store.toLowerCase() === 'teesgarage' || p.store.toLowerCase() === 'infit'
-      ).length,
-      'JEAN-STORE': initialProducts.filter(
-        (p) => p.store && p.store.toLowerCase() === 'jean-store'
       ).length,
     }),
     [initialProducts]
@@ -336,14 +342,8 @@ export default function ShopClient({
     return map
   }, [initialProducts])
 
-  // Show fit selector when in all or denim
-  const showFitFilter = filterCategory === 'all' || filterCategory === 'jeans'
-
-  // Denim product count helper
-  const denimProducts = useMemo(
-    () => initialProducts.filter((p) => p.category === 'jeans' || p.fit !== undefined),
-    [initialProducts]
-  )
+  // Show fit selector
+  const showFitFilter = true
 
   // Filter facets content (Shared between Desktop Sidebar and Mobile Drawer)
   const renderFacetGroups = (isDrawer = false) => (
@@ -357,16 +357,9 @@ export default function ShopClient({
             const count =
               cat.slug === 'all'
                 ? initialProducts.length
-                : cat.slug === 'jeans'
-                ? denimProducts.length
                 : cat.slug === 'sale'
                 ? initialProducts.filter((p) => p.badge?.toLowerCase() === 'sale' || p.priceNum <= 1500).length
-                : initialProducts.filter(
-                    (p) =>
-                      p.category?.toLowerCase() === cat.slug ||
-                      (cat.slug === 'tops' && (p.category === 't-shirts' || p.category === 'shirts')) ||
-                      (cat.slug === 'accessories' && (p.category === 'hats' || p.category === 'accessories'))
-                  ).length
+                : initialProducts.filter((p) => p.category?.toLowerCase() === cat.slug).length
 
             return (
               <label key={cat.slug} className="shop-facet-row">
@@ -376,7 +369,7 @@ export default function ShopClient({
                   onChange={() => {
                     const target = isChecked ? 'all' : cat.slug
                     setCategory(target)
-                    if (target !== 'all' && target !== 'jeans') setFit('all')
+                    if (target !== 'all') setFit('all')
                     if (isDrawer) {
                       // in drawer keep open until Apply
                     } else {
@@ -409,10 +402,10 @@ export default function ShopClient({
               />
               <span className="shop-facet-radio" />
               <span className="shop-facet-text">All Fits</span>
-              <span className="shop-facet-qty">({denimProducts.length})</span>
+              <span className="shop-facet-qty">({fitCounts['all'] ?? initialProducts.length})</span>
             </label>
             {FITS.map((f) => {
-              const count = denimProducts.filter((p) => p.fit === f).length
+              const count = fitCounts[f] ?? 0
               const isChecked = filterFit === f
               return (
                 <label key={f} className="shop-facet-row">

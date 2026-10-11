@@ -160,7 +160,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
                     <Link
                       href={h.primaryCtaLink || '/#catalog'}
                       className="hp-cta-primary"
-                      onClick={() => setCategory('jeans')}
+                      onClick={() => setCategory('all')}
                     >
                       {h.primaryCtaText}
                     </Link>

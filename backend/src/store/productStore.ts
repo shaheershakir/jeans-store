@@ -7,8 +7,8 @@ import { products as productsTable, type DbProduct } from '../db/schema.js'
 function toProduct(row: DbProduct): Product {
   return {
     id: row.id,
-    store: (row.store as StoreType) || 'jean-store',
-    category: row.category || 'jeans',
+    store: (row.store as StoreType) || 'teesgarage',
+    category: row.category || 'printed-tees',
     name: row.name,
     fit: (row.fit as Fit) || undefined,
     price: row.price,
@@ -65,8 +65,8 @@ class ProductStore {
       const [row] = await db
         .insert(productsTable)
         .values({
-          store: input.store || 'jean-store',
-          category: input.category || 'jeans',
+          store: input.store || 'teesgarage',
+          category: input.category || 'printed-tees',
           name: input.name,
           fit: input.fit ?? null,
           price: input.price,

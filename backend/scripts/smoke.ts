@@ -87,7 +87,7 @@ const orderRes = await request('/api/orders', {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({
-    orderNumber: `INF-SMOKE-${Date.now().toString().slice(-4)}`,
+    orderNumber: `TGE-SMOKE-${Date.now().toString().slice(-4)}`,
     customerName: 'Smoke Test Customer',
     customerPhone: '9876543210',
     customerEmail: 'smoke@example.com',

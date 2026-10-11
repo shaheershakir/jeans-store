@@ -16,14 +16,16 @@ import StickyPdpBar from '@/components/StickyPdpBar'
 
 // Map category ID → breadcrumb label + route
 const CATEGORY_META: Record<string, { label: string; href: string }> = {
-  jeans: { label: 'Denim', href: '/shop/jeans' },
-  'jeans-fit': { label: 'Denim', href: '/shop/jeans' },
-  tops: { label: 'Tops & T-Shirts', href: '/shop/tops' },
-  't-shirts': { label: 'Tops & T-Shirts', href: '/shop/tops' },
-  shirts: { label: 'Shirts', href: '/shop/shirts' },
-  hoodies: { label: 'Hoodies', href: '/shop/hoodies' },
-  hats: { label: 'Accessories', href: '/shop/accessories' },
-  accessories: { label: 'Accessories', href: '/shop/accessories' },
+  stripes: { label: 'Stripes', href: '/shop/stripes' },
+  fullsleeve: { label: 'Fullsleeve', href: '/shop/fullsleeve' },
+  drsleeve: { label: 'Drsleeve', href: '/shop/drsleeve' },
+  'printed-tees': { label: 'Printed Tees', href: '/shop/printed-tees' },
+  'ringer-tees': { label: 'Ringer Tees', href: '/shop/ringer-tees' },
+  henley: { label: 'Henley', href: '/shop/henley' },
+  trackpants: { label: 'Trackpants', href: '/shop/trackpants' },
+  sweatpants: { label: 'Sweatpants', href: '/shop/sweatpants' },
+  tops: { label: 'T-Shirts', href: '/shop' },
+  't-shirts': { label: 'T-Shirts', href: '/shop' },
 }
 
 export default function ProductDetail({ product }: { product: Product }) {
@@ -51,7 +53,6 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   const catMeta =
     (product.category ? CATEGORY_META[product.category] : null) ??
-    (product.fit ? CATEGORY_META['jeans'] : null) ??
     { label: 'All Garments', href: '/shop' }
 
   const preferences = usePreferencesStore((state) => state.preferences)
@@ -209,8 +210,8 @@ export default function ProductDetail({ product }: { product: Product }) {
 
           <p className="pdp-narrative">{product.desc}</p>
 
-          {/* Wash Switcher (for Denim) */}
-          {(product.wash || product.category === 'jeans') && (
+          {/* Colorway / Wash Switcher */}
+          {Boolean(product.wash) && (
             <div className="pdp-option-section">
               <div className="option-label-row">
                 <span className="option-title">

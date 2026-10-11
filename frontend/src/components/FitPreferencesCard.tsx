@@ -72,7 +72,7 @@ const FIT_OPTIONS: Array<{
 const INSEAM_OPTIONS = [
   { length: '30', label: '30" (Crop / Under 5\'8")', desc: 'Clean zero-break hem' },
   { length: '32', label: '32" (Standard / 5\'8"–6\'1")', desc: 'Subtle classic break' },
-  { length: '34', label: '34" (Stacked / 6\'1"+)', desc: 'Pronounced denim stacking' }
+  { length: '34', label: '34" (Stacked / 6\'1"+)', desc: 'Pronounced ankle stacking' }
 ]
 
 const COMFORT_OPTIONS: Array<{
@@ -121,7 +121,7 @@ export default function FitPreferencesCard({ standalone = false }: FitPreference
 
   const handleSelectWaist = (waist: string) => {
     updatePreferences({ waistSize: waist })
-    triggerFeedback(`Waist size ${waist}" auto-selected on all jeans & trousers`)
+    triggerFeedback(`Waist size ${waist}" auto-selected on all bottomwear & trackpants`)
   }
 
   const handleSelectTop = (top: string) => {
@@ -221,13 +221,13 @@ export default function FitPreferencesCard({ standalone = false }: FitPreference
         </div>
       </div>
 
-      {/* ── Section 1: Bottoms & Denim Waist Size ── */}
+      {/* ── Section 1: Bottomwear Waist Size ── */}
       <div className="fit-section">
         <div className="fit-section-header">
           <div className="fit-section-info">
-            <h2 className="fit-section-title">1. Bottoms &amp; Denim Waist Size</h2>
+            <h2 className="fit-section-title">1. Bottomwear Waist Size</h2>
             <p className="fit-section-desc">
-              Your exact waist size in inches. Denim waistbands are sanforized and true to size.
+              Your exact waist size in inches. Bottomwear waistbands are engineered for comfortable all-day wear.
             </p>
           </div>
           <span className="fit-selected-indicator">
@@ -295,11 +295,11 @@ export default function FitPreferencesCard({ standalone = false }: FitPreference
         </div>
       </div>
 
-      {/* ── Section 3: Signature Denim Silhouette ── */}
+      {/* ── Section 3: Signature Silhouette ── */}
       <div className="fit-section">
         <div className="fit-section-header">
           <div className="fit-section-info">
-            <h2 className="fit-section-title">3. Signature Denim Silhouette</h2>
+            <h2 className="fit-section-title">3. Signature Silhouette</h2>
             <p className="fit-section-desc">
               Choose your go-to cut. We emphasize matching silhouettes when recommending garments.
             </p>
@@ -309,7 +309,7 @@ export default function FitPreferencesCard({ standalone = false }: FitPreference
           </span>
         </div>
 
-        <div className="fit-cuts-grid" role="radiogroup" aria-label="Denim cut options">
+        <div className="fit-cuts-grid" role="radiogroup" aria-label="Cut options">
           {FIT_OPTIONS.map((opt) => {
             const isSelected = preferences.preferredFit === opt.fit
             return (

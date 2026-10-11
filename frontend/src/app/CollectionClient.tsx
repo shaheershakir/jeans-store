@@ -48,7 +48,7 @@ export default function CollectionClient({ initialProducts = PRODUCTS }: Collect
   const activeFilterCount =
     (category !== 'all' ? 1 : 0) + (fit !== 'all' ? 1 : 0) + prices.length + (searchQuery.trim() ? 1 : 0)
 
-  const showFitFilter = category === 'all' || category === 'jeans'
+  const showFitFilter = true
 
   return (
     <>
@@ -71,9 +71,6 @@ export default function CollectionClient({ initialProducts = PRODUCTS }: Collect
                   className={`category-tab-chip ${isActive ? 'active' : ''}`}
                   onClick={() => {
                     setCategory(cat.id)
-                    if (cat.id !== 'all' && cat.id !== 'jeans') {
-                      setFit('all')
-                    }
                   }}
                 >
                   {cat.label}
@@ -84,9 +81,9 @@ export default function CollectionClient({ initialProducts = PRODUCTS }: Collect
         </div>
 
         <div className="collection-toolbar-content">
-          {/* Fit Filter Segmented Chips (Visible for Denim & All) */}
+          {/* Fit Filter Segmented Chips */}
           {showFitFilter ? (
-            <div className="fit-pills-scroll" role="tablist" aria-label="Filter by denim fit">
+            <div className="fit-pills-scroll" role="tablist" aria-label="Filter by silhouette and fit">
               <button
                 type="button"
                 role="tab"
@@ -215,7 +212,7 @@ export default function CollectionClient({ initialProducts = PRODUCTS }: Collect
       <section className="catalog-section">
         {products.length === 0 ? (
           <div className="catalog-empty-state">
-            <p className="empty-title">No jeans match those filters.</p>
+            <p className="empty-title">No products match those filters.</p>
             <p className="empty-desc">Try resetting your filter parameters to view the archive.</p>
             <button className="reset-catalog-btn" type="button" onClick={reset}>
               Clear all filters

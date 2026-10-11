@@ -64,7 +64,7 @@ export default function Footer() {
       </div>
       <div className="footer-bottom-bar">
         <span>© 2026 TEESGARAGE® CLOTHING. ALL RIGHTS RESERVED.</span>
-        <span>DENIM CRAFTED FOR THE REAL WORLD</span>
+        <span>HEAVYWEIGHT TEES &amp; BOTTOMWEAR CRAFTED FOR THE REAL WORLD</span>
       </div>
     </footer>
   )

@@ -4,9 +4,9 @@ import { getHomepageConfig } from '@/lib/homepage'
 import HomepageClient from '@/components/HomepageClient'
 
 export const metadata: Metadata = {
-  title: 'INFIT — Denim for the real world',
+  title: 'TEESGARAGE — T-Shirts & Bottomwear',
   description:
-    'Heavyweight denim, honest washes, and fits that get better with every wear. Free shipping above ₹999.',
+    'Heavyweight tees, drop shoulders, stripes, henleys, trackpants & sweatpants built for everyday wear. Free shipping above ₹999.',
 }
 
 export default async function HomePage() {

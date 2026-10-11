@@ -73,7 +73,7 @@ export default function CartDrawer() {
             <div className="cart-empty-state">
               <span className="cart-empty-badge">BAG STATUS // EMPTY</span>
               <h3 className="cart-empty-title">Nothing here yet</h3>
-              <p>Your bag is empty. Find your fit and add your first pair of jeans.</p>
+              <p>Your bag is empty. Find your fit and add your first piece.</p>
               <button type="button" className="button primary" onClick={closeOverlay}>
                 Continue shopping <i>↗</i>
               </button>

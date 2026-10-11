@@ -51,7 +51,7 @@ export default function CategoryClient({ products, category: initialCategory, ti
   const filtered = filterAndSortProducts(fit, prices, sort, products, category, searchQuery)
   const activeFilterCount =
     (fit !== 'all' ? 1 : 0) + prices.length + (searchQuery.trim() ? 1 : 0)
-  const showFitFilter = category === 'all' || category === 'jeans'
+  const showFitFilter = true
 
   return (
     <div className="cat-page">
@@ -78,7 +78,7 @@ export default function CategoryClient({ products, category: initialCategory, ti
               className={`category-tab-chip ${category === cat.id ? 'active' : ''}`}
               onClick={() => {
                 setCategory(cat.id)
-                if (cat.id !== 'all' && cat.id !== 'jeans') setFit('all')
+                if (cat.id !== 'all') setFit('all')
               }}
             >
               {cat.label}

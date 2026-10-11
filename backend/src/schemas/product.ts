@@ -1,14 +1,27 @@
 import { z } from 'zod'
 
-export const STORES = ['teesgarage', 'infit', 'jean-store', 'clothing-store', 'frontend'] as const
+export const STORES = ['teesgarage', 'infit', 'clothing-store', 'frontend'] as const
 export type StoreType = (typeof STORES)[number]
 
-export const FITS = ['Straight', 'Baggy', 'Wide', 'Relaxed', 'Bootcut'] as const
+export const FITS = ['Oversized', 'Boxy', 'Relaxed', 'Regular', 'Straight', 'Baggy', 'Bootcut', 'Wide', 'Slim'] as const
 export type Fit = (typeof FITS)[number]
 
 export const FIT_VALUES = [...FITS, 'all'] as const
 
-export const CATEGORIES = ['jeans', 'shirts', 't-shirts', 'hoodies', 'hats', 'accessories'] as const
+export const CATEGORIES = [
+  'stripes',
+  'fullsleeve',
+  'drsleeve',
+  'printed-tees',
+  'ringer-tees',
+  'henley',
+  'trackpants',
+  'sweatpants',
+  't-shirts',
+  'shirts',
+  'hoodies',
+  'accessories'
+] as const
 export type Category = (typeof CATEGORIES)[number]
 
 /**
@@ -17,7 +30,7 @@ export type Category = (typeof CATEGORIES)[number]
 export const productSchema = z.object({
   id: z.number().int().nonnegative(),
   store: z.string().default('teesgarage'),
-  category: z.string().default('jeans'),
+  category: z.string().default('printed-tees'),
   name: z.string().min(1),
   fit: z.enum(FITS).optional(),
   price: z.string().min(1),

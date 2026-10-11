@@ -49,15 +49,7 @@ export function filterAndSortProducts(
   }
 
   if (category && category !== 'all') {
-    if (category === 'jeans') {
-      list = list.filter((p) => p.category === 'jeans' || p.fit !== undefined)
-    } else if (category === 'tops') {
-      list = list.filter((p) => p.category === 't-shirts' || p.category === 'shirts')
-    } else if (category === 'hoodies') {
-      list = list.filter((p) => p.category === 'hoodies')
-    } else if (category === 'hats') {
-      list = list.filter((p) => p.category === 'hats' || p.category === 'accessories')
-    } else if (category === 'sale') {
+    if (category === 'sale') {
       list = list.filter((p) => p.badge?.toLowerCase() === 'sale' || p.priceNum <= 1500)
     } else {
       list = list.filter((p) => p.category?.toLowerCase() === category.toLowerCase())

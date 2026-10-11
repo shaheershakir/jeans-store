@@ -50,8 +50,8 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     enabled: true,
     eyebrow: 'New Season — SS 2026',
     title: 'Built for\neveryday.',
-    subtitle: 'Heavyweight denim. Honest washes.\nCuts that get better with every wear.',
-    primaryCtaText: 'Shop Denim',
+    subtitle: 'Heavyweight T-shirts. Engineered bottomwear.\nCuts that hold their shape with every wear.',
+    primaryCtaText: 'Shop Collection',
     primaryCtaLink: '/#catalog',
     secondaryCtaText: 'All Styles',
     secondaryCtaLink: '/#catalog',
@@ -64,39 +64,60 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     title: 'Shop by Category',
     items: [
       {
-        id: 'jeans',
-        label: 'Denim',
-        icon: '👖',
-        img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=600&q=80',
-        count: '8 styles'
-      },
-      {
-        id: 't-shirts',
-        label: 'T-Shirts',
-        icon: '👕',
-        img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
-        count: '4 styles'
-      },
-      {
-        id: 'shirts',
-        label: 'Shirts',
-        icon: '👔',
-        img: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=600&q=80',
+        id: 'stripes',
+        label: 'Stripes',
+        icon: '💈',
+        img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80',
         count: '3 styles'
       },
       {
-        id: 'hoodies',
-        label: 'Hoodies',
+        id: 'fullsleeve',
+        label: 'Fullsleeve',
         icon: '🧥',
-        img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80',
-        count: '2 styles'
+        img: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
       },
       {
-        id: 'hats',
-        label: 'Accessories',
-        icon: '🧢',
-        img: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
-        count: '2 styles'
+        id: 'drsleeve',
+        label: 'Drsleeve',
+        icon: '👕',
+        img: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
+      },
+      {
+        id: 'printed-tees',
+        label: 'Printed Tees',
+        icon: '🎨',
+        img: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
+      },
+      {
+        id: 'ringer-tees',
+        label: 'Ringer Tees',
+        icon: '⚡',
+        img: 'https://images.unsplash.com/photo-1503343090-f0409e92791a?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
+      },
+      {
+        id: 'henley',
+        label: 'Henley',
+        icon: '👔',
+        img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
+      },
+      {
+        id: 'trackpants',
+        label: 'Trackpants',
+        icon: '👖',
+        img: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
+      },
+      {
+        id: 'sweatpants',
+        label: 'Sweatpants',
+        icon: '🩳',
+        img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80',
+        count: '3 styles'
       }
     ]
   },
@@ -111,9 +132,9 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   featured_collection: {
     enabled: true,
     eyebrow: 'Featured Collection',
-    title: 'The Essentials\nCollection',
+    title: 'The Heavyweight\nCollection',
     description:
-      'Every piece designed to live in your rotation forever. Heavyweight fabrics, considered washes, and silhouettes that hold their shape.',
+      'Every piece designed to live in your everyday rotation. Heavyweight 260+ GSM combed cotton, structured French terry, and boxy fits that hold their shape.',
     ctaText: 'Shop Collection',
     ctaLink: '/#catalog',
     imageUrl: '/featured-collection.jpg'
@@ -130,13 +151,13 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     eyebrow: 'Our Story',
     title: 'Made for your\neveryday.',
     paragraphs: [
-      'TEESGARAGE started with a simple question: why is it so hard to find jeans that fit, last, and feel honest? We’re a Mumbai-based label obsessed with getting denim right — from the weight of the fabric to the arc of the seat.',
-      'No fast fashion. No compromise. Just weighty, considered denim built to outlast the trends.'
+      'TEESGARAGE started with a simple question: why is it so hard to find heavyweight tees and bottomwear that fit right, last, and feel honest? We’re a Mumbai-based label obsessed with getting everyday essentials right — from 260+ GSM combed cotton to structured French terry.',
+      'No fast fashion. No compromise. Just weighty, considered garments built to outlast trends.'
     ],
     imageUrl: '/brand-editorial.jpg',
     stats: [
-      { num: '14oz', label: 'Fabric weight' },
-      { num: '5+', label: 'Signature fits' },
+      { num: '280 GSM', label: 'Cotton weight' },
+      { num: '8', label: 'Signature cuts' },
       { num: '24h', label: 'Mumbai dispatch' }
     ],
     ctaText: 'Get in Touch',
@@ -151,29 +172,29 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
       {
         id: 1,
         title: 'The Daily Driver',
-        tag: 'Straight + Tee',
-        img: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?auto=format&fit=crop&w=600&q=80',
+        tag: 'Drsleeve + Trackpants',
+        img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
         link: '/#catalog'
       },
       {
         id: 2,
         title: 'Street Ready',
-        tag: 'Baggy + Hoodie',
-        img: 'https://images.unsplash.com/photo-1509551388413-e18d0ac5d495?auto=format&fit=crop&w=600&q=80',
+        tag: 'Printed Tee + Sweatpants',
+        img: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
         link: '/#catalog'
       },
       {
         id: 3,
         title: 'Clean & Classic',
-        tag: 'Relaxed + Oxford',
-        img: 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=600&q=80',
+        tag: 'Stripes + Cargo',
+        img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80',
         link: '/#catalog'
       },
       {
         id: 4,
-        title: 'Night Out',
-        tag: 'Dark Indigo + Jacket',
-        img: 'https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=600&q=80',
+        title: 'Minimal Thermal',
+        tag: 'Fullsleeve + Shell Pants',
+        img: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=600&q=80',
         link: '/#catalog'
       }
     ]
@@ -185,12 +206,12 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     subtitle: 'Real people, real fits — tag us in yours.',
     instagramUrl: 'https://instagram.com',
     photos: [
-      'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=400&q=80',
       'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1554412933-514a83d2f3c8?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=400&q=80'
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80'
     ]
   },
   reviews: {
@@ -203,24 +224,24 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
         name: 'Aryan S.',
         location: 'Mumbai',
         stars: 5,
-        text: 'Best jeans I’ve ever owned. The indigo wash is incredible and the fit is exactly right — not too tight, not loose. Worth every rupee.',
-        product: 'Classic Straight Indigo'
+        text: 'Best oversized tee I’ve owned. The 280 GSM combed cotton has real structural weight and doesn\'t bacon at the neck after multiple washes.',
+        product: 'Tokyo Cyber Garage Graphic Tee'
       },
       {
         id: 2,
         name: 'Karan M.',
         location: 'Delhi',
         stars: 5,
-        text: 'Ordered the Baggy Heavy Wash and it exceeded my expectations. The denim weight is perfect for Mumbai winters. Already ordered a second pair.',
-        product: 'Heavy Wash Baggy'
+        text: 'The 450 GSM French terry sweatpants exceeded all my expectations. Heavy, soft, and the cuff stacks perfectly over my sneakers. Ordered a second pair.',
+        product: '450 GSM Heavy French Terry Sweatpants'
       },
       {
         id: 3,
         name: 'Rahul T.',
         location: 'Bangalore',
         stars: 5,
-        text: 'Finally a brand that gets streetwear proportions. The wide leg sits exactly how it should — generously cut but still clean. Top quality.',
-        product: 'Vintage Blue Wide Leg'
+        text: 'Finally a brand that gets streetwear proportions. The drop shoulder sits exactly how it should — boxy, clean drape, and durable collar ribbing.',
+        product: 'Boxy Heavyweight Drop Shoulder Tee'
       }
     ]
   },

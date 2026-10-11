@@ -214,12 +214,12 @@ function LoginForm() {
             <span>Storefront</span>
           </Link>
 
-          <Link href="/" aria-label="INFIT Home">
+          <Link href="/" aria-label="TEESGARAGE Home">
             <Image
-              src="/infit_logo.svg"
-              alt="INFIT"
-              width={105}
-              height={26}
+              src="/teesgarage_logo.svg"
+              alt="TEESGARAGE"
+              width={140}
+              height={40}
               priority
               className="apple-auth-brand-logo"
             />
@@ -229,7 +229,7 @@ function LoginForm() {
         {/* Title Group */}
         <div className="apple-auth-title-group">
           <h1 className="apple-auth-title">
-            {mode === 'signin' ? 'Sign in to your account' : 'Create an INFIT account'}
+            {mode === 'signin' ? 'Sign in to your account' : 'Create a TEESGARAGE account'}
           </h1>
           <p className="apple-auth-subtitle">
             {mode === 'signin'
@@ -384,7 +384,7 @@ function LoginForm() {
             ) : mode === 'signin' ? (
               'Sign In to Account'
             ) : (
-              'Create INFIT Account'
+              'Create TEESGARAGE Account'
             )}
           </button>
         </form>
@@ -436,7 +436,7 @@ function LoginForm() {
 
         {/* New account prompt */}
         <div className="mt-5 text-center font-ui text-xs text-zinc-500">
-          Don&apos;t have an INFIT account?{' '}
+          Don&apos;t have a TEESGARAGE account?{' '}
           <Link
             href={`/register${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`}
             className="text-zinc-900 font-semibold hover:underline"
@@ -447,7 +447,7 @@ function LoginForm() {
 
         {/* Footer Guarantee */}
         <p className="apple-auth-footer-note">
-          By signing in, you agree to INFIT&apos;s Terms of Service and Privacy Policy.
+          By signing in, you agree to TEESGARAGE&apos;s Terms of Service and Privacy Policy.
         </p>
       </div>
     </div>

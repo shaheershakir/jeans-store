@@ -29,60 +29,60 @@ export interface CarouselSlide {
 
 const CAROUSEL_SLIDES: CarouselSlide[] = [
   {
-    id: 'flash-sale',
+    id: 'heavyweight-tees',
     countdown: true,
-    eyebrow: 'Online only: ends in ',
-    title: 'Flash Sale',
-    subtitle: '40-60% off signature denim silhouettes, heavyweight hoodies & wardrobe essentials.',
+    eyebrow: 'ONLINE EXCLUSIVE // SS 2026',
+    title: 'Heavyweight Tees',
+    subtitle: '260-280 GSM combed cotton stripes, drop-shoulder silhouettes & full sleeves.',
     leftImage: {
-      url: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80',
-      alt: 'Models wearing heavyweight raw denim'
+      url: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=800&q=80',
+      alt: 'Model in heavy striped boxy tee'
     },
     rightImage: {
-      url: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80',
-      alt: 'Model in vintage faded indigo jeans'
+      url: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=800&q=80',
+      alt: 'Model in drop sleeve oversized streetwear tee'
     },
     buttons: [
-      { label: 'Women', category: 'tops' },
-      { label: 'Men', category: 'jeans' }
+      { label: 'Stripes', category: 'stripes' },
+      { label: 'Drsleeve', category: 'drsleeve' }
     ]
   },
   {
-    id: 'heavy-fleece',
+    id: 'street-bottomwear',
     countdown: false,
-    eyebrow: 'LIMITED ARCHIVE DROP // 2026',
-    title: 'Heavy Fleece',
-    subtitle: '450 GSM organic looped French terry hoodies with zero drawstrings & structural crossover hoods.',
+    eyebrow: 'NEW BOTTOMWEAR DROP // 2026',
+    title: 'Trackpants & Sweatpants',
+    subtitle: '450 GSM organic looped French terry & matte nylon shell cargo trackpants built for everyday wear.',
     leftImage: {
+      url: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=800&q=80',
+      alt: 'Urban utility cargo trackpants'
+    },
+    rightImage: {
       url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
-      alt: 'Heavy french terry pullover hoodie'
-    },
-    rightImage: {
-      url: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80',
-      alt: 'Vintage mineral washed zip hoodie'
+      alt: '450 GSM French terry sweatpants'
     },
     buttons: [
-      { label: 'Hoodies', category: 'hoodies' },
-      { label: 'Accessories', category: 'hats' }
+      { label: 'Trackpants', category: 'trackpants' },
+      { label: 'Sweatpants', category: 'sweatpants' }
     ]
   },
   {
-    id: 'baggy-wide',
+    id: 'printed-ringer',
     countdown: false,
-    eyebrow: 'EXCLUSIVE CUTS // STUDIO EDIT',
-    title: 'Baggy & Wide',
-    subtitle: 'Cut loose through the seat and thigh with generous leg opening and stacking ankle breaks.',
+    eyebrow: 'ARCHIVAL GRAPHICS // STUDIO EDIT',
+    title: 'Printed & Ringer Tees',
+    subtitle: 'High-density screenprints, Tokyo garage typography, and 70s contrast ribbed ringer collars.',
     leftImage: {
-      url: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=800&q=80',
-      alt: 'Relaxed wide leg stacking jeans'
+      url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
+      alt: 'Distressed cyber garage printed graphic tee'
     },
     rightImage: {
-      url: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=800&q=80',
-      alt: 'Classic straight leg rinsed indigo jeans'
+      url: 'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=800&q=80',
+      alt: 'Vintage 70s contrast ringer tee'
     },
     buttons: [
-      { label: 'Baggy Fit', fit: 'Baggy' },
-      { label: 'Straight Fit', fit: 'Straight' }
+      { label: 'Printed Tees', category: 'printed-tees' },
+      { label: 'Ringer Tees', category: 'ringer-tees' }
     ]
   }
 ]

@@ -11,17 +11,17 @@ import './globals.css'
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://teesgarage.in'),
-  title: 'TEESGARAGE — Denim for the real world',
+  title: 'TEESGARAGE — Heavyweight T-Shirts & Premium Bottomwear',
   description:
-    'Weighty denim, honest washes, and fits that get better with every wear. Free shipping above ₹1,499.',
+    'Heavyweight combed cotton tees, drop shoulders, stripes, henleys, trackpants & sweatpants built for everyday wear. Free shipping above ₹999.',
   manifest: '/site.webmanifest',
   icons: {
     icon: '/icon.svg'
   },
   openGraph: {
-    title: 'TEESGARAGE — Denim for the real world',
+    title: 'TEESGARAGE — Heavyweight T-Shirts & Premium Bottomwear',
     description:
-      'Weighty denim, honest washes, and fits that get better with every wear. Free shipping above ₹1,499.',
+      'Heavyweight combed cotton tees, drop shoulders, stripes, henleys, trackpants & sweatpants built for everyday wear. Free shipping above ₹999.',
     url: 'https://teesgarage.in',
     siteName: 'TEESGARAGE',
     locale: 'en_IN',

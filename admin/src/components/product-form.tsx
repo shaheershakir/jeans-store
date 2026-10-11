@@ -70,11 +70,11 @@ export function ProductForm({ product }: { product?: Product }) {
       weight: v.weight,
       barcode: v.barcode,
     })) ?? [
-      { size: 28, color: 'Blue', sku: 'INF-STR-28', price: 1999, stock: 15, reorderPoint: 5, weight: 650, barcode: '8901234567890' },
-      { size: 30, color: 'Blue', sku: 'INF-STR-30', price: 1999, stock: 25, reorderPoint: 5, weight: 650, barcode: '8901234567891' },
-      { size: 32, color: 'Blue', sku: 'INF-STR-32', price: 1999, stock: 30, reorderPoint: 5, weight: 650, barcode: '8901234567892' },
-      { size: 34, color: 'Blue', sku: 'INF-STR-34', price: 1999, stock: 20, reorderPoint: 5, weight: 650, barcode: '8901234567893' },
-      { size: 36, color: 'Blue', sku: 'INF-STR-36', price: 1999, stock: 10, reorderPoint: 5, weight: 650, barcode: '8901234567894' },
+      { size: 28, color: 'Blue', sku: 'TGE-STR-28', price: 1999, stock: 15, reorderPoint: 5, weight: 650, barcode: '8901234567890' },
+      { size: 30, color: 'Blue', sku: 'TGE-STR-30', price: 1999, stock: 25, reorderPoint: 5, weight: 650, barcode: '8901234567891' },
+      { size: 32, color: 'Blue', sku: 'TGE-STR-32', price: 1999, stock: 30, reorderPoint: 5, weight: 650, barcode: '8901234567892' },
+      { size: 34, color: 'Blue', sku: 'TGE-STR-34', price: 1999, stock: 20, reorderPoint: 5, weight: 650, barcode: '8901234567893' },
+      { size: 36, color: 'Blue', sku: 'TGE-STR-36', price: 1999, stock: 10, reorderPoint: 5, weight: 650, barcode: '8901234567894' },
     ]
   )
 
@@ -95,7 +95,7 @@ export function ProductForm({ product }: { product?: Product }) {
         .map((w) => w[0])
         .join('')
         .toUpperCase()
-      setSku(`INF-${initials || 'JEAN'}`)
+      setSku(`TGE-${initials || 'TEE'}`)
     }
   }
 
@@ -229,11 +229,11 @@ export function ProductForm({ product }: { product?: Product }) {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Product Name" required>
-                <Input value={name} onChange={(e) => handleNameChange(e.target.value)} placeholder="e.g. Classic Indigo Straight" />
+                <Input value={name} onChange={(e) => handleNameChange(e.target.value)} placeholder="e.g. Heavyweight Boxy Tee" />
               </Field>
 
               <Field label="SKU Base" required hint="Master SKU prefix">
-                <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="e.g. INF-STR-01" />
+                <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="e.g. TGE-TEE-01" />
               </Field>
             </div>
 
