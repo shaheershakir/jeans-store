@@ -41,7 +41,26 @@ export const productSchema = z.object({
   badge: z.string().min(1).optional(),
   desc: z.string().min(1),
   wash: z.string().min(1).optional(),
-  sizes: z.array(z.string()).optional()
+  color: z.string().optional(),
+  sizes: z.array(z.string()).optional(),
+  fabric: z.string().optional(),
+  material: z.string().optional(),
+  sleeveLength: z.string().optional(),
+  neckType: z.string().optional(),
+  pattern: z.string().optional(),
+  printStyle: z.string().optional(),
+  trimColor: z.string().optional(),
+  buttons: z.string().optional(),
+  waistSize: z.array(z.string()).optional(),
+  length: z.string().optional(),
+  closure: z.string().optional(),
+  pockets: z.string().optional(),
+  use: z.string().optional(),
+  legStyle: z.string().optional(),
+  rise: z.string().optional(),
+  rating: z.number().optional(),
+  inStock: z.boolean().optional(),
+  collection: z.string().optional()
 })
 
 export const createProductSchema = productSchema.omit({ id: true })

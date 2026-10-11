@@ -48,7 +48,26 @@ export interface Product {
   badge?: string
   desc: string
   wash?: string
+  color?: string
   sizes?: string[]
+  fabric?: string
+  material?: string
+  sleeveLength?: string
+  neckType?: string
+  pattern?: string
+  printStyle?: string
+  trimColor?: string
+  buttons?: string
+  waistSize?: string[]
+  length?: string
+  closure?: string
+  pockets?: string
+  use?: string
+  legStyle?: string
+  rise?: string
+  rating?: number
+  inStock?: boolean
+  collection?: string
 }
 
 export const CATEGORY_FILTERS = [
@@ -84,7 +103,15 @@ export const PRODUCTS: Product[] = [
     badge: 'Bestseller',
     desc: '260 GSM combed cotton featuring traditional Breton nautical stripes, sturdy 1.25" ribbed collar, and relaxed drop-shoulder drape.',
     wash: 'Ecru / Navy',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Navy',
+    sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Short Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Striped',
+    rating: 4.8,
+    inStock: true,
+    collection: 'Bestsellers'
   },
   {
     id: 1,
@@ -105,7 +132,15 @@ export const PRODUCTS: Product[] = [
     badge: 'New',
     desc: 'Fine gauge horizontal micro-stripes knit from yarn-dyed ring-spun cotton. Pre-shrunk with a soft vintage silicone wash.',
     wash: 'Washed Black / Ash',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Black',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Short Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Striped',
+    rating: 4.6,
+    inStock: true,
+    collection: 'New arrivals'
   },
   {
     id: 2,
@@ -125,7 +160,15 @@ export const PRODUCTS: Product[] = [
     ],
     desc: 'Wide horizontal contrast block stripes with reinforced twin-needle hems and an ultra-relaxed streetwear silhouette.',
     wash: 'Forest Green / Cream',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Green',
+    sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Short Sleeve',
+    neckType: 'V-neck',
+    pattern: 'Striped',
+    rating: 4.5,
+    inStock: true,
+    collection: 'Featured'
   },
 
   // ─── 2. FULLSLEEVE (Full Sleeve T-Shirts) ──────────────────────────────────
@@ -148,7 +191,15 @@ export const PRODUCTS: Product[] = [
     badge: 'Essential',
     desc: 'Heavyweight 320 GSM honeycomb waffle knit providing natural warmth, stretch recovery, and ribbed storm cuffs.',
     wash: 'Heather Charcoal',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Grey',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton blend',
+    sleeveLength: 'Full Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Solid',
+    rating: 4.7,
+    inStock: true,
+    collection: 'Featured'
   },
   {
     id: 4,
@@ -169,7 +220,15 @@ export const PRODUCTS: Product[] = [
     badge: 'Core',
     desc: 'Clean, dense 260 GSM single jersey full sleeve tee with thick 1.25" neck ribbing and tapered wrist cuffs.',
     wash: 'Pitch Black',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Black',
+    sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Full Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Solid',
+    rating: 4.9,
+    inStock: true,
+    collection: 'Bestsellers'
   },
   {
     id: 5,
@@ -189,10 +248,18 @@ export const PRODUCTS: Product[] = [
     ],
     desc: 'Raglan sleeve construction for unrestricted mobility, finished in an authentic sun-bleached pigment wash with soft vintage patina.',
     wash: 'Washed Olive / Sand',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Beige',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Full Sleeve',
+    neckType: 'V-neck',
+    pattern: 'Solid',
+    rating: 4.4,
+    inStock: true,
+    collection: 'New arrivals'
   },
 
-  // ─── 3. DRSLEEVE (Drop Sleeve / Drop Shoulder Tees) ────────────────────────
+  // ─── 3. DRSLEEVE (Drop Sleeve / 3/4 Sleeve Tees) ───────────────────────────
   {
     id: 6,
     store: 'teesgarage',
@@ -212,7 +279,15 @@ export const PRODUCTS: Product[] = [
     badge: 'Bestseller',
     desc: 'Dropped shoulder seams with elbow-length sleeves, wide boxy body, and subtle raw-edge bottom hem details.',
     wash: 'Washed Charcoal',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Grey',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: '3/4 Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Solid',
+    rating: 4.8,
+    inStock: true,
+    collection: 'Bestsellers'
   },
   {
     id: 7,
@@ -233,7 +308,15 @@ export const PRODUCTS: Product[] = [
     badge: 'Hot',
     desc: 'Ultra-relaxed drape with extended 12" drop shoulder sleeves, tight mock neck ribbing, and 260 GSM combed cotton.',
     wash: 'Concrete Slate',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Grey',
+    sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: '3/4 Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Solid',
+    rating: 4.6,
+    inStock: true,
+    collection: 'New arrivals'
   },
   {
     id: 8,
@@ -253,7 +336,15 @@ export const PRODUCTS: Product[] = [
     ],
     desc: 'Clean 280 GSM luxury combed cotton with seamless dropped shoulders, double-stitched armholes, and zero side-twist construction.',
     wash: 'Bone White',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'White',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: '3/4 Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Solid',
+    rating: 4.7,
+    inStock: true,
+    collection: 'Featured'
   },
 
   // ─── 4. PRINTED TEES (Graphic / Printed T-Shirts) ──────────────────────────
@@ -276,7 +367,16 @@ export const PRODUCTS: Product[] = [
     badge: 'Trending',
     desc: 'High-density puff screen print featuring distressed garage typography and cyber automotive mechanics graphics.',
     wash: 'Vintage Acid Black',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Black',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Short Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Printed',
+    printStyle: 'Graphic',
+    rating: 4.9,
+    inStock: true,
+    collection: 'Featured'
   },
   {
     id: 10,
@@ -296,7 +396,16 @@ export const PRODUCTS: Product[] = [
     ],
     desc: 'Hand-pulled water-based screenprint on 240 GSM organic cotton. Breathable print surface that softens with each wash.',
     wash: 'Washed Ecru',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Beige',
+    sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Short Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Printed',
+    printStyle: 'Abstract',
+    rating: 4.5,
+    inStock: true,
+    collection: 'New arrivals'
   },
   {
     id: 11,
@@ -317,7 +426,16 @@ export const PRODUCTS: Product[] = [
     badge: 'New',
     desc: 'Heritage motor club back graphic with subtle front chest crest, enzyme washed for an authentic vintage soft-hand feel.',
     wash: 'Faded Burgundy',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Red',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Short Sleeve',
+    neckType: 'V-neck',
+    pattern: 'Printed',
+    printStyle: 'Typography',
+    rating: 4.6,
+    inStock: true,
+    collection: 'Featured'
   },
 
   // ─── 5. RINGER TEES (Retro Contrast Ribbed Tees) ───────────────────────────
@@ -340,7 +458,16 @@ export const PRODUCTS: Product[] = [
     badge: 'Classic',
     desc: 'Timeless retro ringer silhouette with contrast 1" binding along neck and sleeve cuffs. 100% fine combed cotton.',
     wash: 'Off-White / Cobalt',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'White',
+    sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Short Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Color-block',
+    trimColor: 'Cobalt',
+    rating: 4.8,
+    inStock: true,
+    collection: 'Featured'
   },
   {
     id: 13,
@@ -361,7 +488,16 @@ export const PRODUCTS: Product[] = [
     badge: 'New',
     desc: 'Vintage varsity styling with heavyweight two-tone ribbing and an engineered tailored drape.',
     wash: 'Forest Green / Cream',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Green',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Short Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Color-block',
+    trimColor: 'Forest Green',
+    rating: 4.4,
+    inStock: true,
+    collection: 'New arrivals'
   },
   {
     id: 14,
@@ -381,7 +517,16 @@ export const PRODUCTS: Product[] = [
     ],
     desc: 'Warm earthy contrast trims on structured mid-weight cotton jersey. Built to hold neckline shape wear after wear.',
     wash: 'Mustard / Chocolate',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Beige',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Short Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Color-block',
+    trimColor: 'Chocolate',
+    rating: 4.7,
+    inStock: true,
+    collection: 'Bestsellers'
   },
 
   // ─── 6. HENLEY (Buttoned Placket Tees) ─────────────────────────────────────
@@ -404,7 +549,16 @@ export const PRODUCTS: Product[] = [
     badge: 'Bestseller',
     desc: 'Authentic 3-button placket featuring real corozo nut buttons, slub texture, and durable flatlock seam detailing.',
     wash: 'Heather Grey',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Grey',
+    sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton blend',
+    sleeveLength: 'Short Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Solid',
+    buttons: '3-button',
+    rating: 4.8,
+    inStock: true,
+    collection: 'Bestsellers'
   },
   {
     id: 16,
@@ -425,7 +579,16 @@ export const PRODUCTS: Product[] = [
     badge: 'Warm',
     desc: 'Heavyweight 280 GSM cotton jersey with garment mineral wash, double-layer front placket, and raw-cut hem finish.',
     wash: 'Mineral Washed Black',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Black',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton',
+    sleeveLength: 'Full Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Solid',
+    buttons: '4-button',
+    rating: 4.9,
+    inStock: true,
+    collection: 'Featured'
   },
   {
     id: 17,
@@ -445,7 +608,16 @@ export const PRODUCTS: Product[] = [
     ],
     desc: 'Lightweight breathable cotton slub with mother-of-pearl buttons, curved hem, and effortless warm-weather drape.',
     wash: 'Washed Sage',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Green',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    fabric: 'Cotton blend',
+    sleeveLength: 'Short Sleeve',
+    neckType: 'Crew neck',
+    pattern: 'Solid',
+    buttons: '2-button',
+    rating: 4.6,
+    inStock: true,
+    collection: 'New arrivals'
   },
 
   // ─── 7. TRACKPANTS (Bottomwear: Trackpants) ────────────────────────────────
@@ -468,7 +640,18 @@ export const PRODUCTS: Product[] = [
     badge: 'Hot',
     desc: 'Durable nylon-cotton blend trackpants with dual bellowed cargo pockets, bungee adjustable ankle toggles, and elastic drawcord waistband.',
     wash: 'Matte Onyx Black',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Black',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    waistSize: ['30', '32', '34', '36', '38'],
+    material: 'Nylon-Cotton',
+    fabric: 'Cotton blend',
+    length: 'Full Length',
+    closure: 'Drawstring',
+    pockets: 'Cargo Pockets',
+    use: 'Casual',
+    rating: 4.8,
+    inStock: true,
+    collection: 'Bestsellers'
   },
   {
     id: 19,
@@ -489,7 +672,18 @@ export const PRODUCTS: Product[] = [
     badge: 'Classic',
     desc: 'Classic poly-tricot trackpants with contrast side seam piping, zippered hand pockets, and zippered leg gussets for clean sneaker stacking.',
     wash: 'Deep Navy / Off-White',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Navy',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    waistSize: ['30', '32', '34', '36'],
+    material: 'Poly-Tricot',
+    fabric: 'Polyester',
+    length: 'Full Length',
+    closure: 'Elastic waist',
+    pockets: 'Zippered Pockets',
+    use: 'Sports',
+    rating: 4.5,
+    inStock: true,
+    collection: 'Featured'
   },
   {
     id: 20,
@@ -510,7 +704,18 @@ export const PRODUCTS: Product[] = [
     badge: 'New',
     desc: 'Wide skate-inspired volume cut from crinkled matte taslan nylon with breathable mesh lining and articulated knee darting.',
     wash: 'Graphite Grey',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Grey',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    waistSize: ['30', '32', '34', '36', '38'],
+    material: 'Taslan Nylon',
+    fabric: 'Polyester',
+    length: 'Full Length',
+    closure: 'Drawstring',
+    pockets: 'Cargo Pockets',
+    use: 'Training',
+    rating: 4.7,
+    inStock: true,
+    collection: 'New arrivals'
   },
 
   // ─── 8. SWEATPANTS (Bottomwear: Sweatpants) ────────────────────────────────
@@ -533,7 +738,17 @@ export const PRODUCTS: Product[] = [
     badge: 'Heavyweight',
     desc: 'Ultra-heavy 450 GSM combed cotton French terry with thick elastic waistband, hidden drawstrings, and deep slash pockets.',
     wash: 'Washed Black',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Black',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    waistSize: ['30', '32', '34', '36', '38'],
+    material: 'French terry',
+    fabric: 'French terry',
+    legStyle: 'Open hem',
+    rise: 'Mid-rise',
+    pockets: 'Slash Pockets',
+    rating: 4.9,
+    inStock: true,
+    collection: 'Bestsellers'
   },
   {
     id: 22,
@@ -554,7 +769,17 @@ export const PRODUCTS: Product[] = [
     badge: 'Essential',
     desc: 'Enzyme sun-faded wash on fleece back jersey with ribbed ankle cuffs and heavy cotton flat-braided drawcords.',
     wash: 'Vintage Taupe',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Beige',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    waistSize: ['30', '32', '34', '36'],
+    material: 'Fleece',
+    fabric: 'Fleece',
+    legStyle: 'Cuffed',
+    rise: 'Mid-rise',
+    pockets: 'Slash Pockets',
+    rating: 4.6,
+    inStock: true,
+    collection: 'Featured'
   },
   {
     id: 23,
@@ -575,7 +800,17 @@ export const PRODUCTS: Product[] = [
     badge: 'New',
     desc: 'Relaxed open bottom hem designed to stack cleanly over sneakers, crafted from 400 GSM brushed organic fleece.',
     wash: 'Heather Grey',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL']
+    color: 'Grey',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    waistSize: ['30', '32', '34', '36', '38'],
+    material: 'Fleece',
+    fabric: 'Fleece',
+    legStyle: 'Open hem',
+    rise: 'High-rise',
+    pockets: 'Slash Pockets',
+    rating: 4.8,
+    inStock: true,
+    collection: 'New arrivals'
   }
 ]
 

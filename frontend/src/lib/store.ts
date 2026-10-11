@@ -114,11 +114,14 @@ export type PriceRange = 'under-1500' | '1500-2000' | 'above-2000'
 
 interface FilterState {
   category: string | 'all'
+  categories: string[]
   fit: Fit | 'all'
   prices: PriceRange[]
   sort: SortMode
   searchQuery: string
   setCategory: (category: string | 'all') => void
+  setCategories: (categories: string[]) => void
+  toggleCategory: (category: string) => void
   setFit: (fit: Fit | 'all') => void
   togglePrice: (range: PriceRange) => void
   setSort: (sort: SortMode) => void
@@ -130,11 +133,49 @@ export const useFilterStore = create<FilterState>()(
   persist(
     (set) => ({
       category: 'all',
+      categories: [],
       fit: 'all',
       prices: [],
       sort: 'featured',
       searchQuery: '',
-      setCategory: (category) => set({ category }),
+      setCategory: (category) =>
+        set(() => {
+          if (!category || category === 'all') {
+            return { category: 'all', categories: [] }
+          }
+          const list = category.includes(',')
+            ? category
+                .split(',')
+                .map((c) => c.trim().toLowerCase())
+                .filter(Boolean)
+            : [category.toLowerCase()]
+          return { category, categories: list }
+        }),
+      setCategories: (categories) =>
+        set(() => {
+          const clean = categories
+            .filter((c) => c && c !== 'all')
+            .map((c) => c.toLowerCase())
+          return {
+            categories: clean,
+            category: clean.length === 0 ? 'all' : (clean.length === 1 ? clean[0] : clean.join(','))
+          }
+        }),
+      toggleCategory: (cat) =>
+        set((state) => {
+          const lower = cat.toLowerCase()
+          if (lower === 'all') {
+            return { category: 'all', categories: [] }
+          }
+          const exists = state.categories.includes(lower)
+          const next = exists
+            ? state.categories.filter((c) => c !== lower)
+            : [...state.categories, lower]
+          return {
+            categories: next,
+            category: next.length === 0 ? 'all' : (next.length === 1 ? next[0] : next.join(','))
+          }
+        }),
       setFit: (fit) => set({ fit }),
       togglePrice: (range) =>
         set((state) => ({
@@ -144,7 +185,15 @@ export const useFilterStore = create<FilterState>()(
         })),
       setSort: (sort) => set({ sort }),
       setSearchQuery: (searchQuery) => set({ searchQuery }),
-      reset: () => set({ category: 'all', fit: 'all', prices: [], sort: 'featured', searchQuery: '' })
+      reset: () =>
+        set({
+          category: 'all',
+          categories: [],
+          fit: 'all',
+          prices: [],
+          sort: 'featured',
+          searchQuery: ''
+        })
     }),
     {
       name: 'teesgarage-filters',

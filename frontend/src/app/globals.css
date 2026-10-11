@@ -6087,6 +6087,15 @@ button {
   -webkit-overflow-scrolling: touch;
 }
 
+.shop-mobile-filter-pane .shop-facet-block {
+  border-bottom: none;
+  padding: 4px 0 16px 0;
+}
+
+.shop-mobile-filter-pane .shop-facet-title {
+  display: none;
+}
+
 .shop-mobile-option-row {
   display: flex;
   align-items: center;
