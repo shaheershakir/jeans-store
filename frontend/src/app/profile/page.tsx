@@ -41,6 +41,7 @@ import {
   type UserAddress
 } from '@/lib/store'
 import { PRODUCTS, type Product } from '@/lib/constants'
+import { ProfileSkeleton } from '@/components/skeletons'
 
 function ProfileContent() {
   const router = useRouter()
@@ -1061,14 +1062,9 @@ function ProfileContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#f7f7f6]">
-          <div className="w-8 h-8 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin" />
-        </div>
-      }
-    >
+    <Suspense fallback={<ProfileSkeleton />}>
       <ProfileContent />
     </Suspense>
   )
 }
+

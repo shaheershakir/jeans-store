@@ -141,18 +141,13 @@ function CallbackHandler() {
   )
 }
 
+import { AuthSkeleton } from '@/components/skeletons'
+
 export default function AuthCallbackPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="apple-auth-page">
-          <div className="apple-auth-card apple-loading-card">
-            <span className="apple-spinner" />
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<AuthSkeleton mode="signin" />}>
       <CallbackHandler />
     </Suspense>
   )
 }
+

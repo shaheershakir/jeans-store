@@ -454,18 +454,13 @@ function LoginForm() {
   )
 }
 
+import { AuthSkeleton } from '@/components/skeletons'
+
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="apple-auth-page">
-          <div className="apple-auth-card apple-loading-card">
-            <span className="apple-spinner" />
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<AuthSkeleton mode="signin" />}>
       <LoginForm />
     </Suspense>
   )
 }
+

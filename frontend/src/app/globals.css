@@ -11366,5 +11366,164 @@ button,
   }
 }
 
+/* ==========================================================================
+   APPLE-GRADE RESPONSIVE SKELETON SYSTEM
+   Hardware-accelerated GPU shimmer, zero Cumulative Layout Shift (CLS)
+   ========================================================================== */
 
+.apple-skeleton-pulse {
+  position: relative;
+  overflow: hidden;
+  background-color: #eceae4;
+  border-radius: var(--radius-sm, 6px);
+}
 
+.apple-skeleton-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    transparent 100%
+  );
+  animation: apple-skeleton-sweep 1.8s cubic-bezier(0.23, 1, 0.32, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes apple-skeleton-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apple-skeleton-pulse::after {
+    animation: none;
+    display: none;
+  }
+  .apple-skeleton-pulse {
+    background-color: #eceae4;
+  }
+}
+
+.skeleton-card {
+  background: #ffffff;
+  border: 1px solid var(--line, rgba(12, 14, 18, 0.09));
+  border-radius: var(--radius-md, 10px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-text {
+  height: 12px;
+  border-radius: 4px;
+}
+
+.skeleton-pill {
+  border-radius: 9999px;
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+}
+
+/* Skeleton Layout Presets */
+.skeleton-page-wrap {
+  width: 100%;
+  min-height: 70vh;
+  animation: skeletonFadeIn 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes skeletonFadeIn {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Skeleton Product Card */
+.skeleton-product-card {
+  background: #ffffff;
+  border: 1px solid var(--line, rgba(12, 14, 18, 0.09));
+  border-radius: var(--radius-md, 10px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.skeleton-product-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+}
+
+.skeleton-product-body {
+  padding: 16px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Skeleton Hero Block */
+.skeleton-hero-banner {
+  width: 100%;
+  height: clamp(340px, 45vh, 520px);
+  border-radius: 0;
+  position: relative;
+  background-color: #eceae4;
+  display: flex;
+  align-items: flex-end;
+  padding: 40px 4%;
+}
+
+.skeleton-hero-content {
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Skeleton Rail */
+.skeleton-rail {
+  display: flex;
+  gap: 10px;
+  overflow-x: hidden;
+  padding: 4px 0;
+}
+
+/* Skeleton PDP Layout */
+.skeleton-pdp-wrap {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 4% 90px;
+}
+
+/* Skeleton Checkout Layout */
+.skeleton-checkout-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 4% 90px;
+}
+
+/* Skeleton Orders Layout */
+.skeleton-orders-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 4% 90px;
+}
+
+/* Skeleton Profile Layout */
+.skeleton-profile-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 4% 90px;
+}
