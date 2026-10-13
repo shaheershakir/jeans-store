@@ -45,7 +45,7 @@ function Deploy-Api {
   if ($env:GOOGLE_CLIENT_ID) { $secretBindings += ',GOOGLE_CLIENT_SECRET=google-client-secret:latest' }
   if ($env:RAZORPAY_KEY_ID) { $secretBindings += ',RAZORPAY_KEY_SECRET=razorpay-key-secret:latest' }
   $corsOrigins = "$FrontendUrl,$($env:ADMIN_URL)"
-  $apiEnv = "^;^NODE_ENV=production;HOST=0.0.0.0;PORT=4000;GCP_PROJECT_ID=$Project;ADMIN_EMAIL=$($env:ADMIN_EMAIL);ADMIN_NAME=$($env:ADMIN_NAME);GCS_PRODUCT_IMAGES_BUCKET=$($env:GCS_PRODUCT_IMAGES_BUCKET);GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID);RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID);FRONTEND_URL=$FrontendUrl;CORS_ORIGIN=$corsOrigins"
+  $apiEnv = "^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=$Project;ADMIN_EMAIL=$($env:ADMIN_EMAIL);ADMIN_NAME=$($env:ADMIN_NAME);GCS_PRODUCT_IMAGES_BUCKET=$($env:GCS_PRODUCT_IMAGES_BUCKET);GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID);RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID);FRONTEND_URL=$FrontendUrl;CORS_ORIGIN=$corsOrigins"
   gcloud run deploy teesgarage-backend `
     --project=$Project `
     --image=$image `
