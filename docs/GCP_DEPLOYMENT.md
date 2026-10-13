@@ -30,9 +30,15 @@ Set these GitHub repository **variables** or **secrets** for `.github/workflows/
 - `GOOGLE_CLIENT_ID` and `RAZORPAY_KEY_ID` only when those providers are enabled
 - `WHATSAPP_NUMBER` if WhatsApp support links are enabled
 
-Create these Secret Manager secrets for the API runtime: `database-url`, `admin-password`, `admin-session-secret`, and `customer-jwt-secret`. Google sign-in also needs `google-client-secret`; Razorpay checkout also needs `razorpay-key-secret`. Use live Razorpay credentials for production. Do not put secret values in GitHub variables, Docker build arguments, or `NEXT_PUBLIC_*` settings.
+### Runtime Secrets (configure in GitHub Repository Secrets):
+- `DATABASE_URL`: Production Neon PostgreSQL connection string (e.g. `postgresql://user:pass@host/db?sslmode=require`)
+- `ADMIN_PASSWORD`: Strong password for the admin dashboard account (if omitted, a secure temporary password is generated)
+- `ADMIN_SESSION_SECRET`: 32+ character signing key (auto-generated if omitted)
+- `JWT_SECRET`: 32+ character signing key (auto-generated if omitted)
+- `GOOGLE_CLIENT_SECRET`: OAuth secret if Google sign-in is used
+- `RAZORPAY_KEY_SECRET`: Live Razorpay secret key if Razorpay checkout is used
 
-The GitHub workflow and both `infra/gcp/deploy-cloudrun` scripts bind secrets by name. They do not create or populate the secrets. Production API startup checks for the database, admin credentials, signing secrets, project ID, image bucket, storefront URL, and CORS origins.
+By default, the GitHub Actions workflow injects secrets directly into Cloud Run container environment variables from GitHub Secrets without requiring the Google Cloud Secret Manager API. If you prefer to bind secrets via GCP Secret Manager, enable `secretmanager.googleapis.com` in GCP and set `USE_GCP_SECRET_MANAGER=true`.
 
 ## Deploy
 

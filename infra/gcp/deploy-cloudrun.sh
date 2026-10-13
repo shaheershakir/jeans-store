@@ -26,23 +26,44 @@ deploy_api() {
   docker build -t "${REGISTRY}/backend:${TAG}" -f apps/api/Dockerfile .
   docker push "${REGISTRY}/backend:${TAG}"
 
-  secret_bindings="DATABASE_URL=database-url:latest,ADMIN_PASSWORD=admin-password:latest,ADMIN_SESSION_SECRET=admin-session-secret:latest,JWT_SECRET=customer-jwt-secret:latest"
-  if [[ -n "${GOOGLE_CLIENT_ID:-}" ]]; then
-    secret_bindings+=",GOOGLE_CLIENT_SECRET=google-client-secret:latest"
-  fi
-  if [[ -n "${RAZORPAY_KEY_ID:-}" ]]; then
-    secret_bindings+=",RAZORPAY_KEY_SECRET=razorpay-key-secret:latest"
-  fi
+  if [[ "${USE_GCP_SECRET_MANAGER:-false}" == "true" ]]; then
+    secret_bindings="DATABASE_URL=database-url:latest,ADMIN_PASSWORD=admin-password:latest,ADMIN_SESSION_SECRET=admin-session-secret:latest,JWT_SECRET=customer-jwt-secret:latest"
+    if [[ -n "${GOOGLE_CLIENT_ID:-}" ]]; then
+      secret_bindings+=",GOOGLE_CLIENT_SECRET=google-client-secret:latest"
+    fi
+    if [[ -n "${RAZORPAY_KEY_ID:-}" ]]; then
+      secret_bindings+=",RAZORPAY_KEY_SECRET=razorpay-key-secret:latest"
+    fi
 
-  gcloud run deploy teesgarage-backend \
-    --project="${PROJECT}" \
-    --image="${REGISTRY}/backend:${TAG}" \
-    --region="${REGION}" \
-    --platform=managed \
-    --allow-unauthenticated \
-    --port=4000 \
-    --set-env-vars="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${PROJECT};ADMIN_EMAIL=${ADMIN_EMAIL};ADMIN_NAME=${ADMIN_NAME:-Store administrator};GCS_PRODUCT_IMAGES_BUCKET=${GCS_PRODUCT_IMAGES_BUCKET};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-};FRONTEND_URL=${FRONTEND_URL};CORS_ORIGIN=${FRONTEND_URL},${ADMIN_URL}" \
-    --set-secrets="${secret_bindings}"
+    gcloud run deploy teesgarage-backend \
+      --project="${PROJECT}" \
+      --image="${REGISTRY}/backend:${TAG}" \
+      --region="${REGION}" \
+      --platform=managed \
+      --allow-unauthenticated \
+      --port=4000 \
+      --set-env-vars="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${PROJECT};ADMIN_EMAIL=${ADMIN_EMAIL};ADMIN_NAME=${ADMIN_NAME:-Store administrator};GCS_PRODUCT_IMAGES_BUCKET=${GCS_PRODUCT_IMAGES_BUCKET};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-};FRONTEND_URL=${FRONTEND_URL};CORS_ORIGIN=${FRONTEND_URL},${ADMIN_URL}" \
+      --set-secrets="${secret_bindings}"
+  else
+    : "${DATABASE_URL:?Set DATABASE_URL before deploying the API without Secret Manager}"
+    : "${ADMIN_PASSWORD:?Set ADMIN_PASSWORD before deploying the API without Secret Manager}"
+    admin_session_sec="${ADMIN_SESSION_SECRET:-$(openssl rand -hex 32 2>/dev/null || echo '0123456789012345678901234567890123456789')}"
+    jwt_sec="${JWT_SECRET:-$(openssl rand -hex 32 2>/dev/null || echo '0123456789012345678901234567890123456789')}"
+    env_vars="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${PROJECT};DATABASE_URL=${DATABASE_URL};ADMIN_EMAIL=${ADMIN_EMAIL};ADMIN_NAME=${ADMIN_NAME:-Store administrator};ADMIN_PASSWORD=${ADMIN_PASSWORD};ADMIN_SESSION_SECRET=${admin_session_sec};JWT_SECRET=${jwt_sec};GCS_PRODUCT_IMAGES_BUCKET=${GCS_PRODUCT_IMAGES_BUCKET};FRONTEND_URL=${FRONTEND_URL};CORS_ORIGIN=${FRONTEND_URL},${ADMIN_URL}"
+    if [[ -n "${GOOGLE_CLIENT_ID:-}" ]]; then env_vars+=";GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"; fi
+    if [[ -n "${GOOGLE_CLIENT_SECRET:-}" ]]; then env_vars+=";GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}"; fi
+    if [[ -n "${RAZORPAY_KEY_ID:-}" ]]; then env_vars+=";RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}"; fi
+    if [[ -n "${RAZORPAY_KEY_SECRET:-}" ]]; then env_vars+=";RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}"; fi
+
+    gcloud run deploy teesgarage-backend \
+      --project="${PROJECT}" \
+      --image="${REGISTRY}/backend:${TAG}" \
+      --region="${REGION}" \
+      --platform=managed \
+      --allow-unauthenticated \
+      --port=4000 \
+      --set-env-vars="${env_vars}"
+  fi
 }
 
 get_backend_url() {

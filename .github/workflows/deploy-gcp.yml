@@ -139,29 +139,92 @@ jobs:
 
       - name: Deploy Backend to Cloud Run
         run: |
-          SECRET_BINDINGS="DATABASE_URL=database-url:latest,ADMIN_PASSWORD=admin-password:latest,ADMIN_SESSION_SECRET=admin-session-secret:latest,JWT_SECRET=customer-jwt-secret:latest"
-          if [ -n "${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}" ]; then
-            SECRET_BINDINGS="$SECRET_BINDINGS,GOOGLE_CLIENT_SECRET=google-client-secret:latest"
-          fi
-          if [ -n "${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID }}" ]; then
-            SECRET_BINDINGS="$SECRET_BINDINGS,RAZORPAY_KEY_SECRET=razorpay-key-secret:latest"
-          fi
-          ADMIN_EMAIL_VAL="${{ vars.ADMIN_EMAIL || secrets.ADMIN_EMAIL }}"
+          USE_SM="${{ vars.USE_GCP_SECRET_MANAGER || secrets.USE_GCP_SECRET_MANAGER || 'false' }}"
+          DB_URL="${{ secrets.DATABASE_URL || vars.DATABASE_URL }}"
+          ADMIN_PWD="${{ secrets.ADMIN_PASSWORD || vars.ADMIN_PASSWORD }}"
+          ADMIN_SESSION_SEC="${{ secrets.ADMIN_SESSION_SECRET || vars.ADMIN_SESSION_SECRET }}"
+          JWT_SEC="${{ secrets.JWT_SECRET || vars.JWT_SECRET }}"
+          ADMIN_EMAIL_VAL="${{ vars.ADMIN_EMAIL || secrets.ADMIN_EMAIL || 'admin@teesgarage.in' }}"
           ADMIN_NAME_VAL="${{ vars.ADMIN_NAME || secrets.ADMIN_NAME || 'Store administrator' }}"
-          BUCKET_VAL="${{ vars.GCS_PRODUCT_IMAGES_BUCKET || secrets.GCS_PRODUCT_IMAGES_BUCKET }}"
+          BUCKET_VAL="${{ vars.GCS_PRODUCT_IMAGES_BUCKET || secrets.GCS_PRODUCT_IMAGES_BUCKET || format('{0}-product-images', env.GCP_PROJECT_ID) }}"
           GOOGLE_CLIENT_ID_VAL="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}"
+          GOOGLE_CLIENT_SECRET_VAL="${{ secrets.GOOGLE_CLIENT_SECRET || vars.GOOGLE_CLIENT_SECRET }}"
           RAZORPAY_KEY_ID_VAL="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID }}"
+          RAZORPAY_KEY_SECRET_VAL="${{ secrets.RAZORPAY_KEY_SECRET || vars.RAZORPAY_KEY_SECRET }}"
           FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"
           ADMIN_URL_VAL="${{ vars.ADMIN_URL || secrets.ADMIN_URL }}"
-          gcloud run deploy ${{ env.BACKEND_SERVICE }} \
-            --project="${{ env.GCP_PROJECT_ID }}" \
-            --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:${{ github.sha }}" \
-            --region="${{ env.GAR_LOCATION }}" \
-            --platform=managed \
-            --allow-unauthenticated \
-            --port=4000 \
-            --set-env-vars="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID_VAL};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID_VAL};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${FRONTEND_URL_VAL},${ADMIN_URL_VAL}" \
-            --set-secrets="$SECRET_BINDINGS"
+
+          if [ -z "$FRONTEND_URL_VAL" ]; then
+            FRONTEND_URL_VAL="https://${{ env.FRONTEND_SERVICE }}-${{ env.GCP_PROJECT_ID }}.${{ env.GAR_LOCATION }}.run.app"
+          fi
+          if [ -z "$ADMIN_URL_VAL" ]; then
+            ADMIN_URL_VAL="https://${{ env.ADMIN_SERVICE }}-${{ env.GCP_PROJECT_ID }}.${{ env.GAR_LOCATION }}.run.app"
+          fi
+          CORS_VAL="${FRONTEND_URL_VAL},${ADMIN_URL_VAL},http://localhost:3000,http://localhost:3001"
+
+          if [ "$USE_SM" = "true" ]; then
+            echo "::notice::Deploying backend with Google Secret Manager bindings..."
+            SECRET_BINDINGS="DATABASE_URL=database-url:latest,ADMIN_PASSWORD=admin-password:latest,ADMIN_SESSION_SECRET=admin-session-secret:latest,JWT_SECRET=customer-jwt-secret:latest"
+            if [ -n "$GOOGLE_CLIENT_ID_VAL" ]; then
+              SECRET_BINDINGS="$SECRET_BINDINGS,GOOGLE_CLIENT_SECRET=google-client-secret:latest"
+            fi
+            if [ -n "$RAZORPAY_KEY_ID_VAL" ]; then
+              SECRET_BINDINGS="$SECRET_BINDINGS,RAZORPAY_KEY_SECRET=razorpay-key-secret:latest"
+            fi
+            gcloud run deploy ${{ env.BACKEND_SERVICE }} \
+              --project="${{ env.GCP_PROJECT_ID }}" \
+              --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:${{ github.sha }}" \
+              --region="${{ env.GAR_LOCATION }}" \
+              --platform=managed \
+              --allow-unauthenticated \
+              --port=4000 \
+              --set-env-vars="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID_VAL};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID_VAL};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${CORS_VAL}" \
+              --set-secrets="$SECRET_BINDINGS"
+          else
+            echo "::notice::Deploying backend with direct GitHub Secrets environment variables (no Secret Manager dependency)..."
+            if [ -z "$DB_URL" ]; then
+              echo "::error::DATABASE_URL secret is not set in GitHub repository secrets or variables!"
+              echo "::error::Please add your Neon PostgreSQL connection string to GitHub Repository Secrets: Settings -> Secrets and variables -> Actions -> Secrets -> New repository secret -> DATABASE_URL"
+              exit 1
+            fi
+
+            if [ -z "$ADMIN_PWD" ]; then
+              echo "::warning::ADMIN_PASSWORD secret was not provided; generating a temporary secure administrator password for this deployment. Please set ADMIN_PASSWORD in GitHub Secrets."
+              ADMIN_PWD="Admin_$(openssl rand -hex 12)"
+            fi
+
+            if [ -z "$ADMIN_SESSION_SEC" ] || [ ${#ADMIN_SESSION_SEC} -lt 32 ]; then
+              ADMIN_SESSION_SEC=$(openssl rand -hex 32)
+            fi
+
+            if [ -z "$JWT_SEC" ] || [ ${#JWT_SEC} -lt 32 ]; then
+              JWT_SEC=$(openssl rand -hex 32)
+            fi
+
+            ENV_VARS="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};DATABASE_URL=${DB_URL};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};ADMIN_PASSWORD=${ADMIN_PWD};ADMIN_SESSION_SECRET=${ADMIN_SESSION_SEC};JWT_SECRET=${JWT_SEC};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${CORS_VAL}"
+
+            if [ -n "$GOOGLE_CLIENT_ID_VAL" ]; then
+              ENV_VARS="${ENV_VARS};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID_VAL}"
+            fi
+            if [ -n "$GOOGLE_CLIENT_SECRET_VAL" ]; then
+              ENV_VARS="${ENV_VARS};GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET_VAL}"
+            fi
+            if [ -n "$RAZORPAY_KEY_ID_VAL" ]; then
+              ENV_VARS="${ENV_VARS};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID_VAL}"
+            fi
+            if [ -n "$RAZORPAY_KEY_SECRET_VAL" ]; then
+              ENV_VARS="${ENV_VARS};RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET_VAL}"
+            fi
+
+            gcloud run deploy ${{ env.BACKEND_SERVICE }} \
+              --project="${{ env.GCP_PROJECT_ID }}" \
+              --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:${{ github.sha }}" \
+              --region="${{ env.GAR_LOCATION }}" \
+              --platform=managed \
+              --allow-unauthenticated \
+              --port=4000 \
+              --set-env-vars="${ENV_VARS}"
+          fi
 
   # -------------------------------------------------------------
   # 2. Storefront Service (Next.js 15)
@@ -235,6 +298,10 @@ jobs:
       - name: Deploy Storefront to Cloud Run
         run: |
           FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"
+          if [ -z "$FRONTEND_URL_VAL" ]; then
+            STORE_URL=$(gcloud run services describe ${{ env.FRONTEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || true)
+            FRONTEND_URL_VAL="${STORE_URL:-https://${{ env.FRONTEND_SERVICE }}-${{ env.GCP_PROJECT_ID }}.${{ env.GAR_LOCATION }}.run.app}"
+          fi
           gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
             --project="${{ env.GCP_PROJECT_ID }}" \
             --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:${{ github.sha }}" \
@@ -312,6 +379,10 @@ jobs:
       - name: Deploy Admin to Cloud Run
         run: |
           FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"
+          if [ -z "$FRONTEND_URL_VAL" ]; then
+            STORE_URL=$(gcloud run services describe ${{ env.FRONTEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || true)
+            FRONTEND_URL_VAL="${STORE_URL:-https://${{ env.FRONTEND_SERVICE }}-${{ env.GCP_PROJECT_ID }}.${{ env.GAR_LOCATION }}.run.app}"
+          fi
           gcloud run deploy ${{ env.ADMIN_SERVICE }} \
             --project="${{ env.GCP_PROJECT_ID }}" \
             --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:${{ github.sha }}" \

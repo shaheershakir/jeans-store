@@ -41,20 +41,42 @@ function Deploy-Api {
   docker build -t $image -f apps/api/Dockerfile .
   docker push $image
 
-  $secretBindings = 'DATABASE_URL=database-url:latest,ADMIN_PASSWORD=admin-password:latest,ADMIN_SESSION_SECRET=admin-session-secret:latest,JWT_SECRET=customer-jwt-secret:latest'
-  if ($env:GOOGLE_CLIENT_ID) { $secretBindings += ',GOOGLE_CLIENT_SECRET=google-client-secret:latest' }
-  if ($env:RAZORPAY_KEY_ID) { $secretBindings += ',RAZORPAY_KEY_SECRET=razorpay-key-secret:latest' }
-  $corsOrigins = "$FrontendUrl,$($env:ADMIN_URL)"
-  $apiEnv = "^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=$Project;ADMIN_EMAIL=$($env:ADMIN_EMAIL);ADMIN_NAME=$($env:ADMIN_NAME);GCS_PRODUCT_IMAGES_BUCKET=$($env:GCS_PRODUCT_IMAGES_BUCKET);GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID);RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID);FRONTEND_URL=$FrontendUrl;CORS_ORIGIN=$corsOrigins"
-  gcloud run deploy teesgarage-backend `
-    --project=$Project `
-    --image=$image `
-    --region=$Region `
-    --platform=managed `
-    --allow-unauthenticated `
-    --port=4000 `
-    "--set-env-vars=$apiEnv" `
-    "--set-secrets=$secretBindings"
+  if ($env:USE_GCP_SECRET_MANAGER -eq 'true') {
+    $secretBindings = 'DATABASE_URL=database-url:latest,ADMIN_PASSWORD=admin-password:latest,ADMIN_SESSION_SECRET=admin-session-secret:latest,JWT_SECRET=customer-jwt-secret:latest'
+    if ($env:GOOGLE_CLIENT_ID) { $secretBindings += ',GOOGLE_CLIENT_SECRET=google-client-secret:latest' }
+    if ($env:RAZORPAY_KEY_ID) { $secretBindings += ',RAZORPAY_KEY_SECRET=razorpay-key-secret:latest' }
+    $corsOrigins = "$FrontendUrl,$($env:ADMIN_URL)"
+    $apiEnv = "^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=$Project;ADMIN_EMAIL=$($env:ADMIN_EMAIL);ADMIN_NAME=$($env:ADMIN_NAME);GCS_PRODUCT_IMAGES_BUCKET=$($env:GCS_PRODUCT_IMAGES_BUCKET);GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID);RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID);FRONTEND_URL=$FrontendUrl;CORS_ORIGIN=$corsOrigins"
+    gcloud run deploy teesgarage-backend `
+      --project=$Project `
+      --image=$image `
+      --region=$Region `
+      --platform=managed `
+      --allow-unauthenticated `
+      --port=4000 `
+      "--set-env-vars=$apiEnv" `
+      "--set-secrets=$secretBindings"
+  } else {
+    if (-not $env:DATABASE_URL) { throw 'Set DATABASE_URL before deploying the API without Secret Manager.' }
+    if (-not $env:ADMIN_PASSWORD) { throw 'Set ADMIN_PASSWORD before deploying the API without Secret Manager.' }
+    $adminSessionSec = if ($env:ADMIN_SESSION_SECRET) { $env:ADMIN_SESSION_SECRET } else { [System.Guid]::NewGuid().ToString('N') + [System.Guid]::NewGuid().ToString('N') }
+    $jwtSec = if ($env:JWT_SECRET) { $env:JWT_SECRET } else { [System.Guid]::NewGuid().ToString('N') + [System.Guid]::NewGuid().ToString('N') }
+    $corsOrigins = "$FrontendUrl,$($env:ADMIN_URL)"
+    $apiEnv = "^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=$Project;DATABASE_URL=$($env:DATABASE_URL);ADMIN_EMAIL=$($env:ADMIN_EMAIL);ADMIN_NAME=$($env:ADMIN_NAME);ADMIN_PASSWORD=$($env:ADMIN_PASSWORD);ADMIN_SESSION_SECRET=$adminSessionSec;JWT_SECRET=$jwtSec;GCS_PRODUCT_IMAGES_BUCKET=$($env:GCS_PRODUCT_IMAGES_BUCKET);FRONTEND_URL=$FrontendUrl;CORS_ORIGIN=$corsOrigins"
+    if ($env:GOOGLE_CLIENT_ID) { $apiEnv += ";GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID)" }
+    if ($env:GOOGLE_CLIENT_SECRET) { $apiEnv += ";GOOGLE_CLIENT_SECRET=$($env:GOOGLE_CLIENT_SECRET)" }
+    if ($env:RAZORPAY_KEY_ID) { $apiEnv += ";RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID)" }
+    if ($env:RAZORPAY_KEY_SECRET) { $apiEnv += ";RAZORPAY_KEY_SECRET=$($env:RAZORPAY_KEY_SECRET)" }
+
+    gcloud run deploy teesgarage-backend `
+      --project=$Project `
+      --image=$image `
+      --region=$Region `
+      --platform=managed `
+      --allow-unauthenticated `
+      --port=4000 `
+      "--set-env-vars=$apiEnv"
+  }
 }
 
 function Deploy-Storefront {
