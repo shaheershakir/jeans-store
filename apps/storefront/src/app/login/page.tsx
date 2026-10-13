@@ -15,7 +15,7 @@ import {
   AlertCircle,
   ShieldCheck
 } from 'lucide-react'
-import { signUp, signIn, googleAuth, getGoogleOAuthUrl } from '@/lib/auth'
+import { signUp, signIn, googleAuth, getGoogleOAuthUrl, getGoogleClientId } from '@/lib/auth'
 import { useAuthStore, useUIStore, useOnboardingStore } from '@/lib/store'
 
 function LoginForm() {
@@ -28,7 +28,6 @@ function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,6 +35,7 @@ function LoginForm() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const user = useAuthStore((s) => s.user)
   const showToast = useUIStore((s) => s.showToast)
+  const googleSignInEnabled = Boolean(getGoogleClientId())
 
   useEffect(() => {
     void useAuthStore.persist.rehydrate()
@@ -114,7 +114,7 @@ function LoginForm() {
   // Initialize Google Identity Services (One Tap & Credential API) if available
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com'
+    const clientId = getGoogleClientId()
     if (!clientId) return
 
     const handleCredentialResponse = async (response: any) => {
@@ -309,15 +309,6 @@ function LoginForm() {
               <label htmlFor="auth-password" className="apple-form-label !mb-0">
                 Password
               </label>
-              {mode === 'signin' && (
-                <button
-                  type="button"
-                  className="apple-auth-forgot-link"
-                  onClick={() => alert('Password reset link sent to ' + (email || 'your email address'))}
-                >
-                  Forgot?
-                </button>
-              )}
             </div>
             <div className="apple-input-container">
               <Lock className="apple-input-icon" />
@@ -343,17 +334,8 @@ function LoginForm() {
             </div>
           </div>
 
-          {/* Remember me & Security badge */}
+          {/* Security badge */}
           <div className="apple-auth-meta-row">
-            <label className="apple-checkbox-label">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="apple-checkbox"
-              />
-              <span>Remember this device</span>
-            </label>
             <span className="apple-security-note">
               <ShieldCheck className="w-3.5 h-3.5 text-zinc-400 mr-1" />
               <span>Encrypted</span>
@@ -379,12 +361,10 @@ function LoginForm() {
           </button>
         </form>
 
-        {/* Divider */}
+        {googleSignInEnabled && <>
         <div className="apple-auth-divider">
           <span>or continue with</span>
         </div>
-
-        {/* Alternative sign-in methods */}
         <div className="apple-auth-alt-group">
           <button
             type="button"
@@ -414,6 +394,7 @@ function LoginForm() {
           </button>
 
         </div>
+        </>}
 
         {/* New account prompt */}
         <div className="mt-5 text-center font-ui text-xs text-zinc-500">

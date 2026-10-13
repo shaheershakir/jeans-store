@@ -115,7 +115,7 @@ function RegisterForm() {
   // Initialize Google Identity Services (One Tap & Credential API) if available
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com'
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
     if (!clientId) return
 
     const handleCredentialResponse = async (response: any) => {
@@ -382,12 +382,10 @@ function RegisterForm() {
           </button>
         </form>
 
-        {/* Divider */}
+        {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && <>
         <div className="apple-auth-divider">
           <span>or sign up with</span>
         </div>
-
-        {/* Alternative sign-up method */}
         <div className="apple-auth-alt-group">
           <button
             type="button"
@@ -417,6 +415,7 @@ function RegisterForm() {
           </button>
 
         </div>
+        </>}
 
         {/* Existing account prompt */}
         <div className="mt-5 text-center font-ui text-xs text-zinc-500">

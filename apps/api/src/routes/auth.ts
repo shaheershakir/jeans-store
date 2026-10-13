@@ -188,6 +188,10 @@ authRouter.post('/api/auth/verify', async (req: Request, res: Response) => {
 
 // 5. Google OAuth Authorization URL (/api/auth/google/url)
 authRouter.get('/api/auth/google/url', async (req: Request, res: Response) => {
+  if (!getGoogleClientId()) {
+    res.status(503).json({ error: 'Google sign-in is not configured.' })
+    return
+  }
   const query = req.query as { redirect_uri?: string; state?: string }
   const defaultRedirect = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/callback`
   const redirectUri = query.redirect_uri || defaultRedirect

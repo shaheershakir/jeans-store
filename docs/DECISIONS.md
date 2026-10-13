@@ -118,10 +118,10 @@ The original test deployment relied on Render free tier (with 40s cold starts) a
 ### Decision
 
 1. Deploy all three services (`frontend`, `backend`, `admin`) as multi-stage container images on Google Cloud Run.
-2. Persist catalog products and customer orders to Neon PostgreSQL using Drizzle ORM, with an in-memory/seed fallback when `DATABASE_URL` is absent (for offline CI builds).
-3. Secure backend mutations (`POST`, `PUT`, `DELETE /api/products` and `GET /api/orders`) using shared `X-API-Key` authentication, `@fastify/helmet`, and `@fastify/rate-limit`.
+2. Persist catalog products, inventory, orders, shipping rates, and admin operational records to PostgreSQL using Drizzle ORM. In-memory data is limited to development; production startup requires `DATABASE_URL`.
+3. Protect admin mutations and operational reads with signed admin Bearer sessions; protect customer order history with signed customer Bearer tokens. Express security middleware and route-level validation guard API requests.
 4. Implement Next.js On-Demand ISR via `/api/revalidate`, allowing backend catalog edits to trigger immediate cache invalidation on the storefront.
-5. Persist submitted customer orders to `/api/orders` prior to WhatsApp/mailto concierge redirection.
+5. Recalculate cart prices, inventory availability, product weight, and paid delivery charges in the API before accepting an order. Verify Razorpay payments against the server-created order before recording online purchases.
 
 ### Consequences
 

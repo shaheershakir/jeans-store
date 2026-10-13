@@ -76,7 +76,7 @@ export function buildApp(options: BuildAppOptions = {}): Application {
         return callback(null, false)
       },
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true
     })
   )

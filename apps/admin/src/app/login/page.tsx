@@ -1,8 +1,8 @@
-﻿'use client'
+'use client'
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { ShieldAlert, LockKeyhole } from 'lucide-react'
+import { ShieldAlert, LockKeyhole, Eye, EyeOff } from 'lucide-react'
 import { login } from '@/services/auth'
 import { Button, Card, Input, Spinner } from '@/components/ui/primitives'
 import { toastError } from '@/components/ui/toast'
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [showPassword, setShowPassword] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -75,15 +76,26 @@ export default function LoginPage() {
               <label htmlFor="password" className="mb-1 block text-sm font-medium text-ink">
                 Password
               </label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             {error && (

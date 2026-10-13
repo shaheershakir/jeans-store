@@ -1,8 +1,9 @@
-﻿@import 'tailwindcss';
+@import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  color-scheme: light;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
@@ -65,6 +66,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.14 0.04 259.21);

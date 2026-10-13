@@ -5,7 +5,7 @@ import ProductDetail from './ProductDetail'
 
 export async function generateStaticParams() {
   const products = await getProducts()
-  return products.map((product) => ({ id: String(product.id) }))
+  return products.slice(0, 24).map((product) => ({ id: String(product.id) }))
 }
 
 export async function generateMetadata({

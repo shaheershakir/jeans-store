@@ -12,75 +12,62 @@ import {
   MessageCircle,
   ChevronRight,
   RotateCcw,
-  MapPin,
-  FileText
+  MapPin
 } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { useCartStore, useUIStore, useAuthStore } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
-
-export interface OrderItem {
-  id: number
-  name: string
-  size: string
-  fit?: string
-  wash?: string
-  price: string
-  priceNum: number
-  img: string
-  qty: number
-}
-
-export interface StoredOrder {
-  orderId: string
-  date: string
-  status: 'Confirmed' | 'Dispatched' | 'Delivered'
-  expectedDelivery: string
-  items: OrderItem[]
-  subtotal: number
-  shipping: number
-  total: number
-  shippingAddress: string
-  trackingCourier?: string
-  trackingNumber?: string
-}
+import { fetchCustomerOrders, isActiveCustomerOrder, type CustomerOrder, type CustomerOrderItem } from '@/lib/customerOrders'
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<StoredOrder[]>([])
+  const [orders, setOrders] = useState<CustomerOrder[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'active' | 'delivered'>('all')
 
   const addItem = useCartStore((s) => s.addItem)
   const openOverlay = useUIStore((s) => s.openOverlay)
   const showToast = useUIStore((s) => s.showToast)
   const user = useAuthStore((s) => s.user)
+  const token = useAuthStore((s) => s.token)
 
   useEffect(() => {
     void useAuthStore.persist.rehydrate()
     void useCartStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
-
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('teesgarage-orders')
-        if (stored) {
-          const parsed = JSON.parse(stored) as StoredOrder[]
-          setOrders(Array.isArray(parsed) ? parsed : [])
-          return
-        }
-      } catch {
-        // Ignore invalid local order history.
-      }
-    }
   }, [])
 
+  useEffect(() => {
+    if (!token) {
+      setOrders([])
+      setLoading(false)
+      setLoadError(null)
+      return
+    }
+
+    const controller = new AbortController()
+    setLoading(true)
+    setLoadError(null)
+    void fetchCustomerOrders(token, controller.signal)
+      .then(setOrders)
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setLoadError(error instanceof Error ? error.message : 'Could not load your order history.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [token])
+
   const filteredOrders = orders.filter((o) => {
-    if (filter === 'active') return o.status === 'Confirmed' || o.status === 'Dispatched'
+    if (filter === 'active') return isActiveCustomerOrder(o.status)
     if (filter === 'delivered') return o.status === 'Delivered'
     return true
   })
 
-  const handleBuyAgain = (item: OrderItem) => {
+  const handleBuyAgain = (item: CustomerOrderItem) => {
     addItem(item.id, item.size || '32')
     showToast(`Added ${item.name} (${item.size}) to bag`)
     openOverlay('cart')
@@ -155,7 +142,23 @@ export default function OrdersPage() {
         </div>
 
         {/* Orders Listing */}
-        {filteredOrders.length === 0 ? (
+        {!token ? (
+          <div className="text-center py-20 bg-white rounded-2xl border border-[#e7e7e4] my-8 shadow-sm">
+            <Package className="w-12 h-12 mx-auto text-zinc-300 stroke-[1.5] mb-4" />
+            <h3 className="font-brand text-lg font-bold text-zinc-900">Sign in to view your orders</h3>
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-6">
+              Order history is tied to the email address on your customer account.
+            </p>
+            <Link href="/login" className="teesgarage-btn-primary">Sign in to your account</Link>
+          </div>
+        ) : loading ? (
+          <div className="text-center py-20 text-sm text-zinc-500" role="status">Loading your order history…</div>
+        ) : loadError ? (
+          <div className="text-center py-20 bg-white rounded-2xl border border-[#e7e7e4] my-8 shadow-sm" role="alert">
+            <h3 className="font-brand text-lg font-bold text-zinc-900">Could not load your orders</h3>
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1">{loadError}</p>
+          </div>
+        ) : filteredOrders.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-[#e7e7e4] my-8 shadow-sm">
             <Package className="w-12 h-12 mx-auto text-zinc-300 stroke-[1.5] mb-4" />
             <h3 className="font-brand text-lg font-bold text-zinc-900">No orders found</h3>
@@ -174,6 +177,7 @@ export default function OrdersPage() {
             {filteredOrders.map((order) => {
               const isDelivered = order.status === 'Delivered'
               const isDispatched = order.status === 'Dispatched'
+              const statusClass = isDelivered ? 'delivered' : isDispatched ? 'dispatched' : 'confirmed'
 
               return (
                 <div key={order.orderId} className="teesgarage-order-card">
@@ -196,7 +200,7 @@ export default function OrdersPage() {
 
                     <span
                       className={`teesgarage-order-status-badge ${
-                        isDelivered ? 'delivered' : isDispatched ? 'dispatched' : 'confirmed'
+                        statusClass
                       }`}
                     >
                       {isDelivered ? (
@@ -213,7 +217,7 @@ export default function OrdersPage() {
                     <div className="teesgarage-order-delivery-eta">
                       <Clock className="w-4 h-4 text-amber-600 shrink-0" />
                       <span>
-                        <strong>Estimated Delivery:</strong> {order.expectedDelivery}
+                        <strong>Delivery status:</strong> {order.expectedDelivery}
                       </span>
                       {order.trackingCourier && (
                         <span className="text-zinc-400 hidden md:inline">
@@ -222,15 +226,17 @@ export default function OrdersPage() {
                       )}
                     </div>
 
-                    <a
-                      href={`https://wa.me/919876543210?text=Hi%20TEESGARAGE%20Studio%2C%20please%20give%20me%20a%20live%20status%20update%20for%20order%20%23${order.orderId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="teesgarage-order-wa-track"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      <span>Live WhatsApp Tracking</span>
-                    </a>
+                    {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (
+                      <a
+                        href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi TEESGARAGE, please share a status update for order ${order.orderId}.`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="teesgarage-order-wa-track"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        <span>WhatsApp Help</span>
+                      </a>
+                    )}
                   </div>
 
                   {/* Line Items */}
@@ -296,14 +302,6 @@ export default function OrdersPage() {
                       </span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => alert(`Digital Receipt for Order #${order.orderId} prepared for download.`)}
-                      className="inline-flex items-center gap-1.5 text-zinc-600 hover:text-black font-semibold transition-colors bg-none border-none p-0 cursor-pointer"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>Download Receipt</span>
-                    </button>
                   </div>
                 </div>
               )

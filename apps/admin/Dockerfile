@@ -17,11 +17,6 @@ COPY packages/ ./packages/
 COPY apps/admin/ ./apps/admin/
 
 ENV NEXT_TELEMETRY_DISABLED=1
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_ADMIN_API_KEY
-ENV NEXT_PUBLIC_ADMIN_API_KEY=$NEXT_PUBLIC_ADMIN_API_KEY
-
 RUN npx turbo run build --filter=@jeans-store/admin
 
 # Stage 3: Production Runner

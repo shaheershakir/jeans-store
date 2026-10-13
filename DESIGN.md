@@ -4,26 +4,26 @@ This document defines the brand, typographic hierarchy, and visual design standa
 
 ## Brand identity
 
-TEESGARAGE is a denim label focused on permanence and structural weight. We build heavyweight jeans cut from 13.5oz to 14.5oz selvedge and ring-spun cotton denim.
+TEESGARAGE makes everyday apparel across Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants. The visual language should make garment details, fabric, fit, and sizing easy to assess.
 
 The aesthetic draws inspiration from industrial manifests, raw materials, and archival catalogs. We avoid generic e-commerce conventions like artificial sale countdowns, fake review counters, and strike-through pricing. Every element on screen must feel functional, durable, and honest.
 
 ## Color system
 
-All colors are declared as CSS custom properties in `frontend/src/app/globals.css`. We do not use Tailwind CSS or arbitrary inline hex values in the storefront.
+All colors are declared as CSS custom properties in `apps/storefront/src/app/globals.css`. We do not use Tailwind CSS or arbitrary inline hex values in the storefront.
 
 ### Core palette
 
 - `--ink` (`#151515`): Deep graphite black for primary typography, borders, and dominant buttons.
 - `--paper` (`#f5f3ef`): Warm alabaster cream for the storefront base background and primary surfaces.
 - `--bone` (`#ede8e1`): Neutral warm grey for secondary card surfaces, input backgrounds, and badges.
-- `--denim` (`#253d5a`): Deep indigo accent for links, icons, and subtle brand accents.
+- `--navy` (`#1c2a38`): Deep navy accent used on links, icons, and subtle brand accents.
 - `--line` (`rgba(21, 21, 21, 0.15)`): Subtle border divider for grids and cards.
 - `--line-strong` (`rgba(21, 21, 21, 0.4)`): High-contrast border for active states and inputs.
 
 ### Semantic states
 
-- `--accent-green` (`#15803d`): Stock availability, free shipping unlocks, and order confirmations.
+- `--accent-green` (`#15803d`): Stock availability and completed-order states.
 - `--accent-green-bg` (`#dcfce7`): Light green badge background.
 - Danger red (`#dc2626`): Form validation errors.
 
@@ -56,18 +56,18 @@ The storefront uses four distinct type families from Google Fonts.
 ### Product cards
 
 - Cards display a 3:4 aspect ratio image container.
-- Hovering the card swaps to the secondary alternate wash view with a smooth opacity transition.
+- Hovering the card swaps to its secondary product photo when one is available.
 - Price is formatted with the Indian Rupee symbol using the `en-IN` locale (`₹1,699`).
-- Size picker pills allow direct size selection prior to adding items to the bag.
+- Size and color selectors reflect the product's available variants before adding it to the cart.
 
 ### Bag drawer
 
 - Slides out from the right on overlay trigger.
-- Free shipping progress bar updates dynamically against the ₹1,499 threshold.
+- Delivery charges are paid and calculated from the selected destination region and cart weight.
 - Step controls let customers increment or decrement quantity without full page reloads.
 
 ### Checkout form
 
 - Simple two-column layout with delivery details on the left and sticky order manifest on the right.
 - Clean inputs with high-contrast active focus rings.
-- Explicit confirmation cards that render the exact message handed off to WhatsApp or email.
+- The order summary shows the server-calculated subtotal, delivery charge, and total before payment or order submission.

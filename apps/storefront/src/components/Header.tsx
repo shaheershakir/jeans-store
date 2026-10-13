@@ -408,16 +408,18 @@ export default function Header({ initialNavItems }: HeaderProps) {
                           <span>Onboarding &amp; Setup</span>
                         </button>
 
-                        <a
-                          href="https://wa.me/919876543210?text=Hi%20TEESGARAGE%20Studio%2C%20I%20have%20an%20inquiry%20regarding%20my%20account"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="apple-popover-item"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          <MessageCircle className="h-4 w-4 mr-2.5 text-emerald-600" />
-                          <span>Concierge WhatsApp</span>
-                        </a>
+                        {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (
+                          <a
+                            href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi TEESGARAGE, I have an inquiry regarding my account.')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="apple-popover-item"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2.5 text-emerald-600" />
+                            <span>Concierge WhatsApp</span>
+                          </a>
+                        )}
                       </div>
 
                       <div className="apple-popover-divider" />

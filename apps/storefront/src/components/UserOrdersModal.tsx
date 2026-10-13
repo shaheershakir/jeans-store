@@ -9,35 +9,11 @@ import {
   Truck,
   CheckCircle2,
   Clock,
-  ExternalLink,
-  MessageCircle,
-  ShoppingBag
+  MessageCircle
 } from 'lucide-react'
 import { formatPrice } from '@/lib/utils'
-
-export interface OrderItem {
-  id: number
-  name: string
-  size: string
-  fit?: string
-  wash?: string
-  price: string
-  priceNum: number
-  img: string
-  qty: number
-}
-
-export interface StoredOrder {
-  orderId: string
-  date: string
-  status: 'Confirmed' | 'Dispatched' | 'Delivered'
-  expectedDelivery: string
-  items: OrderItem[]
-  subtotal: number
-  shipping: number
-  total: number
-  shippingAddress: string
-}
+import { fetchCustomerOrders, isActiveCustomerOrder, type CustomerOrder } from '@/lib/customerOrders'
+import { useAuthStore } from '@/lib/store'
 
 interface UserOrdersModalProps {
   isOpen: boolean
@@ -46,23 +22,34 @@ interface UserOrdersModalProps {
 }
 
 export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrdersModalProps) {
-  const [orders, setOrders] = useState<StoredOrder[]>([])
+  const [orders, setOrders] = useState<CustomerOrder[]>([])
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'active' | 'delivered'>('all')
+  const token = useAuthStore((state) => state.token)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const stored = localStorage.getItem('teesgarage-orders')
-      if (stored) {
-        const parsed = JSON.parse(stored) as StoredOrder[]
-        setOrders(Array.isArray(parsed) ? parsed : [])
-        return
-      }
-    } catch {
-      // Ignore invalid local order history.
+    if (!isOpen) return
+    if (!token) {
+      setOrders([])
+      setLoadError('Sign in to view the order history for your account.')
+      return
     }
-    setOrders([])
-  }, [isOpen])
+
+    const controller = new AbortController()
+    setLoading(true)
+    setLoadError(null)
+    void fetchCustomerOrders(token, controller.signal)
+      .then(setOrders)
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setLoadError(error instanceof Error ? error.message : 'Could not load your order history.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [isOpen, token])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -81,7 +68,7 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
   if (!isOpen) return null
 
   const filteredOrders = orders.filter((o) => {
-    if (filter === 'active') return o.status === 'Confirmed' || o.status === 'Dispatched'
+    if (filter === 'active') return isActiveCustomerOrder(o.status)
     if (filter === 'delivered') return o.status === 'Delivered'
     return true
   })
@@ -153,7 +140,16 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
 
         {/* Orders List Content */}
         <div className="apple-orders-modal-body">
-          {filteredOrders.length === 0 ? (
+          {loading ? (
+            <div className="apple-orders-empty" role="status">Loading order history…</div>
+          ) : loadError ? (
+            <div className="apple-orders-empty" role="alert">
+              <Package className="w-12 h-12 text-zinc-300 mb-3" />
+              <h3>Order history unavailable</h3>
+              <p>{loadError}</p>
+              {userEmail && <p>{userEmail}</p>}
+            </div>
+          ) : filteredOrders.length === 0 ? (
             <div className="apple-orders-empty">
               <Package className="w-12 h-12 text-zinc-300 mb-3" />
               <h3>No orders found in this view</h3>
@@ -195,6 +191,12 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
                           <span>Delivered</span>
                         </span>
                       )}
+                      {!['Dispatched', 'Confirmed', 'Delivered'].includes(order.status) && (
+                        <span className="apple-status-pill confirmed">
+                          <Clock className="w-3.5 h-3.5 mr-1" />
+                          <span>{order.status}</span>
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -202,6 +204,9 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
                   <div className="apple-order-eta-banner">
                     <span className="eta-label">Estimated Delivery:</span>
                     <strong className="eta-val">{order.expectedDelivery}</strong>
+                    {order.trackingNumber && (
+                      <span className="eta-label">{order.trackingCourier ? `${order.trackingCourier} · ` : ''}{order.trackingNumber}</span>
+                    )}
                   </div>
 
                   {/* Order Items */}
@@ -242,25 +247,17 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
                     </div>
 
                     <div className="apple-order-card-actions">
-                      <a
-                        href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=${encodeURIComponent(
-                          `Hi TEESGARAGE, I need help tracking my order ${order.orderId}`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="apple-order-action-btn whatsapp"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-                        <span>WhatsApp Help</span>
-                      </a>
-                      <button
-                        type="button"
-                        className="apple-order-action-btn"
-                        onClick={() => alert(`Tracking updates for order ${order.orderId} have been sent via SMS & WhatsApp.`)}
-                      >
-                        <ExternalLink className="w-3.5 h-3.5 mr-1" />
-                        <span>Track Parcel</span>
-                      </button>
+                      {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (
+                        <a
+                          href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi TEESGARAGE, I need help with order ${order.orderId}.`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="apple-order-action-btn whatsapp"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                          <span>WhatsApp Help</span>
+                        </a>
+                      )}
                     </div>
                   </div>
                 </article>
@@ -271,7 +268,7 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
 
         {/* Footer */}
         <div className="apple-modal-footer">
-          <span className="apple-modal-footer-note">Free 7-day doorstep size exchanges on all orders</span>
+          <span className="apple-modal-footer-note">Order updates are connected to your account.</span>
           <button type="button" className="apple-modal-done-btn" onClick={onClose}>
             Done
           </button>

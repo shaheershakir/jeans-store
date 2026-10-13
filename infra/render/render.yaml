@@ -17,3 +17,21 @@
         value: 0.0.0.0
       - key: CORS_ORIGIN
         sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_NAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_SESSION_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: GCP_PROJECT_ID
+        sync: false
+      - key: GCS_PRODUCT_IMAGES_BUCKET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false

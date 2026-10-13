@@ -1,71 +1,67 @@
 # TEESGARAGE Context
 
-TEESGARAGE is a premium e-commerce apparel label centering denim as the hero craft, complemented by curated contemporary wardrobe essentials.
+TEESGARAGE is an apparel store for tops and bottoms. This glossary keeps product, checkout, delivery, and order language consistent across the storefront and admin.
 
 ## Language
 
-### Brand & Catalog
+### Catalog
 
 **Product**:
-An individual garment available for purchase in the catalog.
-_Avoid_: Item, SKU, article, piece
-
-**Collection**:
-A curated, seasonal or thematic grouping of products released together.
-_Avoid_: Drop, line, capsule
+An apparel listing available for purchase.
+_Avoid_: Item, article, piece
 
 **Category**:
-The garment classification within the wardrobe (e.g., Denim, Outerwear, Tops).
-_Avoid_: Department, section, vertical, store
+The product group used to organize the catalog. The current categories are Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants.
+_Avoid_: Department, vertical
+
+**Variant**:
+A purchasable version of a product defined by its size and color.
+_Avoid_: SKU, option
+
+**Collection**:
+A curated, seasonal, or thematic group of products.
+_Avoid_: Drop, line, capsule
 
 **Fit**:
-The silhouette, cut, and drape of a garment on the body (e.g., Straight, Baggy, Wide, Relaxed, Bootcut).
-_Avoid_: Style, cut type, shape, profile
+The silhouette and drape of a garment on the body.
+_Avoid_: Shape, profile
 
-**Wash**:
-The specific rinse, dye, or distress treatment applied to denim fabric (e.g., Raw Indigo, Sun Bleached, Vintage Tint).
-_Avoid_: Color, shade, rinse grade
+**Pattern**:
+The visible fabric design, such as stripes or a print.
+_Avoid_: Wash
 
-**Colorway**:
-The primary dye or color variation of a non-denim garment.
-_Avoid_: Wash, tint, hue
-
-**Size**:
-The physical measurement or alpha tier assigned to a garment (e.g., waist 28–36 for denim; S–XXL for apparel).
-_Avoid_: Sizing tier, dimension, tag size
-
----
-
-### Purchasing & Customers
+### Purchasing and delivery
 
 **Customer**:
-A person who browses the catalog, consults on sizing, or purchases garments.
-_Avoid_: User, buyer, client, account, shopper
+A person who browses the catalog or places an order.
+_Avoid_: Buyer, client, account
 
 **Cart**:
-The customer's temporary selection of garments and chosen sizes prior to purchase submission.
-_Avoid_: Bag, basket, checkout session
+A customer's selected products, sizes, colors, and quantities before checkout.
+_Avoid_: Basket, checkout session
 
 **Line Item**:
-A single product entry in a customer's cart or order, specifying the chosen size, quantity, and unit price.
-_Avoid_: Cart item, entry, product line
+A product variant, quantity, and unit price within a cart or order.
+_Avoid_: Entry, product line
 
 **Order**:
-A committed purchase record containing line items, customer delivery details, and fulfillment state.
-_Avoid_: Transaction, booking, inquiry, manifest
+A submitted purchase containing line items, customer delivery details, payment information, and fulfillment status.
+_Avoid_: Booking, inquiry
 
-**Concierge Checkout**:
-The assisted purchase handoff via direct messaging where fit consultation, payment confirmation, and tracking occur.
-_Avoid_: Payment gateway, automated checkout, self-serve purchase
+**Delivery Region**:
+The destination group that determines a cart's delivery charge: Kerala or the rest of India.
+_Avoid_: Zone, shipping tier
+
+**Delivery Charge**:
+A paid amount calculated from the delivery region and total cart weight using the store's configured weight bands.
+_Avoid_: Free shipping, handling fee
 
 **Order Status**:
-The progressive state of a committed order: Pending, Confirmed, Fulfilled, or Cancelled.
-_Avoid_: Order state, progress step, stage
-
----
+The order's fulfillment state: Pending, Confirmed, Processing, Shipped, Out for Delivery, Delivered, Cancelled, or Returned.
+_Avoid_: Stage, progress step
 
 ### Administration
 
 **Store Manager**:
-An authorized operator who updates the product catalog, tracks orders, and manages inventory.
-_Avoid_: Superuser, admin, staff member
+The authorized operator who manages products, inventory, orders, delivery charges, and other store operations.
+_Avoid_: Superuser, staff profile

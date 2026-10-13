@@ -1,4 +1,4 @@
-﻿@import 'tailwindcss';
+@import 'tailwindcss';
 
 @theme {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -29,8 +29,8 @@
   --paper: #ffffff;
   --bone: #f8f8f6;
   --bone-alt: #f1f0ec;
-  --denim: #1c2a38;
-  --denim-accent: #2e445b;
+  --navy: #1c2a38;
+  --navy-accent: #2e445b;
   --line: rgba(12, 14, 18, 0.09);
   --line-strong: rgba(12, 14, 18, 0.18);
   --accent-green: #15803d;
@@ -1046,7 +1046,7 @@ button {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--denim);
+  background: var(--navy);
   box-shadow: 0 0 0 3px rgba(28, 42, 56, 0.15);
 }
 
@@ -1190,14 +1190,14 @@ button {
 }
 
 .filter-drawer-toggle.has-active {
-  background: var(--denim);
+  background: var(--navy);
   color: var(--paper);
-  border-color: var(--denim);
+  border-color: var(--navy);
 }
 
 .filter-badge-pill {
   background: var(--paper);
-  color: var(--denim);
+  color: var(--navy);
   font-family: var(--font-ui);
   font-size: 10px;
   font-weight: 600;
@@ -1491,7 +1491,7 @@ button {
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--denim);
+  color: var(--navy);
   background: rgba(28, 42, 56, 0.08);
   padding: 2px 6px;
   border-radius: var(--radius-xs);
@@ -1523,7 +1523,7 @@ button {
 }
 
 .product-title:hover {
-  color: var(--denim);
+  color: var(--navy);
 }
 
 .product-wash-label {
@@ -2026,7 +2026,7 @@ button {
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--denim);
+  color: var(--navy);
 }
 
 .pdp-headline {
@@ -2327,7 +2327,7 @@ button {
 
 .delivery-icon {
   font-size: 14px;
-  color: var(--denim);
+  color: var(--navy);
 }
 
 .delivery-title {
@@ -2362,7 +2362,7 @@ button {
 
 .pincode-icon {
   font-size: 16px;
-  color: var(--denim);
+  color: var(--navy);
 }
 
 .pincode-title {
@@ -3978,7 +3978,7 @@ button {
 }
 
 /* ==========================================================================
-   AUTHENTICATION & DENIM ATELIER VAULT (Login / Sign-up)
+   CUSTOMER ACCOUNT (Login / Sign-up)
    ========================================================================== */
 .auth-page-wrapper {
   min-height: calc(100vh - 130px);
@@ -4294,7 +4294,7 @@ button {
 }
 
 .auth-input:focus {
-  border-color: var(--denim);
+  border-color: var(--navy);
   box-shadow: 0 0 0 3px rgba(28, 42, 56, 0.1);
 }
 
@@ -4374,7 +4374,7 @@ button {
   background: transparent;
   border: none;
   font: 500 13px var(--font-ui);
-  color: var(--denim);
+  color: var(--navy);
   cursor: pointer;
   padding: 0;
   transition: color 0.15s ease, text-decoration 0.15s ease;
@@ -4389,7 +4389,7 @@ button {
 .auth-submit-btn {
   height: 46px;
   width: 100%;
-  background: var(--denim);
+  background: var(--navy);
   color: #ffffff;
   border: none;
   border-radius: 10px;
@@ -4493,14 +4493,14 @@ button {
   border-radius: 6px;
   padding: 4px 10px;
   font: 600 11.5px var(--font-brand);
-  color: var(--denim);
+  color: var(--navy);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
 }
 
 .auth-demo-action:hover {
-  background: var(--denim);
+  background: var(--navy);
   color: #ffffff;
 }
 
@@ -4629,7 +4629,7 @@ button {
   display: flex;
   align-items: flex-end;
   overflow: hidden;
-  background: var(--denim);
+  background: var(--navy);
 }
 
 .hp-hero-media {
@@ -4932,7 +4932,7 @@ button {
   display: flex;
   align-items: center;
   overflow: hidden;
-  background: var(--denim);
+  background: var(--navy);
 }
 
 .hp-featured-media {
@@ -11926,7 +11926,7 @@ select {
   --hp-ink: #151b1e;
   --hp-muted: #697276;
   --hp-line: #dfded8;
-  --hp-denim: #294455;
+  --hp-accent: #294455;
   color: var(--hp-ink);
   background: var(--hp-paper);
   overflow-x: clip;
@@ -12954,7 +12954,7 @@ select {
 
 /* ========================================================================
    STOREFRONT PAGE SYSTEM
-   Extend the homepage's paper, ink and denim palette across customer routes.
+   Extend the homepage's paper, ink and navy palette across customer routes.
    ======================================================================== */
 :root {
   --store-paper: #f8f7f3;
@@ -12962,7 +12962,7 @@ select {
   --store-ink: #172126;
   --store-muted: #697276;
   --store-line: #dfded8;
-  --store-denim: #294455;
+  --store-accent: #294455;
   --store-soft: #eeede7;
 }
 
@@ -13124,7 +13124,7 @@ select {
 }
 
 .apple-profile-page :is(.apple-input, .apple-form-input, .teesgarage-form-input):focus {
-  border-color: var(--store-denim);
+  border-color: var(--store-accent);
   box-shadow: 0 0 0 2px rgb(41 68 85 / 12%);
   outline: none;
 }
@@ -13203,7 +13203,7 @@ select {
 }
 
 .teesgarage-order-wa-track {
-  color: var(--store-denim);
+  color: var(--store-accent);
 }
 
 .apple-profile-page .fit-studio-pill,
@@ -13217,7 +13217,7 @@ select {
 
 .apple-profile-page .fit-studio-pill svg,
 .apple-profile-page .fit-auto-pill svg {
-  color: var(--store-denim);
+  color: var(--store-accent);
 }
 
 .apple-profile-page .fit-active-snapshot-card {
@@ -13256,7 +13256,7 @@ select {
 }
 
 .apple-profile-page .fit-selected-indicator strong {
-  color: var(--store-denim);
+  color: var(--store-accent);
 }
 
 .apple-profile-page :is(.fit-waist-btn, .fit-top-btn, .fit-cut-card, .fit-inseam-btn, .fit-comfort-card) {
@@ -13462,7 +13462,7 @@ select {
 .field-group input:focus,
 .field-group textarea:focus,
 .checkout-page select:focus {
-  border-color: var(--store-denim);
+  border-color: var(--store-accent);
   box-shadow: 0 0 0 2px rgb(41 68 85 / 12%);
 }
 
@@ -13515,7 +13515,7 @@ select {
 }
 
 .apple-auth-page .apple-form-input:focus {
-  border-color: var(--store-denim);
+  border-color: var(--store-accent);
   box-shadow: 0 0 0 2px rgb(41 68 85 / 12%);
 }
 

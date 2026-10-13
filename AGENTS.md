@@ -1,6 +1,6 @@
 ﻿# AGENTS.md
 
-TEESGARAGE / TEESGARAGE is a premium denim e-commerce platform structured as a Turborepo monorepo with npm workspaces.
+TEESGARAGE is an apparel e-commerce platform structured as a Turborepo monorepo with npm workspaces. The product categories are Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants.
 
 ## Monorepo Layout
 
@@ -62,8 +62,8 @@ docker compose up -d      # Spins up postgres:5432, api:4000, storefront:3000, a
 ## Architecture and Data Flow
 
 - **Storefront**: Customer website statically generated at build time with fallback snapshot resilience. Pages revalidate on catalog changes.
-- **Admin**: Operational dashboard for product catalogue, SKUs, inventory movements, order tracking, and coupons. Uses Tailwind CSS v4.
-- **API**: Express REST API backed by Neon PostgreSQL via Drizzle ORM. Mutating routes require `X-API-Key`. Includes Razorpay payment service and Cloud IAM auth.
+- **Admin**: Operational dashboard for product catalogue, SKUs, inventory movements, order tracking, coupons, and paid delivery rates. It uses one server-configured admin account with signed sessions and has no registration flow.
+- **API**: Express REST API backed by PostgreSQL via Drizzle ORM. Admin operations use signed Bearer sessions; customer accounts use signed Bearer tokens. Checkout totals and paid delivery fees are calculated by the API from live product prices and per-item weight.
 - **Packages**:
   - `@jeans-store/db`: Schema, migrations, Neon connection client.
   - `@jeans-store/shared`: Shared contracts (`Product`, `Fit`, `Order`, `HomepageConfig`, constants).

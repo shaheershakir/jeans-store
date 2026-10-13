@@ -19,17 +19,25 @@ uploadRouter.post(
   verifyAdminAuth,
   express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '10mb' }),
   async (req: Request, res: Response) => {
-    const bucketName = process.env.GCS_PRODUCT_IMAGES_BUCKET?.trim()
-    if (!bucketName) {
-      res.status(503).json({ error: 'Product image storage is not configured.' })
-      return
-    }
-
     const contentType = req.headers['content-type']?.split(';')[0]?.toLowerCase() as keyof typeof IMAGE_TYPES | undefined
     const imageType = contentType ? IMAGE_TYPES[contentType] : undefined
     const bytes = req.body
     if (!imageType || !Buffer.isBuffer(bytes) || bytes.length === 0 || !imageType.signature(bytes)) {
       res.status(400).json({ error: 'Upload a valid JPEG, PNG, or WebP image.' })
+      return
+    }
+
+    const bucketName = process.env.GCS_PRODUCT_IMAGES_BUCKET?.trim()
+    if (!bucketName) {
+      if (process.env.NODE_ENV !== 'production') {
+        const base64 = bytes.toString('base64')
+        res.status(201).json({
+          url: `data:${contentType};base64,${base64}`,
+          object: `local-dev/${crypto.randomUUID()}.${imageType.extension}`
+        })
+        return
+      }
+      res.status(503).json({ error: 'Product image storage is not configured.' })
       return
     }
 
@@ -48,6 +56,14 @@ uploadRouter.post(
         object: objectName
       })
     } catch (err) {
+      if (process.env.NODE_ENV !== 'production') {
+        const base64 = bytes.toString('base64')
+        res.status(201).json({
+          url: `data:${contentType};base64,${base64}`,
+          object: `local-fallback/${crypto.randomUUID()}.${imageType.extension}`
+        })
+        return
+      }
       req.log?.error({ err }, 'Product image upload failed')
       res.status(502).json({ error: 'Could not upload the image to Google Cloud Storage.' })
     }

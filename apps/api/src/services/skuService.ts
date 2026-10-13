@@ -49,7 +49,12 @@ export const CATEGORY_CODES: Record<string, string> = {
   sweats: 'SWT',
 
   't-shirts': 'TSH',
-  tees: 'TSH'
+  tees: 'TSH',
+
+  hoodies: 'HOD',
+  hoodie: 'HOD',
+  jeans: 'JNS',
+  jean: 'JNS'
 }
 
 export const PRODUCT_TYPE_CODES: Record<string, string> = {

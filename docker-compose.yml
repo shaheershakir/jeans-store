@@ -27,10 +27,16 @@
     environment:
       - PORT=4000
       - HOST=0.0.0.0
-      - NODE_ENV=production
+      - NODE_ENV=development
       - CORS_ORIGIN=*
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/jeans_store}
-      - ADMIN_API_KEY=${ADMIN_API_KEY:-admin-secret-dev-key}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@localhost}
+      - ADMIN_NAME=${ADMIN_NAME:-Local Administrator}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-local-dev-only-password}
+      - ADMIN_SESSION_SECRET=${ADMIN_SESSION_SECRET:-local-dev-admin-session-secret-change-me}
+      - JWT_SECRET=${JWT_SECRET:-local-dev-customer-jwt-secret-change-me}
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID:-local-development}
+      - GCS_PRODUCT_IMAGES_BUCKET=${GCS_PRODUCT_IMAGES_BUCKET:-}
       - FRONTEND_URL=http://storefront:3000
       - REVALIDATION_SECRET=${REVALIDATION_SECRET:-revalidate-secret-dev-key}
       - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
@@ -49,6 +55,11 @@
     build:
       context: .
       dockerfile: apps/storefront/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000
+        NEXT_PUBLIC_WHATSAPP_NUMBER: ${NEXT_PUBLIC_WHATSAPP_NUMBER:-}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_SITE_URL: http://localhost:3000
     container_name: teesgarage-storefront
     ports:
       - '3000:3000'
@@ -74,8 +85,7 @@
     environment:
       - PORT=3001
       - HOSTNAME=0.0.0.0
-      - NEXT_PUBLIC_API_URL=http://localhost:4000
-      - NEXT_PUBLIC_ADMIN_API_KEY=${ADMIN_API_KEY:-admin-secret-dev-key}
+      - API_URL=http://api:4000
     depends_on:
       api:
         condition: service_healthy

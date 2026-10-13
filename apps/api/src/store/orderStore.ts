@@ -49,6 +49,22 @@ class OrderStore {
     return [...this.memoryOrders].reverse()
   }
 
+  async listByCustomerEmail(email: string): Promise<Order[]> {
+    const normalizedEmail = email.trim().toLowerCase()
+    if (isDatabaseConfigured() && db) {
+      const rows = await db
+        .select()
+        .from(ordersTable)
+        .where(sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail}`)
+        .orderBy(desc(ordersTable.createdAt))
+      return rows.map(toOrder)
+    }
+    if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
+    return this.memoryOrders
+      .filter((order) => order.customerEmail.trim().toLowerCase() === normalizedEmail)
+      .reverse()
+  }
+
   async getById(id: number): Promise<Order | undefined> {
     if (isDatabaseConfigured() && db) {
       const [row] = await db.select().from(ordersTable).where(eq(ordersTable.id, id))

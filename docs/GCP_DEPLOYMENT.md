@@ -1,227 +1,53 @@
-﻿# Google Cloud Platform (GCP) Production Deployment Guide
+# Google Cloud Run Deployment
 
-This document is the operational guide for deploying TEESGARAGE's three-tier e-commerce architecture to **Google Cloud Run**, persisted with **Neon PostgreSQL** via **Drizzle ORM**, with product media hosted on **Google Cloud Storage**.
+TEESGARAGE deploys three services in `asia-south1`: the customer storefront, the operational admin, and the Express API. The current catalog is Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants.
 
----
+## Before deployment
 
-## Production Architecture & Component Mapping
+1. Create an Artifact Registry Docker repository and a Cloud Storage bucket for product images.
+2. Apply the database schema with `npm run db:push` after backing up the production database.
+3. Grant the API Cloud Run service account `roles/storage.objectUser` on the image bucket and Secret Manager access to the API secrets.
+4. Configure Workload Identity Federation for GitHub Actions. Grant its service account Cloud Run deploy permissions, Artifact Registry write access, and permission to attach the Cloud Run runtime service account.
 
-| Component | Google Cloud service | Why |
-| :--- | :--- | :--- |
-| **Next.js storefront** | **Cloud Run** | Supports server-side rendering, API calls, and dynamic pages |
-| **Next.js admin panel** | **Cloud Run** | Separate deployment and access controls |
-| **Existing REST API** | **Cloud Run** | Keep your current Express backend with zero code rewrite |
-| **PostgreSQL** | **Neon** | Keep your existing database, branching, and connection pooling |
-| **Product images** | **Cloud Storage** | Store product photos independently of application containers |
-| **Secrets and credentials** | **Secret Manager** | Protect server-side credentials and inject them securely at runtime |
-| **Container images** | **Artifact Registry** | Stores immutable images deployed to Cloud Run |
+The runtime account must have access to the production database. Make the product image bucket public for object reads or put a public CDN in front of it; the API only needs object write access.
 
----
+## Required configuration
 
-## Architecture Topology
+Set these GitHub repository **variables** for `.github/workflows/deploy-gcp.yml`:
 
-```
-                              [ Internet Traffic ]
-                                       │
-                     ┌─────────────────┴─────────────────┐
-                     │ Google Cloud Run (Fully Managed)  │
-                     └─────────────────┬─────────────────┘
-                                       │
-        ┌──────────────────────────────┼──────────────────────────────┐
-        ▼                              ▼                              ▼
-┌──────────────────┐          ┌──────────────────┐          ┌──────────────────┐
-│  teesgarage-frontend  │          │  teesgarage-backend   │          │   teesgarage-admin    │
-│  Port: 3000      │          │  Port: 4000      │          │   Port: 3001     │
-│  (Storefront)    │          │  (Express API)   │          │   (Dashboard)    │
-└────────┬─────────┘          └────────┬─────────┘          └────────┬─────────┘
-         │                             │                             │
-         │  On-demand ISR Webhook      │  Authenticated Mutations    │
-         │◄────────────────────────────┤◄────────────────────────────┘
-         │                             │  (X-API-Key: ADMIN_API_KEY)
-         │  Save Order (/api/orders)   │
-         └────────────────────────────►│
-                                       ▼
-                          ┌─────────────────────────┐
-                          │    Neon PostgreSQL      │
-                          │   (Drizzle ORM Pooled)  │
-                          │  - products             │
-                          │  - orders               │
-                          └─────────────────────────┘
+- `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_WIF_SA`
+- `GCP_REGION` (optional; defaults to `asia-south1`) and `GAR_REPOSITORY` (optional; defaults to `teesgarage`)
+- `ADMIN_EMAIL`, `ADMIN_NAME`, `GCS_PRODUCT_IMAGES_BUCKET`
+- `FRONTEND_URL`, `ADMIN_URL`
+- `GOOGLE_CLIENT_ID` and `RAZORPAY_KEY_ID` only when those providers are enabled
+- `WHATSAPP_NUMBER` if WhatsApp support links are enabled
+
+Create these Secret Manager secrets for the API runtime: `database-url`, `admin-password`, `admin-session-secret`, and `customer-jwt-secret`. Google sign-in also needs `google-client-secret`; Razorpay checkout also needs `razorpay-key-secret`. Use live Razorpay credentials for production. Do not put secret values in GitHub variables, Docker build arguments, or `NEXT_PUBLIC_*` settings.
+
+The GitHub workflow and both `infra/gcp/deploy-cloudrun` scripts bind secrets by name. They do not create or populate the secrets. Production API startup checks for the database, admin credentials, signing secrets, project ID, image bucket, storefront URL, and CORS origins.
+
+## Deploy
+
+For GitHub Actions, push a change to `main` under `apps/`, `packages/`, or the workflow file. Run the workflow manually to choose `all`, `backend`, `frontend`, or `admin`.
+
+For a local deployment, authenticate `gcloud`, set `GCP_PROJECT_ID`, `GCP_REGION`, `GAR_REPOSITORY`, `FRONTEND_URL`, and `ADMIN_URL`, then run one of:
+
+```powershell
+./infra/gcp/deploy-cloudrun.ps1 -Service all
 ```
 
----
-
-## 1. Prerequisites
-
-1. **Google Cloud Account**: A project with billing enabled (e.g. `teesgarage-production`).
-2. **Google Cloud CLI (`gcloud`)**: Installed and initialized locally (`gcloud auth login`).
-3. **Neon PostgreSQL Database**:
-   - Create a project at [neon.tech](https://neon.tech).
-   - Use the **Pooled** connection string ending with `?sslmode=require` (`ep-xyz-pooler.neon.tech`).
-
----
-
-## 2. Google Cloud Initial Setup
-
-Run the following commands using `gcloud`:
-
-```bash
-# 1. Set your project ID
-export PROJECT_ID="your-gcp-project-id"
-export REGION="asia-south1" # or us-central1
-gcloud config set project $PROJECT_ID
-
-# 2. Enable necessary APIs
-gcloud services enable \
-  run.googleapis.com \
-  artifactregistry.googleapis.com \
-  secretmanager.googleapis.com \
-  storage.googleapis.com \
-  cloudbuild.googleapis.com
-
-# 3. Create Artifact Registry repository for container images
-gcloud artifacts repositories create teesgarage \
-  --repository-format=docker \
-  --location=$REGION \
-  --description="TEESGARAGE Docker container images"
-
-# 4. Create Cloud Storage bucket for product images
-export ASSETS_BUCKET="teesgarage-product-assets"
-gcloud storage buckets create gs://$ASSETS_BUCKET \
-  --location=$REGION \
-  --uniform-bucket-level-access
-
-# Grant public read access to product assets
-gcloud storage buckets add-iam-policy-binding gs://$ASSETS_BUCKET \
-  --member=allUsers \
-  --role=roles/storage.objectViewer
+```sh
+./infra/gcp/deploy-cloudrun.sh all
 ```
 
----
+When deploying only the storefront or admin, set `BACKEND_URL` to the existing API service URL. The API's CORS origin list must contain the public storefront and admin origins.
 
-## 3. Secret Manager Configuration
+## Verify
 
-Store your credentials securely in Secret Manager so Cloud Run services can inject them at runtime:
+- `GET /health` on the API reports a healthy service and database.
+- Admin login accepts only the configured administrator account; there is no admin registration page or demo account.
+- Upload a product photo in admin and confirm the saved object is readable through the configured bucket/CDN.
+- Confirm the catalog, stock, shipping rates, and admin operations persist after restarting a service instance.
+- Place a test order with Razorpay test credentials in a non-production environment. Never use test keys for production checkout.
 
-```bash
-# 1. Database URL (Neon PostgreSQL Pooled connection string)
-echo -n "postgresql://neondb_owner:YOUR_PASSWORD@ep-xyz-pooler.region.aws.neon.tech/neondb?sslmode=require" | \
-  gcloud secrets create teesgarage-database-url --data-file=-
-
-# 2. Backend Admin API Key (used by Admin and internal services)
-openssl rand -hex 24 | \
-  gcloud secrets create teesgarage-admin-api-key --data-file=-
-
-# 3. On-Demand ISR Revalidation Secret (shared between backend and storefront)
-openssl rand -hex 24 | \
-  gcloud secrets create teesgarage-revalidation-secret --data-file=-
-
-# 4. WhatsApp Order Concierge Phone Number
-echo -n "919876543210" | \
-  gcloud secrets create teesgarage-whatsapp-number --data-file=-
-```
-
----
-
-## 4. Deploying the Services via gcloud
-
-### Step 4.1: Deploy Backend (`teesgarage-backend`)
-
-```bash
-cd backend
-
-# Build and submit container image
-gcloud builds submit --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/backend:latest .
-
-# Deploy to Cloud Run
-gcloud run deploy teesgarage-backend \
-  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/backend:latest \
-  --region=$REGION \
-  --platform=managed \
-  --allow-unauthenticated \
-  --port=4000 \
-  --set-env-vars="NODE_ENV=production" \
-  --set-secrets="DATABASE_URL=teesgarage-database-url:latest,ADMIN_API_KEY=teesgarage-admin-api-key:latest,REVALIDATION_SECRET=teesgarage-revalidation-secret:latest"
-
-# Save the generated Cloud Run backend URL
-export BACKEND_URL=$(gcloud run services describe teesgarage-backend --region=$REGION --format='value(status.url)')
-echo "Backend deployed at: $BACKEND_URL"
-
-# Store the backend URL in Secret Manager for Frontend and Admin
-echo -n "$BACKEND_URL" | gcloud secrets create teesgarage-backend-url --data-file=-
-```
-
-### Step 4.2: Deploy Storefront (`teesgarage-frontend`)
-
-```bash
-cd ../frontend
-
-# Build and submit container image
-gcloud builds submit --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/frontend:latest .
-
-# Deploy to Cloud Run
-gcloud run deploy teesgarage-frontend \
-  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/frontend:latest \
-  --region=$REGION \
-  --platform=managed \
-  --allow-unauthenticated \
-  --port=3000 \
-  --set-env-vars="NODE_ENV=production" \
-  --set-secrets="BACKEND_URL=teesgarage-backend-url:latest,NEXT_PUBLIC_API_URL=teesgarage-backend-url:latest,REVALIDATION_SECRET=teesgarage-revalidation-secret:latest,NEXT_PUBLIC_WHATSAPP_NUMBER=teesgarage-whatsapp-number:latest"
-
-export FRONTEND_URL=$(gcloud run services describe teesgarage-frontend --region=$REGION --format='value(status.url)')
-echo "Storefront deployed at: $FRONTEND_URL"
-```
-
-### Step 4.3: Deploy Admin Dashboard (`teesgarage-admin`)
-
-```bash
-cd ../admin
-
-# Build and submit container image
-gcloud builds submit --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/admin:latest .
-
-# Deploy to Cloud Run
-gcloud run deploy teesgarage-admin \
-  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/admin:latest \
-  --region=$REGION \
-  --platform=managed \
-  --allow-unauthenticated \
-  --port=3001 \
-  --set-env-vars="NODE_ENV=production" \
-  --set-secrets="NEXT_PUBLIC_API_URL=teesgarage-backend-url:latest,NEXT_PUBLIC_ADMIN_API_KEY=teesgarage-admin-api-key:latest"
-
-export ADMIN_URL=$(gcloud run services describe teesgarage-admin --region=$REGION --format='value(status.url)')
-echo "Admin Dashboard deployed at: $ADMIN_URL"
-```
-
----
-
-## 5. Local Docker Testing (Pre-Deployment)
-
-You can run and verify the entire 3-service stack locally with Docker Compose:
-
-```bash
-# In repository root
-docker compose up --build
-```
-
-- Storefront: `http://localhost:3000`
-- Express Backend: `http://localhost:4000` (`http://localhost:4000/health`)
-- Admin Dashboard: `http://localhost:3001`
-
----
-
-## 6. Continuous Deployment via GitHub Actions
-
-The repository includes a ready-to-run GitHub Actions workflow at [`.github/workflows/deploy-gcp.yml`](file:///f:/jeans%20store/.github/workflows/deploy-gcp.yml).
-
-To activate it:
-1. Create a Google Cloud Service Account with `roles/run.admin`, `roles/artifactregistry.writer`, and `roles/secretmanager.secretAccessor`.
-2. Generate a JSON key for the Service Account.
-3. In your GitHub repository settings under **Settings > Secrets and variables > Actions**, add:
-   - `GCP_PROJECT_ID`: Your GCP Project ID.
-   - `GCP_SA_KEY`: The JSON service account key.
-   - `GCP_REGION`: `asia-south1` or `us-central1`.
-   - `GAR_REPOSITORY`: `teesgarage`.
-4. Merges to `main` will automatically build, push, and deploy all updated services.
+See [Admin production setup](ADMIN_PRODUCTION.md) for delivery bands, image upload constraints, and database migration details.

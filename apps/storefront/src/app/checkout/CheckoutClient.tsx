@@ -95,6 +95,7 @@ export default function CheckoutClient() {
   const clearCart = useCartStore((state) => state.clearCart)
 
   const user = useAuthStore((state) => state.user)
+  const authToken = useAuthStore((state) => state.token)
   const addresses = useAuthStore((state) => state.addresses)
   const addAddress = useAuthStore((state) => state.addAddress)
 
@@ -258,29 +259,6 @@ export default function CheckoutClient() {
     return Object.keys(nextErrors).length === 0
   }
 
-  function saveLocalOrder(orderId: string, statusText: string, paymentId?: string) {
-    try {
-      if (typeof window === 'undefined') return
-      const existingStr = localStorage.getItem('teesgarage-orders')
-      const existing = existingStr ? JSON.parse(existingStr) : []
-      const newStoredOrder = {
-        orderId,
-        date: 'Today, Just now',
-        status: statusText,
-        expectedDelivery: 'In 2–4 business days',
-        items: items.map((i) => ({ ...i })),
-        subtotal,
-        shipping,
-        total,
-        paymentId,
-        shippingAddress: `${form.address.trim()}, ${form.city.trim()}, ${form.state.trim()} · ${form.pincode.trim()}`
-      }
-      localStorage.setItem('teesgarage-orders', JSON.stringify([newStoredOrder, ...existing]))
-    } catch (e) {
-      console.warn('Failed to store order in local history', e)
-    }
-  }
-
   function buildSummaryText(orderId: string, methodTitle: string, paymentId?: string) {
     const itemLines = items
       .map((item, index) => {
@@ -409,7 +387,10 @@ export default function CheckoutClient() {
             try {
               const verifyRes = await fetch(`${backendUrl}/api/orders/razorpay/verify`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+                },
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
@@ -427,8 +408,6 @@ export default function CheckoutClient() {
                 const verifyErr = verifyData as { error?: string }
                 throw new Error(verifyErr.error || 'Payment signature verification failed')
               }
-
-              saveLocalOrder(orderId, 'Paid via Razorpay', response.razorpay_payment_id)
 
               if (saveToProfile) {
                 addAddress({
@@ -483,7 +462,10 @@ export default function CheckoutClient() {
       try {
         const orderResponse = await fetch(`${backendUrl}/api/orders`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+          },
           body: JSON.stringify({
             ...orderPayload,
             handoffType: 'cod',
@@ -492,8 +474,6 @@ export default function CheckoutClient() {
         })
         const orderResult = await orderResponse.json().catch(() => ({}))
         if (!orderResponse.ok) throw new Error(orderResult.error || 'Could not place this order. Please try again.')
-
-        saveLocalOrder(orderId, 'Cash on Delivery')
 
         if (saveToProfile) {
           addAddress({
@@ -547,7 +527,7 @@ export default function CheckoutClient() {
             {submittedOrder.paymentMethod === 'razorpay' ? (
               <p>
                 Your payment of <strong>{formatPrice(submittedOrder.total)}</strong> has been verified
-                through Razorpay. Our studio is preparing your pieces for dispatch from Mumbai.
+                through Razorpay. Our studio is preparing your pieces for dispatch from Kerala.
               </p>
             ) : (
               <p>
@@ -1008,7 +988,7 @@ export default function CheckoutClient() {
                 </div>
                 <div className="badge-item">
                   <span className="badge-icon">✓</span>
-                  <span>24h Dispatch from Mumbai</span>
+                  <span>24h Dispatch from Kerala</span>
                 </div>
                 <div className="badge-item">
                   <span className="badge-icon">✓</span>

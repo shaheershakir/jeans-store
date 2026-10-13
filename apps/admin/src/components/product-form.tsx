@@ -345,18 +345,99 @@ function ImageUpload({
   required?: boolean
 }) {
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const [isDragging, setIsDragging] = React.useState(false)
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) onUpload(file)
+  }
+
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between"><span className="text-xs font-semibold">{title}{required && <span className="text-destructive"> *</span>}</span>{value && <button type="button" className="text-xs text-destructive hover:underline" onClick={onRemove}>Remove</button>}</div>
-      {value ? <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-muted">
-        <Image src={value} alt={title} fill sizes="(max-width: 768px) 100vw, 360px" className="object-cover" unoptimized />
-        {uploading && <div className="absolute inset-0 grid place-items-center bg-background/70"><LoaderCircle className="h-6 w-6 animate-spin" /></div>}
-      </div> : <button type="button" disabled={uploading} onClick={() => inputRef.current?.click()} className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/40 text-muted-foreground transition hover:border-primary hover:bg-muted">
-        {uploading ? <LoaderCircle className="h-6 w-6 animate-spin" /> : <UploadCloud className="h-6 w-6" />}
-        <span className="text-xs font-medium">{uploading ? 'Uploading photo…' : 'Choose a product photo'}</span>
-      </button>}
-      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) onUpload(file); event.currentTarget.value = '' }} />
-      {!value && <p className="flex items-center gap-1 text-[11px] text-muted-foreground"><ImagePlus className="h-3 w-3" /> Stored in your product image bucket</p>}
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold">
+          {title}
+          {required && <span className="text-destructive"> *</span>}
+        </span>
+        {value && (
+          <button
+            type="button"
+            className="text-xs text-destructive hover:underline"
+            onClick={onRemove}
+          >
+            Remove
+          </button>
+        )}
+      </div>
+      {value ? (
+        <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-muted">
+          <Image
+            src={value}
+            alt={title}
+            fill
+            sizes="(max-width: 768px) 100vw, 360px"
+            className="object-cover"
+            unoptimized
+          />
+          {uploading && (
+            <div className="absolute inset-0 grid place-items-center bg-background/70">
+              <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed transition cursor-pointer ${
+            isDragging
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-border bg-muted/40 text-muted-foreground hover:border-primary hover:bg-muted'
+          }`}
+        >
+          {uploading ? (
+            <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
+          ) : (
+            <UploadCloud className="h-6 w-6" />
+          )}
+          <span className="text-xs font-medium">
+            {uploading ? 'Uploading photo…' : isDragging ? 'Drop photo to upload' : 'Upload photo or drag and drop'}
+          </span>
+          <span className="text-[10px] text-muted-foreground/75">PNG, JPG, or WEBP up to 10 MB</span>
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          if (file) onUpload(file)
+          event.currentTarget.value = ''
+        }}
+      />
+      {!value && (
+        <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <ImagePlus className="h-3 w-3" /> Stored in Google Cloud Storage
+        </p>
+      )}
     </div>
   )
 }

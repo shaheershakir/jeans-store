@@ -1,7 +1,13 @@
 ﻿import crypto from 'node:crypto'
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_API_KEY || 'teesgarage-cloud-iam-master-secret-2026'
 const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || 'teesgarage-production'
+
+function jwtSecret(): string {
+  const secret = process.env.JWT_SECRET?.trim()
+  if (secret && secret.length >= 32) return secret
+  if (process.env.NODE_ENV === 'production') throw new Error('JWT_SECRET must be configured with at least 32 characters.')
+  return 'local-development-only-jwt-secret-not-for-production'
+}
 
 export interface CloudIamClaims {
   uid: string
@@ -85,7 +91,7 @@ export function createCloudIamToken(claims: { uid: string; email: string; name: 
   const signatureInput = `${encodedHeader}.${encodedPayload}`
 
   const signature = crypto
-    .createHmac('sha256', JWT_SECRET)
+    .createHmac('sha256', jwtSecret())
     .update(signatureInput)
     .digest('base64')
     .replace(/=/g, '')
@@ -111,7 +117,7 @@ export async function verifyCloudIamToken(token: string): Promise<CloudIamClaims
   try {
     // 1. Verify cryptographic signature
     const expectedSignature = crypto
-      .createHmac('sha256', JWT_SECRET)
+      .createHmac('sha256', jwtSecret())
       .update(`${encodedHeader}.${encodedPayload}`)
       .digest('base64')
       .replace(/=/g, '')

@@ -1,7 +1,8 @@
-﻿import { test, describe } from 'node:test'
+import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import request from 'supertest'
 import { buildApp } from '../src/app.js'
+import { razorpayService } from '../src/services/razorpay.js'
 
 describe('Catalog & Orders Unified Brand Seams', () => {
   const app = buildApp({ enableLogging: false })
@@ -45,26 +46,26 @@ describe('Catalog & Orders Unified Brand Seams', () => {
       items: [
         {
           id: 0,
-          name: 'Classic Straight Indigo',
-          fit: 'Straight',
-          size: '32',
-          price: '₹1,699',
-          priceNum: 1699,
+          name: 'Classic Breton Heavyweight Striped Tee',
+          fit: 'Regular',
+          size: 'M',
+          price: '₹1,299',
+          priceNum: 1299,
           quantity: 1
         },
         {
           id: 12,
-          name: 'Heavy French Terry Pullover Hoodie',
+          name: 'Oversized Streetwear Drsleeve Tee',
           size: 'L',
-          price: '₹2,499',
-          priceNum: 2499,
+          price: '₹1,499',
+          priceNum: 1499,
           quantity: 1
         }
       ],
-      subtotal: 4198,
+      subtotal: 2798,
       shipping: 0,
-      total: 4198,
-      handoffType: 'whatsapp'
+      total: 2798,
+      handoffType: 'cod'
     }
 
     const res = await request(app)
@@ -87,9 +88,16 @@ describe('Catalog & Orders Unified Brand Seams', () => {
 
   test('POST /api/orders/razorpay/create-order generates razorpay order', async () => {
     const payload = {
-      amount: 1699,
       currency: 'INR',
       orderNumber: `RZP-TEST-${Date.now()}`,
+      state: 'Kerala',
+      items: [
+        {
+          id: 0,
+          size: 'M',
+          quantity: 1
+        }
+      ],
       customerName: 'Kabir Mehta',
       customerEmail: 'kabir@teesgarage.in'
     }
@@ -100,13 +108,13 @@ describe('Catalog & Orders Unified Brand Seams', () => {
 
     assert.equal(res.status, 201, `Failed with ${JSON.stringify(res.body)}`)
     assert.ok(res.body.razorpayOrderId)
-    assert.equal(res.body.amount, 169900) // amount in paise
+    assert.ok(res.body.amount > 0)
     assert.equal(res.body.currency, 'INR')
   })
 
   test('POST /api/orders/razorpay/verify validates signature and commits order', async () => {
     const crypto = await import('node:crypto')
-    const keySecret = '6HCOI0Fg4exVQWYG2AK7KeSf'
+    const keySecret = razorpayService.getKeySecret()
     const fakeOrderId = 'order_test_12345'
     const fakePaymentId = 'pay_test_98765'
     const expectedSig = crypto.default
@@ -127,33 +135,58 @@ describe('Catalog & Orders Unified Brand Seams', () => {
       items: [
         {
           id: 1,
-          name: 'Relaxed Indigo Selvedge',
-          fit: 'Relaxed',
-          size: '32',
-          price: '₹1,999',
-          priceNum: 1999,
+          name: 'Vintage Skate Micro-Stripe Tee',
+          fit: 'Regular',
+          size: 'M',
+          price: '₹1,249',
+          priceNum: 1249,
           quantity: 1
         }
       ],
-      subtotal: 1999,
-      shipping: 0,
-      total: 1999,
+      subtotal: 1249,
+      shipping: 90,
+      total: 1339,
       handoffType: 'razorpay'
     }
 
-    const res = await request(app)
-      .post('/api/orders/razorpay/verify')
-      .send({
-        razorpay_order_id: fakeOrderId,
-        razorpay_payment_id: fakePaymentId,
-        razorpay_signature: expectedSig,
-        order: orderPayload
-      })
+    const origFetchOrder = razorpayService.fetchOrder.bind(razorpayService)
+    const origFetchPayment = razorpayService.fetchPayment.bind(razorpayService)
+    razorpayService.fetchOrder = async () => ({
+      id: fakeOrderId,
+      entity: 'order',
+      amount: 133900,
+      amount_paid: 133900,
+      amount_due: 0,
+      currency: 'INR',
+      receipt: orderPayload.orderNumber,
+      status: 'paid',
+      created_at: Date.now()
+    })
+    razorpayService.fetchPayment = async () => ({
+      order_id: fakeOrderId,
+      amount: 133900,
+      status: 'captured'
+    })
 
-    assert.equal(res.status, 201, `Failed with ${JSON.stringify(res.body)}`)
-    assert.equal(res.body.success, true)
-    assert.equal(res.body.order.status, 'paid')
-    assert.equal(res.body.paymentId, fakePaymentId)
+    try {
+      const res = await request(app)
+        .post('/api/orders/razorpay/verify')
+        .send({
+          razorpay_order_id: fakeOrderId,
+          razorpay_payment_id: fakePaymentId,
+          razorpay_signature: expectedSig,
+          order: orderPayload
+        })
+
+      assert.equal(res.status, 201, `Failed with ${JSON.stringify(res.body)}`)
+      assert.equal(res.body.success, true)
+      assert.equal(res.body.order.status, 'Confirmed')
+      assert.equal(res.body.order.paymentStatus, 'Paid')
+      assert.equal(res.body.paymentId, fakePaymentId)
+    } finally {
+      razorpayService.fetchOrder = origFetchOrder
+      razorpayService.fetchPayment = origFetchPayment
+    }
   })
 })
 

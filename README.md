@@ -1,6 +1,6 @@
-﻿# TEESGARAGE / TEESGARAGE — Premium Denim Monorepo
+# TEESGARAGE — Apparel Commerce Monorepo
 
-A modern, high-performance denim e-commerce platform built as an integrated monorepo powered by **Turborepo** and **npm workspaces**.
+A modern apparel e-commerce platform built as an integrated monorepo powered by **Turborepo** and **npm workspaces**. The catalog covers Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants.
 
 ---
 

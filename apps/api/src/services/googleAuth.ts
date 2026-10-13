@@ -1,8 +1,6 @@
-const GOOGLE_CLIENT_ID =
-  process.env.GOOGLE_CLIENT_ID ||
-  '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com'
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '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'
-const GOOGLE_PROJECT_ID = process.env.GOOGLE_PROJECT_ID || 'clothing-store-511300'
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID?.trim() || ''
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET?.trim() || ''
+const GOOGLE_PROJECT_ID = process.env.GCP_PROJECT_ID || process.env.GOOGLE_PROJECT_ID || ''
 
 export interface GoogleUserPayload {
   sub: string
@@ -24,6 +22,7 @@ export function getGoogleProjectId(): string {
  * Builds the standard Google OAuth 2.0 Authorization Code flow URL.
  */
 export function getGoogleAuthUrl(redirectUri: string, state?: string): string {
+  if (!GOOGLE_CLIENT_ID) throw new Error('Google sign-in is not configured.')
   const url = new URL('https://accounts.google.com/o/oauth2/v2/auth')
   url.searchParams.set('client_id', GOOGLE_CLIENT_ID)
   url.searchParams.set('redirect_uri', redirectUri)
@@ -41,6 +40,7 @@ export function getGoogleAuthUrl(redirectUri: string, state?: string): string {
  * Verifies a Google ID Token (e.g. from Google Identity Services One Tap or GIS button).
  */
 export async function verifyGoogleIdToken(idToken: string): Promise<GoogleUserPayload> {
+  if (!GOOGLE_CLIENT_ID) throw new Error('Google sign-in is not configured.')
   if (!idToken || typeof idToken !== 'string') {
     throw new Error('Missing Google ID token')
   }
@@ -87,6 +87,7 @@ export async function exchangeGoogleAuthCode(
   code: string,
   redirectUri: string
 ): Promise<GoogleUserPayload> {
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) throw new Error('Google sign-in is not configured.')
   if (!code || typeof code !== 'string') {
     throw new Error('Missing authorization code')
   }

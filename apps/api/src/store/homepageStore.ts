@@ -41,7 +41,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     messages: [
       '📦 Paid delivery calculated by destination and parcel weight',
       '🔄 7-Day doorstep exchanges — no questions asked',
-      '🏭 24h dispatch from Mumbai',
+      '🏭 24h dispatch from Kerala',
       '💳 Cash on delivery available across India'
     ],
     intervalSeconds: 4
@@ -151,14 +151,14 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     eyebrow: 'Our Story',
     title: 'Made for your\neveryday.',
     paragraphs: [
-      'TEESGARAGE started with a simple question: why is it so hard to find heavyweight tees and bottomwear that fit right, last, and feel honest? We’re a Mumbai-based label obsessed with getting everyday essentials right — from 260+ GSM combed cotton to structured French terry.',
+      'TEESGARAGE started with a simple question: why is it so hard to find heavyweight tees and bottomwear that fit right, last, and feel honest? We’re a Kerala-based label obsessed with getting everyday essentials right — from 260+ GSM combed cotton to structured French terry.',
       'No fast fashion. No compromise. Just weighty, considered garments built to outlast trends.'
     ],
     imageUrl: '/brand-editorial.jpg',
     stats: [
       { num: '260+ GSM', label: 'Cotton weight' },
       { num: '8', label: 'Categories' },
-      { num: '24h', label: 'Mumbai dispatch' }
+      { num: '24h', label: 'Kerala dispatch' }
     ],
     ctaText: 'Get in Touch',
     ctaLink: 'mailto:concierge@teesgarage.in'
@@ -218,7 +218,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     items: [
       { id: '1', title: 'Paid delivery by destination and weight', icon: 'truck' },
       { id: '2', title: '7-day doorstep exchange', icon: 'repeat' },
-      { id: '3', title: '24h dispatch from Mumbai', icon: 'package' },
+      { id: '3', title: '24h dispatch from Kerala', icon: 'package' },
       { id: '4', title: 'Secure payments', icon: 'shield' }
     ]
   },

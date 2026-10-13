@@ -5,16 +5,16 @@ The Express REST API powers the product catalog, customer orders, authentication
 ## Base URL
 - **Local Development**: `http://localhost:4000`
 - **Docker Compose**: `http://backend:4000` (internal) / `http://localhost:4000` (host)
-- **Production (Cloud Run)**: `https://teesgarage-backend-f6v6jgb4qa-el.a.run.app`
+- **Production (Cloud Run)**: The API origin configured in `NEXT_PUBLIC_API_URL` for the storefront and `API_URL` for the admin.
 
 ## Authentication
 
-Mutating endpoints (POST, PUT, DELETE) require the `X-API-Key` HTTP header:
+Admin-only endpoints require the signed admin session returned by the admin login flow:
 ```http
-X-API-Key: <ADMIN_API_KEY>
+Authorization: Bearer <ADMIN_SESSION_TOKEN>
 ```
 
-User authentication endpoints issue Bearer JWT tokens:
+Customer authentication endpoints issue signed Bearer tokens:
 ```http
 Authorization: Bearer <TOKEN>
 ```
@@ -58,6 +58,8 @@ Authorization: Bearer <TOKEN>
 ### 3. Orders (`/api/orders`)
 - **`GET /api/orders`** *(Protected)*
   - List all customer orders.
+- **`GET /api/orders/mine`** *(Customer Bearer token required)*
+  - Return delivery details for orders associated with the signed-in customer email.
 - **`GET /api/orders/:orderNumber`**
   - Retrieve single order details.
 - **`POST /api/orders`**

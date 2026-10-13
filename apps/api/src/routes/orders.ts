@@ -7,9 +7,19 @@ import { razorpayService } from '../services/razorpay.js'
 import { logger } from '../lib/logger.js'
 import { productStore } from '../store/productStore.js'
 import { calculateShipping, getShippingRates } from '../services/shipping.js'
+import { verifyCloudIamToken } from '../services/cloudIam.js'
 import type { CalculatedOrder, CreateOrder } from '../schemas/order.js'
 
 export const orderRouter = Router()
+
+async function getOptionalCustomerClaims(req: Request): Promise<{ email: string } | null | false> {
+  const authHeader = req.headers.authorization
+  if (!authHeader) return null
+  if (!authHeader.startsWith('Bearer ')) return false
+  const claims = await verifyCloudIamToken(authHeader.slice(7).trim())
+  if (!claims?.email) return false
+  return { email: claims.email.trim().toLowerCase() }
+}
 
 // Public: Get Razorpay configuration
 orderRouter.get('/api/orders/razorpay/config', (_req: Request, res: Response) => {
@@ -167,6 +177,16 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
 
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order } = parsed.data
 
+  const customer = await getOptionalCustomerClaims(req)
+  if (customer === false) {
+    res.status(401).json({ error: 'Your customer session is invalid or expired. Please sign in again.' })
+    return
+  }
+  if (customer && customer.email !== order.customerEmail.trim().toLowerCase()) {
+    res.status(403).json({ error: 'Checkout email must match the signed-in customer account.' })
+    return
+  }
+
   const isValid = razorpayService.verifyPaymentSignature({
     razorpay_order_id,
     razorpay_payment_id,
@@ -230,8 +250,18 @@ orderRouter.post('/api/orders', async (req: Request, res: Response) => {
     return
   }
 
-  if (parsed.data.handoffType !== 'cod') {
+  if (parsed.data.handoffType === 'razorpay') {
     res.status(400).json({ error: 'Online payments must be completed through the verified Razorpay checkout.' })
+    return
+  }
+
+  const customer = await getOptionalCustomerClaims(req)
+  if (customer === false) {
+    res.status(401).json({ error: 'Your customer session is invalid or expired. Please sign in again.' })
+    return
+  }
+  if (customer && customer.email !== parsed.data.customerEmail.trim().toLowerCase()) {
+    res.status(403).json({ error: 'Checkout email must match the signed-in customer account.' })
     return
   }
 
@@ -246,6 +276,42 @@ orderRouter.post('/api/orders', async (req: Request, res: Response) => {
 })
 
 // Admin: List all captured orders
+orderRouter.get('/api/orders/mine', async (req: Request, res: Response) => {
+  const customer = await getOptionalCustomerClaims(req)
+  if (!customer) {
+    res.status(401).json({ error: 'Sign in to view your order history.' })
+    return
+  }
+
+  try {
+    const orders = await orderStore.listByCustomerEmail(customer.email)
+    res.json({
+      count: orders.length,
+      orders: orders.map((order) => ({
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        status: order.status,
+        carrier: order.carrier,
+        trackingNumber: order.trackingNumber,
+        shippedAt: order.shippedAt,
+        deliveredAt: order.deliveredAt,
+        items: order.items,
+        subtotal: order.subtotal,
+        shipping: order.shipping,
+        total: order.total,
+        address: order.address,
+        apartment: order.apartment,
+        city: order.city,
+        state: order.state,
+        pincode: order.pincode
+      }))
+    })
+  } catch (err) {
+    logger.error({ err }, 'Failed to fetch customer order history')
+    res.status(503).json({ error: 'Order history is temporarily unavailable.' })
+  }
+})
+
 orderRouter.get('/api/orders', verifyAdminAuth, async (_req: Request, res: Response) => {
   try {
     const orders = await orderStore.list()

@@ -1,9 +1,9 @@
-﻿<#
+<#
 .SYNOPSIS
-  Deploy services to Google Cloud Run from Windows PowerShell.
+  Deploy TEESGARAGE services to Cloud Run using runtime secrets from Secret Manager.
 .DESCRIPTION
-  Builds Docker containers with monorepo root context, pushes to Google Artifact Registry,
-  and deploys to Cloud Run in asia-south1.
+  Create the named Secret Manager secrets and grant the Cloud Run service account
+  access before deployment. See docs/ADMIN_PRODUCTION.md for required configuration.
 .PARAMETER Service
   api | storefront | admin | all (default: all)
 .PARAMETER Tag
@@ -17,86 +17,91 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$Region = 'asia-south1'
-$Project = 'clothing-store-511300'
-$Repo = 'teesgarage'
+if (-not $env:GCP_PROJECT_ID) { throw 'Set GCP_PROJECT_ID before deploying.' }
+if (-not $env:FRONTEND_URL) { throw 'Set FRONTEND_URL before deploying.' }
+if (-not $env:ADMIN_URL) { throw 'Set ADMIN_URL before deploying.' }
+
+$Project = $env:GCP_PROJECT_ID
+$Region = if ($env:GCP_REGION) { $env:GCP_REGION } else { 'asia-south1' }
+$Repo = if ($env:GAR_REPOSITORY) { $env:GAR_REPOSITORY } else { 'teesgarage' }
 $Registry = "${Region}-docker.pkg.dev/${Project}/${Repo}"
+$FrontendUrl = $env:FRONTEND_URL
 
-$BackendUrl = "https://teesgarage-backend-777430238035.asia-south1.run.app"
-$FrontendUrl = "https://teesgarage-frontend-777430238035.asia-south1.run.app"
-$AdminUrl = "https://teesgarage-admin-777430238035.asia-south1.run.app"
+function Get-BackendUrl {
+  if ($env:BACKEND_URL) { return $env:BACKEND_URL }
+  $url = gcloud run services describe teesgarage-backend --project=$Project --region=$Region --format='value(status.url)'
+  if (-not $url) { throw 'Set BACKEND_URL or deploy the API service first.' }
+  return $url.Trim()
+}
 
-function Deploy-Backend {
-  Write-Host "==> [1/3] Building and Deploying Backend API..." -ForegroundColor Cyan
+function Deploy-Api {
+  if (-not $env:ADMIN_EMAIL) { throw 'Set ADMIN_EMAIL before deploying the API.' }
+  if (-not $env:GCS_PRODUCT_IMAGES_BUCKET) { throw 'Set GCS_PRODUCT_IMAGES_BUCKET before deploying the API.' }
   $image = "${Registry}/backend:${Tag}"
   docker build -t $image -f apps/api/Dockerfile .
   docker push $image
 
+  $secretBindings = 'DATABASE_URL=database-url:latest,ADMIN_PASSWORD=admin-password:latest,ADMIN_SESSION_SECRET=admin-session-secret:latest,JWT_SECRET=customer-jwt-secret:latest'
+  if ($env:GOOGLE_CLIENT_ID) { $secretBindings += ',GOOGLE_CLIENT_SECRET=google-client-secret:latest' }
+  if ($env:RAZORPAY_KEY_ID) { $secretBindings += ',RAZORPAY_KEY_SECRET=razorpay-key-secret:latest' }
+  $corsOrigins = "$FrontendUrl,$($env:ADMIN_URL)"
+  $apiEnv = "^;^NODE_ENV=production;HOST=0.0.0.0;PORT=4000;GCP_PROJECT_ID=$Project;ADMIN_EMAIL=$($env:ADMIN_EMAIL);ADMIN_NAME=$($env:ADMIN_NAME);GCS_PRODUCT_IMAGES_BUCKET=$($env:GCS_PRODUCT_IMAGES_BUCKET);GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID);RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID);FRONTEND_URL=$FrontendUrl;CORS_ORIGIN=$corsOrigins"
   gcloud run deploy teesgarage-backend `
+    --project=$Project `
     --image=$image `
     --region=$Region `
     --platform=managed `
     --allow-unauthenticated `
     --port=4000 `
-    --set-env-vars="NODE_ENV=production,HOST=0.0.0.0,DATABASE_URL=postgresql://neondb_owner:npg_SjvrTG1FI6ep@ep-muddy-mode-b3mdvd86-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require,ADMIN_API_KEY=local_dev_admin_key,GOOGLE_CLIENT_ID=777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com,GOOGLE_CLIENT_SECRET=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,GOOGLE_PROJECT_ID=clothing-store-511300,RAZORPAY_KEY_ID=rzp_test_TnN4mtRGLw9wJy,RAZORPAY_KEY_SECRET=6HCOI0Fg4exVQWYG2AK7KeSf"
-
-  gcloud run services update teesgarage-backend `
-    --region=$Region `
-    "--update-env-vars=^;^CORS_ORIGIN=${FrontendUrl},${AdminUrl},http://localhost:3000,http://localhost:3001;FRONTEND_URL=${FrontendUrl}"
+    "--set-env-vars=$apiEnv" `
+    "--set-secrets=$secretBindings"
 }
 
 function Deploy-Storefront {
-  Write-Host "==> [2/3] Building and Deploying Storefront..." -ForegroundColor Cyan
+  $backendUrl = Get-BackendUrl
   $image = "${Registry}/frontend:${Tag}"
   docker build `
-    --build-arg NEXT_PUBLIC_API_URL=$BackendUrl `
-    --build-arg NEXT_PUBLIC_WHATSAPP_NUMBER="" `
+    --build-arg "NEXT_PUBLIC_API_URL=$backendUrl" `
+    --build-arg "NEXT_PUBLIC_WHATSAPP_NUMBER=$($env:WHATSAPP_NUMBER)" `
+    --build-arg "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID)" `
+    --build-arg "NEXT_PUBLIC_SITE_URL=$FrontendUrl" `
     -t $image `
     -f apps/storefront/Dockerfile .
   docker push $image
-
+  $storefrontEnv = "^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=$backendUrl;NEXT_PUBLIC_API_URL=$backendUrl;NEXT_PUBLIC_SITE_URL=$FrontendUrl"
   gcloud run deploy teesgarage-frontend `
+    --project=$Project `
     --image=$image `
     --region=$Region `
     --platform=managed `
     --allow-unauthenticated `
     --port=3000 `
-    --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0,BACKEND_URL=${BackendUrl},NEXT_PUBLIC_API_URL=${BackendUrl},NEXT_PUBLIC_SITE_URL=${FrontendUrl},NEXT_PUBLIC_GOOGLE_CLIENT_ID=777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com,NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_TnN4mtRGLw9wJy,RAZORPAY_KEY_ID=rzp_test_TnN4mtRGLw9wJy,RAZORPAY_KEY_SECRET=6HCOI0Fg4exVQWYG2AK7KeSf"
+    "--set-env-vars=$storefrontEnv"
 }
 
 function Deploy-Admin {
-  Write-Host "==> [3/3] Building and Deploying Admin Dashboard..." -ForegroundColor Cyan
+  $backendUrl = Get-BackendUrl
   $image = "${Registry}/admin:${Tag}"
-  docker build `
-    --build-arg NEXT_PUBLIC_API_URL=$BackendUrl `
-    --build-arg NEXT_PUBLIC_ADMIN_API_KEY="local_dev_admin_key" `
-    -t $image `
-    -f apps/admin/Dockerfile .
+  docker build -t $image -f apps/admin/Dockerfile .
   docker push $image
-
+  $adminEnv = "^;^NODE_ENV=production;HOSTNAME=0.0.0.0;API_URL=$backendUrl;NEXT_PUBLIC_STOREFRONT_URL=$FrontendUrl"
   gcloud run deploy teesgarage-admin `
+    --project=$Project `
     --image=$image `
     --region=$Region `
     --platform=managed `
     --allow-unauthenticated `
     --port=3001 `
-    --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0,NEXT_PUBLIC_API_URL=${BackendUrl},NEXT_PUBLIC_ADMIN_API_KEY=local_dev_admin_key,NEXT_PUBLIC_STOREFRONT_URL=${FrontendUrl}"
+    "--set-env-vars=$adminEnv"
 }
 
 switch ($Service) {
-  'api'        { Deploy-Backend }
-  'backend'    { Deploy-Backend }
+  'api'        { Deploy-Api }
+  'backend'    { Deploy-Api }
   'storefront' { Deploy-Storefront }
   'frontend'   { Deploy-Storefront }
   'admin'      { Deploy-Admin }
-  'all'        {
-    Deploy-Backend
-    Deploy-Storefront
-    Deploy-Admin
-  }
+  'all'        { Deploy-Api; Deploy-Storefront; Deploy-Admin }
 }
 
-Write-Host "==> All requested services deployed successfully to Google Cloud Run!" -ForegroundColor Green
-Write-Host "Backend:    $BackendUrl"
-Write-Host "Storefront: $FrontendUrl"
-Write-Host "Admin:      $AdminUrl"
+Write-Host 'Requested Cloud Run deployment completed.' -ForegroundColor Green

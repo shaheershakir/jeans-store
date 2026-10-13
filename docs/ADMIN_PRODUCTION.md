@@ -1,5 +1,7 @@
 # Admin and delivery production setup
 
+Rotate any database, Google OAuth, or Razorpay credentials that were used by older deployment scripts before deploying. Removing them from the current files does not remove them from existing Git history.
+
 The admin uses a single server-managed account. There is no public registration or invitation form. Product records, order operations, inventory, delivery rates, product images, and the remaining operational admin data are stored through the API rather than browser-local state.
 
 ## Required API environment
@@ -13,6 +15,7 @@ Configure these values for the API service:
 | `ADMIN_NAME` | Display name for the administrator. |
 | `ADMIN_PASSWORD` | A unique administrator password. |
 | `ADMIN_SESSION_SECRET` | Random signing secret with at least 32 characters. Keep it private and stable across API instances. |
+| `JWT_SECRET` | Separate stable signing secret (at least 32 characters) for customer authentication tokens. |
 | `GCP_PROJECT_ID` | Google Cloud project containing the product image bucket. |
 | `GCS_PRODUCT_IMAGES_BUCKET` | Bucket for product photos. |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Live Razorpay credentials when online payment is enabled. |
@@ -22,6 +25,14 @@ Configure these values for the API service:
 Set `API_URL` in the admin service to the API's private or public origin. Do not expose database credentials or the admin session secret in `NEXT_PUBLIC_*` variables. Copy the examples from `apps/api/.env.example` and `apps/admin/.env.example` as a starting point.
 
 Set `NEXT_PUBLIC_API_URL` on the storefront to the API origin for customer sign-in and checkout quotes. Set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` only when Google sign-in is enabled; email/password customer sign-in uses the same API. The admin login remains a single server-configured account and has no public registration flow.
+
+## Cloud Run deployment configuration
+
+The GitHub Actions workflow reads non-secret deployment values from repository variables: `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_WIF_SA`, `ADMIN_EMAIL`, `ADMIN_NAME`, `GCS_PRODUCT_IMAGES_BUCKET`, `FRONTEND_URL`, and `ADMIN_URL`. `GCP_REGION` defaults to `asia-south1`; `GAR_REPOSITORY` defaults to `teesgarage`. Set `GOOGLE_CLIENT_ID` and `RAZORPAY_KEY_ID` only when those providers are enabled. `WHATSAPP_NUMBER` is optional.
+
+Create these Google Secret Manager secrets before deploying the API, and grant the Cloud Run runtime service account permission to access them: `database-url`, `admin-password`, `admin-session-secret`, and `customer-jwt-secret`. If Google sign-in is enabled, also create `google-client-secret`; if Razorpay checkout is enabled, create `razorpay-key-secret`. The deploy workflow binds these as runtime environment variables and does not put secret values in the image or deployment command. The manual scripts in `infra/gcp/` use the same secret names.
+
+The GitHub Actions identity needs permission to deploy Cloud Run services, use the Artifact Registry repository, and attach the runtime service account. The runtime account needs database network access, Secret Manager access, and `roles/storage.objectUser` on the product image bucket.
 
 ## Google Cloud Storage
 

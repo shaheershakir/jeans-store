@@ -878,7 +878,7 @@ function buildOpsSeed(): {
     storeName: 'TEESGARAGE',
     supportEmail: 'support@teesgarage.in',
     supportPhone: '+91 73900 12345',
-    address: '12-A, Linking Road, Bandra West, Mumbai 400050',
+    address: 'TEESGARAGE Studio, Marine Drive, Kochi, Kerala 682031',
     currency: 'INR',
     taxRate: 18,
     orderPrefix: 'TG',
@@ -1197,14 +1197,14 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     eyebrow: 'Our Story',
     title: 'Made for your\neveryday.',
     paragraphs: [
-      'TEESGARAGE started with a simple question: why is it so hard to find heavyweight tees and bottomwear that fit right, last, and feel honest? We’re a Mumbai-based label focused on getting everyday essentials right, from combed cotton to structured French terry.',
+      'TEESGARAGE started with a simple question: why is it so hard to find heavyweight tees and bottomwear that fit right, last, and feel honest? We’re a Kerala-based label focused on getting everyday essentials right, from combed cotton to structured French terry.',
       'Considered garments built to hold their shape and earn a place in your daily rotation.'
     ],
     imageUrl: '/brand-editorial.jpg',
     stats: [
       { num: '260+ GSM', label: 'Cotton weight' },
       { num: '8', label: 'Categories' },
-      { num: '24h', label: 'Mumbai dispatch' }
+      { num: '24h', label: 'Kerala dispatch' }
     ],
     ctaText: 'Get in Touch',
     ctaLink: 'mailto:concierge@teesgarage.in'
@@ -1264,7 +1264,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     items: [
       { id: '1', title: 'Paid delivery by destination and weight', icon: 'truck' },
       { id: '2', title: '7-day doorstep exchange', icon: 'repeat' },
-      { id: '3', title: '24h dispatch from Mumbai', icon: 'package' },
+      { id: '3', title: '24h dispatch from Kerala', icon: 'package' },
       { id: '4', title: 'Secure payments', icon: 'shield' }
     ]
   },
