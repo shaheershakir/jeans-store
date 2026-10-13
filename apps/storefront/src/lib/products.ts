@@ -1,6 +1,33 @@
 import type { Product } from './constants'
 import { PRODUCTS as SNAPSHOT_PRODUCTS } from './constants'
 
+export function getAvailableProductSizes(product: Product): string[] {
+  if (product.variants) {
+    const available = new Set(
+      product.variants
+        .filter((variant) => variant.status === 'Active' && variant.stock - variant.reserved > 0)
+        .map((variant) => String(variant.size))
+    )
+    return getProductSizeOptions(product).filter((size) => available.has(size))
+  }
+
+  return product.inStock === false ? [] : getProductSizeOptions(product)
+}
+
+export function getProductSizeOptions(product: Product): string[] {
+  const sizes = product.variants
+    ? product.variants
+        .filter((variant) => variant.status === 'Active')
+        .map((variant) => String(variant.size))
+    : product.sizes ?? []
+
+  return Array.from(new Set(sizes))
+}
+
+export function isProductAvailable(product: Product): boolean {
+  return getAvailableProductSizes(product).length > 0
+}
+
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000'
 
 export async function getProducts(): Promise<Product[]> {

@@ -1074,13 +1074,13 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     'hero',
     'categories',
     'new_arrivals',
-    'featured_collection',
     'best_sellers',
+    'featured_collection',
     'brand_story',
+    'trust_bar',
     'looks',
     'instagram',
     'reviews',
-    'trust_bar',
     'catalog'
   ],
   sectionsEnabled: {
@@ -1091,16 +1091,16 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     featured_collection: true,
     best_sellers: true,
     brand_story: true,
-    looks: true,
-    instagram: true,
-    reviews: true,
+    looks: false,
+    instagram: false,
+    reviews: false,
     trust_bar: true,
-    catalog: true
+    catalog: false
   },
   announcement: {
     enabled: true,
     messages: [
-      '🚚 Free shipping on orders above ₹999',
+      '🚚 Free shipping on orders above ₹1,499',
       '🔄 7-Day doorstep exchanges — no questions asked',
       '🏭 24h dispatch from Mumbai',
       '💳 Cash on delivery available across India'
@@ -1109,15 +1109,15 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   },
   hero: {
     enabled: true,
-    eyebrow: 'New Season — SS 2026',
+    eyebrow: 'TEESGARAGE / EVERYDAY WEAR',
     title: 'Built for\neveryday.',
-    subtitle: 'Heavyweight denim. Honest washes.\nCuts that get better with every wear.',
-    primaryCtaText: 'Shop Denim',
-    primaryCtaLink: '/#catalog',
+    subtitle: 'Heavyweight T-shirts. Engineered bottomwear.\nCuts that hold their shape with every wear.',
+    primaryCtaText: 'Shop Collection',
+    primaryCtaLink: '/shop',
     secondaryCtaText: 'All Styles',
-    secondaryCtaLink: '/#catalog',
+    secondaryCtaLink: '/shop',
     imageUrl: '/hero-man.jpg',
-    trustBadges: ['⚡ 24h dispatch', '🔄 7-day exchange', '🚚 Free above ₹999']
+    trustBadges: []
   },
   categories: {
     enabled: true,
@@ -1125,39 +1125,36 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     title: 'Shop by Category',
     items: [
       {
-        id: 'jeans',
-        label: 'Denim',
-        icon: '👖',
-        img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=600&q=80',
-        count: '8 styles'
+        id: 'stripes', label: 'Stripes', icon: '💈',
+        img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80', count: '3 styles'
       },
       {
-        id: 't-shirts',
-        label: 'T-Shirts',
-        icon: '👕',
-        img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
-        count: '4 styles'
+        id: 'fullsleeve', label: 'Fullsleeve', icon: '🧥',
+        img: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=600&q=80', count: '3 styles'
       },
       {
-        id: 'shirts',
-        label: 'Shirts',
-        icon: '👔',
-        img: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=600&q=80',
-        count: '3 styles'
+        id: 'drsleeve', label: 'Drsleeve', icon: '👕',
+        img: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=600&q=80', count: '3 styles'
       },
       {
-        id: 'hoodies',
-        label: 'Hoodies',
-        icon: '🧥',
-        img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80',
-        count: '2 styles'
+        id: 'printed-tees', label: 'Printed Tees', icon: '🎨',
+        img: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80', count: '3 styles'
       },
       {
-        id: 'hats',
-        label: 'Accessories',
-        icon: '🧢',
-        img: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
-        count: '2 styles'
+        id: 'ringer-tees', label: 'Ringer Tees', icon: '⚡',
+        img: 'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=600&q=80', count: '3 styles'
+      },
+      {
+        id: 'henley', label: 'Henley', icon: '👔',
+        img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=600&q=80', count: '3 styles'
+      },
+      {
+        id: 'trackpants', label: 'Trackpants', icon: '👖',
+        img: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=600&q=80', count: '3 styles'
+      },
+      {
+        id: 'sweatpants', label: 'Sweatpants', icon: '🩳',
+        img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80', count: '3 styles'
       }
     ]
   },
@@ -1167,7 +1164,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     title: 'New Arrivals',
     limit: 4,
     ctaText: 'View All Products',
-    ctaLink: '/#catalog'
+    ctaLink: '/shop'
   },
   featured_collection: {
     enabled: true,
@@ -1176,7 +1173,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     description:
       'Every piece designed to live in your rotation forever. Heavyweight fabrics, considered washes, and silhouettes that hold their shape.',
     ctaText: 'Shop Collection',
-    ctaLink: '/#catalog',
+    ctaLink: '/shop',
     imageUrl: '/featured-collection.jpg'
   },
   best_sellers: {
@@ -1191,13 +1188,13 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     eyebrow: 'Our Story',
     title: 'Made for your\neveryday.',
     paragraphs: [
-      'TEESGARAGE started with a simple question: why is it so hard to find jeans that fit, last, and feel honest? We’re a Mumbai-based label obsessed with getting denim right — from the weight of the fabric to the arc of the seat.',
-      'No fast fashion. No compromise. Just weighty, considered denim built to outlast the trends.'
+      'TEESGARAGE started with a simple question: why is it so hard to find heavyweight tees and bottomwear that fit right, last, and feel honest? We’re a Mumbai-based label focused on getting everyday essentials right, from combed cotton to structured French terry.',
+      'Considered garments built to hold their shape and earn a place in your daily rotation.'
     ],
     imageUrl: '/brand-editorial.jpg',
     stats: [
-      { num: '14oz', label: 'Fabric weight' },
-      { num: '5+', label: 'Signature fits' },
+      { num: '260+ GSM', label: 'Cotton weight' },
+      { num: '8', label: 'Categories' },
       { num: '24h', label: 'Mumbai dispatch' }
     ],
     ctaText: 'Get in Touch',
@@ -1211,31 +1208,31 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     items: [
       {
         id: 1,
-        title: 'The Daily Driver',
-        tag: 'Straight + Tee',
+        title: 'Off-duty uniform',
+        tag: 'Drsleeve + Trackpants',
         img: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?auto=format&fit=crop&w=600&q=80',
-        link: '/#catalog'
+        link: '/shop/trackpants'
       },
       {
         id: 2,
-        title: 'Street Ready',
-        tag: 'Baggy + Hoodie',
+        title: 'Graphic rotation',
+        tag: 'Printed tees',
         img: 'https://images.unsplash.com/photo-1509551388413-e18d0ac5d495?auto=format&fit=crop&w=600&q=80',
-        link: '/#catalog'
+        link: '/shop/printed-tees'
       },
       {
         id: 3,
-        title: 'Clean & Classic',
-        tag: 'Relaxed + Oxford',
+        title: 'Everyday stripes',
+        tag: 'Stripes + Sweatpants',
         img: 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=600&q=80',
-        link: '/#catalog'
+        link: '/shop/stripes'
       },
       {
         id: 4,
-        title: 'Night Out',
-        tag: 'Dark Indigo + Jacket',
+        title: 'Long-sleeve layer',
+        tag: 'Fullsleeve + Henley',
         img: 'https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=600&q=80',
-        link: '/#catalog'
+        link: '/shop/fullsleeve'
       }
     ]
   },
@@ -1245,50 +1242,18 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     title: 'Follow Our Story',
     subtitle: 'Real people, real fits — tag us in yours.',
     instagramUrl: 'https://instagram.com',
-    photos: [
-      'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1554412933-514a83d2f3c8?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=400&q=80'
-    ]
+    photos: []
   },
   reviews: {
     enabled: true,
     title: 'What Customers Say',
-    ratingText: '4.9 / 5 — 200+ verified reviews',
-    items: [
-      {
-        id: 1,
-        name: 'Aryan S.',
-        location: 'Mumbai',
-        stars: 5,
-        text: 'Best jeans I’ve ever owned. The indigo wash is incredible and the fit is exactly right — not too tight, not loose. Worth every rupee.',
-        product: 'Classic Straight Indigo'
-      },
-      {
-        id: 2,
-        name: 'Karan M.',
-        location: 'Delhi',
-        stars: 5,
-        text: 'Ordered the Baggy Heavy Wash and it exceeded my expectations. The denim weight is perfect for Mumbai winters. Already ordered a second pair.',
-        product: 'Heavy Wash Baggy'
-      },
-      {
-        id: 3,
-        name: 'Rahul T.',
-        location: 'Bangalore',
-        stars: 5,
-        text: 'Finally a brand that gets streetwear proportions. The wide leg sits exactly how it should — generously cut but still clean. Top quality.',
-        product: 'Vintage Blue Wide Leg'
-      }
-    ]
+    ratingText: '',
+    items: []
   },
   trust_bar: {
     enabled: true,
     items: [
-      { id: '1', title: 'Free shipping above ₹999', icon: 'truck' },
+      { id: '1', title: 'Free shipping above ₹1,499', icon: 'truck' },
       { id: '2', title: '7-day doorstep exchange', icon: 'repeat' },
       { id: '3', title: '24h dispatch from Mumbai', icon: 'package' },
       { id: '4', title: 'Secure payments', icon: 'shield' }

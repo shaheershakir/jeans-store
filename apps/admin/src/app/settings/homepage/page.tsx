@@ -54,32 +54,32 @@ const SECTION_METADATA: Record<
   },
   hero: {
     name: 'Hero Banner',
-    description: 'Main editorial full-bleed banner with seasonal headline and primary CTAs',
+    description: 'Compact campaign with editable image, headline, and shop links',
     icon: ImageIcon
   },
   categories: {
     name: 'Shop by Category',
-    description: 'Visual grid of category cards with product counts and imagery',
+    description: 'T-shirts and Bottoms groups with editable category links and images',
     icon: FolderTree
   },
   new_arrivals: {
     name: 'New Arrivals',
-    description: 'Fresh drops product showcase with badged items and view-all button',
+    description: 'Recently created, available catalog products with a shop link',
     icon: Sparkles
   },
   featured_collection: {
     name: 'Featured Collection',
-    description: 'Editorial split banner focusing on a signature denim collection',
+    description: 'Editorial campaign with an editable image and collection destination',
     icon: Layers
   },
   best_sellers: {
     name: 'Best Sellers',
-    description: 'Community favorites and high-demand denim silhouettes',
+    description: 'Products marked with the Bestseller badge in the catalog',
     icon: Award
   },
   brand_story: {
     name: 'Our Story & Heritage',
-    description: 'Brand philosophy, fabric specs (14oz), signature fits and Mumbai dispatch stats',
+    description: 'Brand story, fabric details, and service information',
     icon: Compass
   },
   looks: {
@@ -455,7 +455,7 @@ export default function StorefrontHomepagePage() {
               {activeSection === 'hero' && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Field label="Eyebrow Tag" hint="Top micro-tag (e.g. 'New Season — SS 2026')">
+                  <Field label="Eyebrow Tag" hint="Short label above the campaign headline">
                       <Input
                         value={config.hero.eyebrow}
                         onChange={(e) =>
@@ -927,12 +927,12 @@ export default function StorefrontHomepagePage() {
                     />
                   </Field>
 
-                  <Field label="Brand Stats (e.g. 14oz Fabric weight, 24h dispatch)">
+                  <Field label="Brand Stats (e.g. 260+ GSM cotton weight)">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {config.brand_story.stats.map((stat, i) => (
                         <div key={i} className="p-2 border rounded-md bg-muted/20 space-y-1">
                           <Input
-                            placeholder="Value (e.g. 14oz)"
+                            placeholder="Value (e.g. 260+ GSM)"
                             value={stat.num}
                             onChange={(e) => {
                               const stats = [...config.brand_story.stats]
@@ -1272,26 +1272,25 @@ export default function StorefrontHomepagePage() {
 
               {/* Mockup Frame */}
               <div
-                className={`rounded-xl border border-border bg-[#0d0d0d] text-white shadow-xl overflow-hidden transition-all duration-300 ${
+                className={`rounded-xl border border-border bg-[#f8f7f3] text-[#172126] shadow-xl overflow-hidden transition-all duration-300 ${
                   previewMode === 'mobile' ? 'max-w-xs mx-auto text-[11px]' : 'w-full text-xs'
                 }`}
                 style={{ maxHeight: '720px', overflowY: 'auto' }}
               >
                 {/* Storefront Header Mock */}
-                <div className="border-b border-white/10 px-4 py-2.5 flex items-center justify-between bg-black/40 backdrop-blur-md sticky top-0 z-20">
+                <div className="border-b border-[#dfded8] px-4 py-2.5 flex items-center justify-between bg-[#faf9f6] sticky top-0 z-20">
                   <div className="flex items-center gap-2">
-                    <span className="font-extrabold tracking-tight text-white font-sans text-xs">TEESGARAGE</span>
-                    <span className="text-[8px] px-1 py-0.2 rounded bg-white/20 text-white font-mono">DENIM</span>
+                    <span className="font-extrabold tracking-tight text-[#172126] font-sans text-xs">TEESGARAGE</span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] text-white/50 font-mono">
-                    <span>MEN</span>
-                    <span>WOMEN</span>
+                  <div className="flex items-center gap-3 text-[10px] text-[#697276] font-mono">
+                    <span>SHOP</span>
+                    <span>SEARCH</span>
                     <span>BAG (0)</span>
                   </div>
                 </div>
 
                 {/* Rendered Preview Sections In Configured Sequence */}
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-[#dfded8]">
                   {config.sectionsOrder.map((secId) => {
                     const isVisible = config.sectionsEnabled[secId] ?? true
                     if (!isVisible) return null
@@ -1302,7 +1301,7 @@ export default function StorefrontHomepagePage() {
                         return (
                           <div
                             key="announcement"
-                            className="bg-white/5 text-center py-1.5 px-2 text-[10px] text-white/80 font-mono tracking-tight"
+                            className="bg-[#172126] text-center py-1.5 px-2 text-[10px] text-white/90 font-mono tracking-tight"
                           >
                             {config.announcement.messages[0]}
                           </div>
@@ -1314,7 +1313,7 @@ export default function StorefrontHomepagePage() {
                         return (
                           <div
                             key="hero"
-                            className="relative min-h-[160px] p-4 flex flex-col justify-end bg-gradient-to-t from-black via-black/40 to-transparent"
+                            className="relative min-h-[175px] p-4 flex flex-col justify-end bg-gradient-to-t from-black via-black/40 to-transparent"
                             style={{
                               backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.2)), url(${config.hero.imageUrl})`,
                               backgroundSize: 'cover',
@@ -1343,20 +1342,23 @@ export default function StorefrontHomepagePage() {
                       case 'categories': {
                         if (!config.categories.enabled) return null
                         return (
-                          <div key="categories" className="p-3 bg-white/[0.02]">
-                            <div className="text-[10px] text-white/50 uppercase font-mono mb-1">
+                          <div key="categories" className="p-3 bg-[#f4f3ee]">
+                            <div className="text-[10px] text-[#71808a] uppercase font-mono mb-1">
                               {config.categories.eyebrow}
                             </div>
-                            <div className="font-bold text-xs text-white mb-2">{config.categories.title}</div>
-                            <div className="grid grid-cols-3 gap-1.5">
-                              {config.categories.items.slice(0, 3).map((cat) => (
-                                <div
-                                  key={cat.id}
-                                  className="rounded bg-white/5 p-1.5 text-center flex flex-col items-center"
-                                >
-                                  <span className="text-sm mb-0.5">{cat.icon}</span>
-                                  <span className="text-[9px] font-semibold text-white/90">{cat.label}</span>
-                                  <span className="text-[8px] text-white/40">{cat.count}</span>
+                            <div className="font-bold text-xs text-[#172126] mb-2">{config.categories.title}</div>
+                            <div className="grid grid-cols-2 gap-2">
+                              {[
+                                { title: 'T-shirts', items: config.categories.items.filter((item) => !['trackpants', 'sweatpants'].includes(item.id)) },
+                                { title: 'Bottoms', items: config.categories.items.filter((item) => ['trackpants', 'sweatpants'].includes(item.id)) }
+                              ].map((group) => (
+                                <div key={group.title} className="bg-white p-2">
+                                  <div className="text-[9px] font-semibold text-[#172126] mb-1">{group.title}</div>
+                                  <div className="flex flex-wrap gap-x-2 gap-y-1">
+                                    {group.items.map((item) => (
+                                      <span key={item.id} className="text-[8px] text-[#59666d]">{item.label}</span>
+                                    ))}
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -1378,11 +1380,8 @@ export default function StorefrontHomepagePage() {
                               <span className="text-[9px] text-primary underline">{config.new_arrivals.ctaText}</span>
                             </div>
                             <div className="grid grid-cols-2 gap-2">
-                              <div className="rounded bg-white/5 p-2 text-center text-[10px] text-white/70">
-                                👖 Classic Straight Indigo — ₹2,299
-                              </div>
-                              <div className="rounded bg-white/5 p-2 text-center text-[10px] text-white/70">
-                                👖 Heavy Wash Baggy — ₹2,499
+                              <div className="col-span-2 border border-dashed border-[#c9c9c2] p-2 text-center text-[9px] text-[#697276]">
+                                Product cards use current catalog images, prices, and size availability.
                               </div>
                             </div>
                           </div>
@@ -1415,19 +1414,14 @@ export default function StorefrontHomepagePage() {
                       case 'best_sellers': {
                         if (!config.best_sellers.enabled) return null
                         return (
-                          <div key="best_sellers" className="p-3 bg-white/[0.02]">
-                            <span className="text-[9px] text-white/50 uppercase font-mono">
+                          <div key="best_sellers" className="p-3 bg-[#f4f3ee]">
+                            <span className="text-[9px] text-[#71808a] uppercase font-mono">
                               {config.best_sellers.eyebrow}
                             </span>
-                            <h5 className="font-bold text-xs text-white mb-0.5">{config.best_sellers.title}</h5>
-                            <p className="text-[9px] text-white/50 mb-2">{config.best_sellers.subtitle}</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="rounded bg-white/5 p-2 text-center text-[10px] text-white/70">
-                                👖 Vintage Blue Wide Leg
-                              </div>
-                              <div className="rounded bg-white/5 p-2 text-center text-[10px] text-white/70">
-                                👖 Relaxed Charcoal Raw
-                              </div>
+                            <h5 className="font-bold text-xs text-[#172126] mb-0.5">{config.best_sellers.title}</h5>
+                            <p className="text-[9px] text-[#697276] mb-2">{config.best_sellers.subtitle}</p>
+                            <div className="border border-dashed border-[#c9c9c2] p-2 text-center text-[9px] text-[#697276]">
+                              Shown when products carry the Bestseller badge.
                             </div>
                           </div>
                         )

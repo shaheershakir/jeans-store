@@ -1,18 +1,19 @@
 'use client'
 
 import type { MouseEvent } from 'react'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Maximize2, X, ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import type { Product } from '@/lib/constants'
-import { SIZES, SWATCHES } from '@/lib/constants'
+import { SWATCHES } from '@/lib/constants'
 import { useCartStore, useUIStore, usePreferencesStore } from '@/lib/store'
 import SizeGuideModal from '@/components/SizeGuideModal'
 import ProductReviews from '@/components/ProductReviews'
 import RelatedProducts from '@/components/RelatedProducts'
 import StickyPdpBar from '@/components/StickyPdpBar'
+import { getAvailableProductSizes, getProductSizeOptions } from '@/lib/products'
 
 // Map category ID → breadcrumb label + route
 const CATEGORY_META: Record<string, { label: string; href: string }> = {
@@ -38,8 +39,9 @@ export default function ProductDetail({ product }: { product: Product }) {
   const showToast = useUIStore((state) => state.showToast)
   const openOverlay = useUIStore((state) => state.openOverlay)
 
-  const availableSizes = product.sizes && product.sizes.length > 0 ? product.sizes : SIZES
-  const isNumeric = availableSizes.every((s) => /^\d+$/.test(s))
+  const sizeOptions = useMemo(() => getProductSizeOptions(product), [product])
+  const availableSizes = useMemo(() => getAvailableProductSizes(product), [product])
+  const isNumeric = sizeOptions.length > 0 && sizeOptions.every((s) => /^\d+$/.test(s))
 
   // Build image list — from images array or fallback [img, img2]
   const images = (product.images && product.images.length > 0
@@ -69,7 +71,14 @@ export default function ProductDetail({ product }: { product: Product }) {
       if (isMounted) {
         // Auto-select preferred size from user's Fit & Size Profile
         const recommended = usePreferencesStore.getState().getRecommendedSize(availableSizes, product.category)
-        setSelectedSize(recommended)
+        const current = useUIStore.getState().selectedSize
+        setSelectedSize(
+          availableSizes.includes(recommended)
+            ? recommended
+            : availableSizes.includes(current)
+              ? current
+              : availableSizes[0] ?? ''
+        )
       }
     }
     void hydrateAndSelect()
@@ -111,7 +120,8 @@ export default function ProductDetail({ product }: { product: Product }) {
   }, [lightboxIndex, images.length, closeLightbox])
 
   function handleAddToCart() {
-    addItem(product.id, selectedSize)
+    if (!availableSizes.includes(selectedSize)) return
+    addItem(product.id, selectedSize, product)
     setAdded(true)
     showToast(`Added ${product.name} (${isNumeric ? `Waist ${selectedSize}"` : `Size ${selectedSize}`}) to your bag`)
     setTimeout(() => setAdded(false), 1800)
@@ -119,7 +129,8 @@ export default function ProductDetail({ product }: { product: Product }) {
   }
 
   function handleBuyNow() {
-    addItem(product.id, selectedSize)
+    if (!availableSizes.includes(selectedSize)) return
+    addItem(product.id, selectedSize, product)
     router.push('/checkout')
   }
 
@@ -261,17 +272,22 @@ export default function ProductDetail({ product }: { product: Product }) {
             )}
 
             <div className="pdp-sizes-grid">
-              {availableSizes.map((size) => (
+              {sizeOptions.map((size) => {
+                const isAvailable = availableSizes.includes(size)
+                return (
                 <button
                   key={size}
                   type="button"
                   className={`pdp-size-cell ${size === selectedSize ? 'selected' : ''}`}
                   onClick={() => setSelectedSize(size)}
-                  aria-label={`Select size ${size}`}
+                  disabled={!isAvailable}
+                  aria-label={isAvailable ? `Select size ${size}` : `Size ${size} is out of stock`}
                 >
                   {size}
                 </button>
-              ))}
+                )
+              })}
+              {sizeOptions.length === 0 && <p className="pdp-stock-message">Size availability is not listed.</p>}
             </div>
           </div>
 
@@ -281,6 +297,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               type="button"
               className={`pdp-add-to-cart-btn ${added ? 'added' : ''}`}
               onClick={handleAddToCart}
+              disabled={!availableSizes.includes(selectedSize)}
             >
               {added ? (
                 <span>✓ Added to Shopping Bag</span>
@@ -292,7 +309,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               )}
             </button>
 
-            <button type="button" className="pdp-buy-now-btn" onClick={handleBuyNow}>
+            <button type="button" className="pdp-buy-now-btn" onClick={handleBuyNow} disabled={!availableSizes.includes(selectedSize)}>
               Buy Now with Instant Express
             </button>
           </div>

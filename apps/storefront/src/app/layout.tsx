@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://teesgarage.in'),
   title: 'TEESGARAGE — Heavyweight T-Shirts & Premium Bottomwear',
   description:
-    'Heavyweight combed cotton tees, drop shoulders, stripes, henleys, trackpants & sweatpants built for everyday wear. Free shipping above ₹999.',
+    'Heavyweight combed cotton tees, stripes, henleys, trackpants, and sweatpants made for everyday wear. Free shipping above ₹1,499.',
   manifest: '/site.webmanifest',
   icons: {
     icon: '/icon.svg'
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'TEESGARAGE — Heavyweight T-Shirts & Premium Bottomwear',
     description:
-      'Heavyweight combed cotton tees, drop shoulders, stripes, henleys, trackpants & sweatpants built for everyday wear. Free shipping above ₹999.',
+      'Heavyweight combed cotton tees, stripes, henleys, trackpants, and sweatpants made for everyday wear. Free shipping above ₹1,499.',
     url: 'https://teesgarage.in',
     siteName: 'TEESGARAGE',
     locale: 'en_IN',

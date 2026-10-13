@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import { ShoppingBag, Check } from 'lucide-react'
 import type { Product } from '@/lib/constants'
-import { useCartStore, useUIStore } from '@/lib/store'
+import { getAvailableProductSizes, getProductSizeOptions } from '@/lib/products'
 
 interface StickyPdpBarProps {
   product: Product
@@ -22,8 +22,9 @@ export default function StickyPdpBar({
   isAdded,
 }: StickyPdpBarProps) {
   const [visible, setVisible] = useState(false)
-  const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : ['28', '30', '32', '34', '36', '38']
-  const isNumeric = sizes.every((s) => /^\d+$/.test(s))
+  const sizes = useMemo(() => getProductSizeOptions(product), [product])
+  const availableSizes = useMemo(() => getAvailableProductSizes(product), [product])
+  const isNumeric = sizes.length > 0 && sizes.every((size) => /^\d+$/.test(size))
 
   useEffect(() => {
     const handleScroll = () => {
@@ -77,7 +78,8 @@ export default function StickyPdpBar({
                   type="button"
                   className={`apple-sticky-size-btn ${selectedSize === size ? 'active' : ''}`}
                   onClick={() => onSizeChange(size)}
-                  aria-label={`Select size ${size}`}
+                  disabled={!availableSizes.includes(size)}
+                  aria-label={availableSizes.includes(size) ? `Select size ${size}` : `Size ${size} is out of stock`}
                 >
                   {size}
                 </button>
@@ -89,6 +91,7 @@ export default function StickyPdpBar({
             type="button"
             className={`apple-sticky-buy-btn ${isAdded ? 'added' : ''}`}
             onClick={onAddToCart}
+            disabled={!availableSizes.includes(selectedSize)}
             aria-label={`Add ${product.name} size ${selectedSize} to bag`}
           >
             {isAdded ? (

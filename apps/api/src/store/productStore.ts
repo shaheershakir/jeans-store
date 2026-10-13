@@ -47,7 +47,8 @@ function toProduct(row: DbProduct, variants: Variant[] = []): Product {
     desc: row.desc,
     wash: row.wash ?? undefined,
     sizes: (row.sizes as string[]) ?? undefined,
-    variants: variants.length > 0 ? variants : undefined
+    variants: variants.length > 0 ? variants : undefined,
+    createdAt: row.createdAt
   }
 }
 
@@ -398,6 +399,7 @@ export class ProductStore {
     const createdProduct: Product = {
       id: newProductId,
       ...input,
+      createdAt: new Date(),
       variants: variantsToInsert.map((v, i) => ({ ...v, id: this.memoryVariants.length + i + 1 }))
     }
     this.memoryProducts.push(createdProduct)

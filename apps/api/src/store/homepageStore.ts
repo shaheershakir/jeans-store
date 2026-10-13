@@ -13,13 +13,13 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     'hero',
     'categories',
     'new_arrivals',
-    'featured_collection',
     'best_sellers',
+    'featured_collection',
     'brand_story',
+    'trust_bar',
     'looks',
     'instagram',
     'reviews',
-    'trust_bar',
     'catalog'
   ],
   sectionsEnabled: {
@@ -30,16 +30,16 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     featured_collection: true,
     best_sellers: true,
     brand_story: true,
-    looks: true,
-    instagram: true,
-    reviews: true,
+    looks: false,
+    instagram: false,
+    reviews: false,
     trust_bar: true,
-    catalog: true
+    catalog: false
   },
   announcement: {
     enabled: true,
     messages: [
-      '🚚 Free shipping on orders above ₹999',
+      '🚚 Free shipping on orders above ₹1,499',
       '🔄 7-Day doorstep exchanges — no questions asked',
       '🏭 24h dispatch from Mumbai',
       '💳 Cash on delivery available across India'
@@ -48,15 +48,15 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   },
   hero: {
     enabled: true,
-    eyebrow: 'New Season — SS 2026',
+    eyebrow: 'TEESGARAGE / EVERYDAY WEAR',
     title: 'Built for\neveryday.',
     subtitle: 'Heavyweight T-shirts. Engineered bottomwear.\nCuts that hold their shape with every wear.',
     primaryCtaText: 'Shop Collection',
-    primaryCtaLink: '/#catalog',
+    primaryCtaLink: '/shop',
     secondaryCtaText: 'All Styles',
-    secondaryCtaLink: '/#catalog',
+    secondaryCtaLink: '/shop',
     imageUrl: '/hero-man.jpg',
-    trustBadges: ['⚡ 24h dispatch', '🔄 7-day exchange', '🚚 Free above ₹999']
+    trustBadges: []
   },
   categories: {
     enabled: true,
@@ -127,7 +127,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     title: 'New Arrivals',
     limit: 4,
     ctaText: 'View All Products',
-    ctaLink: '/#catalog'
+    ctaLink: '/shop'
   },
   featured_collection: {
     enabled: true,
@@ -136,7 +136,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     description:
       'Every piece designed to live in your everyday rotation. Heavyweight 260+ GSM combed cotton, structured French terry, and boxy fits that hold their shape.',
     ctaText: 'Shop Collection',
-    ctaLink: '/#catalog',
+    ctaLink: '/shop',
     imageUrl: '/featured-collection.jpg'
   },
   best_sellers: {
@@ -156,8 +156,8 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     ],
     imageUrl: '/brand-editorial.jpg',
     stats: [
-      { num: '280 GSM', label: 'Cotton weight' },
-      { num: '8', label: 'Signature cuts' },
+      { num: '260+ GSM', label: 'Cotton weight' },
+      { num: '8', label: 'Categories' },
       { num: '24h', label: 'Mumbai dispatch' }
     ],
     ctaText: 'Get in Touch',
@@ -171,31 +171,31 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     items: [
       {
         id: 1,
-        title: 'The Daily Driver',
+        title: 'Off-duty uniform',
         tag: 'Drsleeve + Trackpants',
         img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
-        link: '/#catalog'
+        link: '/shop/drsleeve'
       },
       {
         id: 2,
-        title: 'Street Ready',
+        title: 'Graphic rotation',
         tag: 'Printed Tee + Sweatpants',
         img: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
-        link: '/#catalog'
+        link: '/shop/printed-tees'
       },
       {
         id: 3,
-        title: 'Clean & Classic',
-        tag: 'Stripes + Cargo',
+        title: 'Everyday stripes',
+        tag: 'Stripes + Sweatpants',
         img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80',
-        link: '/#catalog'
+        link: '/shop/stripes'
       },
       {
         id: 4,
-        title: 'Minimal Thermal',
-        tag: 'Fullsleeve + Shell Pants',
+        title: 'Long-sleeve layer',
+        tag: 'Fullsleeve + Henley',
         img: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=600&q=80',
-        link: '/#catalog'
+        link: '/shop/fullsleeve'
       }
     ]
   },
@@ -205,50 +205,18 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     title: 'Follow Our Story',
     subtitle: 'Real people, real fits — tag us in yours.',
     instagramUrl: 'https://instagram.com',
-    photos: [
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80'
-    ]
+    photos: []
   },
   reviews: {
     enabled: true,
     title: 'What Customers Say',
-    ratingText: '4.9 / 5 — 200+ verified reviews',
-    items: [
-      {
-        id: 1,
-        name: 'Aryan S.',
-        location: 'Mumbai',
-        stars: 5,
-        text: 'Best oversized tee I’ve owned. The 280 GSM combed cotton has real structural weight and doesn\'t bacon at the neck after multiple washes.',
-        product: 'Tokyo Cyber Garage Graphic Tee'
-      },
-      {
-        id: 2,
-        name: 'Karan M.',
-        location: 'Delhi',
-        stars: 5,
-        text: 'The 450 GSM French terry sweatpants exceeded all my expectations. Heavy, soft, and the cuff stacks perfectly over my sneakers. Ordered a second pair.',
-        product: '450 GSM Heavy French Terry Sweatpants'
-      },
-      {
-        id: 3,
-        name: 'Rahul T.',
-        location: 'Bangalore',
-        stars: 5,
-        text: 'Finally a brand that gets streetwear proportions. The drop shoulder sits exactly how it should — boxy, clean drape, and durable collar ribbing.',
-        product: 'Boxy Heavyweight Drop Shoulder Tee'
-      }
-    ]
+    ratingText: '',
+    items: []
   },
   trust_bar: {
     enabled: true,
     items: [
-      { id: '1', title: 'Free shipping above ₹999', icon: 'truck' },
+      { id: '1', title: 'Free shipping above ₹1,499', icon: 'truck' },
       { id: '2', title: '7-day doorstep exchange', icon: 'repeat' },
       { id: '3', title: '24h dispatch from Mumbai', icon: 'package' },
       { id: '4', title: 'Secure payments', icon: 'shield' }

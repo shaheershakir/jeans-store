@@ -79,13 +79,14 @@ export const productSchema = z.object({
   rise: z.string().optional(),
   rating: z.number().optional(),
   inStock: z.boolean().optional(),
-  collection: z.string().optional()
+  collection: z.string().optional(),
+  createdAt: z.coerce.date().optional()
 })
 
-export const createProductSchema = productSchema.omit({ id: true })
+export const createProductSchema = productSchema.omit({ id: true, createdAt: true })
 
 export const updateProductSchema = productSchema
-  .omit({ id: true })
+  .omit({ id: true, createdAt: true })
   .partial()
 
 export type Product = z.infer<typeof productSchema>

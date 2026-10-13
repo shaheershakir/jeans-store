@@ -297,6 +297,15 @@ export default function Header({ initialNavItems }: HeaderProps) {
               )}
             </div>
 
+            <button
+              className="macy-mobile-search"
+              type="button"
+              aria-label="Search products"
+              onClick={() => openOverlay('search')}
+            >
+              <Search className="h-5 w-5" aria-hidden="true" />
+            </button>
+
             {/* Right Action Utilities (Sign In / User Popover & Bag) */}
             <div className="macy-actions-group">
               {/* Account Sign In / User Control Section */}

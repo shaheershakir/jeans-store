@@ -1,13 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Product, HomepageConfig, HomepageSectionType } from '@/lib/constants'
 import { DEFAULT_HOMEPAGE_CONFIG } from '@/lib/constants'
 import { useCartStore, useFilterStore } from '@/lib/store'
 import ProductCard from '@/components/ProductCard'
+import CategoryGroups from '@/components/homepage/CategoryGroups'
 import CollectionClient from '@/app/CollectionClient'
+import { isProductAvailable } from '@/lib/products'
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -31,7 +33,7 @@ function AnnouncementBar({ messages, intervalSeconds }: { messages: string[]; in
   if (!messages || messages.length === 0) return null
 
   return (
-    <div className="hp-announcement-bar" role="marquee" aria-live="polite">
+    <div className="hp-announcement-bar" role="status" aria-live="polite" aria-atomic="true">
       <span className={`hp-announcement-text ${visible ? 'hp-ann-visible' : 'hp-ann-hidden'}`}>
         {messages[idx % messages.length]}
       </span>
@@ -70,7 +72,6 @@ interface HomepageClientProps {
 export default function HomepageClient({ products, config }: HomepageClientProps) {
   const setCategory = useFilterStore((s) => s.setCategory)
   const [activeReview, setActiveReview] = useState(0)
-  const heroRef = useRef<HTMLElement>(null)
 
   const cfg = config || DEFAULT_HOMEPAGE_CONFIG
 
@@ -79,37 +80,23 @@ export default function HomepageClient({ products, config }: HomepageClientProps
     void useFilterStore.persist.rehydrate()
   }, [])
 
-  // Parallax on hero
-  useEffect(() => {
-    const hero = heroRef.current
-    if (!hero) return
-    const handler = () => {
-      const scrollY = window.scrollY
-      const img = hero.querySelector('.hp-hero-img') as HTMLElement | null
-      if (img) img.style.transform = `translateY(${scrollY * 0.25}px)`
-    }
-    window.addEventListener('scroll', handler, { passive: true })
-    return () => window.removeEventListener('scroll', handler)
-  }, [])
-
-  // Auto-advance review carousel
   const reviewsCount = cfg.reviews?.items?.length || 0
-  useEffect(() => {
-    if (reviewsCount <= 1) return
-    const id = setInterval(() => {
-      setActiveReview((i) => (i + 1) % reviewsCount)
-    }, 5000)
-    return () => clearInterval(id)
-  }, [reviewsCount])
 
   const newArrivalsLimit = cfg.new_arrivals?.limit || 4
   const bestSellersLimit = cfg.best_sellers?.limit || 4
 
+  const recentCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
   const newArrivals = products
-    .filter((p) => p.badge === 'New' || p.badge === 'Essential')
+    .filter((product) => {
+      if (!isProductAvailable(product)) return false
+      if (!product.createdAt) return product.badge?.toLowerCase() === 'new'
+      const createdAt = Date.parse(product.createdAt)
+      return Number.isFinite(createdAt) && createdAt <= Date.now() && createdAt >= recentCutoff
+    })
+    .sort((a, b) => Date.parse(b.createdAt || '') - Date.parse(a.createdAt || ''))
     .slice(0, newArrivalsLimit)
   const bestSellers = products
-    .filter((p) => p.badge === 'Bestseller')
+    .filter((product) => product.badge?.toLowerCase() === 'bestseller')
     .slice(0, bestSellersLimit)
 
   // Section renderers
@@ -134,7 +121,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
         if (!cfg.hero?.enabled) return null
         const h = cfg.hero
         return (
-          <section key="hero" className="hp-hero" ref={heroRef} id="hero">
+          <section key="hero" className="hp-hero" id="hero">
             <div className="hp-hero-media">
               <Image
                 src={h.imageUrl || '/hero-man.jpg'}
@@ -206,35 +193,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
                 {cats.title}
               </h2>
             </div>
-            <div className="hp-categories-grid">
-              {cats.items.map((cat) => {
-                const targetUrl = cat.id === 'all' ? '/shop' : `/shop/${cat.id}`
-                return (
-                  <Link
-                    key={cat.id}
-                    href={targetUrl}
-                    className="hp-category-card"
-                    onClick={() => setCategory(cat.id as Parameters<typeof setCategory>[0])}
-                    aria-label={`Shop ${cat.label}`}
-                  >
-                    <div className="hp-category-img-wrap">
-                      <Image
-                        src={cat.img}
-                        alt={cat.label}
-                        fill
-                        className="hp-category-img"
-                        sizes="(max-width: 768px) 50vw, 20vw"
-                      />
-                      <div className="hp-category-overlay" />
-                    </div>
-                    <div className="hp-category-info">
-                      <span className="hp-category-label">{cat.label}</span>
-                      <span className="hp-category-count">{cat.count}</span>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
+            <CategoryGroups config={cats} onSelectCategory={setCategory} />
           </section>
         )
       }
@@ -243,7 +202,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
         if (!cfg.new_arrivals?.enabled) return null
         const na = cfg.new_arrivals
         return (
-          <section key="new_arrivals" className="hp-section hp-arrivals-section" aria-labelledby="hp-arrivals-heading">
+          <section key="new_arrivals" id="new-arrivals" className="hp-section hp-arrivals-section" aria-labelledby="hp-arrivals-heading">
             <div className="hp-section-header">
               {na.eyebrow && <span className="hp-section-eyebrow">{na.eyebrow}</span>}
               <h2 className="hp-section-title" id="hp-arrivals-heading">
@@ -255,6 +214,9 @@ export default function HomepageClient({ products, config }: HomepageClientProps
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
+            {newArrivals.length === 0 && (
+              <p className="hp-empty-message">New pieces will appear here as they arrive.</p>
+            )}
             {na.ctaText && (
               <div className="hp-section-cta-row">
                 <Link
@@ -307,9 +269,8 @@ export default function HomepageClient({ products, config }: HomepageClientProps
       }
 
       case 'best_sellers': {
-        if (!cfg.best_sellers?.enabled) return null
+        if (!cfg.best_sellers?.enabled || bestSellers.length === 0) return null
         const bs = cfg.best_sellers
-        const displayList = bestSellers.length > 0 ? bestSellers : products.slice(0, bs.limit || 4)
         return (
           <section key="best_sellers" className="hp-section hp-bestsellers-section" aria-labelledby="hp-bs-heading">
             <div className="hp-section-header">
@@ -320,7 +281,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
               {bs.subtitle && <p className="hp-section-sub">{bs.subtitle}</p>}
             </div>
             <div className="hp-product-grid">
-              {displayList.map((p) => (
+              {bestSellers.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
@@ -378,7 +339,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
       }
 
       case 'looks': {
-        if (!cfg.looks?.enabled) return null
+        if (!cfg.looks?.enabled || cfg.looks.items.length === 0) return null
         const lk = cfg.looks
         return (
           <section key="looks" className="hp-section hp-looks-section" aria-labelledby="hp-looks-heading">
@@ -414,7 +375,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
       }
 
       case 'instagram': {
-        if (!cfg.instagram?.enabled) return null
+        if (!cfg.instagram?.enabled || cfg.instagram.photos.length === 0) return null
         const ig = cfg.instagram
         return (
           <section key="instagram" className="hp-section hp-instagram-section" aria-labelledby="hp-ig-heading">
@@ -457,7 +418,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
       }
 
       case 'reviews': {
-        if (!cfg.reviews?.enabled) return null
+        if (!cfg.reviews?.enabled || reviewsCount === 0) return null
         const rev = cfg.reviews
         return (
           <section key="reviews" className="hp-section hp-reviews-section" aria-labelledby="hp-reviews-heading">

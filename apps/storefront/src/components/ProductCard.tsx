@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Heart } from 'lucide-react'
 import type { Product } from '@/lib/constants'
 import { useCartStore, useUIStore, useFavoriteStore } from '@/lib/store'
+import { getAvailableProductSizes } from '@/lib/products'
 
 export default function ProductCard({ product }: { product: Product }) {
   const addItem = useCartStore((state) => state.addItem)
@@ -17,6 +18,9 @@ export default function ProductCard({ product }: { product: Product }) {
   const [mounted, setMounted] = useState<boolean>(false)
   const [isAdded, setIsAdded] = useState<boolean>(false)
   const [favAnimate, setFavAnimate] = useState<boolean>(false)
+  const [selectedSize, setSelectedSize] = useState('')
+  const availableSizes = getAvailableProductSizes(product)
+  const chosenSize = availableSizes.includes(selectedSize) ? selectedSize : ''
 
   useEffect(() => {
     setMounted(true)
@@ -29,9 +33,10 @@ export default function ProductCard({ product }: { product: Product }) {
     e.preventDefault()
     e.stopPropagation()
 
-    // Default size is first size or '32'
-    const defaultSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : '32'
-    addItem(product.id, defaultSize)
+    const size = availableSizes.length === 1 ? availableSizes[0] : chosenSize
+    if (!size) return
+
+    addItem(product.id, size, product)
     setIsAdded(true)
     showToast(`Added ${product.name} to bag`)
 
@@ -53,11 +58,6 @@ export default function ProductCard({ product }: { product: Product }) {
     const nextState = !isFavorite
     showToast(nextState ? `Saved ${product.name} to favorites` : `Removed from favorites`)
   }
-
-  const rating = (4.3 + ((product.id * 13) % 6) / 10).toFixed(1)
-  const ratingCount = Math.round(150 + ((product.id * 317) % 850))
-  const originalPriceNum = Math.round(product.priceNum * 1.38)
-  const discountPct = Math.round(((originalPriceNum - product.priceNum) / originalPriceNum) * 100)
 
   return (
     <article className="product-card">
@@ -89,11 +89,6 @@ export default function ProductCard({ product }: { product: Product }) {
             />
           </div>
           {product.badge && <span className="product-badge top-right">{product.badge}</span>}
-          <div className="product-rating-pill">
-            <span className="rating-score">{rating} ★</span>
-            <span className="rating-divider">|</span>
-            <span className="rating-reviews">{ratingCount}</span>
-          </div>
         </Link>
       </div>
 
@@ -106,20 +101,45 @@ export default function ProductCard({ product }: { product: Product }) {
 
         <div className="product-price-row">
           <span className="product-price">{product.price}</span>
-          <span className="product-orig-price">₹{originalPriceNum.toLocaleString('en-IN')}</span>
-          <span className="product-discount">({discountPct}% OFF)</span>
         </div>
 
         <p className="product-wash-label">{product.wash || product.desc.slice(0, 50) + '...'}</p>
 
-        {/* Full Width Clean Add to Bag Button (Sizes removed from card per request) */}
+        {availableSizes.length > 1 && (
+          <label className="product-size-select-label">
+            <span className="sr-only">Choose a size for {product.name}</span>
+            <select
+              className="product-size-select"
+              value={chosenSize}
+              onChange={(event) => setSelectedSize(event.target.value)}
+              aria-label={`Choose an available size for ${product.name}`}
+            >
+              <option value="">Choose size</option>
+              {availableSizes.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
         <button
           type="button"
           className={`card-add-btn ${isAdded ? 'added' : ''}`}
           onClick={handleAddToCart}
-          aria-label={`Add ${product.name} to bag`}
+          disabled={availableSizes.length === 0 || (availableSizes.length > 1 && !chosenSize)}
+          aria-label={
+            availableSizes.length === 0
+              ? `${product.name} is out of stock`
+              : availableSizes.length > 1 && !chosenSize
+                ? `Choose a size for ${product.name} before adding it to your bag`
+                : `Add ${product.name} to bag`
+          }
         >
-          {isAdded ? (
+          {availableSizes.length === 0 ? (
+            <span>Out of stock</span>
+          ) : isAdded ? (
             <>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />

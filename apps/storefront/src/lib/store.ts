@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Fit } from './constants'
+import type { Fit, Product } from './constants'
 import { PRODUCTS } from './constants'
 
 if (typeof window !== 'undefined') {
@@ -41,7 +41,7 @@ export interface CartItem {
 
 interface CartState {
   items: CartItem[]
-  addItem: (productId: number, size: string) => void
+  addItem: (productId: number, size: string, product?: Product) => void
   updateQty: (id: number, size: string, delta: number) => void
   removeItem: (id: number, size: string) => void
   clearCart: () => void
@@ -51,9 +51,9 @@ export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
       items: [],
-      addItem: (productId, size) =>
+      addItem: (productId, size, productDetails) =>
         set((state) => {
-          const product = PRODUCTS.find((p) => p.id === productId)
+          const product = productDetails ?? PRODUCTS.find((p) => p.id === productId)
           if (!product) return state
           const existing = state.items.find((item) => item.id === productId && item.size === size)
           if (existing) {
