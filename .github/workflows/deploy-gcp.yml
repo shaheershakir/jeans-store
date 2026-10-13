@@ -6,9 +6,10 @@ on:
     branches:
       - main
     paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'admin/**'
+      - 'apps/api/**'
+      - 'apps/storefront/**'
+      - 'apps/admin/**'
+      - 'packages/**'
       - '.github/workflows/deploy-gcp.yml'
 
 env:
@@ -47,7 +48,7 @@ jobs:
         if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
         run: |
           IMAGE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:${{ github.sha }}"
-          docker build -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:latest" ./backend
+          docker build -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:latest" ./apps/api
           docker push "$IMAGE"
           docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:latest"
 
@@ -73,7 +74,7 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL || 'https://infit-backend-f6v6jgb4qa-el.a.run.app' }}" \
             --build-arg NEXT_PUBLIC_WHATSAPP_NUMBER="${{ secrets.NEXT_PUBLIC_WHATSAPP_NUMBER || '' }}" \
-            -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:latest" ./frontend
+            -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:latest" ./apps/storefront
           docker push "$IMAGE"
           docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:latest"
 
@@ -99,7 +100,7 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL || 'https://infit-backend-f6v6jgb4qa-el.a.run.app' }}" \
             --build-arg NEXT_PUBLIC_ADMIN_API_KEY="${{ secrets.ADMIN_API_KEY || '' }}" \
-            -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:latest" ./admin
+            -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:latest" ./apps/admin
           docker push "$IMAGE"
           docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:latest"
 

@@ -1,0 +1,33 @@
+{
+  "name": "jeans-store",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "npm@11.17.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:storefront": "turbo dev --filter=@jeans-store/storefront",
+    "dev:admin": "turbo dev --filter=@jeans-store/admin",
+    "dev:api": "turbo dev --filter=@jeans-store/api",
+    "build": "turbo build",
+    "build:storefront": "turbo build --filter=@jeans-store/storefront",
+    "build:admin": "turbo build --filter=@jeans-store/admin",
+    "build:api": "turbo build --filter=@jeans-store/api",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "db:generate": "turbo db:generate --filter=@jeans-store/db",
+    "db:push": "turbo db:push --filter=@jeans-store/db",
+    "db:seed": "turbo db:seed --filter=@jeans-store/db",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6",
+    "turbo": "^2.4.4",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,60 +1,78 @@
 # AGENTS.md
 
-TEESGARAGE is a premium denim e-commerce platform. This repository contains three independent applications: `frontend/`, `backend/`, and `admin/`.
+TEESGARAGE / INFIT is a premium denim e-commerce platform structured as a Turborepo monorepo with npm workspaces.
 
-## Application layout
+## Monorepo Layout
 
-- `frontend/`: Next.js 15 App Router, React 19, TypeScript strict, and Zustand. Statically generated storefront deployed to Vercel.
-- `backend/`: Express REST API with Zod validation. Manages the product catalog. Deployed to Render free tier via `render.yaml`.
-- `admin/`: Next.js 15 App Router, React 19, and Tailwind CSS v4. Operational dashboard for store administration.
-- No root package.json or npm workspaces exist. All commands must be executed within their respective application directories.
-
-## Commands
-
-### Frontend (`frontend/`)
-
-```bash
-cd frontend
-npm run dev      # Local dev server on :3000 with Turbopack
-npm run build    # Production build (fetches backend or falls back to snapshot)
-npm run start    # Production server
-npm run lint     # Next.js ESLint checks
-npm run format   # Prettier code formatting
+```
+jeans-store/
+├── apps/
+│   ├── storefront/    # Next.js 15 customer storefront (:3000)
+│   ├── admin/         # Next.js 15 operational dashboard (:3001)
+│   └── api/           # Express REST API, auth & Razorpay (:4000)
+├── packages/
+│   ├── db/            # PostgreSQL schema, Drizzle ORM client & migrations
+│   ├── shared/        # Common TypeScript types, interfaces & constants
+│   ├── validators/    # Shared Zod validation schemas
+│   └── config/        # Shared TypeScript & ESLint configurations
+├── infra/             # Deployment specifications (Cloud Run, Render, Docker)
+├── docs/              # System architecture, API & deployment guides
+├── .github/workflows/ # CI & GCP Cloud Run CD pipelines
+├── package.json       # Monorepo workspaces configuration
+└── turbo.json         # Turborepo task pipelines
 ```
 
-### Backend (`backend/`)
+## Workspace Commands
 
+All commands can be run from the repository root using Turborepo or npm workspaces:
+
+### Root Development & Build
 ```bash
-cd backend
-npm run dev      # Local dev server on :4000 using tsx watch
-npm run build    # TypeScript compiler check and output to dist/
-npm run start    # Node production server
-npm run test     # Node test runner suite
-npm run smoke    # Verification smoke test script
+npm run dev               # Start all services concurrently (storefront, admin, api)
+npm run build             # Build all apps and packages in topological order
+npm run lint              # Run linting across all workspaces
+npm run test              # Run unit & integration tests
+npm run typecheck         # Typecheck all packages and apps
+npm run format            # Run prettier across the codebase
 ```
 
-### Admin (`admin/`)
-
+### Scoped Commands
 ```bash
-cd admin
-npm run dev      # Local dev server on :3001
-npm run build    # Production Next.js build
-npm run start    # Production server on :3001
-npm run lint     # ESLint checks
+# Storefront (apps/storefront)
+npm run dev:storefront    # Local dev server on :3000 with Turbopack
+npm run build:storefront  # Production Next.js build
+
+# Admin Dashboard (apps/admin)
+npm run dev:admin         # Local dev server on :3001 with Turbopack
+npm run build:admin       # Production Next.js build
+
+# API (apps/api)
+npm run dev:api           # Local dev server on :4000 using tsx watch
+npm run build:api         # Production compile to dist/
+npm run db:generate       # Generate Drizzle migration files
+npm run db:push           # Push Drizzle schema to Neon DB
+npm run db:seed           # Seed database with initial products
 ```
 
-## Architecture and data flow
+### Local Multi-Container Development (Docker Compose)
+```bash
+docker compose up -d      # Spins up postgres:5432, api:4000, storefront:3000, admin:3001
+```
 
-- Storefront homepage `/` is the product catalog. There is no standalone marketing landing page.
-- Prerendering at build time: `frontend/src/lib/products.ts` queries the backend during `next build`. If the backend is offline or in CI, it falls back to the bundled snapshot in `frontend/src/lib/constants.ts`. Shoppers never encounter backend cold starts at runtime.
-- Client state: Three Zustand stores live in `frontend/src/lib/store.ts` (`useCartStore`, `useUIStore`, `useFilterStore`). Keys in localStorage are `infit-cart`, `infit-filters`, and `infit-ui`.
-- Checkout: Customer orders on `/checkout` hand off via WhatsApp (`wa.me`) or mailto fallback. No database orders table or payment gateway is required for this phase.
-- Shared product model: `Product` interface in `frontend/src/lib/constants.ts` and `backend/src/schemas/product.ts`.
-- Styling: The storefront uses vanilla CSS custom properties in `frontend/src/app/globals.css`. Do not add Tailwind to `frontend/`. The `admin/` application uses Tailwind CSS v4.
+## Architecture and Data Flow
+
+- **Storefront**: Customer website statically generated at build time with fallback snapshot resilience. Pages revalidate on catalog changes.
+- **Admin**: Operational dashboard for product catalogue, SKUs, inventory movements, order tracking, and coupons. Uses Tailwind CSS v4.
+- **API**: Express REST API backed by Neon PostgreSQL via Drizzle ORM. Mutating routes require `X-API-Key`. Includes Razorpay payment service and Cloud IAM auth.
+- **Packages**:
+  - `@jeans-store/db`: Schema, migrations, Neon connection client.
+  - `@jeans-store/shared`: Shared contracts (`Product`, `Fit`, `Order`, `HomepageConfig`, constants).
+  - `@jeans-store/validators`: Shared Zod validation schemas (`productSchema`, `createOrderSchema`, etc.).
+  - `@jeans-store/config`: Shared base configs.
 
 ## Gotchas
 
-- Windows dev server: Spawning the dev server from shells requires `cmd /c npm run dev` to avoid Win32 process execution failures.
-- Path aliases: Inside `frontend/`, `@/*` resolves to `./src/*`. Inside `admin/`, `@/*` resolves to `./src/*`.
-- Unsplash images: Only `images.unsplash.com` is configured in `next.config.ts` remote patterns.
-- Sentry: `@sentry/nextjs` is initialized as a no-op when `NEXT_PUBLIC_SENTRY_DSN` is absent.
+- **Windows dev server**: Spawning individual dev servers from Windows shells requires `cmd /c npm run dev` if node subshell spawning fails.
+- **Path aliases**: Storefront and Admin resolve `@/*` to `./src/*`, plus direct workspace package paths (`@jeans-store/*`).
+- **Styling**: `apps/storefront` uses vanilla CSS custom properties in `src/app/globals.css`. Do not add Tailwind to `apps/storefront`. `apps/admin` uses Tailwind CSS v4.
+- **Unsplash Images**: `images.unsplash.com` and `storage.googleapis.com` are allowed in `next.config.ts`.

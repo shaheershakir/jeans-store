@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: oregon
-    rootDir: backend
+    rootDir: apps/api
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /health

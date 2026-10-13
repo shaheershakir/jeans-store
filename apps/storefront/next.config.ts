@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['@jeans-store/shared', '@jeans-store/validators'],
   ...(process.env.NEXT_OUTPUT_STANDALONE === 'true' || process.platform !== 'win32'
     ? { output: 'standalone' }
     : {}),

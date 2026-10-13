@@ -1,5 +1,5 @@
 {
-  "name": "infit-backend",
+  "name": "@jeans-store/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,6 +17,9 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@jeans-store/db": "*",
+    "@jeans-store/shared": "*",
+    "@jeans-store/validators": "*",
     "@neondatabase/serverless": "^1.1.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.0",
@@ -29,6 +32,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@jeans-store/config": "*",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^24.13.3",

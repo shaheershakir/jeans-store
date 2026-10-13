@@ -1,5 +1,5 @@
 {
-  "name": "infit-frontend",
+  "name": "@jeans-store/storefront",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,6 +10,8 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@jeans-store/shared": "*",
+    "@jeans-store/validators": "*",
     "@sentry/nextjs": "^10.73.0",
     "lucide-react": "^1.49.0",
     "next": "15.5.24",
@@ -18,6 +20,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@jeans-store/config": "*",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",

@@ -1,10 +1,29 @@
 version: '3.8'
 
 services:
-  backend:
+  postgres:
+    image: postgres:16-alpine
+    container_name: infit-postgres
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=jeans_store
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
     build:
-      context: ./backend
+      context: ./apps/api
       dockerfile: Dockerfile
+    container_name: infit-api
     ports:
       - '4000:4000'
     environment:
@@ -12,10 +31,12 @@ services:
       - HOST=0.0.0.0
       - NODE_ENV=development
       - CORS_ORIGIN=*
-      - DATABASE_URL=${DATABASE_URL:-}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/jeans_store}
       - ADMIN_API_KEY=${ADMIN_API_KEY:-admin-secret-dev-key}
-      - FRONTEND_URL=http://frontend:3000
+      - FRONTEND_URL=http://storefront:3000
       - REVALIDATION_SECRET=${REVALIDATION_SECRET:-revalidate-secret-dev-key}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:4000/health']
       interval: 10s
@@ -23,28 +44,30 @@ services:
       retries: 3
     restart: unless-stopped
 
-  frontend:
+  storefront:
     build:
-      context: ./frontend
+      context: ./apps/storefront
       dockerfile: Dockerfile
+    container_name: infit-storefront
     ports:
       - '3000:3000'
     environment:
       - PORT=3000
       - HOSTNAME=0.0.0.0
-      - BACKEND_URL=http://backend:4000
+      - BACKEND_URL=http://api:4000
       - NEXT_PUBLIC_API_URL=http://localhost:4000
       - REVALIDATION_SECRET=${REVALIDATION_SECRET:-revalidate-secret-dev-key}
       - NEXT_PUBLIC_WHATSAPP_NUMBER=${NEXT_PUBLIC_WHATSAPP_NUMBER:-}
     depends_on:
-      backend:
+      api:
         condition: service_healthy
     restart: unless-stopped
 
   admin:
     build:
-      context: ./admin
+      context: ./apps/admin
       dockerfile: Dockerfile
+    container_name: infit-admin
     ports:
       - '3001:3001'
     environment:
@@ -53,6 +76,9 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:4000
       - NEXT_PUBLIC_ADMIN_API_KEY=${ADMIN_API_KEY:-admin-secret-dev-key}
     depends_on:
-      backend:
+      api:
         condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  postgres_data:

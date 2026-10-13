@@ -13,6 +13,7 @@ build
 
 # production
 dist
+.turbo/
 
 # misc
 .DS_Store
