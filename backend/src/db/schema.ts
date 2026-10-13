@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, jsonb, varchar, boolean } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, integer, timestamp, jsonb, varchar, boolean, uniqueIndex } from 'drizzle-orm/pg-core'
 
 export const products = pgTable('products', {
   id: serial('id').primaryKey(),
@@ -65,11 +65,39 @@ export const navigationItems = pgTable('navigation_items', {
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
 
+export const productVariants = pgTable(
+  'product_variants',
+  {
+    id: serial('id').primaryKey(),
+    productId: integer('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    sku: varchar('sku', { length: 100 }).notNull().unique(),
+    size: varchar('size', { length: 50 }).notNull(),
+    color: varchar('color', { length: 50 }).notNull(),
+    price: integer('price').notNull(),
+    stock: integer('stock').default(0).notNull(),
+    reserved: integer('reserved').default(0).notNull(),
+    reorderPoint: integer('reorder_point').default(5).notNull(),
+    weight: integer('weight').default(250).notNull(),
+    barcode: varchar('barcode', { length: 100 }),
+    status: varchar('status', { length: 50 }).default('Active').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull()
+  },
+  (table) => [
+    uniqueIndex('product_variants_product_color_size_idx').on(table.productId, table.color, table.size)
+  ]
+)
+
 export type DbProduct = typeof products.$inferSelect
 export type DbNewProduct = typeof products.$inferInsert
+export type DbProductVariant = typeof productVariants.$inferSelect
+export type DbNewProductVariant = typeof productVariants.$inferInsert
 export type DbOrder = typeof orders.$inferSelect
 export type DbNewOrder = typeof orders.$inferInsert
 export type DbUser = typeof users.$inferSelect
 export type DbNewUser = typeof users.$inferInsert
 export type DbNavigationItem = typeof navigationItems.$inferSelect
 export type DbNewNavigationItem = typeof navigationItems.$inferInsert
+

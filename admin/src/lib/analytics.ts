@@ -393,15 +393,17 @@ export function inventoryAlerts(data: DbState): { low: StockAlert[]; out: StockA
   return { low, out, predicted }
 }
 
-export function stockOutsBySize(data: DbState): { size: number; count: number }[] {
-  const bySize = new Map<number, number>()
+export function stockOutsBySize(data: DbState): { size: number | string; count: number }[] {
+  const bySize = new Map<number | string, number>()
   for (const p of data.products) {
     if (p.status === 'Archived') continue
     for (const v of p.variants) {
       if (v.stock === 0) bySize.set(v.size, (bySize.get(v.size) ?? 0) + 1)
     }
   }
-  return [...bySize.entries()].map(([size, count]) => ({ size, count })).sort((a, b) => a.size - b.size)
+  return [...bySize.entries()]
+    .map(([size, count]) => ({ size, count }))
+    .sort((a, b) => String(a.size).localeCompare(String(b.size), undefined, { numeric: true }))
 }
 
 /* ------------------------------------------------------------------ */

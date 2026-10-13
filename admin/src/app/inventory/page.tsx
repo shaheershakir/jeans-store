@@ -64,8 +64,8 @@ export default function InventoryPage() {
       const matchesQuery =
         !q ||
         v.productName.toLowerCase().includes(q) ||
-        v.sku.toLowerCase().includes(q) ||
-        v.barcode.toLowerCase().includes(q)
+        (v.sku && v.sku.toLowerCase().includes(q)) ||
+        (v.barcode && v.barcode.toLowerCase().includes(q))
 
       const matchesStatus =
         filterStatus === 'all' ||
@@ -245,7 +245,7 @@ export default function InventoryPage() {
                         <span className="block text-[10px] text-ink-4 font-sans">{v.barcode}</span>
                       </td>
                       <td className="px-4 py-3 text-ink">
-                        W{v.size} &bull; {v.color}
+                        {typeof v.size === 'number' || /^\d+$/.test(String(v.size)) ? `W${v.size}` : v.size} &bull; {v.color}
                       </td>
                       <td className="px-4 py-3 text-center font-bold tnum text-ink">
                         {v.stock}

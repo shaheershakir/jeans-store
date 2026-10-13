@@ -8,8 +8,32 @@
  * API once `backend/` is built.
  */
 
-export type Fit = 'Skinny' | 'Slim' | 'Straight' | 'Relaxed' | 'Bootcut'
-export type Color = 'Blue' | 'Dark Blue' | 'Light Blue' | 'Black' | 'Grey' | 'White'
+export type Fit =
+  | 'Oversized'
+  | 'Boxy'
+  | 'Relaxed'
+  | 'Regular'
+  | 'Straight'
+  | 'Baggy'
+  | 'Bootcut'
+  | 'Wide'
+  | 'Slim'
+  | 'Skinny'
+
+export type Color =
+  | 'Black'
+  | 'White'
+  | 'Navy'
+  | 'Grey'
+  | 'Blue'
+  | 'Dark Blue'
+  | 'Light Blue'
+  | 'Green'
+  | 'Olive'
+  | 'Red'
+  | 'Beige'
+  | string
+
 export type Wash =
   | 'Raw'
   | 'Stone Wash'
@@ -65,7 +89,7 @@ export interface Variant {
   id: number
   productId: number
   sku: string
-  size: number
+  size: number | string
   color: Color
   price: number
   stock: number
@@ -75,6 +99,7 @@ export interface Variant {
   barcode: string
   status: 'Active' | 'Inactive'
 }
+
 
 export interface Category {
   id: number

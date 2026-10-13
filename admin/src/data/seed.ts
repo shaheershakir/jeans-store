@@ -34,10 +34,18 @@ import { mulberry32, pick, randInt, isoDaysAgo, isoDaysAhead } from '@/lib/utils
 import { PRODUCT_SPECS, alternateColor } from '@/data/product-specs'
 import { buildCustomers } from '@/data/names'
 import { CARRIERS } from '@/lib/constants'
+import {
+  generateBaseSku,
+  generateProductScopedSku,
+  getCategoryCode,
+  getProductTypeCode,
+  formatProductCode,
+} from '@/lib/sku'
 
 const SEED = 20260830
 const NOW = Date.now()
-export const DATA_VERSION = 3
+export const DATA_VERSION = 4
+
 
 export const IMAGE_POOL = [
   'https://images.unsplash.com/photo-1541099649105-f69ad21f3246',
@@ -97,6 +105,7 @@ function sizeRangeFor(gender: string, fit: string): number[] {
 
 let globalVariantId = 1
 let globalImageId = 1
+const globalSeedSkus = new Set<string>()
 
 function buildProduct(
   rand: () => number,
@@ -107,8 +116,9 @@ function buildProduct(
   const status: ProductStatus = index % 9 === 7 ? 'Draft' : index % 13 === 11 ? 'Archived' : 'Active'
   const sizes = sizeRangeFor(spec.gender, spec.fit)
   const colors = [spec.color, alternateColor(spec.color)]
-  const brand3 = BRAND_CODE[spec.brand] ?? 'TGE'
   const productId = index + 1
+  const categoryId = spec.gender === 'Women' ? 2 : spec.gender === 'Men' ? 1 : 3
+  const categorySlug = CATEGORIES.find((c) => c.id === categoryId)?.slug || 'stripes'
   const variants: Variant[] = []
 
   for (let ci = 0; ci < colors.length; ci++) {
@@ -122,10 +132,17 @@ function buildProduct(
       if (size === 28 || size === 40 || ci === 1) stock = Math.max(0, stock - randInt(rand, 0, 12))
       const id = globalVariantId++
       const price = spec.basePrice
+
+      const baseSku = generateBaseSku({ category: categorySlug, productType: spec.fit, color, size })
+      const finalSku = globalSeedSkus.has(baseSku)
+        ? generateProductScopedSku({ category: categorySlug, productType: spec.fit, color, size, productId })
+        : baseSku
+      globalSeedSkus.add(finalSku)
+
       variants.push({
         id,
         productId,
-        sku: `${brand3}-${100 + index}-${size}-${COLOR_CODE[color]}`,
+        sku: finalSku,
         size,
         color,
         price,
@@ -148,10 +165,11 @@ function buildProduct(
     id: productId,
     name: spec.name,
     slug: `${slugify(spec.name)}-${spec.fit.toLowerCase()}`,
-    sku: `${brand3}-${100 + index}`,
+    sku: `${getCategoryCode(categorySlug)}-${getProductTypeCode(spec.fit)}-${formatProductCode(productId)}`,
     description: spec.blurb,
     brand: spec.brand,
-    categoryId: spec.gender === 'Women' ? 2 : spec.gender === 'Men' ? 1 : 3,
+    categoryId,
+
     collectionId:
       spec.material === 'Selvedge Denim' ? 3 : index % 7 === 0 ? 2 : index % 4 === 0 ? 4 : index % 5 === 0 ? 5 : 1,
     fit: spec.fit,
@@ -798,8 +816,24 @@ function buildSizeCharts(): SizeChart[] {
     Straight: 'A consistent width from hip to hem — the classic everyday cut.',
     Relaxed: 'Roomy through the seat and thigh with a gently tapered leg.',
     Bootcut: 'Fitted through the hip and thigh, flaring from the knee down.',
+    Oversized: 'Generous silhouette with dropped shoulders and roomy torso.',
+    Boxy: 'Squared off proportions with structured drape.',
+    Regular: 'Classic standard silhouette tailored for balanced everyday comfort.',
+    Baggy: 'Exaggerated relaxed cut through thigh and leg.',
+    Wide: 'Wide leg profile extending straight down from the hip.',
   }
-  const hipBoost: Record<Fit, number> = { Skinny: 7, Slim: 8, Straight: 9, Relaxed: 10, Bootcut: 9 }
+  const hipBoost: Record<Fit, number> = {
+    Skinny: 7,
+    Slim: 8,
+    Straight: 9,
+    Relaxed: 10,
+    Bootcut: 9,
+    Oversized: 10,
+    Boxy: 9,
+    Regular: 8,
+    Baggy: 12,
+    Wide: 11,
+  }
   return fits.map((fit) => ({
     fit,
     description: descriptions[fit],

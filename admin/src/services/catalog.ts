@@ -18,6 +18,7 @@ export async function fetchBackendProducts(): Promise<void> {
 export async function createProduct(input: ProductInput): Promise<Product> {
   await simulateLatency()
   const product = useAdminStore.getState().saveProduct(input)
+  const categorySlug = useAdminStore.getState().data.categories.find((c) => c.id === input.categoryId)?.slug || 'printed-tees'
 
   // Sync to live backend API
   try {
@@ -25,6 +26,7 @@ export async function createProduct(input: ProductInput): Promise<Product> {
       method: 'POST',
       body: JSON.stringify({
         name: input.name,
+        category: categorySlug,
         fit: input.fit,
         price: `₹${input.price.toLocaleString('en-IN')}`,
         priceNum: input.price,
@@ -32,7 +34,18 @@ export async function createProduct(input: ProductInput): Promise<Product> {
         img2: input.images?.[1]?.url || input.image || 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80',
         badge: input.status === 'Draft' ? 'Draft' : undefined,
         desc: input.description || input.name,
-        wash: input.wash || 'Raw'
+        wash: input.wash || 'Raw',
+        variants: product.variants.map((v) => ({
+          sku: v.sku,
+          size: v.size,
+          color: v.color,
+          price: v.price,
+          stock: v.stock,
+          reorderPoint: v.reorderPoint,
+          weight: v.weight,
+          barcode: v.barcode,
+          status: v.status
+        }))
       })
     })
   } catch (err) {
@@ -45,6 +58,7 @@ export async function createProduct(input: ProductInput): Promise<Product> {
 export async function updateProduct(input: ProductInput): Promise<Product> {
   await simulateLatency()
   const product = useAdminStore.getState().saveProduct(input)
+  const categorySlug = useAdminStore.getState().data.categories.find((c) => c.id === input.categoryId)?.slug || 'printed-tees'
 
   if (input.id) {
     try {
@@ -52,13 +66,26 @@ export async function updateProduct(input: ProductInput): Promise<Product> {
         method: 'PUT',
         body: JSON.stringify({
           name: input.name,
+          category: categorySlug,
           fit: input.fit,
           price: `₹${input.price.toLocaleString('en-IN')}`,
           priceNum: input.price,
           img: input.image || input.images?.[0]?.url,
           img2: input.images?.[1]?.url,
           desc: input.description,
-          wash: input.wash
+          wash: input.wash,
+          variants: product.variants.map((v) => ({
+            id: v.id,
+            sku: v.sku,
+            size: v.size,
+            color: v.color,
+            price: v.price,
+            stock: v.stock,
+            reorderPoint: v.reorderPoint,
+            weight: v.weight,
+            barcode: v.barcode,
+            status: v.status
+          }))
         })
       })
     } catch (err) {
@@ -68,6 +95,7 @@ export async function updateProduct(input: ProductInput): Promise<Product> {
 
   return product
 }
+
 
 export async function deleteProduct(id: number): Promise<void> {
   await simulateLatency()

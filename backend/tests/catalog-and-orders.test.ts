@@ -15,26 +15,27 @@ describe('Catalog & Orders Unified Brand Seams', () => {
     const data = JSON.parse(res.body)
     assert.ok(data.products.length >= 16, `Expected at least 16 products, got ${data.products.length}`)
 
-    // Verify both denim and apparel items exist
-    const hasJeans = data.products.some((p: any) => p.category === 'jeans')
-    const hasHoodies = data.products.some((p: any) => p.category === 'hoodies')
-    const hasTees = data.products.some((p: any) => p.category === 't-shirts')
-    assert.ok(hasJeans, 'Should include jeans products')
-    assert.ok(hasHoodies, 'Should include hoodies products')
-    assert.ok(hasTees, 'Should include t-shirts products')
+    // Verify active categories exist
+    const hasStripes = data.products.some((p: any) => p.category === 'stripes')
+    const hasFullsleeve = data.products.some((p: any) => p.category === 'fullsleeve')
+    const hasPrinted = data.products.some((p: any) => p.category === 'printed-tees')
+    assert.ok(hasStripes, 'Should include stripes products')
+    assert.ok(hasFullsleeve, 'Should include fullsleeve products')
+    assert.ok(hasPrinted, 'Should include printed-tees products')
   })
 
-  test('GET /api/products?category=hoodies filters specifically by category', async () => {
+  test('GET /api/products?category=stripes filters specifically by category', async () => {
     const res = await app.inject({
       method: 'GET',
-      url: '/api/products?category=hoodies'
+      url: '/api/products?category=stripes'
     })
 
     assert.equal(res.statusCode, 200)
     const data = JSON.parse(res.body)
     assert.ok(data.products.length > 0)
-    assert.ok(data.products.every((p: any) => p.category === 'hoodies'))
+    assert.ok(data.products.every((p: any) => p.category === 'stripes'))
   })
+
 
   test('POST /api/orders accepts order with line items containing sizes and store: infit', async () => {
     const orderPayload = {

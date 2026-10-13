@@ -24,6 +24,23 @@ export const CATEGORIES = [
 ] as const
 export type Category = (typeof CATEGORIES)[number]
 
+export const variantSchema = z.object({
+  id: z.number().int().nonnegative().optional(),
+  productId: z.number().int().nonnegative().optional(),
+  sku: z.string().min(1).optional(),
+  size: z.union([z.string().min(1), z.number()]),
+  color: z.string().min(1),
+  price: z.number().nonnegative().optional(),
+  stock: z.number().int().nonnegative().default(0),
+  reserved: z.number().int().nonnegative().default(0),
+  reorderPoint: z.number().int().nonnegative().default(5),
+  weight: z.number().nonnegative().default(250),
+  barcode: z.string().optional(),
+  status: z.enum(['Active', 'Inactive']).default('Active')
+})
+
+export type Variant = z.infer<typeof variantSchema>
+
 /**
  * Shared Product model across backend, frontend, and admin.
  */
@@ -32,6 +49,7 @@ export const productSchema = z.object({
   store: z.string().default('teesgarage'),
   category: z.string().default('printed-tees'),
   name: z.string().min(1),
+  sku: z.string().optional(),
   fit: z.enum(FITS).optional(),
   price: z.string().min(1),
   priceNum: z.number().nonnegative(),
@@ -43,6 +61,7 @@ export const productSchema = z.object({
   wash: z.string().min(1).optional(),
   color: z.string().optional(),
   sizes: z.array(z.string()).optional(),
+  variants: z.array(variantSchema).optional(),
   fabric: z.string().optional(),
   material: z.string().optional(),
   sleeveLength: z.string().optional(),
@@ -72,3 +91,4 @@ export const updateProductSchema = productSchema
 export type Product = z.infer<typeof productSchema>
 export type CreateProduct = z.infer<typeof createProductSchema>
 export type UpdateProduct = z.infer<typeof updateProductSchema>
+

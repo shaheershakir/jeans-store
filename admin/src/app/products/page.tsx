@@ -23,15 +23,18 @@ export default function ProductsPage() {
 
   const filteredProducts = React.useMemo(() => {
     return products.filter((p) => {
+      const q = query.trim().toLowerCase()
       const matchesQuery =
-        !query ||
-        p.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.sku.toLowerCase().includes(query.toLowerCase())
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        p.variants?.some((v) => v.sku.toLowerCase().includes(q))
       const matchesFit = selectedFit === 'all' || p.fit === selectedFit
       const matchesStatus = selectedStatus === 'all' || p.status === selectedStatus
       return matchesQuery && matchesFit && matchesStatus
     })
   }, [products, query, selectedFit, selectedStatus])
+
 
   const allSelected =
     filteredProducts.length > 0 && selectedIds.length === filteredProducts.length
@@ -205,7 +208,15 @@ export default function ProductsPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 font-mono text-ink-2">{product.sku}</td>
+                        <td className="px-4 py-3 font-mono text-ink-2">
+                          <span className="font-semibold">{product.sku}</span>
+                          {product.variants.length > 0 && (
+                            <span className="block text-[10px] text-ink-4 mt-0.5 tracking-tight">
+                              {product.variants[0]?.sku}
+                              {product.variants.length > 1 ? ` (+${product.variants.length - 1} variants)` : ''}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-ink-2">
                           {product.fit} fit &bull; {product.wash}
                         </td>

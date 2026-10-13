@@ -47,15 +47,17 @@ import type {
 import { WAIST_SIZES } from '@/lib/constants'
 import { uid, clamp } from '@/lib/utils'
 import { roleById } from '@/lib/permissions'
+import { generateBaseSku, generateProductScopedSku } from '@/lib/sku'
 
 /** Shape accepted by saveProduct — create (no id) or update (with id). */
 export interface VariantInput {
   id?: number
-  size: number
-  color: Color
+  size: number | string
+  color: Color | string
   sku: string
   price: number
   stock: number
+
   reorderPoint: number
   weight: number
   barcode: string
@@ -362,7 +364,21 @@ export const useAdminStore = create<AdminState>()(
         },
 
         saveProduct: (input) => {
-          const { products } = get().data
+          const { products, categories } = get().data
+          const categorySlug = categories.find((c) => c.id === input.categoryId)?.slug || 'printed-tees'
+
+          // Prevent duplicate variants for the same product
+          const seenCombos = new Set<string>()
+          for (const v of input.variants) {
+            const comboKey = `${String(v.color).toLowerCase()}__${String(v.size).toUpperCase()}`
+            if (seenCombos.has(comboKey)) {
+              throw new StoreError(
+                `Duplicate variant: A variant with color "${v.color}" and size "${v.size}" already exists on this product.`
+              )
+            }
+            seenCombos.add(comboKey)
+          }
+
           const skus = new Set<string>()
           for (const p of products) {
             if (p.id === input.id) continue
@@ -377,33 +393,53 @@ export const useAdminStore = create<AdminState>()(
           if (skus.has(input.sku.toUpperCase())) {
             throw new StoreError(`SKU ${input.sku} already exists on another product.`)
           }
-          for (const v of input.variants) {
-            if (skus.has(v.sku.toUpperCase())) throw new StoreError(`SKU ${v.sku} already exists.`)
-            skus.add(v.sku.toUpperCase())
-          }
 
           if (input.id != null) {
             const existing = products.find((p) => p.id === input.id)
             if (!existing) throw new StoreError('Product not found.')
             let variantId = nextId(existing.variants)
-            const variants: Variant[] = input.variants.map((v) =>
-              v.id != null
-                ? ({ ...v, id: v.id, productId: existing.id } as Variant)
-                : {
-                    id: variantId++,
-                    productId: existing.id,
+
+            const variants: Variant[] = input.variants.map((v) => {
+              if (v.id != null) {
+                // Preserve existing variant SKU
+                const ev = existing.variants.find((x) => x.id === v.id)
+                const preservedSku = v.sku?.trim() ? v.sku.trim().toUpperCase() : (ev?.sku || v.sku)
+                return {
+                  ...v,
+                  id: v.id,
+                  productId: existing.id,
+                  sku: preservedSku,
+                  status: v.status ?? 'Active',
+                } as Variant
+              }
+
+              // Newly added variant to existing product
+              const resolvedSku = v.sku?.trim()
+                ? v.sku.trim().toUpperCase()
+                : generateBaseSku({
+                    category: categorySlug,
+                    productType: input.fit,
+                    color: String(v.color),
                     size: v.size,
-                    color: v.color,
-                    sku: v.sku,
-                    price: v.price,
-                    stock: v.stock,
-                    reserved: 0,
-                    reorderPoint: v.reorderPoint,
-                    weight: v.weight,
-                    barcode: v.barcode || `890${Math.floor(10000000000 + Math.random() * 89999999999)}`,
-                    status: v.status ?? 'Active',
-                  }
-            )
+                    productId: existing.id,
+                  })
+
+              return {
+                id: variantId++,
+                productId: existing.id,
+                size: v.size,
+                color: v.color,
+                sku: resolvedSku,
+                price: v.price,
+                stock: v.stock,
+                reserved: 0,
+                reorderPoint: v.reorderPoint,
+                weight: v.weight,
+                barcode: v.barcode || `890${Math.floor(10000000000 + Math.random() * 89999999999)}`,
+                status: v.status ?? 'Active',
+              }
+            })
+
             const updated: Product = {
               ...existing,
               ...input,
@@ -424,20 +460,33 @@ export const useAdminStore = create<AdminState>()(
 
           const id = nextId(products)
           let variantId = nextId(products.flatMap((p) => p.variants))
-          const variants: Variant[] = input.variants.map((v) => ({
-            id: variantId++,
-            productId: id,
-            size: v.size,
-            color: v.color,
-            sku: v.sku,
-            price: v.price,
-            stock: v.stock,
-            reserved: 0,
-            reorderPoint: v.reorderPoint,
-            weight: v.weight,
-            barcode: v.barcode || `890${Math.floor(10000000000 + Math.random() * 89999999999)}`,
-            status: v.status ?? 'Active',
-          }))
+          const variants: Variant[] = input.variants.map((v) => {
+            const resolvedSku = v.sku?.trim()
+              ? v.sku.trim().toUpperCase()
+              : generateBaseSku({
+                  category: categorySlug,
+                  productType: input.fit,
+                  color: String(v.color),
+                  size: v.size,
+                  productId: id,
+                })
+
+            return {
+              id: variantId++,
+              productId: id,
+              size: v.size,
+              color: v.color,
+              sku: resolvedSku,
+              price: v.price,
+              stock: v.stock,
+              reserved: 0,
+              reorderPoint: v.reorderPoint,
+              weight: v.weight,
+              barcode: v.barcode || `890${Math.floor(10000000000 + Math.random() * 89999999999)}`,
+              status: v.status ?? 'Active',
+            }
+          })
+
           const created: Product = {
             id,
             name: input.name,

@@ -201,15 +201,18 @@ export class DataBackedAiProvider implements AiProvider {
   }
 
   private stockOuts(db: DbState): AiAnswer {
-    const rows = stockOutsBySize(db).map((s) => ({ size: `${s.size}W`, outCount: s.count }))
+    const rows = stockOutsBySize(db).map((s) => ({
+      size: typeof s.size === 'number' || /^\d+$/.test(String(s.size)) ? `${s.size}W` : String(s.size),
+      outCount: s.count,
+    }))
     const text = rows.length
-      ? `Currently out of stock across waist sizes: ${rows.map((r) => r.size).join(', ')}.`
-      : 'No waist size is completely out of stock right now.'
+      ? `Currently out of stock across sizes: ${rows.map((r) => r.size).join(', ')}.`
+      : 'No size is completely out of stock right now.'
     return {
       text,
       table: mkTable(
         [
-          { key: 'size', label: 'Waist' },
+          { key: 'size', label: 'Size' },
           { key: 'outCount', label: 'Out-of-stock variants' },
         ],
         rows
