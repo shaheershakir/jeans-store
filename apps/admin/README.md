@@ -1,6 +1,6 @@
-# INFIT Admin Panel
+﻿# TEESGARAGE Admin Panel
 
-Operational dashboard for managing INFIT denim inventory, orders, analytics, marketing campaigns, and store settings.
+Operational dashboard for managing TEESGARAGE denim inventory, orders, analytics, marketing campaigns, and store settings.
 
 ## Technology stack
 

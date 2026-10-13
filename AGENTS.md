@@ -1,6 +1,6 @@
-# AGENTS.md
+﻿# AGENTS.md
 
-TEESGARAGE / INFIT is a premium denim e-commerce platform structured as a Turborepo monorepo with npm workspaces.
+TEESGARAGE / TEESGARAGE is a premium denim e-commerce platform structured as a Turborepo monorepo with npm workspaces.
 
 ## Monorepo Layout
 

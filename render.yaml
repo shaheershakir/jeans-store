@@ -1,6 +1,6 @@
-services:
+﻿services:
   - type: web
-    name: infit-backend
+    name: teesgarage-backend
     runtime: node
     plan: free
     region: oregon

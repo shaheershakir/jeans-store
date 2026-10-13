@@ -1,4 +1,4 @@
-# Google Cloud Platform (GCP) Production Deployment Guide
+﻿# Google Cloud Platform (GCP) Production Deployment Guide
 
 This document is the operational guide for deploying TEESGARAGE's three-tier e-commerce architecture to **Google Cloud Run**, persisted with **Neon PostgreSQL** via **Drizzle ORM**, with product media hosted on **Google Cloud Storage**.
 
@@ -30,7 +30,7 @@ This document is the operational guide for deploying TEESGARAGE's three-tier e-c
         ┌──────────────────────────────┼──────────────────────────────┐
         ▼                              ▼                              ▼
 ┌──────────────────┐          ┌──────────────────┐          ┌──────────────────┐
-│  infit-frontend  │          │  infit-backend   │          │   infit-admin    │
+│  teesgarage-frontend  │          │  teesgarage-backend   │          │   teesgarage-admin    │
 │  Port: 3000      │          │  Port: 4000      │          │   Port: 3001     │
 │  (Storefront)    │          │  (Express API)   │          │   (Dashboard)    │
 └────────┬─────────┘          └────────┬─────────┘          └────────┬─────────┘
@@ -80,7 +80,7 @@ gcloud services enable \
   cloudbuild.googleapis.com
 
 # 3. Create Artifact Registry repository for container images
-gcloud artifacts repositories create infit \
+gcloud artifacts repositories create teesgarage \
   --repository-format=docker \
   --location=$REGION \
   --description="TEESGARAGE Docker container images"
@@ -106,92 +106,92 @@ Store your credentials securely in Secret Manager so Cloud Run services can inje
 ```bash
 # 1. Database URL (Neon PostgreSQL Pooled connection string)
 echo -n "postgresql://neondb_owner:YOUR_PASSWORD@ep-xyz-pooler.region.aws.neon.tech/neondb?sslmode=require" | \
-  gcloud secrets create infit-database-url --data-file=-
+  gcloud secrets create teesgarage-database-url --data-file=-
 
 # 2. Backend Admin API Key (used by Admin and internal services)
 openssl rand -hex 24 | \
-  gcloud secrets create infit-admin-api-key --data-file=-
+  gcloud secrets create teesgarage-admin-api-key --data-file=-
 
 # 3. On-Demand ISR Revalidation Secret (shared between backend and storefront)
 openssl rand -hex 24 | \
-  gcloud secrets create infit-revalidation-secret --data-file=-
+  gcloud secrets create teesgarage-revalidation-secret --data-file=-
 
 # 4. WhatsApp Order Concierge Phone Number
 echo -n "919876543210" | \
-  gcloud secrets create infit-whatsapp-number --data-file=-
+  gcloud secrets create teesgarage-whatsapp-number --data-file=-
 ```
 
 ---
 
 ## 4. Deploying the Services via gcloud
 
-### Step 4.1: Deploy Backend (`infit-backend`)
+### Step 4.1: Deploy Backend (`teesgarage-backend`)
 
 ```bash
 cd backend
 
 # Build and submit container image
-gcloud builds submit --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/infit/backend:latest .
+gcloud builds submit --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/backend:latest .
 
 # Deploy to Cloud Run
-gcloud run deploy infit-backend \
-  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/infit/backend:latest \
+gcloud run deploy teesgarage-backend \
+  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/backend:latest \
   --region=$REGION \
   --platform=managed \
   --allow-unauthenticated \
   --port=4000 \
   --set-env-vars="NODE_ENV=production" \
-  --set-secrets="DATABASE_URL=infit-database-url:latest,ADMIN_API_KEY=infit-admin-api-key:latest,REVALIDATION_SECRET=infit-revalidation-secret:latest"
+  --set-secrets="DATABASE_URL=teesgarage-database-url:latest,ADMIN_API_KEY=teesgarage-admin-api-key:latest,REVALIDATION_SECRET=teesgarage-revalidation-secret:latest"
 
 # Save the generated Cloud Run backend URL
-export BACKEND_URL=$(gcloud run services describe infit-backend --region=$REGION --format='value(status.url)')
+export BACKEND_URL=$(gcloud run services describe teesgarage-backend --region=$REGION --format='value(status.url)')
 echo "Backend deployed at: $BACKEND_URL"
 
 # Store the backend URL in Secret Manager for Frontend and Admin
-echo -n "$BACKEND_URL" | gcloud secrets create infit-backend-url --data-file=-
+echo -n "$BACKEND_URL" | gcloud secrets create teesgarage-backend-url --data-file=-
 ```
 
-### Step 4.2: Deploy Storefront (`infit-frontend`)
+### Step 4.2: Deploy Storefront (`teesgarage-frontend`)
 
 ```bash
 cd ../frontend
 
 # Build and submit container image
-gcloud builds submit --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/infit/frontend:latest .
+gcloud builds submit --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/frontend:latest .
 
 # Deploy to Cloud Run
-gcloud run deploy infit-frontend \
-  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/infit/frontend:latest \
+gcloud run deploy teesgarage-frontend \
+  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/frontend:latest \
   --region=$REGION \
   --platform=managed \
   --allow-unauthenticated \
   --port=3000 \
   --set-env-vars="NODE_ENV=production" \
-  --set-secrets="BACKEND_URL=infit-backend-url:latest,NEXT_PUBLIC_API_URL=infit-backend-url:latest,REVALIDATION_SECRET=infit-revalidation-secret:latest,NEXT_PUBLIC_WHATSAPP_NUMBER=infit-whatsapp-number:latest"
+  --set-secrets="BACKEND_URL=teesgarage-backend-url:latest,NEXT_PUBLIC_API_URL=teesgarage-backend-url:latest,REVALIDATION_SECRET=teesgarage-revalidation-secret:latest,NEXT_PUBLIC_WHATSAPP_NUMBER=teesgarage-whatsapp-number:latest"
 
-export FRONTEND_URL=$(gcloud run services describe infit-frontend --region=$REGION --format='value(status.url)')
+export FRONTEND_URL=$(gcloud run services describe teesgarage-frontend --region=$REGION --format='value(status.url)')
 echo "Storefront deployed at: $FRONTEND_URL"
 ```
 
-### Step 4.3: Deploy Admin Dashboard (`infit-admin`)
+### Step 4.3: Deploy Admin Dashboard (`teesgarage-admin`)
 
 ```bash
 cd ../admin
 
 # Build and submit container image
-gcloud builds submit --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/infit/admin:latest .
+gcloud builds submit --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/admin:latest .
 
 # Deploy to Cloud Run
-gcloud run deploy infit-admin \
-  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/infit/admin:latest \
+gcloud run deploy teesgarage-admin \
+  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/teesgarage/admin:latest \
   --region=$REGION \
   --platform=managed \
   --allow-unauthenticated \
   --port=3001 \
   --set-env-vars="NODE_ENV=production" \
-  --set-secrets="NEXT_PUBLIC_API_URL=infit-backend-url:latest,NEXT_PUBLIC_ADMIN_API_KEY=infit-admin-api-key:latest"
+  --set-secrets="NEXT_PUBLIC_API_URL=teesgarage-backend-url:latest,NEXT_PUBLIC_ADMIN_API_KEY=teesgarage-admin-api-key:latest"
 
-export ADMIN_URL=$(gcloud run services describe infit-admin --region=$REGION --format='value(status.url)')
+export ADMIN_URL=$(gcloud run services describe teesgarage-admin --region=$REGION --format='value(status.url)')
 echo "Admin Dashboard deployed at: $ADMIN_URL"
 ```
 
@@ -223,5 +223,5 @@ To activate it:
    - `GCP_PROJECT_ID`: Your GCP Project ID.
    - `GCP_SA_KEY`: The JSON service account key.
    - `GCP_REGION`: `asia-south1` or `us-central1`.
-   - `GAR_REPOSITORY`: `infit`.
+   - `GAR_REPOSITORY`: `teesgarage`.
 4. Merges to `main` will automatically build, push, and deploy all updated services.

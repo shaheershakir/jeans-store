@@ -1,6 +1,6 @@
-# Database Environments & Neon PostgreSQL Infrastructure
+﻿# Database Environments & Neon PostgreSQL Infrastructure
 
-This guide details the database architecture, environment separation, connection management, migration workflows, and operational runbooks for INFIT / TEESGARAGE.
+This guide details the database architecture, environment separation, connection management, migration workflows, and operational runbooks for TEESGARAGE / TEESGARAGE.
 
 ---
 
@@ -74,7 +74,7 @@ DATABASE_URL=postgresql://neondb_owner:[PASSWORD]@ep-muddy-cell-b38jjvgy-pooler.
 
 Traditional Node.js PostgreSQL drivers (`pg`, `pg-pool`) require raw TCP sockets (`net.Socket`), which are unsupported or restricted in serverless edge runtimes such as **Fastly Compute** (`Compute@Edge`).
 
-The INFIT backend uses `@neondatabase/serverless` in **HTTP query mode**:
+The TEESGARAGE backend uses `@neondatabase/serverless` in **HTTP query mode**:
 - Every query is dispatched via standard HTTPS fetch calls (`/sql` endpoint) over TLS.
 - Does **not** require TCP sockets.
 - Eliminates connection pool overhead and connection exhaustion during serverless scaling.
@@ -135,7 +135,7 @@ Fastly Compute applications isolate secrets using **Fastly Secret Store**:
    ```
 2. Mount the secret to the Cloud Run service:
    ```bash
-   gcloud run deploy infit-backend \
+   gcloud run deploy teesgarage-backend \
      --set-secrets="DATABASE_URL=neon-db-prod:latest"
    ```
 

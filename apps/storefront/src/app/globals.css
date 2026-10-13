@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+﻿@import 'tailwindcss';
 
 @theme {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -8600,16 +8600,16 @@ button:active,
 }
 
 /* ══════════════════════════════════════════════════════════
-   INFIT ACCOUNT, ORDERS & PROFILE REFINED DESIGN SYSTEM
+   TEESGARAGE ACCOUNT, ORDERS & PROFILE REFINED DESIGN SYSTEM
    ══════════════════════════════════════════════════════════ */
-.infit-account-page {
+.teesgarage-account-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background-color: #fbfbfa;
 }
 
-.infit-account-container {
+.teesgarage-account-container {
   flex: 1;
   max-width: 1140px;
   width: 100%;
@@ -8618,12 +8618,12 @@ button:active,
 }
 
 @media (min-width: 768px) {
-  .infit-account-container {
+  .teesgarage-account-container {
     padding: 44px 32px 80px;
   }
 }
 
-.infit-breadcrumb-nav {
+.teesgarage-breadcrumb-nav {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -8634,7 +8634,7 @@ button:active,
   margin-bottom: 24px;
 }
 
-.infit-breadcrumb-link {
+.teesgarage-breadcrumb-link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -8643,17 +8643,17 @@ button:active,
   transition: color 0.15s ease;
 }
 
-.infit-breadcrumb-link:hover {
+.teesgarage-breadcrumb-link:hover {
   color: #0c0e12;
 }
 
-.infit-breadcrumb-current {
+.teesgarage-breadcrumb-current {
   color: #0c0e12;
   font-weight: 600;
 }
 
 /* User Account Header Banner */
-.infit-account-hero {
+.teesgarage-account-hero {
   background: #ffffff;
   border: 1px solid #e7e7e4;
   border-radius: 20px;
@@ -8666,7 +8666,7 @@ button:active,
 }
 
 @media (min-width: 640px) {
-  .infit-account-hero {
+  .teesgarage-account-hero {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
@@ -8674,13 +8674,13 @@ button:active,
   }
 }
 
-.infit-hero-user-cluster {
+.teesgarage-hero-user-cluster {
   display: flex;
   align-items: center;
   gap: 18px;
 }
 
-.infit-hero-avatar {
+.teesgarage-hero-avatar {
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -8696,7 +8696,7 @@ button:active,
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
-.infit-hero-name {
+.teesgarage-hero-name {
   font-family: var(--font-brand);
   font-size: 22px;
   font-weight: 700;
@@ -8705,21 +8705,21 @@ button:active,
   margin: 0;
 }
 
-.infit-hero-meta {
+.teesgarage-hero-meta {
   font-family: var(--font-ui);
   font-size: 13px;
   color: #71717a;
   margin-top: 3px;
 }
 
-.infit-hero-actions {
+.teesgarage-hero-actions {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.infit-btn-pill-secondary {
+.teesgarage-btn-pill-secondary {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -8736,12 +8736,12 @@ button:active,
   transition: all 0.18s ease;
 }
 
-.infit-btn-pill-secondary:hover {
+.teesgarage-btn-pill-secondary:hover {
   background: #f4f4f5;
   border-color: #a1a1aa;
 }
 
-.infit-btn-pill-danger {
+.teesgarage-btn-pill-danger {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -8757,13 +8757,13 @@ button:active,
   transition: all 0.18s ease;
 }
 
-.infit-btn-pill-danger:hover {
+.teesgarage-btn-pill-danger:hover {
   background: #ffe4e6;
   border-color: #fda4af;
 }
 
 /* Tabs Bar */
-.infit-tabs-row {
+.teesgarage-tabs-row {
   display: flex;
   gap: 6px;
   border-bottom: 1px solid #e7e7e4;
@@ -8772,7 +8772,7 @@ button:active,
   scrollbar-width: none;
 }
 
-.infit-tab-button {
+.teesgarage-tab-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -8789,18 +8789,18 @@ button:active,
   transition: all 0.18s ease;
 }
 
-.infit-tab-button:hover {
+.teesgarage-tab-button:hover {
   color: #0c0e12;
 }
 
-.infit-tab-button.active {
+.teesgarage-tab-button.active {
   color: #0c0e12;
   font-weight: 700;
   border-bottom-color: #0c0e12;
 }
 
 /* Orders Cards */
-.infit-order-card {
+.teesgarage-order-card {
   background: #ffffff;
   border: 1px solid #e7e7e4;
   border-radius: 18px;
@@ -8810,12 +8810,12 @@ button:active,
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.infit-order-card:hover {
+.teesgarage-order-card:hover {
   border-color: #d4d4d8;
   box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.06);
 }
 
-.infit-order-header {
+.teesgarage-order-header {
   background: #fafaf9;
   border-bottom: 1px solid #ecece9;
   padding: 18px 24px;
@@ -8826,13 +8826,13 @@ button:active,
   gap: 16px;
 }
 
-.infit-order-meta-grid {
+.teesgarage-order-meta-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 24px;
 }
 
-.infit-order-meta-label {
+.teesgarage-order-meta-label {
   display: block;
   font-family: var(--font-ui);
   font-size: 10px;
@@ -8843,14 +8843,14 @@ button:active,
   margin-bottom: 2px;
 }
 
-.infit-order-meta-val {
+.teesgarage-order-meta-val {
   font-family: var(--font-brand);
   font-size: 14px;
   font-weight: 700;
   color: #0c0e12;
 }
 
-.infit-order-status-badge {
+.teesgarage-order-status-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -8861,25 +8861,25 @@ button:active,
   font-weight: 600;
 }
 
-.infit-order-status-badge.dispatched {
+.teesgarage-order-status-badge.dispatched {
   background: #fffbeb;
   color: #b45309;
   border: 1px solid #fde68a;
 }
 
-.infit-order-status-badge.delivered {
+.teesgarage-order-status-badge.delivered {
   background: #ecfdf5;
   color: #047857;
   border: 1px solid #a7f3d0;
 }
 
-.infit-order-status-badge.confirmed {
+.teesgarage-order-status-badge.confirmed {
   background: #eff6ff;
   color: #1d4ed8;
   border: 1px solid #bfdbfe;
 }
 
-.infit-order-timeline-bar {
+.teesgarage-order-timeline-bar {
   background: #fdfdfc;
   border-bottom: 1px solid #f0f0ee;
   padding: 14px 24px;
@@ -8889,14 +8889,14 @@ button:active,
 }
 
 @media (min-width: 640px) {
-  .infit-order-timeline-bar {
+  .teesgarage-order-timeline-bar {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
   }
 }
 
-.infit-order-delivery-eta {
+.teesgarage-order-delivery-eta {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -8905,7 +8905,7 @@ button:active,
   color: #3f3f46;
 }
 
-.infit-order-wa-track {
+.teesgarage-order-wa-track {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -8917,12 +8917,12 @@ button:active,
   transition: color 0.15s ease;
 }
 
-.infit-order-wa-track:hover {
+.teesgarage-order-wa-track:hover {
   color: #047857;
   text-decoration: underline;
 }
 
-.infit-order-item-row {
+.teesgarage-order-item-row {
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
@@ -8931,24 +8931,24 @@ button:active,
 }
 
 @media (min-width: 640px) {
-  .infit-order-item-row {
+  .teesgarage-order-item-row {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
   }
 }
 
-.infit-order-item-row:last-child {
+.teesgarage-order-item-row:last-child {
   border-bottom: none;
 }
 
-.infit-order-item-info {
+.teesgarage-order-item-info {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
-.infit-order-item-thumb {
+.teesgarage-order-item-thumb {
   position: relative;
   width: 64px;
   height: 80px;
@@ -8959,7 +8959,7 @@ button:active,
   flex-shrink: 0;
 }
 
-.infit-order-item-title {
+.teesgarage-order-item-title {
   font-family: var(--font-brand);
   font-size: 14px;
   font-weight: 600;
@@ -8970,18 +8970,18 @@ button:active,
   gap: 4px;
 }
 
-.infit-order-item-title:hover {
+.teesgarage-order-item-title:hover {
   text-decoration: underline;
 }
 
-.infit-order-item-meta {
+.teesgarage-order-item-meta {
   font-family: var(--font-ui);
   font-size: 12px;
   color: #71717a;
   margin-top: 2px;
 }
 
-.infit-order-item-price {
+.teesgarage-order-item-price {
   font-family: var(--font-brand);
   font-size: 13.5px;
   font-weight: 700;
@@ -8990,7 +8990,7 @@ button:active,
   display: block;
 }
 
-.infit-order-footer {
+.teesgarage-order-footer {
   background: #fafaf9;
   border-top: 1px solid #ecece9;
   padding: 16px 24px;
@@ -9003,7 +9003,7 @@ button:active,
 }
 
 @media (min-width: 640px) {
-  .infit-order-footer {
+  .teesgarage-order-footer {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
@@ -9011,7 +9011,7 @@ button:active,
 }
 
 /* Profile Form Panels */
-.infit-panel-card {
+.teesgarage-panel-card {
   background: #ffffff;
   border: 1px solid #e7e7e4;
   border-radius: 20px;
@@ -9020,7 +9020,7 @@ button:active,
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
 }
 
-.infit-panel-title {
+.teesgarage-panel-title {
   font-family: var(--font-brand);
   font-size: 20px;
   font-weight: 700;
@@ -9029,18 +9029,18 @@ button:active,
   letter-spacing: -0.02em;
 }
 
-.infit-panel-desc {
+.teesgarage-panel-desc {
   font-family: var(--font-ui);
   font-size: 13px;
   color: #71717a;
   margin: 0 0 24px;
 }
 
-.infit-form-group {
+.teesgarage-form-group {
   margin-bottom: 20px;
 }
 
-.infit-form-label {
+.teesgarage-form-label {
   display: block;
   font-family: var(--font-ui);
   font-size: 11.5px;
@@ -9051,7 +9051,7 @@ button:active,
   margin-bottom: 8px;
 }
 
-.infit-form-input {
+.teesgarage-form-input {
   width: 100%;
   padding: 11px 14px;
   border-radius: 12px;
@@ -9064,13 +9064,13 @@ button:active,
   box-sizing: border-box;
 }
 
-.infit-form-input:focus {
+.teesgarage-form-input:focus {
   outline: none;
   border-color: #0c0e12;
   box-shadow: 0 0 0 3px rgba(12, 14, 18, 0.08);
 }
 
-.infit-btn-primary {
+.teesgarage-btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -9088,30 +9088,30 @@ button:active,
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
-.infit-btn-primary:hover {
+.teesgarage-btn-primary:hover {
   background: #27272a;
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
 }
 
-.infit-btn-primary:active {
+.teesgarage-btn-primary:active {
   transform: scale(0.98);
 }
 
 /* Address Card Grid */
-.infit-address-grid {
+.teesgarage-address-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 18px;
 }
 
 @media (min-width: 768px) {
-  .infit-address-grid {
+  .teesgarage-address-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-.infit-address-card {
+.teesgarage-address-card {
   background: #ffffff;
   border: 1px solid #e7e7e4;
   border-radius: 18px;
@@ -9121,7 +9121,7 @@ button:active,
   position: relative;
 }
 
-.infit-address-card.default {
+.teesgarage-address-card.default {
   border-color: #0c0e12;
   box-shadow: 0 0 0 1px #0c0e12, 0 6px 20px rgba(0, 0, 0, 0.05);
 }
@@ -9293,8 +9293,8 @@ button:active,
   gap: 4px;
 }
 
-/* Infit Profile Breadcrumb Navigation */
-.infit-breadcrumb-nav {
+/* Teesgarage Profile Breadcrumb Navigation */
+.teesgarage-breadcrumb-nav {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -9307,11 +9307,11 @@ button:active,
   -webkit-overflow-scrolling: touch;
 }
 
-.infit-breadcrumb-nav::-webkit-scrollbar {
+.teesgarage-breadcrumb-nav::-webkit-scrollbar {
   display: none;
 }
 
-.infit-breadcrumb-link {
+.teesgarage-breadcrumb-link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -9321,11 +9321,11 @@ button:active,
   transition: color 0.15s ease;
 }
 
-.infit-breadcrumb-link:hover {
+.teesgarage-breadcrumb-link:hover {
   color: #0c0e12;
 }
 
-.infit-breadcrumb-current {
+.teesgarage-breadcrumb-current {
   color: #0c0e12;
   font-weight: 600;
 }
@@ -12967,7 +12967,7 @@ select {
 }
 
 .apple-profile-page,
-.infit-account-page,
+.teesgarage-account-page,
 .checkout-page,
 .apple-auth-page,
 .onboarding-page-layout,
@@ -12977,7 +12977,7 @@ select {
 }
 
 .apple-profile-page,
-.infit-account-page,
+.teesgarage-account-page,
 .checkout-page,
 .apple-auth-page,
 .shop-page,
@@ -12986,35 +12986,35 @@ select {
 }
 
 .apple-profile-container,
-.infit-account-container {
+.teesgarage-account-container {
   max-width: 1320px;
   padding-right: clamp(18px, 4.4vw, 64px);
   padding-left: clamp(18px, 4.4vw, 64px);
 }
 
-.apple-profile-page .infit-breadcrumb-nav,
-.infit-account-page .infit-breadcrumb-nav,
+.apple-profile-page .teesgarage-breadcrumb-nav,
+.teesgarage-account-page .teesgarage-breadcrumb-nav,
 .pdp-container .pdp-breadcrumb {
   color: #747d80;
   font-size: 11px;
   letter-spacing: 0.025em;
 }
 
-.apple-profile-page .infit-breadcrumb-current,
-.infit-account-page .infit-breadcrumb-current,
+.apple-profile-page .teesgarage-breadcrumb-current,
+.teesgarage-account-page .teesgarage-breadcrumb-current,
 .pdp-container .crumb-current {
   color: var(--store-ink);
 }
 
 /* Account, orders and preferences */
-.infit-account-page,
+.teesgarage-account-page,
 .apple-profile-page {
   min-height: 100dvh;
   background-color: var(--store-paper);
   color: var(--store-ink);
 }
 
-.infit-account-hero,
+.teesgarage-account-hero,
 .apple-profile-page .apple-mobile-profile-card,
 .apple-profile-page .apple-glass-card,
 .apple-profile-page .apple-detail-card {
@@ -13026,18 +13026,18 @@ select {
   backdrop-filter: none;
 }
 
-.infit-account-hero {
+.teesgarage-account-hero {
   padding: clamp(20px, 3vw, 32px);
 }
 
-.infit-hero-avatar,
+.teesgarage-hero-avatar,
 .apple-profile-page .apple-id-avatar,
 .apple-profile-page .apple-mobile-avatar {
   background: var(--store-ink);
   box-shadow: none;
 }
 
-.infit-hero-name,
+.teesgarage-hero-name,
 .apple-profile-page .apple-id-name,
 .apple-profile-page .apple-mobile-name,
 .apple-profile-page .apple-card-title {
@@ -13045,7 +13045,7 @@ select {
   letter-spacing: -0.045em;
 }
 
-.infit-hero-meta,
+.teesgarage-hero-meta,
 .apple-profile-page .apple-id-email,
 .apple-profile-page .apple-mobile-email,
 .apple-profile-page .apple-card-subtitle {
@@ -13087,7 +13087,7 @@ select {
 
 .apple-profile-page .apple-info-display-item,
 .apple-profile-page .apple-grouped-box,
-.apple-profile-page .infit-address-card {
+.apple-profile-page .teesgarage-address-card {
   border: 1px solid var(--store-line);
   border-radius: 2px;
   background: #fbfaf7;
@@ -13111,26 +13111,26 @@ select {
   color: var(--store-ink);
 }
 
-.apple-profile-page :is(.apple-input, .apple-form-input, .infit-form-input),
+.apple-profile-page :is(.apple-input, .apple-form-input, .teesgarage-form-input),
 .apple-profile-page .apple-input-shell,
 .apple-profile-page .apple-input-container {
   border-radius: 2px;
 }
 
-.apple-profile-page :is(.apple-input, .apple-form-input, .infit-form-input) {
+.apple-profile-page :is(.apple-input, .apple-form-input, .teesgarage-form-input) {
   border-color: #d6d7d3;
   background: #fff;
   color: var(--store-ink);
 }
 
-.apple-profile-page :is(.apple-input, .apple-form-input, .infit-form-input):focus {
+.apple-profile-page :is(.apple-input, .apple-form-input, .teesgarage-form-input):focus {
   border-color: var(--store-denim);
   box-shadow: 0 0 0 2px rgb(41 68 85 / 12%);
   outline: none;
 }
 
-.apple-profile-page :is(.apple-btn-primary, .infit-btn-primary),
-.infit-account-page .infit-btn-primary {
+.apple-profile-page :is(.apple-btn-primary, .teesgarage-btn-primary),
+.teesgarage-account-page .teesgarage-btn-primary {
   min-height: 44px;
   border: 1px solid var(--store-ink);
   border-radius: 2px;
@@ -13139,8 +13139,8 @@ select {
   box-shadow: none;
 }
 
-.apple-profile-page :is(.apple-btn-secondary, .apple-edit-btn, .infit-btn-pill-secondary),
-.infit-account-page .infit-btn-pill-secondary {
+.apple-profile-page :is(.apple-btn-secondary, .apple-edit-btn, .teesgarage-btn-pill-secondary),
+.teesgarage-account-page .teesgarage-btn-pill-secondary {
   min-height: 40px;
   border: 1px solid #bdc2c1;
   border-radius: 2px;
@@ -13149,7 +13149,7 @@ select {
   box-shadow: none;
 }
 
-.infit-account-page .apple-segment-item.active,
+.teesgarage-account-page .apple-segment-item.active,
 .apple-profile-page .apple-segment-item.active {
   border-color: var(--store-ink);
   border-radius: 2px;
@@ -13158,7 +13158,7 @@ select {
   box-shadow: none;
 }
 
-.infit-order-card {
+.teesgarage-order-card {
   overflow: hidden;
   border: 1px solid var(--store-line);
   border-radius: 2px;
@@ -13166,43 +13166,43 @@ select {
   box-shadow: none;
 }
 
-.infit-order-card:hover {
+.teesgarage-order-card:hover {
   border-color: #c6cac6;
   box-shadow: none;
   transform: none;
 }
 
-.infit-order-header,
-.infit-order-footer {
+.teesgarage-order-header,
+.teesgarage-order-footer {
   border-color: var(--store-line);
   background: #fff;
 }
 
-.infit-order-timeline-bar {
+.teesgarage-order-timeline-bar {
   border-color: var(--store-line);
   border-radius: 0;
   background: #f1f0eb;
 }
 
-.infit-order-status-badge {
+.teesgarage-order-status-badge {
   border-radius: 2px;
   font-weight: 600;
 }
 
-.infit-order-status-badge.dispatched,
-.infit-order-status-badge.delivered,
-.infit-order-status-badge.confirmed {
+.teesgarage-order-status-badge.dispatched,
+.teesgarage-order-status-badge.delivered,
+.teesgarage-order-status-badge.confirmed {
   border: 1px solid #d7dedf;
   background: #f2f5f4;
   color: #294455;
 }
 
-.infit-order-item-thumb {
+.teesgarage-order-item-thumb {
   border-radius: 0;
   background: var(--store-soft);
 }
 
-.infit-order-wa-track {
+.teesgarage-order-wa-track {
   color: var(--store-denim);
 }
 
@@ -13560,7 +13560,7 @@ select {
 }
 
 /* Shared focus, press and narrow-screen behavior */
-:is(.apple-profile-page, .infit-account-page, .checkout-page, .apple-auth-page, .shop-page, .pdp-container)
+:is(.apple-profile-page, .teesgarage-account-page, .checkout-page, .apple-auth-page, .shop-page, .pdp-container)
   :is(a, button, input, select, textarea):focus-visible {
   outline: 2px solid #31586f;
   outline-offset: 3px;
@@ -13568,21 +13568,21 @@ select {
 
 @media (max-width: 639px) {
   .apple-profile-container,
-  .infit-account-container {
+  .teesgarage-account-container {
     padding-top: 16px;
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 
-  .infit-account-hero {
+  .teesgarage-account-hero {
     gap: 14px;
     margin-bottom: 22px;
   }
 
-  .infit-hero-user-cluster {
+  .teesgarage-hero-user-cluster {
     gap: 12px;
   }
 
-  .infit-hero-avatar {
+  .teesgarage-hero-avatar {
     width: 48px;
     height: 48px;
     font-size: 18px;
@@ -13617,36 +13617,36 @@ select {
     padding: 20px 16px;
   }
 
-  .infit-account-page .apple-segmented-control {
+  .teesgarage-account-page .apple-segmented-control {
     width: 100%;
     max-width: 100%;
     overflow-x: auto;
     scrollbar-width: none;
   }
 
-  .infit-account-page .apple-segment-item {
+  .teesgarage-account-page .apple-segment-item {
     flex: 0 0 auto;
     min-height: 40px;
     padding: 8px 12px;
     white-space: nowrap;
   }
 
-  .infit-order-header {
+  .teesgarage-order-header {
     align-items: flex-start;
     gap: 12px;
   }
 
-  .infit-order-meta-grid {
+  .teesgarage-order-meta-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
 
-  .infit-order-item-row {
+  .teesgarage-order-item-row {
     align-items: flex-start;
     gap: 14px;
   }
 
-  .infit-order-item-row > .flex {
+  .teesgarage-order-item-row > .flex {
     width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;

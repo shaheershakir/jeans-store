@@ -1,6 +1,6 @@
-# Architectural decisions
+﻿# Architectural decisions
 
-This document records the key architectural decisions, rationale, and consequences for the INFIT platform during the testing phase.
+This document records the key architectural decisions, rationale, and consequences for the TEESGARAGE platform during the testing phase.
 
 ## ADR 1: Build-time static generation instead of runtime SSR
 

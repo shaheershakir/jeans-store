@@ -1,6 +1,6 @@
-# Monorepo Architecture
+﻿# Monorepo Architecture
 
-This document describes the workspace architecture of INFIT / TEESGARAGE, its applications, shared packages, and build orchestration.
+This document describes the workspace architecture of TEESGARAGE / TEESGARAGE, its applications, shared packages, and build orchestration.
 
 ## System Overview
 

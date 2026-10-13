@@ -86,7 +86,7 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
-      const stored = localStorage.getItem('teesgarage-orders') || localStorage.getItem('infit-orders')
+      const stored = localStorage.getItem('teesgarage-orders')
       if (stored) {
         const parsed = JSON.parse(stored) as StoredOrder[]
         if (Array.isArray(parsed) && parsed.length > 0) {

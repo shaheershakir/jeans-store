@@ -1,7 +1,7 @@
-import crypto from 'node:crypto'
+﻿import crypto from 'node:crypto'
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_API_KEY || 'infit-cloud-iam-master-secret-2026'
-const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || 'infit-production'
+const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_API_KEY || 'teesgarage-cloud-iam-master-secret-2026'
+const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || 'teesgarage-production'
 
 export interface CloudIamClaims {
   uid: string

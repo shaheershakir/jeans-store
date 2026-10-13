@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Deploy services to Google Cloud Run from Windows PowerShell.
 .DESCRIPTION
@@ -19,12 +19,12 @@ $ErrorActionPreference = 'Stop'
 
 $Region = 'asia-south1'
 $Project = 'clothing-store-511300'
-$Repo = 'infit'
+$Repo = 'teesgarage'
 $Registry = "${Region}-docker.pkg.dev/${Project}/${Repo}"
 
-$BackendUrl = "https://infit-backend-777430238035.asia-south1.run.app"
-$FrontendUrl = "https://infit-frontend-777430238035.asia-south1.run.app"
-$AdminUrl = "https://infit-admin-777430238035.asia-south1.run.app"
+$BackendUrl = "https://teesgarage-backend-777430238035.asia-south1.run.app"
+$FrontendUrl = "https://teesgarage-frontend-777430238035.asia-south1.run.app"
+$AdminUrl = "https://teesgarage-admin-777430238035.asia-south1.run.app"
 
 function Deploy-Backend {
   Write-Host "==> [1/3] Building and Deploying Backend API..." -ForegroundColor Cyan
@@ -32,7 +32,7 @@ function Deploy-Backend {
   docker build -t $image -f apps/api/Dockerfile .
   docker push $image
 
-  gcloud run deploy infit-backend `
+  gcloud run deploy teesgarage-backend `
     --image=$image `
     --region=$Region `
     --platform=managed `
@@ -40,7 +40,7 @@ function Deploy-Backend {
     --port=4000 `
     --set-env-vars="NODE_ENV=production,HOST=0.0.0.0,DATABASE_URL=postgresql://neondb_owner:npg_SjvrTG1FI6ep@ep-muddy-mode-b3mdvd86-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require,ADMIN_API_KEY=local_dev_admin_key,GOOGLE_CLIENT_ID=777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com,GOOGLE_CLIENT_SECRET=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,GOOGLE_PROJECT_ID=clothing-store-511300,RAZORPAY_KEY_ID=rzp_test_TnN4mtRGLw9wJy,RAZORPAY_KEY_SECRET=6HCOI0Fg4exVQWYG2AK7KeSf"
 
-  gcloud run services update infit-backend `
+  gcloud run services update teesgarage-backend `
     --region=$Region `
     "--update-env-vars=^;^CORS_ORIGIN=${FrontendUrl},${AdminUrl},http://localhost:3000,http://localhost:3001;FRONTEND_URL=${FrontendUrl}"
 }
@@ -55,7 +55,7 @@ function Deploy-Storefront {
     -f apps/storefront/Dockerfile .
   docker push $image
 
-  gcloud run deploy infit-frontend `
+  gcloud run deploy teesgarage-frontend `
     --image=$image `
     --region=$Region `
     --platform=managed `
@@ -74,7 +74,7 @@ function Deploy-Admin {
     -f apps/admin/Dockerfile .
   docker push $image
 
-  gcloud run deploy infit-admin `
+  gcloud run deploy teesgarage-admin `
     --image=$image `
     --region=$Region `
     --platform=managed `

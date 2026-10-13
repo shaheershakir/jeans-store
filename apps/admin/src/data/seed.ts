@@ -67,7 +67,7 @@ function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
-const BRAND_CODE: Record<string, string> = { TEESGARAGE: 'TG', INFIT: 'TG', 'INDIGO WORKS': 'IWK', 'RETRO DENIM CO.': 'RDC' }
+const BRAND_CODE: Record<string, string> = { TEESGARAGE: 'TG', 'INDIGO WORKS': 'IWK', 'RETRO DENIM CO.': 'RDC' }
 const COLOR_CODE: Record<string, string> = {
   Blue: 'BLU',
   'Dark Blue': 'DBL',

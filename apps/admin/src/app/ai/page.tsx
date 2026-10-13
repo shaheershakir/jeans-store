@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import * as React from 'react'
 import { Sparkles, Send, Bot, User, ArrowRight, RefreshCw } from 'lucide-react'
@@ -22,7 +22,7 @@ export default function AiAssistantPage() {
     {
       id: 1,
       sender: 'ai',
-      text: 'Hello! I am your INFIT Operations AI Assistant. Ask me anything about store performance, reorder predictions, top products, or revenue analytics.',
+      text: 'Hello! I am your TEESGARAGE Operations AI Assistant. Ask me anything about store performance, reorder predictions, top products, or revenue analytics.',
       followUps: GUIDE_FOLLOWUPS.slice(0, 4),
     },
   ])

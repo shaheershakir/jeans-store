@@ -1,6 +1,6 @@
-# Deployment guide
+﻿# Deployment guide
 
-This document provides setup instructions for deploying the INFIT testing phase applications to Vercel, Render, and Sentry.
+This document provides setup instructions for deploying the TEESGARAGE testing phase applications to Vercel, Render, and Sentry.
 
 ## Manual setup requirements
 
@@ -22,10 +22,10 @@ The storefront is deployed as a static Next.js 15 site on the Vercel platform.
 3. Import the GitHub repository `shaheershakir/jeans-store`.
 4. In the configuration screen, set the **Root Directory** to `frontend`.
 5. Under **Environment Variables**, add the following:
-   - `BACKEND_URL`: The production URL of your Render backend (e.g. `https://infit-backend.onrender.com`).
+   - `BACKEND_URL`: The production URL of your Render backend (e.g. `https://teesgarage-backend.onrender.com`).
    - `NEXT_PUBLIC_WHATSAPP_NUMBER`: The WhatsApp phone number including country code (e.g. `919876543210`).
    - `NEXT_PUBLIC_SENTRY_DSN`: Your Sentry DSN key (optional, leave blank until created).
-   - `NEXT_PUBLIC_SITE_URL`: Your assigned Vercel production domain (e.g. `https://infit.vercel.app`).
+   - `NEXT_PUBLIC_SITE_URL`: Your assigned Vercel production domain (e.g. `https://teesgarage.vercel.app`).
 6. Click **Deploy**.
 
 ### Build-time behavior on Vercel
@@ -43,11 +43,11 @@ The Fastify backend is deployed as a web service using Render Blueprints.
 1. Log into your [Render Dashboard](https://dashboard.render.com/).
 2. Click **New +** in the top navigation and choose **Blueprint**.
 3. Connect your GitHub repository `shaheershakir/jeans-store`.
-4. Render will detect `render.yaml` at the repository root and display the `infit-backend` service configuration.
+4. Render will detect `render.yaml` at the repository root and display the `teesgarage-backend` service configuration.
 5. In the environment configuration step:
-   - Set `CORS_ORIGIN` to your Vercel storefront domain (e.g. `https://infit.vercel.app`).
+   - Set `CORS_ORIGIN` to your Vercel storefront domain (e.g. `https://teesgarage.vercel.app`).
 6. Click **Apply**.
-7. Render will build the TypeScript source and launch the Fastify server. Once active, note your service URL (e.g. `https://infit-backend.onrender.com`).
+7. Render will build the TypeScript source and launch the Fastify server. Once active, note your service URL (e.g. `https://teesgarage-backend.onrender.com`).
 
 ---
 
@@ -60,7 +60,7 @@ Frontend exceptions and client errors are captured via `@sentry/nextjs`.
 1. Log into your [Sentry Account](https://sentry.io/).
 2. Click **Projects** and select **Create Project**.
 3. Choose **Next.js** as your platform.
-4. Name the project `infit-storefront` and create it.
+4. Name the project `teesgarage-storefront` and create it.
 5. Copy the generated **Client DSN** from **Settings > Client Keys (DSN)**.
 6. Return to your Vercel Project Settings under **Environment Variables**.
 7. Add `NEXT_PUBLIC_SENTRY_DSN` with the copied value.
@@ -70,6 +70,6 @@ Frontend exceptions and client errors are captured via `@sentry/nextjs`.
 
 ## Free tier considerations and caveats
 
-- **Render free tier**: Web services on Render spin down after 15 minutes of inactivity. First requests after a pause take 30 to 50 seconds to respond. Because INFIT builds static pages at deploy time, cold starts never affect storefront shoppers. Cold starts only impact catalog rebuilds and admin API calls.
+- **Render free tier**: Web services on Render spin down after 15 minutes of inactivity. First requests after a pause take 30 to 50 seconds to respond. Because TEESGARAGE builds static pages at deploy time, cold starts never affect storefront shoppers. Cold starts only impact catalog rebuilds and admin API calls.
 - **Vercel Hobby tier**: The Hobby plan is intended for personal projects and testing. Prior to processing high-volume commercial transactions, upgrade to Vercel Pro or migrate to self-hosted Docker containers.
 - **Vercel deploy hooks**: When products are edited in the backend database, you can trigger a catalog redeployment by setting up a Deploy Hook under **Vercel Project Settings > Git > Deploy Hooks**.

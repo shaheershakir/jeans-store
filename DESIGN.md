@@ -1,10 +1,10 @@
-# Design system
+﻿# Design system
 
-This document defines the brand, typographic hierarchy, and visual design standards for the INFIT storefront.
+This document defines the brand, typographic hierarchy, and visual design standards for the TEESGARAGE storefront.
 
 ## Brand identity
 
-INFIT is a denim label focused on permanence and structural weight. We build heavyweight jeans cut from 13.5oz to 14.5oz selvedge and ring-spun cotton denim.
+TEESGARAGE is a denim label focused on permanence and structural weight. We build heavyweight jeans cut from 13.5oz to 14.5oz selvedge and ring-spun cotton denim.
 
 The aesthetic draws inspiration from industrial manifests, raw materials, and archival catalogs. We avoid generic e-commerce conventions like artificial sale countdowns, fake review counters, and strike-through pricing. Every element on screen must feel functional, durable, and honest.
 

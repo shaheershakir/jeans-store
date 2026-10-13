@@ -1,4 +1,4 @@
-import { test, describe } from 'node:test'
+﻿import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import request from 'supertest'
 import { buildApp } from '../src/app.js'
@@ -31,10 +31,10 @@ describe('Catalog & Orders Unified Brand Seams', () => {
     assert.ok(data.products.every((p: any) => p.category === 'stripes'))
   })
 
-  test('POST /api/orders accepts order with line items containing sizes and store: infit', async () => {
+  test('POST /api/orders accepts order with line items containing sizes and store: teesgarage', async () => {
     const orderPayload = {
       orderNumber: `TEST-ORD-${Date.now()}`,
-      store: 'infit',
+      store: 'teesgarage',
       customerName: 'Aarav Patel',
       customerPhone: '9876543210',
       customerEmail: 'aarav@example.com',

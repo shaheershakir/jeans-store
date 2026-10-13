@@ -1,4 +1,4 @@
-# Changes — INFIT Denim Store Migration
+﻿# Changes — TEESGARAGE Denim Store Migration
 
 ## Summary
 

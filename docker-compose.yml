@@ -1,7 +1,7 @@
-services:
+﻿services:
   postgres:
     image: postgres:16-alpine
-    container_name: infit-postgres
+    container_name: teesgarage-postgres
     ports:
       - '5432:5432'
     environment:
@@ -21,7 +21,7 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    container_name: infit-api
+    container_name: teesgarage-api
     ports:
       - '4000:4000'
     environment:
@@ -49,7 +49,7 @@ services:
     build:
       context: .
       dockerfile: apps/storefront/Dockerfile
-    container_name: infit-storefront
+    container_name: teesgarage-storefront
     ports:
       - '3000:3000'
     environment:
@@ -68,7 +68,7 @@ services:
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
-    container_name: infit-admin
+    container_name: teesgarage-admin
     ports:
       - '3001:3001'
     environment:

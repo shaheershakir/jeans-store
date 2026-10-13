@@ -1,4 +1,4 @@
-# Task brief: Storefront checkout flow
+﻿# Task brief: Storefront checkout flow
 
 ## Objective
 
@@ -11,7 +11,7 @@ Build and maintain the customer order checkout route on `/checkout`, connecting 
 - Order manifest generation: Structured text listing silhouette names, selected waist sizes, cut, wash, and itemized subtotal.
 - Transmission deep links:
   - When `NEXT_PUBLIC_WHATSAPP_NUMBER` is present, hand off via `https://wa.me/<number>?text=<encodedMessage>`.
-  - When unset or empty, hand off via `mailto:orders@infit.in`.
+  - When unset or empty, hand off via `mailto:orders@teesgarage.in`.
 - Confirmation state: Clear cart state upon successful transmission and present an order reference card with the transmitted summary.
 
 ## Acceptance criteria

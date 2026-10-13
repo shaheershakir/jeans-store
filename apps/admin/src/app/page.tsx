@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import * as React from 'react'
 import Link from 'next/link'
@@ -41,7 +41,7 @@ export default function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description="Overview of INFIT store performance, orders, inventory and fulfillment"
+        description="Overview of TEESGARAGE store performance, orders, inventory and fulfillment"
       >
         <Link href="/settings/homepage">
           <Button variant="outline" size="sm">
@@ -156,7 +156,7 @@ export default function DashboardPage() {
           <Card className="lg:col-span-2">
             <CardHeader
               title="Recent Orders"
-              subtitle="Latest customer orders placed on INFIT store"
+              subtitle="Latest customer orders placed on TEESGARAGE store"
               action={
                 <Link href="/orders">
                   <Button variant="ghost" size="sm">

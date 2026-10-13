@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { create } from 'zustand'
 import { persist, type PersistOptions } from 'zustand/middleware'
@@ -1262,7 +1262,7 @@ export const useAdminStore = create<AdminState>()(
       }
     },
     {
-      name: 'infit-admin',
+      name: 'teesgarage-admin',
       version: 4,
       partialize: (s) => ({ data: s.data, session: s.session }),
       merge: (persisted, current) => {

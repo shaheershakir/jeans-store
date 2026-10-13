@@ -1,4 +1,4 @@
-name: Deploy to Google Cloud Run
+﻿name: Deploy to Google Cloud Run
 
 on:
   push:
@@ -31,12 +31,12 @@ permissions:
 env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || 'clothing-store-511300' }}
   GAR_LOCATION: ${{ secrets.GCP_REGION || 'asia-south1' }}
-  GAR_REPOSITORY: ${{ secrets.GAR_REPOSITORY || 'infit' }}
+  GAR_REPOSITORY: ${{ secrets.GAR_REPOSITORY || 'teesgarage' }}
   WIF_PROVIDER: ${{ secrets.GCP_WIF_PROVIDER || 'projects/777430238035/locations/global/workloadIdentityPools/github-pool/providers/github-provider' }}
   WIF_SERVICE_ACCOUNT: ${{ secrets.GCP_WIF_SA || 'github-actions-sa@clothing-store-511300.iam.gserviceaccount.com' }}
-  BACKEND_SERVICE: infit-backend
-  FRONTEND_SERVICE: infit-frontend
-  ADMIN_SERVICE: infit-admin
+  BACKEND_SERVICE: teesgarage-backend
+  FRONTEND_SERVICE: teesgarage-frontend
+  ADMIN_SERVICE: teesgarage-admin
 
 jobs:
   detect-changes:
@@ -156,7 +156,7 @@ jobs:
       - name: Get Backend URL
         id: backend_url
         run: |
-          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || echo "https://infit-backend-777430238035.asia-south1.run.app")
+          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || echo "https://teesgarage-backend-777430238035.asia-south1.run.app")
           echo "url=$URL" >> $GITHUB_OUTPUT
 
       - name: Build & Push Storefront Container
@@ -179,7 +179,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=3000 \
-            --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0,BACKEND_URL=${{ steps.backend_url.outputs.url }},NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }},NEXT_PUBLIC_SITE_URL=https://infit-frontend-777430238035.asia-south1.run.app,NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }},NEXT_PUBLIC_RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID || 'rzp_test_TnN4mtRGLw9wJy' }},RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID || 'rzp_test_TnN4mtRGLw9wJy' }},RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET || '6HCOI0Fg4exVQWYG2AK7KeSf' }}"
+            --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0,BACKEND_URL=${{ steps.backend_url.outputs.url }},NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }},NEXT_PUBLIC_SITE_URL=https://teesgarage-frontend-777430238035.asia-south1.run.app,NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }},NEXT_PUBLIC_RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID || 'rzp_test_TnN4mtRGLw9wJy' }},RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID || 'rzp_test_TnN4mtRGLw9wJy' }},RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET || '6HCOI0Fg4exVQWYG2AK7KeSf' }}"
 
   # -------------------------------------------------------------
   # 3. Admin Dashboard Service (Next.js 15)
@@ -215,7 +215,7 @@ jobs:
       - name: Get Backend URL
         id: backend_url
         run: |
-          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || echo "https://infit-backend-777430238035.asia-south1.run.app")
+          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || echo "https://teesgarage-backend-777430238035.asia-south1.run.app")
           echo "url=$URL" >> $GITHUB_OUTPUT
 
       - name: Build & Push Admin Container
@@ -238,4 +238,4 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=3001 \
-            --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0,NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }},NEXT_PUBLIC_ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY || 'local_dev_admin_key' }},NEXT_PUBLIC_STOREFRONT_URL=https://infit-frontend-777430238035.asia-south1.run.app"
+            --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0,NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }},NEXT_PUBLIC_ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY || 'local_dev_admin_key' }},NEXT_PUBLIC_STOREFRONT_URL=https://teesgarage-frontend-777430238035.asia-south1.run.app"

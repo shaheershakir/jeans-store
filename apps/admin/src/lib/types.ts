@@ -1,5 +1,5 @@
-/**
- * INFIT Admin — domain model.
+﻿/**
+ * TEESGARAGE Admin — domain model.
  *
  * The admin manages a much richer catalog shape than the storefront
  * (`frontend/src/lib/constants.ts`): one product owns many variants

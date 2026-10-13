@@ -1,10 +1,10 @@
-# Data architecture and catalog schema
+﻿# Data architecture and catalog schema
 
 This document details the product data contract, catalog seed dataset, and the snapshot fallback synchronization pipeline.
 
 ## Product contract
 
-All denim items in the INFIT ecosystem adhere to the `Product` TypeScript definition.
+All denim items in the TEESGARAGE ecosystem adhere to the `Product` TypeScript definition.
 
 ```typescript
 export type Fit = 'Straight' | 'Baggy' | 'Wide' | 'Relaxed' | 'Bootcut'

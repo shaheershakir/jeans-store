@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import Skeleton from './Skeleton'
 
 /**
@@ -10,7 +10,7 @@ export default function ProfileSkeleton() {
     <div className="apple-profile-page" aria-busy="true" aria-label="Loading Profile Details">
       <main className="apple-profile-container">
         {/* 1. Breadcrumb */}
-        <nav className="infit-breadcrumb-nav" aria-label="Breadcrumbs">
+        <nav className="teesgarage-breadcrumb-nav" aria-label="Breadcrumbs">
           <Skeleton width={75} height={12} />
           <span style={{ color: '#999', fontSize: 12 }}>/</span>
           <Skeleton width={50} height={12} />

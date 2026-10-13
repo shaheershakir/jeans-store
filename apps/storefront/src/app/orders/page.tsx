@@ -125,7 +125,7 @@ export default function OrdersPage() {
 
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('teesgarage-orders') || localStorage.getItem('infit-orders')
+        const stored = localStorage.getItem('teesgarage-orders')
         if (stored) {
           const parsed = JSON.parse(stored) as StoredOrder[]
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -152,37 +152,37 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="infit-account-page">
+    <div className="teesgarage-account-page">
 
-      <main className="infit-account-container">
+      <main className="teesgarage-account-container">
         {/* Breadcrumb Navigation */}
-        <nav className="infit-breadcrumb-nav" aria-label="Breadcrumbs">
-          <Link href="/" className="infit-breadcrumb-link">
+        <nav className="teesgarage-breadcrumb-nav" aria-label="Breadcrumbs">
+          <Link href="/" className="teesgarage-breadcrumb-link">
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Storefront</span>
           </Link>
           <span>/</span>
-          <span className="infit-breadcrumb-current">My Orders &amp; Tracking</span>
+          <span className="teesgarage-breadcrumb-current">My Orders &amp; Tracking</span>
         </nav>
 
         {/* Top Header Card */}
-        <div className="infit-account-hero">
-          <div className="infit-hero-user-cluster">
-            <div className="infit-hero-avatar">
+        <div className="teesgarage-account-hero">
+          <div className="teesgarage-hero-user-cluster">
+            <div className="teesgarage-hero-avatar">
               {(user?.name || 'Devon Vance').charAt(0).toUpperCase()}
             </div>
             <div>
-              <h1 className="infit-hero-name">
+              <h1 className="teesgarage-hero-name">
                 {user?.name || 'Devon Vance'}
               </h1>
-              <p className="infit-hero-meta">
+              <p className="teesgarage-hero-meta">
                 Active shipments &amp; order history
               </p>
             </div>
           </div>
 
-          <div className="infit-hero-actions">
-            <Link href="/profile" className="infit-btn-pill-secondary">
+          <div className="teesgarage-hero-actions">
+            <Link href="/profile" className="teesgarage-btn-pill-secondary">
               Profile &amp; Addresses
             </Link>
           </div>
@@ -229,7 +229,7 @@ export default function OrdersPage() {
             </p>
             <Link
               href="/shop"
-              className="infit-btn-primary"
+              className="teesgarage-btn-primary"
             >
               Explore Denim Catalog
             </Link>
@@ -241,26 +241,26 @@ export default function OrdersPage() {
               const isDispatched = order.status === 'Dispatched'
 
               return (
-                <div key={order.orderId} className="infit-order-card">
+                <div key={order.orderId} className="teesgarage-order-card">
                   {/* Order Top Bar */}
-                  <div className="infit-order-header">
-                    <div className="infit-order-meta-grid">
+                  <div className="teesgarage-order-header">
+                    <div className="teesgarage-order-meta-grid">
                       <div>
-                        <span className="infit-order-meta-label">Order ID</span>
-                        <span className="infit-order-meta-val">{order.orderId}</span>
+                        <span className="teesgarage-order-meta-label">Order ID</span>
+                        <span className="teesgarage-order-meta-val">{order.orderId}</span>
                       </div>
                       <div>
-                        <span className="infit-order-meta-label">Date Placed</span>
+                        <span className="teesgarage-order-meta-label">Date Placed</span>
                         <span className="text-zinc-800 text-xs font-semibold">{order.date}</span>
                       </div>
                       <div>
-                        <span className="infit-order-meta-label">Total Amount</span>
-                        <span className="infit-order-meta-val">{formatPrice(order.total)}</span>
+                        <span className="teesgarage-order-meta-label">Total Amount</span>
+                        <span className="teesgarage-order-meta-val">{formatPrice(order.total)}</span>
                       </div>
                     </div>
 
                     <span
-                      className={`infit-order-status-badge ${
+                      className={`teesgarage-order-status-badge ${
                         isDelivered ? 'delivered' : isDispatched ? 'dispatched' : 'confirmed'
                       }`}
                     >
@@ -274,8 +274,8 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Delivery & Tracking Meta Banner */}
-                  <div className="infit-order-timeline-bar">
-                    <div className="infit-order-delivery-eta">
+                  <div className="teesgarage-order-timeline-bar">
+                    <div className="teesgarage-order-delivery-eta">
                       <Clock className="w-4 h-4 text-amber-600 shrink-0" />
                       <span>
                         <strong>Estimated Delivery:</strong> {order.expectedDelivery}
@@ -291,7 +291,7 @@ export default function OrdersPage() {
                       href={`https://wa.me/919876543210?text=Hi%20TEESGARAGE%20Studio%2C%20please%20give%20me%20a%20live%20status%20update%20for%20order%20%23${order.orderId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="infit-order-wa-track"
+                      className="teesgarage-order-wa-track"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       <span>Live WhatsApp Tracking</span>
@@ -301,9 +301,9 @@ export default function OrdersPage() {
                   {/* Line Items */}
                   <div>
                     {order.items.map((item, idx) => (
-                      <div key={idx} className="infit-order-item-row">
-                        <div className="infit-order-item-info">
-                          <div className="infit-order-item-thumb">
+                      <div key={idx} className="teesgarage-order-item-row">
+                        <div className="teesgarage-order-item-info">
+                          <div className="teesgarage-order-item-thumb">
                             <Image
                               src={item.img}
                               alt={item.name}
@@ -315,16 +315,16 @@ export default function OrdersPage() {
                           <div>
                             <Link
                               href={`/product/${item.id}`}
-                              className="infit-order-item-title"
+                              className="teesgarage-order-item-title"
                             >
                               <span>{item.name}</span>
                               <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
                             </Link>
-                            <p className="infit-order-item-meta">
+                            <p className="teesgarage-order-item-meta">
                               {item.wash ? `${item.wash} · ` : ''}
                               Size: <strong>{item.size}</strong> · Qty: {item.qty}
                             </p>
-                            <span className="infit-order-item-price">
+                            <span className="teesgarage-order-item-price">
                               {item.price}
                             </span>
                           </div>
@@ -335,7 +335,7 @@ export default function OrdersPage() {
                           <button
                             type="button"
                             onClick={() => handleBuyAgain(item)}
-                            className="infit-btn-pill-secondary"
+                            className="teesgarage-btn-pill-secondary"
                           >
                             <RotateCcw className="w-3 h-3" />
                             <span>Buy Again</span>
@@ -343,7 +343,7 @@ export default function OrdersPage() {
 
                           <Link
                             href={`/product/${item.id}`}
-                            className="infit-btn-primary !py-2 !px-4 !text-xs"
+                            className="teesgarage-btn-primary !py-2 !px-4 !text-xs"
                           >
                             <span>View Product</span>
                           </Link>
@@ -353,7 +353,7 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Order Footer with Address & Total */}
-                  <div className="infit-order-footer">
+                  <div className="teesgarage-order-footer">
                     <div className="flex items-start gap-2 max-w-lg">
                       <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" />
                       <span>

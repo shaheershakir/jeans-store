@@ -1,4 +1,4 @@
-# TEESGARAGE / INFIT — Premium Denim Monorepo
+﻿# TEESGARAGE / TEESGARAGE — Premium Denim Monorepo
 
 A modern, high-performance denim e-commerce platform built as an integrated monorepo powered by **Turborepo** and **npm workspaces**.
 

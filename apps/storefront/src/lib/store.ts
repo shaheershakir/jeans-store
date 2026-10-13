@@ -5,27 +5,6 @@ import { persist } from 'zustand/middleware'
 import type { Fit, Product } from './constants'
 import { PRODUCTS } from './constants'
 
-if (typeof window !== 'undefined') {
-  const migrations = [
-    ['infit-cart', 'teesgarage-cart'],
-    ['infit-filters', 'teesgarage-filters'],
-    ['infit-ui', 'teesgarage-ui'],
-    ['infit-auth', 'teesgarage-auth'],
-    ['infit-favorites', 'teesgarage-favorites'],
-    ['infit-orders', 'teesgarage-orders'],
-    ['infit-onboarding', 'teesgarage-onboarding'],
-  ]
-  for (const [oldK, newK] of migrations) {
-    try {
-      const oldVal = localStorage.getItem(oldK)
-      if (oldVal && !localStorage.getItem(newK)) {
-        localStorage.setItem(newK, oldVal)
-      }
-    } catch {
-      // Ignore storage access errors
-    }
-  }
-}
 
 export interface CartItem {
   id: number

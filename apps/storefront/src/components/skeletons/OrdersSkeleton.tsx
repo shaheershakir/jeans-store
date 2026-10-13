@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import Skeleton from './Skeleton'
 
 /**
@@ -7,25 +7,25 @@ import Skeleton from './Skeleton'
  */
 export default function OrdersSkeleton() {
   return (
-    <div className="infit-account-page" aria-busy="true" aria-label="Loading Order Manifests">
-      <main className="infit-account-container">
+    <div className="teesgarage-account-page" aria-busy="true" aria-label="Loading Order Manifests">
+      <main className="teesgarage-account-container">
         {/* 1. Breadcrumbs */}
-        <nav className="infit-breadcrumb-nav" aria-label="Breadcrumbs">
+        <nav className="teesgarage-breadcrumb-nav" aria-label="Breadcrumbs">
           <Skeleton width={80} height={12} />
           <span style={{ color: '#999', fontSize: 12 }}>/</span>
           <Skeleton width={140} height={12} />
         </nav>
 
         {/* 2. Top Header Card */}
-        <div className="infit-account-hero">
-          <div className="infit-hero-user-cluster">
+        <div className="teesgarage-account-hero">
+          <div className="teesgarage-hero-user-cluster">
             <Skeleton variant="circular" width={48} height={48} />
             <div>
               <Skeleton width={130} height={20} style={{ marginBottom: 6 }} />
               <Skeleton width={180} height={13} />
             </div>
           </div>
-          <div className="infit-hero-actions">
+          <div className="teesgarage-hero-actions">
             <Skeleton variant="pill" width={140} height={36} />
           </div>
         </div>
@@ -52,10 +52,10 @@ export default function OrdersSkeleton() {
         {/* 4. Order Manifest Cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {Array.from({ length: 2 }).map((_, idx) => (
-            <div key={idx} className="infit-order-card">
+            <div key={idx} className="teesgarage-order-card">
               {/* Order Top Bar */}
-              <div className="infit-order-header">
-                <div className="infit-order-meta-grid">
+              <div className="teesgarage-order-header">
+                <div className="teesgarage-order-meta-grid">
                   <div>
                     <Skeleton width={50} height={10} style={{ marginBottom: 4 }} />
                     <Skeleton width={85} height={14} />
@@ -73,7 +73,7 @@ export default function OrdersSkeleton() {
               </div>
 
               {/* Delivery ETA Bar */}
-              <div className="infit-order-timeline-bar">
+              <div className="teesgarage-order-timeline-bar">
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <Skeleton variant="circular" width={16} height={16} />
                   <Skeleton width={240} height={14} />
@@ -82,9 +82,9 @@ export default function OrdersSkeleton() {
               </div>
 
               {/* Item Rows */}
-              <div className="infit-order-item-row">
-                <div className="infit-order-item-info">
-                  <div className="infit-order-item-thumb">
+              <div className="teesgarage-order-item-row">
+                <div className="teesgarage-order-item-info">
+                  <div className="teesgarage-order-item-thumb">
                     <Skeleton width="100%" height="100%" />
                   </div>
                   <div style={{ flex: 1 }}>
@@ -100,7 +100,7 @@ export default function OrdersSkeleton() {
               </div>
 
               {/* Order Footer */}
-              <div className="infit-order-footer">
+              <div className="teesgarage-order-footer">
                 <Skeleton width="55%" height={14} />
                 <Skeleton width={120} height={14} />
               </div>

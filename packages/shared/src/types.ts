@@ -1,4 +1,4 @@
-export const STORES = ['teesgarage', 'infit', 'clothing-store', 'frontend'] as const
+export const STORES = ['teesgarage', 'clothing-store', 'frontend'] as const
 export type StoreType = (typeof STORES)[number]
 
 export const FITS = [

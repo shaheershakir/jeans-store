@@ -208,8 +208,7 @@ export default function CheckoutClient() {
   function saveLocalOrder(orderId: string, statusText: string, paymentId?: string) {
     try {
       if (typeof window === 'undefined') return
-      const existingStr =
-        localStorage.getItem('teesgarage-orders') || localStorage.getItem('infit-orders')
+      const existingStr = localStorage.getItem('teesgarage-orders')
       const existing = existingStr ? JSON.parse(existingStr) : []
       const newStoredOrder = {
         orderId,
@@ -224,7 +223,6 @@ export default function CheckoutClient() {
         shippingAddress: `${form.address.trim()}, ${form.city.trim()}, ${form.state.trim()} · ${form.pincode.trim()}`
       }
       localStorage.setItem('teesgarage-orders', JSON.stringify([newStoredOrder, ...existing]))
-      localStorage.setItem('infit-orders', JSON.stringify([newStoredOrder, ...existing]))
     } catch (e) {
       console.warn('Failed to store order in local history', e)
     }

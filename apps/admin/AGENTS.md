@@ -1,6 +1,6 @@
-# AGENTS.md — admin
+﻿# AGENTS.md — admin
 
-This directory houses the administrative dashboard for INFIT. It is a fully built Next.js 15 application with Tailwind CSS v4.
+This directory houses the administrative dashboard for TEESGARAGE. It is a fully built Next.js 15 application with Tailwind CSS v4.
 
 ## Commands
 

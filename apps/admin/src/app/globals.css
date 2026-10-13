@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+﻿@import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -37,7 +37,7 @@
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
 
-  /* INFIT custom compatibility tokens */
+  /* TEESGARAGE custom compatibility tokens */
   --color-canvas: #f8f9fa;
   --color-surface: #ffffff;
   --color-surface-subtle: #f9fafb;
@@ -142,7 +142,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* INFIT legacy tokens */
+  /* TEESGARAGE legacy tokens */
   --color-canvas: var(--color-canvas);
   --color-surface: var(--color-surface);
   --color-surface-subtle: var(--color-surface-subtle);

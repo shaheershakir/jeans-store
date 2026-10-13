@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import * as React from 'react'
 import Link from 'next/link'
@@ -82,7 +82,7 @@ export default function ProductsPage() {
     <div>
       <PageHeader
         title="Products"
-        description={`Manage INFIT product catalog (${products.length} products total)`}
+        description={`Manage TEESGARAGE product catalog (${products.length} products total)`}
       >
         <Link href="/products/new">
           <Button size="sm">

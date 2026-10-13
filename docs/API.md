@@ -1,11 +1,11 @@
-# Express REST API Reference (`apps/api`)
+﻿# Express REST API Reference (`apps/api`)
 
 The Express REST API powers the product catalog, customer orders, authentication, homepage customization, and Razorpay payment operations.
 
 ## Base URL
 - **Local Development**: `http://localhost:4000`
 - **Docker Compose**: `http://backend:4000` (internal) / `http://localhost:4000` (host)
-- **Production (Cloud Run)**: `https://infit-backend-f6v6jgb4qa-el.a.run.app`
+- **Production (Cloud Run)**: `https://teesgarage-backend-f6v6jgb4qa-el.a.run.app`
 
 ## Authentication
 
@@ -43,7 +43,7 @@ Authorization: Bearer <TOKEN>
 - **`GET /api/products`**
   - Returns all products.
   - Query parameters:
-    - `store`: Filter by store (`teesgarage`, `infit`, etc.)
+    - `store`: Filter by store (`teesgarage`, `teesgarage`, etc.)
     - `category`: Filter by category (`stripes`, `fullsleeve`, etc.)
     - `fit`: Filter by fit silhouette (`Boxy`, `Oversized`, etc.)
 - **`GET /api/products/:id`**

@@ -1,6 +1,6 @@
-# backend
+﻿# backend
 
-Serves the INFIT store API. Built with **Express + TypeScript + Zod**.
+Serves the TEESGARAGE store API. Built with **Express + TypeScript + Zod**.
 
 ## Run
 

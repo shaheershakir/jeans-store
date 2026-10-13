@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import * as React from 'react'
 import {
@@ -505,7 +505,7 @@ export default function StorefrontNavigationPage() {
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-white/10 text-[10px] text-white/40">
-                    Direct Studio Support: concierge@infit.in
+                    Direct Studio Support: concierge@teesgarage.in
                   </div>
                 </div>
               )}

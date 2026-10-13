@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -201,15 +201,15 @@ function ProfileContent() {
     <div className="apple-profile-page">
       <main className="apple-profile-container">
         {/* Breadcrumb Navigation */}
-        <nav className="infit-breadcrumb-nav" aria-label="Breadcrumbs">
-          <Link href="/" className="infit-breadcrumb-link">
+        <nav className="teesgarage-breadcrumb-nav" aria-label="Breadcrumbs">
+          <Link href="/" className="teesgarage-breadcrumb-link">
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Storefront</span>
           </Link>
           <span>/</span>
           <span className="text-zinc-500">Account</span>
           <span>/</span>
-          <span className="infit-breadcrumb-current">
+          <span className="teesgarage-breadcrumb-current">
             {activeTab === 'info' && 'Personal Information'}
             {activeTab === 'security' && 'Sign-In & Security'}
             {activeTab === 'preferences' && 'Fit & Size Preferences'}
@@ -773,11 +773,11 @@ function ProfileContent() {
                 </div>
 
                 {/* Horizontal Card Grid for Addresses */}
-                <div className="infit-address-grid">
+                <div className="teesgarage-address-grid">
                   {addresses.map((addr) => (
                     <div
                       key={addr.id}
-                      className={`infit-address-card ${addr.isDefault ? 'default' : ''}`}
+                      className={`teesgarage-address-card ${addr.isDefault ? 'default' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div>

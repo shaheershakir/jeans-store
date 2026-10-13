@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
@@ -66,7 +66,7 @@ export default function LoginPage() {
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-xl font-bold text-white shadow-card">
             I
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink">INFIT Admin Panel</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-ink">TEESGARAGE Admin Panel</h1>
           <p className="text-sm text-ink-3">Jeans commerce operations dashboard</p>
         </div>
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="name@infitjeans.com"
+                placeholder="name@teesgaragejeans.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -130,7 +130,7 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-center text-xs text-ink-4">
-          INFIT Admin Panel v0.1.0 &bull; Simulated Environment
+          TEESGARAGE Admin Panel v0.1.0 &bull; Simulated Environment
         </p>
       </div>
     </div>

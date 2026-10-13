@@ -1,4 +1,4 @@
-import { buildApp } from '../src/app.js'
+﻿import { buildApp } from '../src/app.js'
 
 async function run() {
   const app = buildApp({ logger: false })
@@ -7,7 +7,7 @@ async function run() {
   console.log('--- Running Authentication Integration Tests ---')
 
   // 1. Register a new user
-  const email = `test_${Date.now()}@infitjeans.com`
+  const email = `test_${Date.now()}@teesgaragejeans.com`
   const regRes = await app.inject({
     method: 'POST',
     url: '/api/auth/register',

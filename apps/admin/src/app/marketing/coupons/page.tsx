@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import * as React from 'react'
 import { Plus, TicketPercent, Trash2, Edit2, CheckCircle, XCircle } from 'lucide-react'
@@ -122,7 +122,7 @@ export default function CouponsPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <Field label="Coupon Code" required hint="e.g. INFIT15">
+                <Field label="Coupon Code" required hint="e.g. TEESGARAGE15">
                   <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
                 </Field>
 

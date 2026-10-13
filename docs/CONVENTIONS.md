@@ -1,6 +1,6 @@
-# Coding conventions
+﻿# Coding conventions
 
-This document outlines the code organization, TypeScript standards, styling patterns, and state rules across the INFIT codebase.
+This document outlines the code organization, TypeScript standards, styling patterns, and state rules across the TEESGARAGE codebase.
 
 ## Code organization
 

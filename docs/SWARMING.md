@@ -1,4 +1,4 @@
-# Multi-agent coordination and swarming playbook
+﻿# Multi-agent coordination and swarming playbook
 
 This playbook defines operational protocols for external orchestrators and parallel coding agents working across the three applications in this repository.
 
@@ -10,21 +10,21 @@ Because this repository does not use a root monorepo manager, parallel agents wo
 
 ```bash
 # Worktree for storefront agent
-git worktree add ../infit-storefront -b feat/storefront-enhancements
+git worktree add ../teesgarage-storefront -b feat/storefront-enhancements
 
 # Worktree for backend agent
-git worktree add ../infit-backend -b feat/backend-enhancements
+git worktree add ../teesgarage-backend -b feat/backend-enhancements
 
 # Worktree for admin agent
-git worktree add ../infit-admin -b feat/admin-enhancements
+git worktree add ../teesgarage-admin -b feat/admin-enhancements
 ```
 
 ### Removing worktrees
 
 ```bash
-git worktree remove ../infit-storefront
-git worktree remove ../infit-backend
-git worktree remove ../infit-admin
+git worktree remove ../teesgarage-storefront
+git worktree remove ../teesgarage-backend
+git worktree remove ../teesgarage-admin
 ```
 
 ---

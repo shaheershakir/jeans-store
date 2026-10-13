@@ -1,6 +1,6 @@
-# Infrastructure & Deployment
+﻿# Infrastructure & Deployment
 
-This directory contains deployment specifications, containerization blueprints, and infrastructure scripts for the **INFIT / TEESGARAGE** monorepo.
+This directory contains deployment specifications, containerization blueprints, and infrastructure scripts for the **TEESGARAGE / TEESGARAGE** monorepo.
 
 ## Structure
 
