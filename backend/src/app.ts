@@ -1,67 +1,88 @@
-import Fastify, { type FastifyInstance } from 'fastify'
-import cors from '@fastify/cors'
-import helmet from '@fastify/helmet'
-import rateLimit from '@fastify/rate-limit'
-import { productRoutes } from './routes/products.js'
-import { orderRoutes } from './routes/orders.js'
-import { authRoutes } from './routes/auth.js'
-import { navigationRoutes } from './routes/navigation.js'
-import { homepageRoutes } from './routes/homepage.js'
+import express, { type Application, type Request, type Response, type NextFunction } from 'express'
+import cors from 'cors'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
+import { pinoHttp } from 'pino-http'
+import { logger } from './lib/logger.js'
+import { productRouter } from './routes/products.js'
+import { orderRouter } from './routes/orders.js'
+import { authRouter } from './routes/auth.js'
+import { navigationRouter } from './routes/navigation.js'
+import { homepageRouter } from './routes/homepage.js'
 
 export interface BuildAppOptions {
   corsOrigin?: string | string[] | boolean
-  logger?: boolean | Record<string, unknown>
+  enableLogging?: boolean
 }
 
-export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
-  const isProd = process.env.NODE_ENV === 'production'
-  const logLevel = process.env.LOG_LEVEL || 'warn'
-
-  const defaultLogger = isProd
-    ? { level: logLevel }
-    : {
-        level: logLevel,
-        transport: {
-          target: 'pino-pretty',
-          options: { colorize: true }
-        }
-      }
-
-  const app = Fastify({
-    logger: options.logger ?? defaultLogger
-  })
+export function buildApp(options: BuildAppOptions = {}): Application {
+  const app: Application = express()
 
   // Security Headers
-  void app.register(helmet, {
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false
-  })
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false
+    })
+  )
 
   // Rate Limiting
-  void app.register(rateLimit, {
-    max: 120,
-    timeWindow: '1 minute',
-    allowList: ['127.0.0.1', 'localhost']
-  })
+  app.use(
+    rateLimit({
+      windowMs: 60 * 1000,
+      max: 120,
+      standardHeaders: true,
+      legacyHeaders: false,
+      skip: (req) => {
+        const ip = req.ip || req.socket.remoteAddress || ''
+        return ip === '127.0.0.1' || ip === '::1' || ip === 'localhost'
+      }
+    })
+  )
 
   // CORS
-  void app.register(cors, {
-    origin: options.corsOrigin ?? true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
-  })
+  app.use(
+    cors({
+      origin: options.corsOrigin ?? true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
+    })
+  )
+
+  // Body Parsing
+  app.use(express.json())
+  app.use(express.urlencoded({ extended: true }))
+
+  // HTTP Request Logging
+  if (options.enableLogging !== false) {
+    app.use(pinoHttp({ logger }))
+  }
 
   // Health check for Cloud Run / load balancers
-  app.get('/health', async () => ({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  }))
+  app.get('/health', (_req: Request, res: Response) => {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString()
+    })
+  })
 
-  void app.register(productRoutes)
-  void app.register(orderRoutes)
-  void app.register(authRoutes)
-  void app.register(navigationRoutes)
-  void app.register(homepageRoutes)
+  // API Routes
+  app.use(productRouter)
+  app.use(orderRouter)
+  app.use(authRouter)
+  app.use(navigationRouter)
+  app.use(homepageRouter)
+
+  // 404 Handler
+  app.use((_req: Request, res: Response) => {
+    res.status(404).json({ error: 'Route not found' })
+  })
+
+  // Global Error Handler
+  app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+    logger.error({ err, path: req.path }, 'Unhandled request error')
+    res.status(500).json({ error: 'Internal server error' })
+  })
 
   return app
 }

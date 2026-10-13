@@ -1,7 +1,7 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import { Router, type Request, type Response } from 'express'
 import { z } from 'zod'
 import { productStore } from '../store/productStore.js'
-import { createProductSchema, updateProductSchema, variantSchema } from '../schemas/product.js'
+import { createProductSchema, updateProductSchema } from '../schemas/product.js'
 import {
   generateBaseSku,
   generateProductScopedSku,
@@ -10,6 +10,8 @@ import {
   getColorCode,
   getSizeCode
 } from '../services/skuService.js'
+import { verifyAdminAuth } from '../middleware/auth.js'
+import { logger } from '../lib/logger.js'
 
 const SORT_MODES = ['featured', 'price-asc', 'price-desc'] as const
 
@@ -45,19 +47,7 @@ const skuBatchGenerateSchema = z.object({
   )
 })
 
-function verifyAdminAuth(request: FastifyRequest, reply: FastifyReply): boolean {
-  const configuredKey = process.env.ADMIN_API_KEY
-  if (configuredKey) {
-    const keyHeader = request.headers['x-api-key']
-    if (!keyHeader || keyHeader !== configuredKey) {
-      void reply.status(401).send({ error: 'Unauthorized: Missing or invalid X-API-Key' })
-      return false
-    }
-  }
-  return true
-}
-
-async function triggerFrontendRevalidation(app: FastifyInstance, store?: string): Promise<void> {
+async function triggerFrontendRevalidation(store?: string): Promise<void> {
   const revalidateSecret = process.env.REVALIDATION_SECRET
   if (!revalidateSecret) return
 
@@ -84,199 +74,206 @@ async function triggerFrontendRevalidation(app: FastifyInstance, store?: string)
         signal: AbortSignal.timeout(4000)
       })
       if (!res.ok) {
-        app.log.warn(`Revalidation for ${url} responded with status ${res.status}`)
+        logger.warn(`Revalidation for ${url} responded with status ${res.status}`)
       } else {
-        app.log.info(`Triggered ISR revalidation successfully for ${url}`)
+        logger.info(`Triggered ISR revalidation successfully for ${url}`)
       }
     } catch (err) {
-      app.log.warn({ err }, `Failed to trigger revalidation for ${url} (non-fatal)`)
+      logger.warn({ err }, `Failed to trigger revalidation for ${url} (non-fatal)`)
     }
   }
 }
 
-export async function productRoutes(app: FastifyInstance): Promise<void> {
-  // ─── SKU PREVIEW & GENERATION ENDPOINTS ─────────────────────────────────────
-  app.post('/api/products/sku/preview', async (request, reply) => {
-    const parsed = skuPreviewSchema.safeParse(request.body)
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: 'Invalid SKU preview parameters',
-        details: z.treeifyError(parsed.error)
-      })
-    }
+export const productRouter = Router()
 
-    const { category, productType, color, size, productId } = parsed.data
-    const baseSku = generateBaseSku({ category, productType, color, size, productId })
-    const productScopedSku = generateProductScopedSku({ category, productType, color, size, productId })
-    const sku = await productStore.generateSku({ category, productType, color, size, productId })
-
-    return reply.send({
-      sku,
-      baseSku,
-      productScopedSku,
-      breakdown: {
-        categoryCode: getCategoryCode(category),
-        productTypeCode: getProductTypeCode(productType),
-        colorCode: getColorCode(color),
-        sizeCode: getSizeCode(size)
-      }
+// ─── SKU PREVIEW & GENERATION ENDPOINTS ─────────────────────────────────────
+productRouter.post('/api/products/sku/preview', async (req: Request, res: Response) => {
+  const parsed = skuPreviewSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid SKU preview parameters',
+      details: z.treeifyError(parsed.error)
     })
-  })
+    return
+  }
 
-  app.post('/api/products/sku/generate', async (request, reply) => {
-    const parsed = skuBatchGenerateSchema.safeParse(request.body)
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: 'Invalid batch SKU generate parameters',
-        details: z.treeifyError(parsed.error)
-      })
-    }
+  const { category, productType, color, size, productId } = parsed.data
+  const baseSku = generateBaseSku({ category, productType, color, size, productId })
+  const productScopedSku = generateProductScopedSku({ category, productType, color, size, productId })
+  const sku = await productStore.generateSku({ category, productType, color, size, productId })
 
-    const { productId, variants } = parsed.data
-    const generated = await Promise.all(
-      variants.map(async (v) => {
-        if (v.sku && v.sku.trim().length > 0) {
-          return { ...v, sku: v.sku.trim().toUpperCase() }
-        }
-        const sku = await productStore.generateSku({
-          category: v.category || 'printed-tees',
-          productType: v.productType,
-          color: v.color,
-          size: v.size,
-          productId
-        })
-        return { ...v, sku }
-      })
-    )
-
-    return reply.send({ variants: generated })
-  })
-
-  // ─── GET VARIANT BY SKU ─────────────────────────────────────────────────────
-  app.get('/api/variants/:sku', async (request, reply) => {
-    const { sku } = request.params as { sku: string }
-    if (!sku || !sku.trim()) {
-      return reply.status(400).send({ error: 'SKU parameter is required' })
-    }
-
-    const result = await productStore.getBySku(sku)
-    if (!result) {
-      return reply.status(404).send({ error: `Variant with SKU "${sku}" not found` })
-    }
-
-    return reply.send(result)
-  })
-
-  // ─── PRODUCT CATALOG ROUTES ─────────────────────────────────────────────────
-  app.get('/api/products', async (request, reply) => {
-    const parsed = listQuerySchema.safeParse(request.query)
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: 'Invalid query parameters',
-        details: z.treeifyError(parsed.error)
-      })
-    }
-
-    const { store, category, fit, sku, minPrice, maxPrice, q, sort = 'featured' } = parsed.data
-    let list = await productStore.list({ store, category, fit, sku, q })
-
-    if (minPrice !== undefined) {
-      list = list.filter((p) => p.priceNum >= minPrice)
-    }
-    if (maxPrice !== undefined) {
-      list = list.filter((p) => p.priceNum <= maxPrice)
-    }
-
-    if (sort === 'price-asc') {
-      list.sort((a, b) => a.priceNum - b.priceNum)
-    } else if (sort === 'price-desc') {
-      list.sort((a, b) => b.priceNum - a.priceNum)
-    } else {
-      list.sort((a, b) => a.id - b.id)
-    }
-
-    return reply.send({ count: list.length, products: list })
-  })
-
-  app.get('/api/products/:id', async (request, reply) => {
-    const { id } = request.params as { id: string }
-    const numericId = Number(id)
-    if (!Number.isInteger(numericId) || numericId < 0) {
-      return reply.status(400).send({ error: 'Product id must be a non-negative integer' })
-    }
-    const product = await productStore.getById(numericId)
-    if (!product) {
-      return reply.status(404).send({ error: `Product ${numericId} not found` })
-    }
-    return reply.send({ product })
-  })
-
-  app.post('/api/products', async (request, reply) => {
-    if (!verifyAdminAuth(request, reply)) return
-
-    const parsed = createProductSchema.safeParse(request.body)
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: 'Invalid product payload',
-        details: z.treeifyError(parsed.error)
-      })
-    }
-
-    try {
-      const product = await productStore.create(parsed.data)
-      void triggerFrontendRevalidation(app, product.store)
-      return reply.status(201).send({ product })
-    } catch (err: any) {
-      return reply.status(400).send({
-        error: err.message || 'Failed to create product'
-      })
+  res.json({
+    sku,
+    baseSku,
+    productScopedSku,
+    breakdown: {
+      categoryCode: getCategoryCode(category),
+      productTypeCode: getProductTypeCode(productType),
+      colorCode: getColorCode(color),
+      sizeCode: getSizeCode(size)
     }
   })
+})
 
-  app.put('/api/products/:id', async (request, reply) => {
-    if (!verifyAdminAuth(request, reply)) return
+productRouter.post('/api/products/sku/generate', async (req: Request, res: Response) => {
+  const parsed = skuBatchGenerateSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid batch SKU generate parameters',
+      details: z.treeifyError(parsed.error)
+    })
+    return
+  }
 
-    const { id } = request.params as { id: string }
-    const numericId = Number(id)
-    if (!Number.isInteger(numericId) || numericId < 0) {
-      return reply.status(400).send({ error: 'Product id must be a non-negative integer' })
-    }
-    const parsed = updateProductSchema.safeParse(request.body)
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: 'Invalid product payload',
-        details: z.treeifyError(parsed.error)
-      })
-    }
-
-    try {
-      const product = await productStore.update(numericId, parsed.data)
-      if (!product) {
-        return reply.status(404).send({ error: `Product ${numericId} not found` })
+  const { productId, variants } = parsed.data
+  const generated = await Promise.all(
+    variants.map(async (v) => {
+      if (v.sku && v.sku.trim().length > 0) {
+        return { ...v, sku: v.sku.trim().toUpperCase() }
       }
-      void triggerFrontendRevalidation(app, product.store)
-      return reply.send({ product })
-    } catch (err: any) {
-      return reply.status(400).send({
-        error: err.message || 'Failed to update product'
+      const sku = await productStore.generateSku({
+        category: v.category || 'printed-tees',
+        productType: v.productType,
+        color: v.color,
+        size: v.size,
+        productId
       })
-    }
-  })
+      return { ...v, sku }
+    })
+  )
 
-  app.delete('/api/products/:id', async (request, reply) => {
-    if (!verifyAdminAuth(request, reply)) return
+  res.json({ variants: generated })
+})
 
-    const { id } = request.params as { id: string }
-    const numericId = Number(id)
-    if (!Number.isInteger(numericId) || numericId < 0) {
-      return reply.status(400).send({ error: 'Product id must be a non-negative integer' })
+// ─── GET VARIANT BY SKU ─────────────────────────────────────────────────────
+productRouter.get('/api/variants/:sku', async (req: Request, res: Response) => {
+  const sku = req.params.sku as string
+  if (!sku || !sku.trim()) {
+    res.status(400).json({ error: 'SKU parameter is required' })
+    return
+  }
+
+  const result = await productStore.getBySku(sku)
+  if (!result) {
+    res.status(404).json({ error: `Variant with SKU "${sku}" not found` })
+    return
+  }
+
+  res.json(result)
+})
+
+// ─── PRODUCT CATALOG ROUTES ─────────────────────────────────────────────────
+productRouter.get('/api/products', async (req: Request, res: Response) => {
+  const parsed = listQuerySchema.safeParse(req.query)
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid query parameters',
+      details: z.treeifyError(parsed.error)
+    })
+    return
+  }
+
+  const { store, category, fit, sku, minPrice, maxPrice, q, sort = 'featured' } = parsed.data
+  let list = await productStore.list({ store, category, fit, sku, q })
+
+  if (minPrice !== undefined) {
+    list = list.filter((p) => p.priceNum >= minPrice)
+  }
+  if (maxPrice !== undefined) {
+    list = list.filter((p) => p.priceNum <= maxPrice)
+  }
+
+  if (sort === 'price-asc') {
+    list.sort((a, b) => a.priceNum - b.priceNum)
+  } else if (sort === 'price-desc') {
+    list.sort((a, b) => b.priceNum - a.priceNum)
+  } else {
+    list.sort((a, b) => a.id - b.id)
+  }
+
+  res.json({ count: list.length, products: list })
+})
+
+productRouter.get('/api/products/:id', async (req: Request, res: Response) => {
+  const { id } = req.params
+  const numericId = Number(id)
+  if (!Number.isInteger(numericId) || numericId < 0) {
+    res.status(400).json({ error: 'Product id must be a non-negative integer' })
+    return
+  }
+  const product = await productStore.getById(numericId)
+  if (!product) {
+    res.status(404).json({ error: `Product ${numericId} not found` })
+    return
+  }
+  res.json({ product })
+})
+
+productRouter.post('/api/products', verifyAdminAuth, async (req: Request, res: Response) => {
+  const parsed = createProductSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid product payload',
+      details: z.treeifyError(parsed.error)
+    })
+    return
+  }
+
+  try {
+    const product = await productStore.create(parsed.data)
+    void triggerFrontendRevalidation(product.store)
+    res.status(201).json({ product })
+  } catch (err: any) {
+    res.status(400).json({
+      error: err.message || 'Failed to create product'
+    })
+  }
+})
+
+productRouter.put('/api/products/:id', verifyAdminAuth, async (req: Request, res: Response) => {
+  const { id } = req.params
+  const numericId = Number(id)
+  if (!Number.isInteger(numericId) || numericId < 0) {
+    res.status(400).json({ error: 'Product id must be a non-negative integer' })
+    return
+  }
+  const parsed = updateProductSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid product payload',
+      details: z.treeifyError(parsed.error)
+    })
+    return
+  }
+
+  try {
+    const product = await productStore.update(numericId, parsed.data)
+    if (!product) {
+      res.status(404).json({ error: `Product ${numericId} not found` })
+      return
     }
-    const existing = await productStore.getById(numericId)
-    const removed = await productStore.remove(numericId)
-    if (!removed) {
-      return reply.status(404).send({ error: `Product ${numericId} not found` })
-    }
-    void triggerFrontendRevalidation(app, existing?.store)
-    return reply.status(204).send()
-  })
-}
+    void triggerFrontendRevalidation(product.store)
+    res.json({ product })
+  } catch (err: any) {
+    res.status(400).json({
+      error: err.message || 'Failed to update product'
+    })
+  }
+})
+
+productRouter.delete('/api/products/:id', verifyAdminAuth, async (req: Request, res: Response) => {
+  const { id } = req.params
+  const numericId = Number(id)
+  if (!Number.isInteger(numericId) || numericId < 0) {
+    res.status(400).json({ error: 'Product id must be a non-negative integer' })
+    return
+  }
+  const existing = await productStore.getById(numericId)
+  const removed = await productStore.remove(numericId)
+  if (!removed) {
+    res.status(404).json({ error: `Product ${numericId} not found` })
+    return
+  }
+  void triggerFrontendRevalidation(existing?.store)
+  res.status(204).end()
+})

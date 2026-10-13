@@ -9,7 +9,7 @@ The repository is structured as three independent applications with no shared ro
 ```
 .
 ├── frontend/             Next.js 15 App Router storefront (Cloud Run / Vercel)
-├── backend/              Fastify REST API & Neon PostgreSQL persistence (Cloud Run / Render)
+├── backend/              Express REST API & Neon PostgreSQL persistence (Cloud Run / Render)
 ├── admin/                Next.js 15 operational dashboard (Cloud Run)
 ├── docker-compose.yml    Local multi-container development environment
 ├── docs/                 System documentation and deployment runbooks
@@ -28,17 +28,17 @@ The repository is structured as three independent applications with no shared ro
 
 ### 2. Backend API (`backend/`)
 
-- Built with Fastify, Zod, and TypeScript.
+- Built with Express, Zod, and TypeScript.
 - Containerized via multi-stage Dockerfile and deployed to **Google Cloud Run**.
 - Persisted to **Neon PostgreSQL** via **Drizzle ORM** (`products` and `orders` tables).
-- Protected with `X-API-Key` authentication for mutations, `@fastify/helmet`, and `@fastify/rate-limit`.
+- Protected with `X-API-Key` authentication for mutations, `helmet`, and `express-rate-limit`.
 - Auto-seeds the initial 8 denim silhouettes if the database is newly provisioned.
 
 ### 3. Admin dashboard (`admin/`)
 
 - Built with Next.js 15, React 19, Tailwind CSS v4, and Lucide React.
 - Containerized via multi-stage Dockerfile and deployed to **Google Cloud Run**.
-- Connected to the live Fastify backend via `admin/src/services/api.ts` with authenticated endpoints.
+- Connected to the live Express backend via `admin/src/services/api.ts` with authenticated endpoints.
 
 ## Product contract
 

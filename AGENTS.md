@@ -5,7 +5,7 @@ TEESGARAGE is a premium denim e-commerce platform. This repository contains thre
 ## Application layout
 
 - `frontend/`: Next.js 15 App Router, React 19, TypeScript strict, and Zustand. Statically generated storefront deployed to Vercel.
-- `backend/`: Fastify REST API with Zod validation. Manages the product catalog. Deployed to Render free tier via `render.yaml`.
+- `backend/`: Express REST API with Zod validation. Manages the product catalog. Deployed to Render free tier via `render.yaml`.
 - `admin/`: Next.js 15 App Router, React 19, and Tailwind CSS v4. Operational dashboard for store administration.
 - No root package.json or npm workspaces exist. All commands must be executed within their respective application directories.
 
@@ -29,6 +29,7 @@ cd backend
 npm run dev      # Local dev server on :4000 using tsx watch
 npm run build    # TypeScript compiler check and output to dist/
 npm run start    # Node production server
+npm run test     # Node test runner suite
 npm run smoke    # Verification smoke test script
 ```
 

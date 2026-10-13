@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for Fastify Backend on Google Cloud Run
+# Multi-stage Dockerfile for Express Backend on Google Cloud Run
 FROM node:20-alpine AS base
 WORKDIR /app
 

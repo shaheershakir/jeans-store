@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import { Router, type Request, type Response } from 'express'
 import { z } from 'zod'
 import {
   registerSchema,
@@ -17,6 +17,7 @@ import {
   type GoogleUserPayload
 } from '../services/googleAuth.js'
 import type { DbUser } from '../db/schema.js'
+import { logger } from '../lib/logger.js'
 
 function formatProfile(user: DbUser): UserProfile {
   return {
@@ -29,223 +30,234 @@ function formatProfile(user: DbUser): UserProfile {
   }
 }
 
-export async function authRoutes(app: FastifyInstance): Promise<void> {
-  // 1. User Registration (Storefront Sign-up)
-  app.post('/api/auth/register', async (request: FastifyRequest, reply: FastifyReply) => {
-    const parsed = registerSchema.safeParse(request.body)
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: 'Invalid registration details',
-        details: z.treeifyError(parsed.error)
+export const authRouter = Router()
+
+// 1. User Registration (Storefront Sign-up)
+authRouter.post('/api/auth/register', async (req: Request, res: Response) => {
+  const parsed = registerSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid registration details',
+      details: z.treeifyError(parsed.error)
+    })
+    return
+  }
+
+  const { name, email, password } = parsed.data
+
+  try {
+    const existing = await userStore.findByEmail(email)
+    if (existing) {
+      res.status(409).json({
+        error: 'An account with this email address already exists. Please sign in.'
       })
+      return
     }
 
-    const { name, email, password } = parsed.data
+    const user = await userStore.create({
+      name,
+      email,
+      password,
+      provider: 'cloud-iam'
+    })
 
-    try {
-      const existing = await userStore.findByEmail(email)
-      if (existing) {
-        return reply.status(409).send({
-          error: 'An account with this email address already exists. Please sign in.'
-        })
-      }
+    const { token, expiresIn } = createCloudIamToken({
+      uid: user.uid,
+      email: user.email,
+      name: user.name
+    })
 
-      const user = await userStore.create({
-        name,
-        email,
-        password,
-        provider: 'cloud-iam'
-      })
+    logger.info({ email: user.email, uid: user.uid }, 'New user registered via Cloud IAM')
 
-      const { token, expiresIn } = createCloudIamToken({
-        uid: user.uid,
-        email: user.email,
-        name: user.name
-      })
-
-      app.log.info({ email: user.email, uid: user.uid }, 'New user registered via Cloud IAM')
-
-      return reply.status(201).send({
-        user: formatProfile(user),
-        token,
-        expiresIn
-      })
-    } catch (err) {
-      app.log.error({ err }, 'Failed to register user')
-      return reply.status(500).send({ error: 'Failed to process registration' })
-    }
-  })
-
-  // 2. User Login (Storefront Sign-in)
-  app.post('/api/auth/login', async (request: FastifyRequest, reply: FastifyReply) => {
-    const parsed = loginSchema.safeParse(request.body)
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: 'Invalid login details',
-        details: z.treeifyError(parsed.error)
-      })
-    }
-
-    const { email, password } = parsed.data
-
-    try {
-      const user = await userStore.findByEmail(email)
-      if (!user || !user.passwordHash) {
-        return reply.status(401).send({
-          error: 'Invalid email or password'
-        })
-      }
-
-      const isValid = verifyPassword(password, user.passwordHash)
-      if (!isValid) {
-        return reply.status(401).send({
-          error: 'Invalid email or password'
-        })
-      }
-
-      const { token, expiresIn } = createCloudIamToken({
-        uid: user.uid,
-        email: user.email,
-        name: user.name
-      })
-
-      app.log.info({ email: user.email, uid: user.uid }, 'User logged in successfully')
-
-      return reply.send({
-        user: formatProfile(user),
-        token,
-        expiresIn
-      })
-    } catch (err) {
-      app.log.error({ err }, 'Failed to login user')
-      return reply.status(500).send({ error: 'Authentication failed' })
-    }
-  })
-
-  // 3. Current User Profile (/api/auth/me)
-  app.get('/api/auth/me', async (request: FastifyRequest, reply: FastifyReply) => {
-    const authHeader = request.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return reply.status(401).send({ error: 'Missing or malformed Authorization header' })
-    }
-
-    const token = authHeader.slice(7).trim()
-    const claims = await verifyCloudIamToken(token)
-
-    if (!claims) {
-      return reply.status(401).send({ error: 'Invalid or expired Cloud IAM token' })
-    }
-
-    let user = await userStore.findByUid(claims.uid)
-    if (!user) {
-      user = await userStore.findByEmail(claims.email)
-    }
-
-    if (!user) {
-      // Auto-provision profile from verified IAM claims if not yet in DB
-      user = await userStore.create({
-        uid: claims.uid,
-        email: claims.email,
-        name: claims.name || claims.email.split('@')[0],
-        provider: 'cloud-iam'
-      })
-    }
-
-    return reply.send({
+    res.status(201).json({
       user: formatProfile(user),
-      claims
+      token,
+      expiresIn
     })
-  })
+  } catch (err) {
+    logger.error({ err }, 'Failed to register user')
+    res.status(500).json({ error: 'Failed to process registration' })
+  }
+})
 
-  // 4. Token Verification Utility (/api/auth/verify)
-  app.post('/api/auth/verify', async (request: FastifyRequest, reply: FastifyReply) => {
-    const parsed = verifyTokenSchema.safeParse(request.body)
-    if (!parsed.success) {
-      return reply.status(400).send({ error: 'Token is required' })
-    }
-
-    const claims = await verifyCloudIamToken(parsed.data.token)
-    if (!claims) {
-      return reply.status(200).send({ valid: false })
-    }
-
-    return reply.status(200).send({
-      valid: true,
-      claims
+// 2. User Login (Storefront Sign-in)
+authRouter.post('/api/auth/login', async (req: Request, res: Response) => {
+  const parsed = loginSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid login details',
+      details: z.treeifyError(parsed.error)
     })
-  })
+    return
+  }
 
-  // 5. Google OAuth Authorization URL (/api/auth/google/url)
-  app.get('/api/auth/google/url', async (request: FastifyRequest, reply: FastifyReply) => {
-    const query = request.query as { redirect_uri?: string; state?: string }
-    const defaultRedirect = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/callback`
-    const redirectUri = query.redirect_uri || defaultRedirect
-    const url = getGoogleAuthUrl(redirectUri, query.state)
+  const { email, password } = parsed.data
 
-    return reply.send({
-      url,
-      clientId: getGoogleClientId(),
-      redirectUri
+  try {
+    const user = await userStore.findByEmail(email)
+    if (!user || !user.passwordHash) {
+      res.status(401).json({
+        error: 'Invalid email or password'
+      })
+      return
+    }
+
+    const isValid = verifyPassword(password, user.passwordHash)
+    if (!isValid) {
+      res.status(401).json({
+        error: 'Invalid email or password'
+      })
+      return
+    }
+
+    const { token, expiresIn } = createCloudIamToken({
+      uid: user.uid,
+      email: user.email,
+      name: user.name
     })
-  })
 
-  // 6. Google OAuth Sign-in / Sign-up (/api/auth/google)
-  app.post('/api/auth/google', async (request: FastifyRequest, reply: FastifyReply) => {
-    const parsed = googleAuthSchema.safeParse(request.body)
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: 'Invalid Google authentication parameters',
-        details: z.treeifyError(parsed.error)
-      })
+    logger.info({ email: user.email, uid: user.uid }, 'User logged in successfully')
+
+    res.json({
+      user: formatProfile(user),
+      token,
+      expiresIn
+    })
+  } catch (err) {
+    logger.error({ err }, 'Failed to login user')
+    res.status(500).json({ error: 'Authentication failed' })
+  }
+})
+
+// 3. Current User Profile (/api/auth/me)
+authRouter.get('/api/auth/me', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Missing or malformed Authorization header' })
+    return
+  }
+
+  const token = authHeader.slice(7).trim()
+  const claims = await verifyCloudIamToken(token)
+
+  if (!claims) {
+    res.status(401).json({ error: 'Invalid or expired Cloud IAM token' })
+    return
+  }
+
+  let user = await userStore.findByUid(claims.uid)
+  if (!user) {
+    user = await userStore.findByEmail(claims.email)
+  }
+
+  if (!user) {
+    // Auto-provision profile from verified IAM claims if not yet in DB
+    user = await userStore.create({
+      uid: claims.uid,
+      email: claims.email,
+      name: claims.name || claims.email.split('@')[0],
+      provider: 'cloud-iam'
+    })
+  }
+
+  res.json({
+    user: formatProfile(user),
+    claims
+  })
+})
+
+// 4. Token Verification Utility (/api/auth/verify)
+authRouter.post('/api/auth/verify', async (req: Request, res: Response) => {
+  const parsed = verifyTokenSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Token is required' })
+    return
+  }
+
+  const claims = await verifyCloudIamToken(parsed.data.token)
+  if (!claims) {
+    res.status(200).json({ valid: false })
+    return
+  }
+
+  res.status(200).json({
+    valid: true,
+    claims
+  })
+})
+
+// 5. Google OAuth Authorization URL (/api/auth/google/url)
+authRouter.get('/api/auth/google/url', async (req: Request, res: Response) => {
+  const query = req.query as { redirect_uri?: string; state?: string }
+  const defaultRedirect = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/callback`
+  const redirectUri = query.redirect_uri || defaultRedirect
+  const url = getGoogleAuthUrl(redirectUri, query.state)
+
+  res.json({
+    url,
+    clientId: getGoogleClientId(),
+    redirectUri
+  })
+})
+
+// 6. Google OAuth Sign-in / Sign-up (/api/auth/google)
+authRouter.post('/api/auth/google', async (req: Request, res: Response) => {
+  const parsed = googleAuthSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid Google authentication parameters',
+      details: z.treeifyError(parsed.error)
+    })
+    return
+  }
+
+  const { credential, code, redirectUri } = parsed.data
+
+  try {
+    let googleUser: GoogleUserPayload
+    if (credential) {
+      googleUser = await verifyGoogleIdToken(credential)
+    } else if (code) {
+      const defaultRedirect = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/callback`
+      const targetRedirect = redirectUri || defaultRedirect
+      googleUser = await exchangeGoogleAuthCode(code, targetRedirect)
+    } else {
+      res.status(400).json({ error: 'Missing credential or authorization code' })
+      return
     }
 
-    const { credential, code, redirectUri } = parsed.data
+    let user = await userStore.findByEmail(googleUser.email)
+    let isNewUser = false
 
-    try {
-      let googleUser: GoogleUserPayload
-      if (credential) {
-        googleUser = await verifyGoogleIdToken(credential)
-      } else if (code) {
-        const defaultRedirect = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/callback`
-        const targetRedirect = redirectUri || defaultRedirect
-        googleUser = await exchangeGoogleAuthCode(code, targetRedirect)
-      } else {
-        return reply.status(400).send({ error: 'Missing credential or authorization code' })
-      }
-
-      let user = await userStore.findByEmail(googleUser.email)
-      let isNewUser = false
-
-      if (!user) {
-        user = await userStore.create({
-          uid: `google_${googleUser.sub}`,
-          email: googleUser.email,
-          name: googleUser.name || googleUser.email.split('@')[0],
-          provider: 'google'
-        })
-        isNewUser = true
-        app.log.info({ email: user.email, uid: user.uid }, 'New user account registered via Google OAuth 2.0')
-      } else {
-        app.log.info({ email: user.email, uid: user.uid }, 'Existing user authenticated via Google OAuth 2.0')
-      }
-
-      const { token, expiresIn } = createCloudIamToken({
-        uid: user.uid,
-        email: user.email,
-        name: user.name
+    if (!user) {
+      user = await userStore.create({
+        uid: `google_${googleUser.sub}`,
+        email: googleUser.email,
+        name: googleUser.name || googleUser.email.split('@')[0],
+        provider: 'google'
       })
-
-      return reply.send({
-        user: formatProfile(user),
-        token,
-        expiresIn,
-        isNewUser
-      })
-    } catch (err: any) {
-      app.log.error({ err }, 'Google OAuth authentication failed')
-      return reply.status(400).send({
-        error: err.message || 'Failed to authenticate with Google'
-      })
+      isNewUser = true
+      logger.info({ email: user.email, uid: user.uid }, 'New user account registered via Google OAuth 2.0')
+    } else {
+      logger.info({ email: user.email, uid: user.uid }, 'Existing user authenticated via Google OAuth 2.0')
     }
-  })
-}
+
+    const { token, expiresIn } = createCloudIamToken({
+      uid: user.uid,
+      email: user.email,
+      name: user.name
+    })
+
+    res.json({
+      user: formatProfile(user),
+      token,
+      expiresIn,
+      isNewUser
+    })
+  } catch (err: any) {
+    logger.error({ err }, 'Google OAuth authentication failed')
+    res.status(400).json({
+      error: err.message || 'Failed to authenticate with Google'
+    })
+  }
+})

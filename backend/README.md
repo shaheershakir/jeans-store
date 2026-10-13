@@ -1,6 +1,6 @@
 # backend
 
-Serves the INFIT store API. Built with **Fastify + TypeScript + Zod**.
+Serves the INFIT store API. Built with **Express + TypeScript + Zod**.
 
 ## Run
 

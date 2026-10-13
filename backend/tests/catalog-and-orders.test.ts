@@ -1,18 +1,16 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
+import request from 'supertest'
 import { buildApp } from '../src/app.js'
 
 describe('Catalog & Orders Unified Brand Seams', () => {
-  const app = buildApp({ logger: false })
+  const app = buildApp({ enableLogging: false })
 
   test('GET /api/products returns all catalog items across categories', async () => {
-    const res = await app.inject({
-      method: 'GET',
-      url: '/api/products'
-    })
+    const res = await request(app).get('/api/products')
 
-    assert.equal(res.statusCode, 200)
-    const data = JSON.parse(res.body)
+    assert.equal(res.status, 200)
+    const data = res.body
     assert.ok(data.products.length >= 16, `Expected at least 16 products, got ${data.products.length}`)
 
     // Verify active categories exist
@@ -25,17 +23,13 @@ describe('Catalog & Orders Unified Brand Seams', () => {
   })
 
   test('GET /api/products?category=stripes filters specifically by category', async () => {
-    const res = await app.inject({
-      method: 'GET',
-      url: '/api/products?category=stripes'
-    })
+    const res = await request(app).get('/api/products?category=stripes')
 
-    assert.equal(res.statusCode, 200)
-    const data = JSON.parse(res.body)
+    assert.equal(res.status, 200)
+    const data = res.body
     assert.ok(data.products.length > 0)
     assert.ok(data.products.every((p: any) => p.category === 'stripes'))
   })
-
 
   test('POST /api/orders accepts order with line items containing sizes and store: infit', async () => {
     const orderPayload = {
@@ -73,14 +67,12 @@ describe('Catalog & Orders Unified Brand Seams', () => {
       handoffType: 'whatsapp'
     }
 
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/orders',
-      payload: orderPayload
-    })
+    const res = await request(app)
+      .post('/api/orders')
+      .send(orderPayload)
 
-    assert.equal(res.statusCode, 201, `Failed with ${res.body}`)
-    const data = JSON.parse(res.body)
+    assert.equal(res.status, 201, `Failed with ${JSON.stringify(res.body)}`)
+    const data = res.body
     assert.equal(data.order.orderNumber, orderPayload.orderNumber)
     assert.equal(data.order.items.length, 2)
     assert.equal(data.order.items[1].size, 'L')
