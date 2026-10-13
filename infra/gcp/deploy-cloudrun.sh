@@ -2,51 +2,61 @@
 set -euo pipefail
 
 # Deployment script for INFIT / TEESGARAGE on Google Cloud Run
-# Usage: ./infra/gcp/deploy-cloudrun.sh <service> [image_tag]
-# Services: api | storefront | admin
+# Usage: ./infra/gcp/deploy-cloudrun.sh [service] [image_tag]
+# Services: api | storefront | admin | all (default)
 
 SERVICE=${1:-"all"}
 TAG=${2:-"latest"}
 REGION=${GCP_REGION:-"asia-south1"}
-PROJECT=${GCP_PROJECT_ID:-""}
+PROJECT=${GCP_PROJECT_ID:-"clothing-store-511300"}
 REPO=${GAR_REPOSITORY:-"infit"}
 
-if [ -z "$PROJECT" ]; then
-  echo "Error: GCP_PROJECT_ID environment variable is required."
-  exit 1
-fi
-
 REGISTRY="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}"
+BACKEND_URL="https://infit-backend-777430238035.asia-south1.run.app"
+FRONTEND_URL="https://infit-frontend-777430238035.asia-south1.run.app"
+ADMIN_URL="https://infit-admin-777430238035.asia-south1.run.app"
 
 deploy_api() {
-  echo "==> Building and deploying API (${REGISTRY}/api:${TAG})..."
-  docker build -t "${REGISTRY}/api:${TAG}" -f apps/api/Dockerfile ./apps/api
-  docker push "${REGISTRY}/api:${TAG}"
+  echo "==> Building and deploying Backend API (${REGISTRY}/backend:${TAG})..."
+  docker build -t "${REGISTRY}/backend:${TAG}" -f apps/api/Dockerfile .
+  docker push "${REGISTRY}/backend:${TAG}"
   gcloud run deploy infit-backend \
-    --image="${REGISTRY}/api:${TAG}" \
+    --image="${REGISTRY}/backend:${TAG}" \
     --region="${REGION}" \
     --platform=managed \
     --allow-unauthenticated \
     --port=4000 \
-    --set-env-vars="NODE_ENV=production,HOST=0.0.0.0"
+    --set-env-vars="NODE_ENV=production,HOST=0.0.0.0,DATABASE_URL=postgresql://neondb_owner:npg_SjvrTG1FI6ep@ep-muddy-mode-b3mdvd86-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require,ADMIN_API_KEY=local_dev_admin_key,GOOGLE_CLIENT_ID=777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com,GOOGLE_CLIENT_SECRET=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,GOOGLE_PROJECT_ID=clothing-store-511300,RAZORPAY_KEY_ID=rzp_test_TnN4mtRGLw9wJy,RAZORPAY_KEY_SECRET=6HCOI0Fg4exVQWYG2AK7KeSf"
+  
+  gcloud run services update infit-backend \
+    --region="${REGION}" \
+    "--update-env-vars=^;^CORS_ORIGIN=${FRONTEND_URL},${ADMIN_URL},http://localhost:3000,http://localhost:3001;FRONTEND_URL=${FRONTEND_URL}"
 }
 
 deploy_storefront() {
-  echo "==> Building and deploying Storefront (${REGISTRY}/storefront:${TAG})..."
-  docker build -t "${REGISTRY}/storefront:${TAG}" -f apps/storefront/Dockerfile ./apps/storefront
-  docker push "${REGISTRY}/storefront:${TAG}"
+  echo "==> Building and deploying Storefront (${REGISTRY}/frontend:${TAG})..."
+  docker build \
+    --build-arg NEXT_PUBLIC_API_URL="${BACKEND_URL}" \
+    --build-arg NEXT_PUBLIC_WHATSAPP_NUMBER="" \
+    -t "${REGISTRY}/frontend:${TAG}" \
+    -f apps/storefront/Dockerfile .
+  docker push "${REGISTRY}/frontend:${TAG}"
   gcloud run deploy infit-frontend \
-    --image="${REGISTRY}/storefront:${TAG}" \
+    --image="${REGISTRY}/frontend:${TAG}" \
     --region="${REGION}" \
     --platform=managed \
     --allow-unauthenticated \
     --port=3000 \
-    --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0"
+    --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0,BACKEND_URL=${BACKEND_URL},NEXT_PUBLIC_API_URL=${BACKEND_URL},NEXT_PUBLIC_SITE_URL=${FRONTEND_URL},NEXT_PUBLIC_GOOGLE_CLIENT_ID=777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com,NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_TnN4mtRGLw9wJy,RAZORPAY_KEY_ID=rzp_test_TnN4mtRGLw9wJy,RAZORPAY_KEY_SECRET=6HCOI0Fg4exVQWYG2AK7KeSf"
 }
 
 deploy_admin() {
   echo "==> Building and deploying Admin (${REGISTRY}/admin:${TAG})..."
-  docker build -t "${REGISTRY}/admin:${TAG}" -f apps/admin/Dockerfile ./apps/admin
+  docker build \
+    --build-arg NEXT_PUBLIC_API_URL="${BACKEND_URL}" \
+    --build-arg NEXT_PUBLIC_ADMIN_API_KEY="local_dev_admin_key" \
+    -t "${REGISTRY}/admin:${TAG}" \
+    -f apps/admin/Dockerfile .
   docker push "${REGISTRY}/admin:${TAG}"
   gcloud run deploy infit-admin \
     --image="${REGISTRY}/admin:${TAG}" \
@@ -54,14 +64,14 @@ deploy_admin() {
     --platform=managed \
     --allow-unauthenticated \
     --port=3001 \
-    --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0"
+    --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0,NEXT_PUBLIC_API_URL=${BACKEND_URL},NEXT_PUBLIC_ADMIN_API_KEY=local_dev_admin_key,NEXT_PUBLIC_STOREFRONT_URL=${FRONTEND_URL}"
 }
 
 case "$SERVICE" in
-  api)
+  api|backend)
     deploy_api
     ;;
-  storefront)
+  storefront|frontend)
     deploy_storefront
     ;;
   admin)
