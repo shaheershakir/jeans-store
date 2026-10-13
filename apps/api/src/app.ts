@@ -12,6 +12,7 @@ import { homepageRouter } from './routes/homepage.js'
 import { adminAuthRouter } from './routes/adminAuth.js'
 import { uploadRouter } from './routes/uploads.js'
 import { shippingRouter } from './routes/shipping.js'
+import { adminStateRouter } from './routes/adminState.js'
 
 export interface BuildAppOptions {
   corsOrigin?: string | string[] | boolean
@@ -81,7 +82,7 @@ export function buildApp(options: BuildAppOptions = {}): Application {
   )
 
   // Body Parsing
-  app.use(express.json())
+  app.use(express.json({ limit: '2mb' }))
   app.use(express.urlencoded({ extended: true }))
 
   // HTTP Request Logging
@@ -104,6 +105,7 @@ export function buildApp(options: BuildAppOptions = {}): Application {
   app.use(adminAuthRouter)
   app.use(uploadRouter)
   app.use(shippingRouter)
+  app.use(adminStateRouter)
   app.use(navigationRouter)
   app.use(homepageRouter)
 

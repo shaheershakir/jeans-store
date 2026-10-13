@@ -33,3 +33,9 @@ CREATE TABLE IF NOT EXISTS "shipping_settings" (
   "rates" jsonb NOT NULL,
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS "admin_state" (
+  "id" varchar(50) PRIMARY KEY,
+  "data" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);

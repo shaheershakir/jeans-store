@@ -135,6 +135,7 @@ interface AdminState {
   setHydrated: () => void
   setReady: () => void
   replaceProducts: (products: Product[]) => void
+  replaceOperationalData: (data: Partial<Pick<DbState, 'collections' | 'returns' | 'refunds' | 'coupons' | 'promotions' | 'banners' | 'reviews' | 'sizeCharts' | 'shipments' | 'inventoryMovements' | 'auditLog' | 'notifications' | 'settings' | 'roles'>>) => void
 
   login: (user: AdminUser) => void
   logout: () => void
@@ -319,6 +320,7 @@ export const useAdminStore = create<AdminState>()(
         setHydrated: () => set({ hydrated: true }),
         setReady: () => set({ ready: true }),
         replaceProducts: (products) => set({ data: { ...get().data, products } }),
+        replaceOperationalData: (operationalData) => set({ data: { ...get().data, ...operationalData } }),
 
         login: (user) => {
           const role = roleById(user.roleId)

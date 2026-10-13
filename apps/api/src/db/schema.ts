@@ -118,6 +118,12 @@ export const shippingSettings = pgTable('shipping_settings', {
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
 
+export const adminState = pgTable('admin_state', {
+  id: varchar('id', { length: 50 }).primaryKey(),
+  data: jsonb('data').$type<Record<string, unknown>>().notNull().default({}),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+})
+
 export type DbProduct = typeof products.$inferSelect
 export type DbNewProduct = typeof products.$inferInsert
 export type DbProductVariant = typeof productVariants.$inferSelect

@@ -1,6 +1,6 @@
 # Admin and delivery production setup
 
-The admin uses a single server-managed account. There is no public registration or invitation form. Product records, order operations, delivery rates, and product images are stored through the API rather than browser-local state.
+The admin uses a single server-managed account. There is no public registration or invitation form. Product records, order operations, inventory, delivery rates, product images, and the remaining operational admin data are stored through the API rather than browser-local state.
 
 ## Required API environment
 
@@ -37,7 +37,7 @@ Apply the schema before starting the updated API:
 npm run db:push
 ```
 
-This adds product image/metadata fields, paid delivery-rate settings, and persisted order payment status, carrier details, admin notes, and order events. Back up production before applying schema changes.
+This adds product image/metadata fields, paid delivery-rate settings, a persisted admin operations state, and order payment status, carrier details, admin notes, and order events. Back up production before applying schema changes.
 
 ## Paid delivery rules
 
