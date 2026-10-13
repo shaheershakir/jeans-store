@@ -84,6 +84,7 @@ export default function ProductCard({ product }: { product: Product }) {
               alt={product.name}
               width={600}
               height={780}
+              sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 24vw"
               className="primary-img"
               loading="lazy"
             />

@@ -15,35 +15,28 @@ export default function ProductCardSkeleton() {
           <Skeleton width="100%" height="100%" />
         </div>
 
-        {/* Favorite circle outline top-left */}
-        <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2 }}>
+        {/* Favorite circle outline */}
+        <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 2 }}>
           <Skeleton variant="circular" width={34} height={34} />
-        </div>
-
-        {/* Rating pill bottom-left */}
-        <div style={{ position: 'absolute', bottom: 10, left: 10, zIndex: 2 }}>
-          <Skeleton variant="pill" width={72} height={22} />
         </div>
       </div>
 
       {/* Info wrap */}
       <div className="product-info-wrap">
         {/* Brand label */}
-        <Skeleton width="35%" height={11} style={{ marginBottom: 4 }} />
+        <Skeleton width="35%" height={10} style={{ marginBottom: 5 }} />
 
         {/* Product title (2 lines max) */}
-        <Skeleton width="88%" height={16} style={{ marginBottom: 4 }} />
-        <Skeleton width="55%" height={16} style={{ marginBottom: 8 }} />
+        <Skeleton width="88%" height={14} style={{ marginBottom: 4 }} />
+        <Skeleton width="55%" height={14} style={{ marginBottom: 8 }} />
 
         {/* Price row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <Skeleton width={64} height={18} />
-          <Skeleton width={50} height={14} />
-          <Skeleton width={62} height={14} variant="pill" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+          <Skeleton width={64} height={16} />
         </div>
 
         {/* Wash / fabric description line */}
-        <Skeleton width="75%" height={12} style={{ marginBottom: 14 }} />
+        <Skeleton width="75%" height={11} style={{ marginBottom: 10 }} />
 
         {/* Add to bag button placeholder */}
         <Skeleton

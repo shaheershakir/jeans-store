@@ -7195,136 +7195,9 @@ button:active,
 
 @media (max-width: 600px) {
   .apple-related-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 10px;
   }
-}
-
-.apple-related-card {
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.apple-related-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
-}
-
-.apple-related-img-wrap {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  background: #f4f4f2;
-  overflow: hidden;
-}
-
-.apple-related-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.apple-related-card:hover .apple-related-img {
-  transform: scale(1.035);
-}
-
-.apple-badge-tag {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: #0c0e12;
-  color: #ffffff;
-  font-family: var(--font-ui);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  padding: 3px 8px;
-  border-radius: 9999px;
-  text-transform: uppercase;
-}
-
-.apple-related-details {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.apple-related-category {
-  font-family: var(--font-ui);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
-
-.apple-related-name-link {
-  text-decoration: none;
-  color: inherit;
-  margin-bottom: 8px;
-}
-
-.apple-related-name {
-  font-family: var(--font-brand);
-  font-size: 15px;
-  font-weight: 600;
-  color: #0c0e12;
-  line-height: 1.3;
-}
-
-.apple-related-price-row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.apple-related-price {
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: 700;
-  color: #0c0e12;
-  font-feature-settings: 'tnum';
-}
-
-.apple-related-wash {
-  font-family: var(--font-ui);
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.apple-quick-add-btn {
-  margin-top: auto;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f3f4f6;
-  border: none;
-  padding: 9px;
-  border-radius: 10px;
-  font-family: var(--font-brand);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #0c0e12;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.apple-quick-add-btn:hover {
-  background: #0c0e12;
-  color: #ffffff;
-}
-
-.apple-quick-add-btn.added {
-  background: #15803d;
-  color: #ffffff;
 }
 
 /* ── 7. Apple Sticky Quick-Add Floating Bottom Bar (PDP) ── */
@@ -11906,7 +11779,7 @@ select {
   gap: clamp(12px, 2vw, 24px);
 }
 
-.hp-root .product-card {
+.product-card {
   min-width: 0;
   overflow: visible;
   border: 0;
@@ -11916,31 +11789,37 @@ select {
   transform: none;
 }
 
-.hp-root .product-image-container {
+.product-card:hover {
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.product-card .product-image-container {
   position: relative;
   aspect-ratio: 3 / 4;
   border-radius: 0;
   background: #eeede7;
 }
 
-.hp-root .image-wrapper {
+.product-card .image-wrapper {
   width: 100%;
   height: 100%;
   aspect-ratio: 3 / 4;
   overflow: hidden;
 }
 
-.hp-root .product-image-container img {
+.product-card .product-image-container img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.hp-root .product-rating-pill {
+.product-card .product-rating-pill {
   display: none;
 }
 
-.hp-root .product-fav-btn {
+.product-card .product-fav-btn {
   top: 10px;
   right: 10px;
   width: 38px;
@@ -11949,23 +11828,23 @@ select {
   color: #172126;
 }
 
-.hp-root .product-info-wrap {
+.product-card .product-info-wrap {
   padding: 12px 0 0;
 }
 
-.hp-root .product-brand-name {
+.product-card .product-brand-name {
   margin-bottom: 5px;
   color: #768085;
   font: 600 9px/1.2 var(--font-ui);
   letter-spacing: 0.12em !important;
 }
 
-.hp-root .product-title-link {
+.product-card .product-title-link {
   color: inherit;
   text-decoration: none;
 }
 
-.hp-root .product-title {
+.product-card .product-title {
   display: -webkit-box;
   min-height: 2.6em;
   margin: 0 0 7px;
@@ -11976,14 +11855,14 @@ select {
   -webkit-line-clamp: 2;
 }
 
-.hp-root .product-price-row {
+.product-card .product-price-row {
   min-height: 20px;
   gap: 0;
   color: #172126;
   font: 600 13px/1.2 var(--font-ui);
 }
 
-.hp-root .product-wash-label {
+.product-card .product-wash-label {
   min-height: 1.3em;
   margin: 5px 0 10px;
   overflow: hidden;
@@ -11993,12 +11872,12 @@ select {
   white-space: nowrap;
 }
 
-.hp-root .product-size-select-label {
+.product-card .product-size-select-label {
   display: block;
   margin: 0 0 8px;
 }
 
-.hp-root .product-size-select {
+.product-card .product-size-select {
   width: 100%;
   min-height: 40px;
   padding: 0 10px;
@@ -12009,7 +11888,7 @@ select {
   font: 500 12px/1.2 var(--font-ui);
 }
 
-.hp-root .card-add-btn {
+.product-card .card-add-btn {
   display: flex;
   width: 100%;
   min-height: 42px;
@@ -12026,11 +11905,17 @@ select {
   cursor: pointer;
 }
 
-.hp-root .card-add-btn:disabled {
+.product-card .card-add-btn:disabled {
   border-color: #d5d5d0;
   background: #e9e8e3;
   color: #747b7d;
   cursor: not-allowed;
+}
+
+.product-card .card-add-btn.added {
+  border-color: var(--accent-green);
+  background: var(--accent-green);
+  color: #fff;
 }
 
 .pdp-size-cell:disabled,
@@ -12286,11 +12171,11 @@ select {
     color: #b5c8d2;
   }
 
-  .hp-root .product-image-container img {
+  .product-card .product-image-container img {
     transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
   }
 
-  .hp-root .product-card:hover .product-image-container img {
+  .product-card:hover .product-image-container img {
     transform: scale(1.025);
   }
 }
@@ -12537,30 +12422,30 @@ select {
     gap: 24px 10px;
   }
 
-  .hp-root .product-info-wrap {
+  .product-card .product-info-wrap {
     padding-top: 9px;
   }
 
-  .hp-root .product-title {
+  .product-card .product-title {
     min-height: 2.6em;
     font-size: 12px;
   }
 
-  .hp-root .product-price-row {
+  .product-card .product-price-row {
     font-size: 12px;
   }
 
-  .hp-root .product-wash-label {
+  .product-card .product-wash-label {
     margin-bottom: 8px;
     font-size: 10px;
   }
 
-  .hp-root .product-size-select {
+  .product-card .product-size-select {
     min-height: 40px;
     font-size: 16px;
   }
 
-  .hp-root .card-add-btn {
+  .product-card .card-add-btn {
     min-height: 40px;
     font-size: 10px;
   }
