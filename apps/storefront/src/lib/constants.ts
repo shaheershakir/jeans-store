@@ -6,6 +6,7 @@ export type Fit =
   | 'Straight'
   | 'Baggy'
   | 'Wide'
+  | 'Tapered'
   | 'Bootcut'
   | 'Slim'
 
@@ -81,6 +82,7 @@ export interface ProductVariant {
   price?: number
   stock: number
   reserved: number
+  weight?: number
   status: 'Active' | 'Inactive'
 }
 
@@ -828,7 +830,7 @@ export const PRODUCTS: Product[] = [
   }
 ]
 
-export const FITS: Fit[] = ['Oversized', 'Boxy', 'Relaxed', 'Regular', 'Straight', 'Baggy']
+export const FITS: Fit[] = ['Oversized', 'Boxy', 'Relaxed', 'Regular', 'Straight', 'Baggy', 'Tapered']
 
 export const SIZES = ['S', 'M', 'L', 'XL', 'XXL']
 
@@ -838,9 +840,6 @@ export const SWATCHES = [
   { name: 'Forest Green', className: 'green' },
   { name: 'Ecru / Navy', className: 'ecru' }
 ]
-
-export const FREE_SHIPPING_THRESHOLD = 1499
-export const SHIPPING_FEE = 99
 
 // ─── Homepage Layout Configuration ────────────────────────────────────────────
 
@@ -1013,7 +1012,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   announcement: {
     enabled: true,
     messages: [
-      '🚚 Free shipping on orders above ₹1,499',
+      '📦 Paid delivery calculated by destination and parcel weight',
       '🔄 7-Day doorstep exchanges — no questions asked',
       '🏭 24h dispatch from Mumbai',
       '💳 Cash on delivery available across India'
@@ -1190,7 +1189,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   trust_bar: {
     enabled: true,
     items: [
-      { id: '1', title: 'Free shipping above ₹1,499', icon: 'truck' },
+      { id: '1', title: 'Paid delivery by destination and weight', icon: 'truck' },
       { id: '2', title: '7-day doorstep exchange', icon: 'repeat' },
       { id: '3', title: '24h dispatch from Mumbai', icon: 'package' },
       { id: '4', title: 'Secure payments', icon: 'shield' }

@@ -25,7 +25,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   if (isLoginPage) {
     return (
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="system">
         <div className="min-h-screen bg-background text-foreground">{children}</div>
       </ThemeProvider>
     )
@@ -69,7 +69,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ThemeProvider defaultTheme="light">
+    <ThemeProvider defaultTheme="system">
       <LayoutProvider>
         <SearchProvider>
           <SidebarProvider>

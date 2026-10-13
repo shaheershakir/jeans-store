@@ -95,7 +95,7 @@ export default function PromotionsPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <Field label="Campaign Title" required hint="e.g. Summer Denim Fest">
+                <Field label="Campaign Title" required hint="e.g. Summer Apparel Edit">
                   <Input value={title} onChange={(e) => setTitle(e.target.value)} />
                 </Field>
 

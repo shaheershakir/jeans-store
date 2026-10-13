@@ -5,7 +5,7 @@ import { OnboardingSkeleton } from '@/components/skeletons'
 
 export const metadata: Metadata = {
   title: 'Onboarding & Size Setup — TEESGARAGE',
-  description: 'Personalize your delivery destination and signature denim fit preferences.'
+  description: 'Personalize your delivery destination and apparel fit preferences.'
 }
 
 export default function OnboardingPage() {

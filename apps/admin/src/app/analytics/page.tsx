@@ -3,6 +3,8 @@
 import * as React from 'react'
 import { BarChart3, TrendingUp, ShoppingBag, DollarSign, Package } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
+import { fetchBackendProducts } from '@/services/catalog'
+import { fetchBackendOrders } from '@/services/commerce'
 import { PageContent, PageHeader } from '@/components/ui/page-header'
 import { KpiCard } from '@/components/ui/kpi'
 import { Card, CardHeader } from '@/components/ui/primitives'
@@ -18,6 +20,10 @@ import { formatINR } from '@/lib/format'
 
 export default function AnalyticsPage() {
   const data = useAdminStore((s) => s.data)
+
+  React.useEffect(() => {
+    void Promise.all([fetchBackendProducts(), fetchBackendOrders()]).catch(() => undefined)
+  }, [])
 
   const kpiData = React.useMemo(() => kpis(data, 30), [data])
   const dailySeries = React.useMemo(() => series(data, 30), [data])
@@ -80,12 +86,12 @@ export default function AnalyticsPage() {
         {/* Category & Color Breakdown */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card className="p-5">
-            <CardHeader title="Revenue by Denim Fit" subtitle="Fit performance distribution" />
+            <CardHeader title="Revenue by product fit" subtitle="Fit performance distribution" />
             <BreakdownBarChart data={fitsData} color="#4f46e5" valueName="Revenue (₹)" />
           </Card>
 
           <Card className="p-5">
-            <CardHeader title="Color Swatch Popularity" subtitle="Units sold by denim shade" />
+            <CardHeader title="Color popularity" subtitle="Units sold by product color" />
             <DonutChart data={colorsData} colorMap={CHART_COLORS} centerLabel="Shades" />
           </Card>
         </div>

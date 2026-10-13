@@ -8,6 +8,8 @@ import { PRODUCTS } from './constants'
 
 export interface CartItem {
   id: number
+  variantId?: number
+  color?: string
   name: string
   fit?: Fit
   wash?: string
@@ -20,9 +22,9 @@ export interface CartItem {
 
 interface CartState {
   items: CartItem[]
-  addItem: (productId: number, size: string, product?: Product) => void
-  updateQty: (id: number, size: string, delta: number) => void
-  removeItem: (id: number, size: string) => void
+  addItem: (productId: number, size: string, product?: Product, color?: string) => void
+  updateQty: (id: number, size: string, delta: number, variantId?: number) => void
+  removeItem: (id: number, size: string, variantId?: number) => void
   clearCart: () => void
 }
 
@@ -30,11 +32,13 @@ export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
       items: [],
-      addItem: (productId, size, productDetails) =>
+      addItem: (productId, size, productDetails, color) =>
         set((state) => {
           const product = productDetails ?? PRODUCTS.find((p) => p.id === productId)
           if (!product) return state
-          const existing = state.items.find((item) => item.id === productId && item.size === size)
+          const variant = product.variants?.find((item) => String(item.size) === String(size) && item.status === 'Active' && (!color || item.color.toLowerCase() === color.toLowerCase()))
+          if (product.variants && (!variant || variant.stock - variant.reserved <= 0)) return state
+          const existing = state.items.find((item) => item.id === productId && item.size === size && item.variantId === variant?.id)
           if (existing) {
             return {
               items: state.items.map((item) =>
@@ -47,11 +51,13 @@ export const useCartStore = create<CartState>()(
               ...state.items,
               {
                 id: product.id,
+                variantId: variant?.id,
+                color: variant?.color ?? color ?? product.color,
                 name: product.name,
                 fit: product.fit,
                 wash: product.wash,
-                price: product.price,
-                priceNum: product.priceNum,
+                price: variant?.price ? `₹${variant.price.toLocaleString('en-IN')}` : product.price,
+                priceNum: variant?.price ?? product.priceNum,
                 img: product.img,
                 size,
                 qty: 1
@@ -59,17 +65,17 @@ export const useCartStore = create<CartState>()(
             ]
           }
         }),
-      updateQty: (id, size, delta) =>
+      updateQty: (id, size, delta, variantId) =>
         set((state) => ({
           items: state.items
             .map((item) =>
-              item.id === id && item.size === size ? { ...item, qty: item.qty + delta } : item
+              item.id === id && item.size === size && (variantId === undefined || item.variantId === variantId) ? { ...item, qty: item.qty + delta } : item
             )
             .filter((item) => item.qty > 0)
         })),
-      removeItem: (id, size) =>
+      removeItem: (id, size, variantId) =>
         set((state) => ({
-          items: state.items.filter((item) => !(item.id === id && item.size === size))
+          items: state.items.filter((item) => !(item.id === id && item.size === size && (variantId === undefined || item.variantId === variantId)))
         })),
       clearCart: () => set({ items: [] })
     }),
@@ -265,26 +271,13 @@ interface AuthState {
   logout: () => void
 }
 
-const DEFAULT_SAMPLE_ADDRESSES: UserAddress[] = [
-  {
-    id: 'addr_default_1',
-    fullName: 'Devon Vance',
-    phone: '+91 98201 44521',
-    addressLine: 'Flat 402, Sea Green Apts, Perry Cross Road, Bandra West',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400050',
-    isDefault: true
-  }
-]
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
       token: null,
       isAuthenticated: false,
-      addresses: DEFAULT_SAMPLE_ADDRESSES,
+      addresses: [],
       setAuth: (user, token) => set({ user, token, isAuthenticated: true }),
       updateProfile: (updated) =>
         set((state) => ({
@@ -332,7 +325,22 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'teesgarage-auth',
-      skipHydration: true
+      version: 2,
+      skipHydration: true,
+      migrate: (persistedState) => {
+        const state = (persistedState || {}) as Partial<AuthState>
+        const isMockSession = state.token?.startsWith('mock_') || state.user?.uid === 'usr_demo_8829'
+        const addresses = Array.isArray(state.addresses)
+          ? state.addresses.filter((address) => address.id !== 'addr_default_1' && !address.addressLine.includes('Sea Green Apts'))
+          : []
+        return {
+          ...state,
+          user: isMockSession ? null : state.user,
+          token: isMockSession ? null : state.token,
+          isAuthenticated: isMockSession ? false : Boolean(state.isAuthenticated && state.token),
+          addresses
+        }
+      }
     }
   )
 )
@@ -347,7 +355,7 @@ interface FavoriteState {
 export const useFavoriteStore = create<FavoriteState>()(
   persist(
     (set, get) => ({
-      favorites: [0, 4], // Pre-populate with two sample favorites for rich UX
+      favorites: [],
       toggleFavorite: (productId) =>
         set((state) => ({
           favorites: state.favorites.includes(productId)
@@ -401,7 +409,7 @@ export const usePreferencesStore = create<PreferencesState>()(
         const prefs = get().preferences
         const isNumeric = availableSizes.every((s) => /^\d+$/.test(s))
 
-        // Denim / Numeric Waist Sizes (e.g. 28, 30, 32, 34, 36, 38)
+        // Numeric sizes are used by Trackpants and Sweatpants.
         if (isNumeric) {
           if (availableSizes.includes(prefs.waistSize)) {
             return prefs.waistSize

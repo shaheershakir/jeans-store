@@ -59,7 +59,7 @@ const FIT_OPTIONS: Array<{
   {
     fit: 'Wide',
     tagline: 'Architectural Voluminous',
-    desc: 'Dramatic full-leg silhouette tailored from Japanese selvedge-inspired block.'
+    desc: 'A relaxed, full-leg shape for an easy fit through the seat and leg.'
   },
   {
     fit: 'Relaxed',
@@ -153,7 +153,7 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
   }, [])
 
   useEffect(() => {
-    if (user?.name && (!fullName || fullName === 'Devon Vance')) {
+    if (user?.name && !fullName) {
       setFullName(user.name)
     }
     if (user?.phone && !phone) {
@@ -295,7 +295,7 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
                 <MapPin className="w-5 h-5 text-zinc-900" />
               </div>
               <div>
-                <h2 className="onboarding-title">Where should we deliver your denim?</h2>
+                <h2 className="onboarding-title">Where should we deliver your order?</h2>
                 <p className="onboarding-desc">
                   Save your primary delivery destination once for instant 1-tap WhatsApp checkout and tracked express dispatch.
                 </p>
@@ -317,7 +317,7 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Devon Vance"
+                    placeholder="Enter your name"
                     className="onboarding-input"
                   />
                 </div>

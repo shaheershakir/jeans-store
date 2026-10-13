@@ -29,9 +29,15 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = React.useState('all')
   const [query, setQuery] = React.useState('')
   const [paymentFilter, setPaymentFilter] = React.useState('all')
+  const [loading, setLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
+    let active = true
     void fetchBackendOrders()
+      .catch((error) => { if (active) setLoadError(error instanceof Error ? error.message : 'Could not load orders.') })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
   }, [])
 
   const filteredOrders = React.useMemo(() => {
@@ -135,10 +141,14 @@ export default function OrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-divider">
-                {filteredOrders.length === 0 ? (
+                {loadError ? (
+                  <tr><td colSpan={7} className="py-8 text-center text-destructive">{loadError}</td></tr>
+                ) : loading ? (
+                  <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Loading orders…</td></tr>
+                ) : filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-ink-3">
-                      No orders found matching filters.
+                      {orders.length === 0 ? 'No customer orders yet.' : 'No orders match these filters.'}
                     </td>
                   </tr>
                 ) : (

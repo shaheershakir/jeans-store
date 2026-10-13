@@ -10,10 +10,12 @@ export const products = pgTable('products', {
   priceNum: integer('price_num').notNull(),
   img: text('img').notNull(),
   img2: text('img2').notNull(),
+  images: jsonb('images').$type<string[]>().notNull().default([]),
   badge: varchar('badge', { length: 50 }),
   desc: text('desc').notNull(),
   wash: varchar('wash', { length: 100 }),
   sizes: jsonb('sizes'),
+  adminData: jsonb('admin_data').$type<Record<string, unknown>>().notNull().default({}),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
@@ -35,9 +37,17 @@ export const orders = pgTable('orders', {
   subtotal: integer('subtotal').notNull(),
   shipping: integer('shipping').notNull(),
   total: integer('total').notNull(),
-  status: varchar('status', { length: 50 }).default('pending').notNull(),
+  status: varchar('status', { length: 50 }).default('Pending').notNull(),
+  paymentStatus: varchar('payment_status', { length: 50 }).default('Pending').notNull(),
   handoffType: varchar('handoff_type', { length: 50 }).default('whatsapp').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull()
+  carrier: varchar('carrier', { length: 100 }),
+  trackingNumber: varchar('tracking_number', { length: 100 }),
+  shippedAt: timestamp('shipped_at'),
+  deliveredAt: timestamp('delivered_at'),
+  adminNotes: jsonb('admin_notes').$type<Array<{ id: string; text: string; at: string; by: string; internal: boolean }>>().notNull().default([]),
+  events: jsonb('events').$type<Array<{ id: string; status: string; note: string; at: string; by: string }>>().notNull().default([]),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
 
 export const users = pgTable('users', {
@@ -89,6 +99,24 @@ export const productVariants = pgTable(
     uniqueIndex('product_variants_product_color_size_idx').on(table.productId, table.color, table.size)
   ]
 )
+
+export interface ShippingRate {
+  baseWeightGrams: number
+  baseCharge: number
+  additionalWeightGrams: number
+  additionalCharge: number
+}
+
+export interface ShippingRates {
+  kerala: ShippingRate
+  restOfIndia: ShippingRate
+}
+
+export const shippingSettings = pgTable('shipping_settings', {
+  id: varchar('id', { length: 50 }).primaryKey(),
+  rates: jsonb('rates').$type<ShippingRates>().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+})
 
 export type DbProduct = typeof products.$inferSelect
 export type DbNewProduct = typeof products.$inferInsert

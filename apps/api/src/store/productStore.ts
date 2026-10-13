@@ -1,5 +1,5 @@
-import { eq } from 'drizzle-orm'
-import type { CreateProduct, Product, UpdateProduct, Variant, Fit, StoreType } from '../schemas/product.js'
+import { and, eq, sql } from 'drizzle-orm'
+import { CATEGORIES, type Category, type CreateProduct, type Fit, type Product, type StoreType, type UpdateProduct, type Variant } from '../schemas/product.js'
 import { PRODUCTS } from '../data/products.js'
 import { db, isDatabaseConfigured } from '../db/index.js'
 import {
@@ -13,7 +13,6 @@ import {
   generateProductScopedSku,
   type SkuComponents
 } from '../services/skuService.js'
-import { logger } from '../lib/logger.js'
 
 function toVariant(row: DbProductVariant): Variant {
   return {
@@ -33,20 +32,24 @@ function toVariant(row: DbProductVariant): Variant {
 }
 
 function toProduct(row: DbProduct, variants: Variant[] = []): Product {
+  const validCategory = CATEGORIES.includes(row.category as Category)
+  const adminData = row.adminData ?? {}
   return {
     id: row.id,
     store: (row.store as StoreType) || 'teesgarage',
-    category: row.category || 'printed-tees',
+    category: validCategory ? (row.category as Category) : 'printed-tees',
     name: row.name,
     fit: (row.fit as Fit) || undefined,
     price: row.price,
     priceNum: row.priceNum,
     img: row.img,
     img2: row.img2,
+    images: row.images ?? [],
     badge: row.badge ?? undefined,
     desc: row.desc,
     wash: row.wash ?? undefined,
     sizes: (row.sizes as string[]) ?? undefined,
+    adminData: validCategory ? adminData : { ...adminData, status: 'Archived', legacyCategory: row.category },
     variants: variants.length > 0 ? variants : undefined,
     createdAt: row.createdAt
   }
@@ -172,27 +175,21 @@ export class ProductStore {
   async list(filters?: { store?: string; category?: string; fit?: string; sku?: string; q?: string }): Promise<Product[]> {
     let list: Product[]
     if (isDatabaseConfigured() && db) {
-      try {
-        const productRows = await db.select().from(productsTable)
-        const variantRows = await db.select().from(productVariantsTable)
+      const productRows = await db.select().from(productsTable)
+      const variantRows = await db.select().from(productVariantsTable)
 
-        const variantMap = new Map<number, Variant[]>()
-        for (const vr of variantRows) {
-          if (!variantMap.has(vr.productId)) {
-            variantMap.set(vr.productId, [])
-          }
-          variantMap.get(vr.productId)!.push(toVariant(vr))
+      const variantMap = new Map<number, Variant[]>()
+      for (const vr of variantRows) {
+        if (!variantMap.has(vr.productId)) {
+          variantMap.set(vr.productId, [])
         }
-
-        list = productRows.map((p) => toProduct(p, variantMap.get(p.id) || []))
-      } catch (err) {
-        logger.warn({ err }, '[ProductStore] Database query failed, serving fallback memory catalog')
-        list = this.memoryProducts.map((p) => ({
-          ...p,
-          variants: this.memoryVariants.filter((v) => v.productId === p.id)
-        }))
+        variantMap.get(vr.productId)!.push(toVariant(vr))
       }
+      list = productRows.map((p) => toProduct(p, variantMap.get(p.id) || []))
+    } else if (process.env.NODE_ENV === 'production') {
+      throw new Error('Product database is not configured.')
     } else {
+      if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
       list = this.memoryProducts.map((p) => ({
         ...p,
         variants: this.memoryVariants.filter((v) => v.productId === p.id)
@@ -235,17 +232,16 @@ export class ProductStore {
 
   async getById(id: number): Promise<Product | undefined> {
     if (isDatabaseConfigured() && db) {
-      try {
-        const [pRow] = await db.select().from(productsTable).where(eq(productsTable.id, id))
-        if (!pRow) return undefined
-        const vRows = await db
-          .select()
-          .from(productVariantsTable)
-          .where(eq(productVariantsTable.productId, id))
-        return toProduct(pRow, vRows.map(toVariant))
-      } catch (err) {
-        logger.warn({ err, id }, '[ProductStore] Database query failed in getById, serving memory product')
-      }
+      const [pRow] = await db.select().from(productsTable).where(eq(productsTable.id, id))
+      if (!pRow) return undefined
+      const vRows = await db
+        .select()
+        .from(productVariantsTable)
+        .where(eq(productVariantsTable.productId, id))
+      return toProduct(pRow, vRows.map(toVariant))
+    }
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Product database is not configured.')
     }
 
     const found = this.memoryProducts.find((p) => p.id === id)
@@ -254,6 +250,28 @@ export class ProductStore {
       ...found,
       variants: this.memoryVariants.filter((v) => v.productId === id)
     }
+  }
+
+  async adjustStock(variantId: number, delta: number): Promise<Variant> {
+    if (isDatabaseConfigured() && db) {
+      const [row] = await db
+        .update(productVariantsTable)
+        .set({ stock: sql`${productVariantsTable.stock} + ${delta}`, updatedAt: new Date() })
+        .where(and(
+          eq(productVariantsTable.id, variantId),
+          sql`${productVariantsTable.stock} + ${delta} >= ${productVariantsTable.reserved}`
+        ))
+        .returning()
+      if (!row) throw new Error('Variant not found or adjustment would reduce stock below reserved units.')
+      return toVariant(row)
+    }
+
+    if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
+    const variant = this.memoryVariants.find((item) => item.id === variantId)
+    if (!variant) throw new Error('Variant not found.')
+    if (variant.stock + delta < variant.reserved) throw new Error('Adjustment would reduce stock below reserved units.')
+    variant.stock += delta
+    return { ...variant }
   }
 
   async getBySku(sku: string): Promise<{ product: Product; variant: Variant } | undefined> {
@@ -268,6 +286,8 @@ export class ProductStore {
       if (!product) return undefined
       return { product, variant: toVariant(vRow) }
     }
+
+    if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
 
     const variant = this.memoryVariants.find((v) => Boolean(v.sku && v.sku.toUpperCase() === cleanSku))
     if (!variant) return undefined
@@ -291,14 +311,17 @@ export class ProductStore {
           priceNum: input.priceNum,
           img: input.img,
           img2: input.img2,
+          images: input.images ?? [],
           badge: input.badge ?? null,
           desc: input.desc,
           wash: input.wash ?? null,
-          sizes: input.sizes ?? null
+          sizes: input.sizes ?? null,
+          adminData: input.adminData ?? {}
         })
         .returning()
       newProductId = row.id
     } else {
+      if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
       newProductId = this.memoryProducts.length > 0 ? Math.max(...this.memoryProducts.map((p) => p.id)) + 1 : 0
     }
 
@@ -423,10 +446,12 @@ export class ProductStore {
       if (patch.priceNum !== undefined) updateData.priceNum = patch.priceNum
       if (patch.img !== undefined) updateData.img = patch.img
       if (patch.img2 !== undefined) updateData.img2 = patch.img2
+      if (patch.images !== undefined) updateData.images = patch.images
       if (patch.badge !== undefined) updateData.badge = patch.badge
       if (patch.desc !== undefined) updateData.desc = patch.desc
       if (patch.wash !== undefined) updateData.wash = patch.wash
       if (patch.sizes !== undefined) updateData.sizes = patch.sizes
+      if (patch.adminData !== undefined) updateData.adminData = patch.adminData
 
       await db
         .update(productsTable)
@@ -611,6 +636,8 @@ export class ProductStore {
         .returning({ id: productsTable.id })
       return Boolean(row)
     }
+
+    if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
 
     const before = this.memoryProducts.length
     this.memoryProducts = this.memoryProducts.filter((p) => p.id !== id)

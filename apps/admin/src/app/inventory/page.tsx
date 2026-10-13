@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Image from 'next/image'
 import {
   ArrowDown,
   ArrowUp,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
 import { adjustStock } from '@/services/commerce'
+import { fetchBackendProducts } from '@/services/catalog'
 import { PageContent, PageHeader } from '@/components/ui/page-header'
 import { Button, Card, CardHeader, Field, Input, Select } from '@/components/ui/primitives'
 import { StockBadge } from '@/components/ui/status'
@@ -37,6 +39,10 @@ export default function InventoryPage() {
   const [reason, setReason] = React.useState<string>('Stock Purchase')
   const [reference, setReference] = React.useState<string>('')
   const [submitting, setSubmitting] = React.useState(false)
+
+  React.useEffect(() => {
+    void fetchBackendProducts().catch((error) => toastError(error instanceof Error ? error.message : 'Could not load inventory.'))
+  }, [])
 
   // Flatten variants with parent product info
   const allVariants = React.useMemo(() => {
@@ -227,9 +233,11 @@ export default function InventoryPage() {
                     <tr key={v.id} className="hover:bg-surface-subtle transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <img
+                          <Image
                             src={v.productImage}
                             alt=""
+                            width={32}
+                            height={32}
                             className="h-8 w-8 rounded object-cover border border-line"
                           />
                           <div>

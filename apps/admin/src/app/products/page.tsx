@@ -1,13 +1,14 @@
 ﻿'use client'
 
 import * as React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Edit2, Plus, Search, Trash2, Filter } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
 import { PageContent, PageHeader } from '@/components/ui/page-header'
 import { Button, Card, Checkbox, Input, Select } from '@/components/ui/primitives'
 import { ProductStatusBadge } from '@/components/ui/status'
-import { bulkDeleteProducts, bulkSetProductStatus } from '@/services/catalog'
+import { bulkDeleteProducts, bulkSetProductStatus, fetchBackendProducts } from '@/services/catalog'
 import { toastSuccess, toastError } from '@/components/ui/toast'
 import { formatINR } from '@/lib/format'
 import type { Fit, ProductStatus } from '@/lib/types'
@@ -20,6 +21,17 @@ export default function ProductsPage() {
   const [selectedFit, setSelectedFit] = React.useState<string>('all')
   const [selectedStatus, setSelectedStatus] = React.useState<string>('all')
   const [selectedIds, setSelectedIds] = React.useState<number[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    let active = true
+    void fetchBackendProducts()
+      .then(() => { if (active) setLoadError(null) })
+      .catch((error) => { if (active) setLoadError(error instanceof Error ? error.message : 'Could not load products.') })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [])
 
   const filteredProducts = React.useMemo(() => {
     return products.filter((p) => {
@@ -82,7 +94,7 @@ export default function ProductsPage() {
     <div>
       <PageHeader
         title="Products"
-        description={`Manage TEESGARAGE product catalog (${products.length} products total)`}
+        description={`Manage the TEESGARAGE apparel catalog (${products.length} products)`}
       >
         <Link href="/products/new">
           <Button size="sm">
@@ -107,16 +119,7 @@ export default function ProductsPage() {
                 />
               </div>
 
-              <div className="w-36">
-                <Select value={selectedFit} onChange={(e) => setSelectedFit(e.target.value)}>
-                  <option value="all">All Fits</option>
-                  <option value="Straight">Straight</option>
-                  <option value="Skinny">Skinny</option>
-                  <option value="Slim">Slim</option>
-                  <option value="Relaxed">Relaxed</option>
-                  <option value="Bootcut">Bootcut</option>
-                </Select>
-              </div>
+              <div className="w-40"><Select value={selectedFit} onChange={(e) => setSelectedFit(e.target.value)}><option value="all">All fits</option><option value="Regular">Regular</option><option value="Oversized">Oversized</option><option value="Boxy">Boxy</option><option value="Relaxed">Relaxed</option><option value="Straight">Straight</option><option value="Baggy">Baggy</option></Select></div>
 
               <div className="w-36">
                 <Select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
@@ -167,10 +170,14 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-divider">
-                {filteredProducts.length === 0 ? (
+                  {loadError ? (
+                    <tr><td colSpan={8} className="py-8 text-center text-destructive">{loadError}</td></tr>
+                  ) : loading ? (
+                    <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">Loading catalog…</td></tr>
+                  ) : filteredProducts.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-8 text-center text-ink-3">
-                      No products found matching criteria.
+                      {products.length === 0 ? 'No products yet. Add your first product to publish it to the storefront.' : 'No products match these filters.'}
                     </td>
                   </tr>
                 ) : (
@@ -189,9 +196,11 @@ export default function ProductsPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-line bg-canvas">
-                              <img
+                              <Image
                                 src={product.image}
                                 alt={product.name}
+                                width={40}
+                                height={40}
                                 className="h-full w-full object-cover"
                               />
                             </div>
@@ -203,7 +212,7 @@ export default function ProductsPage() {
                                 {product.name}
                               </Link>
                               <p className="text-[11px] text-ink-3">
-                                {categories.find((c) => c.id === product.categoryId)?.name ?? 'Jeans'}
+                                {categories.find((c) => c.id === product.categoryId)?.name ?? 'Uncategorized'}
                               </p>
                             </div>
                           </div>

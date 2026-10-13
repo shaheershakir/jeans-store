@@ -125,7 +125,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
             <div className="hp-hero-media">
               <Image
                 src={h.imageUrl || '/hero-man.jpg'}
-                alt={h.title || 'TEESGARAGE — Built for everyday denim'}
+                alt={h.title || 'TEESGARAGE — Built for everyday apparel'}
                 fill
                 priority
                 className="hp-hero-img"

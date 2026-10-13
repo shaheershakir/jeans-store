@@ -27,6 +27,7 @@ import { OrderBadge, PaymentBadge } from '@/components/ui/status'
 import { toastSuccess, toastError } from '@/components/ui/toast'
 import { formatINR } from '@/lib/format'
 import type { FulfillmentStatus, PaymentStatus } from '@/lib/types'
+import { fetchBackendOrders } from '@/services/commerce'
 
 export default function OrderDetailPage({
   params,
@@ -47,6 +48,21 @@ export default function OrderDetailPage({
   const [trackingNumber, setTrackingNumber] = React.useState('')
   const [showTrackingModal, setShowTrackingModal] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
+  const [fetching, setFetching] = React.useState(!order)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (order) return
+    let active = true
+    void fetchBackendOrders()
+      .catch((error) => { if (active) setLoadError(error instanceof Error ? error.message : 'Could not load order.') })
+      .finally(() => { if (active) setFetching(false) })
+    return () => { active = false }
+  }, [order])
+
+  if (fetching) {
+    return <div><PageHeader title="Loading order…" /><PageContent><div className="py-12 text-center text-muted-foreground">Loading order details…</div></PageContent></div>
+  }
 
   if (!order) {
     return (
@@ -57,7 +73,7 @@ export default function OrderDetailPage({
         />
         <PageContent>
           <div className="py-12 text-center text-ink-3">
-            Order #{resolvedParams.id} could not be found.
+            {loadError ?? `Order #${resolvedParams.id} could not be found.`}
           </div>
         </PageContent>
       </div>
@@ -310,7 +326,7 @@ export default function OrderDetailPage({
                 <div className="flex justify-between text-ink-2">
                   <span>Shipping Fee</span>
                   <span className="tnum font-medium text-ink">
-                    {order.shippingFee === 0 ? 'FREE' : formatINR(order.shippingFee)}
+                    {formatINR(order.shippingFee)}
                   </span>
                 </div>
                 <div className="flex justify-between text-ink-2">

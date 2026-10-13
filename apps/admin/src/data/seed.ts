@@ -44,7 +44,7 @@ import {
 
 const SEED = 20260830
 const NOW = Date.now()
-export const DATA_VERSION = 4
+export const DATA_VERSION = 6
 
 
 export const IMAGE_POOL = [
@@ -67,7 +67,7 @@ function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
-const BRAND_CODE: Record<string, string> = { TEESGARAGE: 'TG', 'INDIGO WORKS': 'IWK', 'RETRO DENIM CO.': 'RDC' }
+const BRAND_CODE: Record<string, string> = { TEESGARAGE: 'TG' }
 const COLOR_CODE: Record<string, string> = {
   Blue: 'BLU',
   'Dark Blue': 'DBL',
@@ -89,18 +89,17 @@ const CATEGORIES: Category[] = [
 ]
 
 const COLLECTIONS: Collection[] = [
-  { id: 1, name: 'New Arrivals', slug: 'new-arrivals', description: 'Fresh drops from this season.', status: 'Active' },
-  { id: 2, name: 'Bestsellers', slug: 'bestsellers', description: 'The pairs customers come back for.', status: 'Active' },
-  { id: 3, name: 'Premium Selvedge', slug: 'premium-selvedge', description: 'Raw and rigid selvedge denim.', status: 'Active' },
-  { id: 4, name: 'Office Denim', slug: 'office-denim', description: 'Dark, sharp cuts that pass for formal.', status: 'Active' },
-  { id: 5, name: 'Summer Essentials', slug: 'summer-essentials', description: 'Light and breathable denim.', status: 'Active' },
+  { id: 1, name: 'New Arrivals', slug: 'new-arrivals', description: 'Fresh apparel drops from this season.', status: 'Active' },
+  { id: 2, name: 'Bestsellers', slug: 'bestsellers', description: 'Customer-favorite tees and bottoms.', status: 'Active' },
+  { id: 3, name: 'Everyday Essentials', slug: 'everyday-essentials', description: 'Easy-to-wear pieces for daily rotation.', status: 'Active' },
+  { id: 4, name: 'Streetwear', slug: 'streetwear', description: 'Relaxed fits and graphic apparel.', status: 'Active' },
+  { id: 5, name: 'Seasonal Edit', slug: 'seasonal-edit', description: 'Apparel selected for the season.', status: 'Active' },
 ]
 
-function sizeRangeFor(gender: string, fit: string): number[] {
-  if (gender === 'Women') return [28, 30, 32, 34, 36]
-  if (fit === 'Relaxed') return [28, 30, 32, 34, 36, 38, 40]
-  if (fit === 'Straight' || fit === 'Bootcut') return [28, 30, 32, 34, 36, 38]
-  return [28, 30, 32, 34, 36]
+function sizeRangeFor(category: string): Array<string | number> {
+  return category === 'trackpants' || category === 'sweatpants'
+    ? [28, 30, 32, 34, 36, 38, 40]
+    : ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 }
 
 let globalVariantId = 1
@@ -114,11 +113,12 @@ function buildProduct(
   now: number
 ): Product {
   const status: ProductStatus = index % 9 === 7 ? 'Draft' : index % 13 === 11 ? 'Archived' : 'Active'
-  const sizes = sizeRangeFor(spec.gender, spec.fit)
+  const sizes = sizeRangeFor(spec.category)
   const colors = [spec.color, alternateColor(spec.color)]
   const productId = index + 1
-  const categoryId = spec.gender === 'Women' ? 2 : spec.gender === 'Men' ? 1 : 3
-  const categorySlug = CATEGORIES.find((c) => c.id === categoryId)?.slug || 'stripes'
+  const category = CATEGORIES.find((c) => c.slug === spec.category) ?? CATEGORIES[3]
+  const categoryId = category.id
+  const categorySlug = category.slug
   const variants: Variant[] = []
 
   for (let ci = 0; ci < colors.length; ci++) {
@@ -149,7 +149,7 @@ function buildProduct(
         stock,
         reserved: stock > 0 ? randInt(rand, 0, Math.min(4, stock)) : 0,
         reorderPoint: randInt(rand, 6, 14),
-        weight: randInt(rand, 660, 790),
+        weight: spec.category === 'trackpants' || spec.category === 'sweatpants' ? randInt(rand, 600, 800) : randInt(rand, 250, 450),
         barcode: `890${String(10000000000 + id * 7919).slice(0, 11)}`,
         status: status === 'Active' ? 'Active' : 'Active',
       })
@@ -170,8 +170,7 @@ function buildProduct(
     brand: spec.brand,
     categoryId,
 
-    collectionId:
-      spec.material === 'Selvedge Denim' ? 3 : index % 7 === 0 ? 2 : index % 4 === 0 ? 4 : index % 5 === 0 ? 5 : 1,
+    collectionId: index % 7 === 0 ? 2 : index % 4 === 0 ? 4 : index % 5 === 0 ? 5 : 1,
     fit: spec.fit,
     gender: spec.gender,
     rise: spec.rise,
@@ -184,6 +183,7 @@ function buildProduct(
     taxRate: 18,
     status,
     featured: index % 7 === 0,
+    weightGrams: spec.category === 'trackpants' || spec.category === 'sweatpants' ? 650 : 350,
     views: randInt(rand, 900, 19000),
     wishlists: randInt(rand, 40, 950),
     image,
@@ -296,7 +296,7 @@ function buildOneOrder(
   const subtotal = itemTotal + (variant2 ? variant2.price * qty2 : 0)
   const useCoupon = rand() < 0.18
   const discount = useCoupon && subtotal >= 1499 ? Math.round(subtotal * (rand() < 0.5 ? 0.1 : 0.15)) : 0
-  const shippingFee = subtotal - discount >= 1499 ? 0 : 99
+  const shippingFee = 99
   const tax = Math.round((subtotal - discount) * 0.18)
   const total = subtotal - discount + shippingFee + tax
 
@@ -666,13 +666,13 @@ function buildRefunds(
 
 const REVIEW_TEXTS: { title: string; body: string; stars: number }[] = [
   { title: 'Perfect everyday fit', body: 'Bought these for daily wear and they fit true to size. Wash after wash the colour holds up well.', stars: 5 },
-  { title: 'Great quality denim', body: 'The fabric is thick and structured, exactly what I wanted. Slightly tight in the thighs for the first week.', stars: 4 },
+  { title: 'Great quality cotton', body: 'The fabric feels soft and structured, exactly what I wanted. The fit is comfortable for everyday wear.', stars: 4 },
   { title: 'Runs a little long', body: 'Quality is great but the inseam is longer than expected. Had to get it hemmed locally.', stars: 4 },
   { title: 'Comfort all day', body: 'Wore them on a 10-hour flight, zero discomfort. The stretch does its job.', stars: 5 },
   { title: 'Disappointed with the colour', body: 'The wash looks lighter in person than in the photos. Not a bad pair otherwise.', stars: 3 },
   { title: 'Thin fabric', body: 'Fabric feels thinner than my older pairs. Okay for summer but not winter.', stars: 3 },
   { title: 'Poor stitching', body: 'The button came off within two weeks. Customer support arranged a replacement.', stars: 2 },
-  { title: 'Best jeans I have owned', body: 'Third pair from this brand and they keep getting better. The fade pattern is beautiful.', stars: 5 },
+  { title: 'Best tee I have owned', body: 'Third piece from this brand and they keep getting better. The print and stitching are excellent.', stars: 5 },
   { title: 'Snug at the waist', body: 'Waist fits well but the hips are tight. Go one size up if you are between sizes.', stars: 4 },
   { title: 'Good value for money', body: 'At this price point, the quality is genuinely impressive. Would recommend.', stars: 4 },
   { title: 'Too baggy for me', body: 'I ordered the relaxed fit expecting a taper but it is quite wide. Style is subjective, fabric is fine.', stars: 3 },
@@ -732,7 +732,7 @@ function buildCoupons(now: number): Coupon[] {
   return [
     { id: 1, code: 'WELCOME15', type: 'percentage', value: 15, minOrderValue: 1299, maxDiscount: 499, startsAt: isoDaysAgo(300), endsAt: isoDaysAhead(300), usageLimit: null, perCustomerLimit: 1, productIds: [], categoryIds: [], isActive: true, timesUsed: 214 },
     { id: 2, code: 'FLAT199', type: 'fixed', value: 199, minOrderValue: 1999, maxDiscount: null, startsAt: isoDaysAgo(60), endsAt: isoDaysAhead(45), usageLimit: 500, perCustomerLimit: 1, productIds: [], categoryIds: [1], isActive: true, timesUsed: 132 },
-    { id: 3, code: 'DENIM10', type: 'percentage', value: 10, minOrderValue: 999, maxDiscount: 249, startsAt: isoDaysAgo(90), endsAt: isoDaysAhead(90), usageLimit: null, perCustomerLimit: 3, productIds: [], categoryIds: [], isActive: true, timesUsed: 356 },
+    { id: 3, code: 'APPAREL10', type: 'percentage', value: 10, minOrderValue: 999, maxDiscount: 249, startsAt: isoDaysAgo(90), endsAt: isoDaysAhead(90), usageLimit: null, perCustomerLimit: 3, productIds: [], categoryIds: [], isActive: true, timesUsed: 356 },
     { id: 4, code: 'SAVE300', type: 'fixed', value: 300, minOrderValue: 2999, maxDiscount: null, startsAt: isoDaysAgo(45), endsAt: isoDaysAhead(20), usageLimit: 300, perCustomerLimit: 1, productIds: [], categoryIds: [], isActive: true, timesUsed: 88 },
     { id: 5, code: 'FIRSTORDER', type: 'fixed', value: 249, minOrderValue: 1499, maxDiscount: null, startsAt: isoDaysAgo(400), endsAt: isoDaysAhead(400), usageLimit: null, perCustomerLimit: 1, productIds: [], categoryIds: [], isActive: true, timesUsed: 418 },
     { id: 6, code: 'FESTIVE15', type: 'percentage', value: 15, minOrderValue: 1999, maxDiscount: 749, startsAt: isoDaysAhead(7), endsAt: isoDaysAhead(30), usageLimit: 1000, perCustomerLimit: 2, productIds: [], categoryIds: [], isActive: true, timesUsed: 41 },
@@ -744,19 +744,19 @@ function buildCoupons(now: number): Coupon[] {
 function buildPromotions(): Promotion[] {
   return [
     { id: 1, title: 'Flat ₹400 off all Slim Fits', target: 'Fit', targetId: 'Slim', discountType: 'fixed', discountValue: 400, startsAt: isoDaysAgo(10), endsAt: isoDaysAhead(20), status: 'Active', createdAt: isoDaysAgo(12) },
-    { id: 2, title: "Buy 2, get 10% off Men's Jeans", target: 'Category', targetId: 1, discountType: 'percentage', discountValue: 10, startsAt: isoDaysAgo(5), endsAt: isoDaysAhead(15), status: 'Active', createdAt: isoDaysAgo(6) },
+    { id: 2, title: 'Buy 2, get 10% off tees', target: 'Category', targetId: 4, discountType: 'percentage', discountValue: 10, startsAt: isoDaysAgo(5), endsAt: isoDaysAhead(15), status: 'Active', createdAt: isoDaysAgo(6) },
     { id: 3, title: 'Selvedge Week — 15% off Premium Selvedge', target: 'Collection', targetId: 3, discountType: 'percentage', discountValue: 15, startsAt: isoDaysAgo(2), endsAt: isoDaysAhead(5), status: 'Active', createdAt: isoDaysAgo(4) },
     { id: 4, title: 'Bootcut Revival — ₹500 off', target: 'Fit', targetId: 'Bootcut', discountType: 'fixed', discountValue: 500, startsAt: isoDaysAhead(7), endsAt: isoDaysAhead(21), status: 'Scheduled', createdAt: isoDaysAgo(1) },
-    { id: 5, title: 'Monsoon Denim Drop — 12% off Women', target: 'Category', targetId: 2, discountType: 'percentage', discountValue: 12, startsAt: isoDaysAgo(3), endsAt: isoDaysAhead(11), status: 'Active', createdAt: isoDaysAgo(5) },
+    { id: 5, title: 'Seasonal apparel edit — 12% off', target: 'Category', targetId: 7, discountType: 'percentage', discountValue: 12, startsAt: isoDaysAgo(3), endsAt: isoDaysAhead(11), status: 'Active', createdAt: isoDaysAgo(5) },
     { id: 6, title: 'Summer Essentials Sale', target: 'Collection', targetId: 5, discountType: 'percentage', discountValue: 20, startsAt: isoDaysAhead(14), endsAt: isoDaysAhead(28), status: 'Scheduled', createdAt: isoDaysAgo(3) },
   ]
 }
 
 function buildBanners(): Banner[] {
   return [
-    { id: 1, title: 'New Season Denim', subtitle: 'Up to 30% off on fresh drops', ctaLabel: 'Shop New Arrivals', link: '/collections/new-arrivals', image: img(2, 1400), startsAt: isoDaysAgo(20), endsAt: isoDaysAhead(40), status: 'Active', order: 1 },
-    { id: 2, title: 'Selvedge Week', subtitle: 'Premium raw denim, now 15% off', ctaLabel: 'Explore Selvedge', link: '/collections/premium-selvedge', image: img(6, 1400), startsAt: isoDaysAgo(2), endsAt: isoDaysAhead(5), status: 'Active', order: 2 },
-    { id: 3, title: 'Monsoon Denim Drop', subtitle: 'Light washes for sticky weather', ctaLabel: 'Shop Now', link: '/collections/summer-essentials', image: img(7, 1400), startsAt: isoDaysAhead(7), endsAt: isoDaysAhead(21), status: 'Scheduled', order: 3 },
+    { id: 1, title: 'New Season Apparel', subtitle: 'Fresh tees and everyday bottoms', ctaLabel: 'Shop New Arrivals', link: '/collections/new-arrivals', image: img(2, 1400), startsAt: isoDaysAgo(20), endsAt: isoDaysAhead(40), status: 'Active', order: 1 },
+    { id: 2, title: 'Heavyweight Cotton Edit', subtitle: 'Comfortable everyday tees', ctaLabel: 'Explore tees', link: '/shop/printed-tees', image: img(6, 1400), startsAt: isoDaysAgo(2), endsAt: isoDaysAhead(5), status: 'Active', order: 2 },
+    { id: 3, title: 'Seasonal Essentials', subtitle: 'Easy layers for everyday wear', ctaLabel: 'Shop Now', link: '/collections/seasonal-edit', image: img(7, 1400), startsAt: isoDaysAhead(7), endsAt: isoDaysAhead(21), status: 'Scheduled', order: 3 },
     { id: 4, title: 'Festive Sale 2026', subtitle: 'Up to ₹1,500 off across the store', ctaLabel: 'Bookmark the sale', link: '/collections/bestsellers', image: img(3, 1400), startsAt: isoDaysAhead(21), endsAt: isoDaysAhead(60), status: 'Scheduled', order: 4 },
   ]
 }
@@ -766,13 +766,12 @@ function buildBanners(): Banner[] {
 /* ------------------------------------------------------------------ */
 
 function buildShippingZones(): ShippingZone[] {
-  const west = { id: 2, name: 'West India', regions: ['Maharashtra', 'Gujarat', 'Goa'], freeShippingThreshold: 1499 }
+  const west = { id: 2, name: 'West India', regions: ['Maharashtra', 'Gujarat', 'Goa'] }
   return [
     {
       id: 1,
       name: 'North & Central India',
       regions: ['Delhi NCR', 'Uttar Pradesh', 'Haryana', 'Punjab', 'Rajasthan', 'Madhya Pradesh'],
-      freeShippingThreshold: 1499,
       methods: [
         { id: 1, zoneId: 1, name: 'Standard', rate: 99, minDays: 2, maxDays: 4, codAvailable: true },
         { id: 2, zoneId: 1, name: 'Express', rate: 149, minDays: 1, maxDays: 2, codAvailable: true },
@@ -789,7 +788,6 @@ function buildShippingZones(): ShippingZone[] {
       id: 3,
       name: 'South India',
       regions: ['Karnataka', 'Tamil Nadu', 'Kerala', 'Telangana', 'Andhra Pradesh'],
-      freeShippingThreshold: 1999,
       methods: [
         { id: 5, zoneId: 3, name: 'Standard', rate: 109, minDays: 2, maxDays: 5, codAvailable: true },
         { id: 6, zoneId: 3, name: 'Express', rate: 169, minDays: 1, maxDays: 3, codAvailable: true },
@@ -799,7 +797,6 @@ function buildShippingZones(): ShippingZone[] {
       id: 4,
       name: 'East & North-East India',
       regions: ['West Bengal', 'Bihar', 'Odisha', 'Assam', 'North-East States'],
-      freeShippingThreshold: 1499,
       methods: [
         { id: 7, zoneId: 4, name: 'Standard', rate: 129, minDays: 3, maxDays: 6, codAvailable: true },
         { id: 8, zoneId: 4, name: 'Express', rate: 189, minDays: 2, maxDays: 3, codAvailable: false },
@@ -821,6 +818,7 @@ function buildSizeCharts(): SizeChart[] {
     Regular: 'Classic standard silhouette tailored for balanced everyday comfort.',
     Baggy: 'Exaggerated relaxed cut through thigh and leg.',
     Wide: 'Wide leg profile extending straight down from the hip.',
+    Tapered: 'Comfortable through the seat and thigh with a narrower leg opening.',
   }
   const hipBoost: Record<Fit, number> = {
     Skinny: 7,
@@ -833,6 +831,7 @@ function buildSizeCharts(): SizeChart[] {
     Regular: 8,
     Baggy: 12,
     Wide: 11,
+    Tapered: 10,
   }
   return fits.map((fit) => ({
     fit,
@@ -853,16 +852,7 @@ function buildOpsSeed(): {
   notifications: AppNotification[]
   settings: StoreSettings
 } {
-  const adminUsers: AdminUser[] = [
-    { id: 1, name: 'Rahul Mehta', email: 'rahul@teesgarage.in', roleId: 1, status: 'Active', lastLoginAt: null },
-    { id: 2, name: 'Ananya Iyer', email: 'ananya@teesgarage.in', roleId: 2, status: 'Active', lastLoginAt: null },
-    { id: 3, name: 'Rohan Kapoor', email: 'rohan@teesgarage.in', roleId: 3, status: 'Active', lastLoginAt: null },
-    { id: 4, name: 'Meena Krishnan', email: 'meena@teesgarage.in', roleId: 4, status: 'Active', lastLoginAt: null },
-    { id: 5, name: 'Arjun Nair', email: 'arjun@teesgarage.in', roleId: 5, status: 'Active', lastLoginAt: null },
-    { id: 6, name: 'Priya Anand', email: 'priya@teesgarage.in', roleId: 6, status: 'Active', lastLoginAt: null },
-    { id: 7, name: 'Kabir Shaikh', email: 'kabir@teesgarage.in', roleId: 7, status: 'Active', lastLoginAt: null },
-    { id: 8, name: 'Sofia D’Souza', email: 'sofia@teesgarage.in', roleId: 2, status: 'Inactive', lastLoginAt: null },
-  ]
+  const adminUsers: AdminUser[] = []
 
   const auditLog: AuditLogEntry[] = [
     { id: 1, userId: 4, userName: 'Meena Krishnan', action: 'Adjusted stock', entity: 'Variant', entityId: 'TGE-109-32-BLK', detail: 'SKU TGE-109-32-BLK: 12 → 25 (restock)', at: isoDaysAgo(0.08) },
@@ -871,7 +861,7 @@ function buildOpsSeed(): {
     { id: 4, userId: 6, userName: 'Priya Anand', action: 'Created coupon', entity: 'Coupon', entityId: 'FESTIVE15', detail: '15% off, max ₹749', at: isoDaysAgo(1.2) },
     { id: 5, userId: 2, userName: 'Ananya Iyer', action: 'Approved return', entity: 'Return', entityId: 'RTN-401', detail: 'Approved — size not fitting', at: isoDaysAgo(2) },
     { id: 6, userId: 4, userName: 'Meena Krishnan', action: 'Adjusted stock', entity: 'Variant', entityId: 'TGE-120-34-BLU', detail: 'SKU TGE-120-34-BLU: 4 → 32 (purchase order PO-8821)', at: isoDaysAgo(3) },
-    { id: 7, userId: 3, userName: 'Rohan Kapoor', action: 'Created product', entity: 'Product', entityId: 'Combat Cargo Slim Black', detail: 'New listing in Men’s Jeans', at: isoDaysAgo(4) },
+    { id: 7, userId: 3, userName: 'Rohan Kapoor', action: 'Created product', entity: 'Product', entityId: 'Graphic Printed Tee', detail: 'New listing in Printed tees', at: isoDaysAgo(4) },
     { id: 8, userId: 7, userName: 'Kabir Shaikh', action: 'Replied to review', entity: 'Review', entityId: '#104', detail: 'Posted merchant response', at: isoDaysAgo(5) },
   ]
 
@@ -895,7 +885,6 @@ function buildOpsSeed(): {
     returnWindowDays: 7,
     cancellationAllowedAfter: 'Processing',
     defaultShippingMethod: 'Standard',
-    freeShippingThreshold: 1499,
     notify: { email: true, orderUpdates: true, inventoryAlerts: true, reviewAlerts: true },
   }
 
@@ -1017,6 +1006,26 @@ function buildInventoryMovements(
 /* ------------------------------------------------------------------ */
 
 export function createDbState(): DbState {
+  if (process.env.NODE_ENV === 'production') {
+    return {
+      version: DATA_VERSION,
+      products: [], categories: CATEGORIES, collections: COLLECTIONS,
+      orders: [], customers: [], returns: [], refunds: [], coupons: [], promotions: [], banners: [], reviews: [],
+      sizeCharts: buildSizeCharts(), shippingZones: [], shipments: [], payments: [], inventoryMovements: [],
+      adminUsers: [],
+      roles: ROLE_DEFS.map((role) => ({ id: role.id, name: role.name, description: role.description, permissions: role.permissions })),
+      auditLog: [], notifications: [],
+      settings: {
+        storeName: 'TEESGARAGE', supportEmail: 'support@teesgarage.in', supportPhone: '', address: '', currency: 'INR',
+        taxRate: 18, orderPrefix: 'TG', returnWindowDays: 7, cancellationAllowedAfter: 'Processing',
+        defaultShippingMethod: 'Standard',
+        notify: { email: true, orderUpdates: true, inventoryAlerts: true, reviewAlerts: true }
+      },
+      navigation: DEFAULT_NAVIGATION_ITEMS.map((item) => ({ ...item })),
+      homepage: JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG)),
+    }
+  }
+
   const rand = mulberry32(SEED)
 
   const products = PRODUCT_SPECS.map((spec, i) => buildProduct(rand, spec, i, NOW))
@@ -1100,7 +1109,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   announcement: {
     enabled: true,
     messages: [
-      '🚚 Free shipping on orders above ₹1,499',
+      '📦 Paid delivery calculated by destination and parcel weight',
       '🔄 7-Day doorstep exchanges — no questions asked',
       '🏭 24h dispatch from Mumbai',
       '💳 Cash on delivery available across India'
@@ -1253,7 +1262,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   trust_bar: {
     enabled: true,
     items: [
-      { id: '1', title: 'Free shipping above ₹1,499', icon: 'truck' },
+      { id: '1', title: 'Paid delivery by destination and weight', icon: 'truck' },
       { id: '2', title: '7-day doorstep exchange', icon: 'repeat' },
       { id: '3', title: '24h dispatch from Mumbai', icon: 'package' },
       { id: '4', title: 'Secure payments', icon: 'shield' }

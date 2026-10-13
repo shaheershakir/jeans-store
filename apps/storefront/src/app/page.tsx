@@ -6,7 +6,7 @@ import HomepageClient from '@/components/HomepageClient'
 export const metadata: Metadata = {
   title: 'TEESGARAGE — T-Shirts & Bottomwear',
   description:
-    'Heavyweight tees, stripes, henleys, trackpants, and sweatpants made for everyday wear. Free shipping above ₹1,499.',
+    'Tees, henleys, trackpants, and sweatpants made for everyday wear. Delivery is charged by location and parcel weight.',
 }
 
 export default async function HomePage() {

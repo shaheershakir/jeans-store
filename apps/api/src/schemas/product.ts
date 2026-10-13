@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const STORES = ['teesgarage', 'clothing-store', 'frontend'] as const
 export type StoreType = (typeof STORES)[number]
 
-export const FITS = ['Oversized', 'Boxy', 'Relaxed', 'Regular', 'Straight', 'Baggy', 'Bootcut', 'Wide', 'Slim'] as const
+export const FITS = ['Oversized', 'Boxy', 'Relaxed', 'Regular', 'Straight', 'Baggy', 'Bootcut', 'Wide', 'Slim', 'Tapered'] as const
 export type Fit = (typeof FITS)[number]
 
 export const FIT_VALUES = [...FITS, 'all'] as const
@@ -17,10 +17,6 @@ export const CATEGORIES = [
   'henley',
   'trackpants',
   'sweatpants',
-  't-shirts',
-  'shirts',
-  'hoodies',
-  'accessories'
 ] as const
 export type Category = (typeof CATEGORIES)[number]
 
@@ -34,7 +30,7 @@ export const variantSchema = z.object({
   stock: z.number().int().nonnegative().default(0),
   reserved: z.number().int().nonnegative().default(0),
   reorderPoint: z.number().int().nonnegative().default(5),
-  weight: z.number().nonnegative().default(250),
+  weight: z.number().int().positive().max(100_000).default(350),
   barcode: z.string().optional(),
   status: z.enum(['Active', 'Inactive']).default('Active')
 })
@@ -47,7 +43,7 @@ export type Variant = z.infer<typeof variantSchema>
 export const productSchema = z.object({
   id: z.number().int().nonnegative(),
   store: z.string().default('teesgarage'),
-  category: z.string().default('printed-tees'),
+  category: z.enum(CATEGORIES).default('printed-tees'),
   name: z.string().min(1),
   sku: z.string().optional(),
   fit: z.enum(FITS).optional(),
@@ -80,6 +76,7 @@ export const productSchema = z.object({
   rating: z.number().optional(),
   inStock: z.boolean().optional(),
   collection: z.string().optional(),
+  adminData: z.record(z.string(), z.unknown()).optional(),
   createdAt: z.coerce.date().optional()
 })
 

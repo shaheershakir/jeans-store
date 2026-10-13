@@ -37,7 +37,7 @@ export class DataBackedAiProvider implements AiProvider {
       return {
         text: 'I can answer business questions directly from your live dashboard data.',
         bullets: [
-          'Which jeans are selling fastest',
+          'Which apparel products are selling fastest',
           'Which sizes are likely to run out',
           'Why revenue changed this month',
           'High views, low conversion products',
@@ -77,7 +77,7 @@ export class DataBackedAiProvider implements AiProvider {
         title: 'Revenue by product',
         points: top.map((p) => ({ label: p.product.name.slice(0, 16), value: p.revenue })),
       },
-      followUps: GUIDE_FOLLOWUPS.filter((s) => s !== 'What were my best-selling jeans last month?'),
+      followUps: GUIDE_FOLLOWUPS.filter((s) => s !== 'Which apparel products sold best last month?'),
     }
   }
 

@@ -12,7 +12,6 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Sparkles,
   ShieldCheck,
   Check
 } from 'lucide-react'
@@ -194,14 +193,6 @@ function RegisterForm() {
     }
   }
 
-  const handleFillDemo = () => {
-    setName('Devon Vance')
-    setEmail('devon.vance@teesgarage.in')
-    setPassword('VanceAtelier2026!')
-    setConfirmPassword('VanceAtelier2026!')
-    setError(null)
-  }
-
   return (
     <div className="apple-auth-page">
       {/* Centered Single-Column Apple Auth Card */}
@@ -272,7 +263,7 @@ function RegisterForm() {
               <input
                 id="register-name"
                 type="text"
-                placeholder="e.g. Devon Vance"
+                placeholder="Enter your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={loading}
@@ -396,7 +387,7 @@ function RegisterForm() {
           <span>or sign up with</span>
         </div>
 
-        {/* Alternative Actions: Google & Demo */}
+        {/* Alternative sign-up method */}
         <div className="apple-auth-alt-group">
           <button
             type="button"
@@ -425,15 +416,6 @@ function RegisterForm() {
             <span>Sign up with Google</span>
           </button>
 
-          <button
-            type="button"
-            className="apple-demo-fill-btn"
-            onClick={handleFillDemo}
-            title="Auto-fill sample member credentials"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 mr-1.5" />
-            <span>Auto-fill Sample Registration</span>
-          </button>
         </div>
 
         {/* Existing account prompt */}

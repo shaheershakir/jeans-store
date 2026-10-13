@@ -26,12 +26,7 @@ export const CATEGORY_CODES: Record<string, string> = {
   trackpants: 'TRK',
   trackpant: 'TRK',
   sweatpants: 'SWT',
-  sweatpant: 'SWT',
-  't-shirts': 'TSH',
-  shirts: 'SHT',
-  hoodies: 'HOD',
-  accessories: 'ACC',
-  jeans: 'JNS'
+  sweatpant: 'SWT'
 }
 
 export const PRODUCT_TYPE_CODES: Record<string, string> = {
@@ -44,7 +39,8 @@ export const PRODUCT_TYPE_CODES: Record<string, string> = {
   skinny: 'SKN',
   baggy: 'BAG',
   bootcut: 'BTC',
-  wide: 'WID'
+  wide: 'WID',
+  tapered: 'TAP'
 }
 
 export const COLOR_CODES: Record<string, string> = {

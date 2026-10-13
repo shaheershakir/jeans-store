@@ -52,11 +52,11 @@ async function triggerFrontendRevalidation(store?: string): Promise<void> {
   if (!revalidateSecret) return
 
   const urls: string[] = []
-  const jeanStoreUrl = process.env.JEAN_STORE_URL || process.env.FRONTEND_URL
+  const storefrontUrl = process.env.FRONTEND_URL
   const clothingStoreUrl = process.env.CLOTHING_STORE_URL
 
-  if (!store || store === 'jean-store' || store === 'all') {
-    if (jeanStoreUrl) urls.push(jeanStoreUrl)
+  if (!store || store === 'teesgarage' || store === 'jean-store' || store === 'all') {
+    if (storefrontUrl) urls.push(storefrontUrl)
   }
   if (!store || store === 'clothing-store' || store === 'all') {
     if (clothingStoreUrl) urls.push(clothingStoreUrl)
@@ -85,6 +85,41 @@ async function triggerFrontendRevalidation(store?: string): Promise<void> {
 }
 
 export const productRouter = Router()
+
+productRouter.get('/api/admin/products', verifyAdminAuth, async (req: Request, res: Response) => {
+  const parsed = listQuerySchema.safeParse(req.query)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid query parameters', details: z.treeifyError(parsed.error) })
+    return
+  }
+  try {
+    const { store, category, fit, sku, q } = parsed.data
+    const products = await productStore.list({ store, category, fit, sku, q })
+    res.json({ count: products.length, products })
+  } catch (err) {
+    logger.error({ err }, 'Failed to fetch admin product catalog')
+    res.status(503).json({ error: 'Product catalog is unavailable.' })
+  }
+})
+
+productRouter.get('/api/admin/products/:id', verifyAdminAuth, async (req: Request, res: Response) => {
+  const numericId = Number(req.params.id)
+  if (!Number.isInteger(numericId) || numericId < 0) {
+    res.status(400).json({ error: 'Product id must be a non-negative integer' })
+    return
+  }
+  try {
+    const product = await productStore.getById(numericId)
+    if (!product) {
+      res.status(404).json({ error: `Product ${numericId} not found` })
+      return
+    }
+    res.json({ product })
+  } catch (err) {
+    logger.error({ err, numericId }, 'Failed to fetch admin product')
+    res.status(503).json({ error: 'Product catalog is unavailable.' })
+  }
+})
 
 // ─── SKU PREVIEW & GENERATION ENDPOINTS ─────────────────────────────────────
 productRouter.post('/api/products/sku/preview', async (req: Request, res: Response) => {
@@ -175,6 +210,10 @@ productRouter.get('/api/products', async (req: Request, res: Response) => {
 
   const { store, category, fit, sku, minPrice, maxPrice, q, sort = 'featured' } = parsed.data
   let list = await productStore.list({ store, category, fit, sku, q })
+  list = list.filter((product) => {
+    const status = (product.adminData as Record<string, unknown> | undefined)?.status
+    return status !== 'Draft' && status !== 'Archived'
+  })
 
   if (minPrice !== undefined) {
     list = list.filter((p) => p.priceNum >= minPrice)
@@ -203,6 +242,11 @@ productRouter.get('/api/products/:id', async (req: Request, res: Response) => {
   }
   const product = await productStore.getById(numericId)
   if (!product) {
+    res.status(404).json({ error: `Product ${numericId} not found` })
+    return
+  }
+  const status = (product.adminData as Record<string, unknown> | undefined)?.status
+  if (status === 'Draft' || status === 'Archived') {
     res.status(404).json({ error: `Product ${numericId} not found` })
     return
   }
@@ -276,4 +320,25 @@ productRouter.delete('/api/products/:id', verifyAdminAuth, async (req: Request, 
   }
   void triggerFrontendRevalidation(existing?.store)
   res.status(204).end()
+})
+
+const stockAdjustmentSchema = z.object({
+  delta: z.number().int().min(-100_000).max(100_000).refine((value) => value !== 0),
+  reason: z.string().trim().min(1).max(200),
+  reference: z.string().trim().max(200).optional()
+})
+
+productRouter.patch('/api/products/variants/:id/stock', verifyAdminAuth, async (req: Request, res: Response) => {
+  const variantId = Number(req.params.id)
+  const parsed = stockAdjustmentSchema.safeParse(req.body)
+  if (!Number.isInteger(variantId) || variantId < 1 || !parsed.success) {
+    res.status(400).json({ error: 'Enter a valid stock adjustment and variant.' })
+    return
+  }
+  try {
+    const variant = await productStore.adjustStock(variantId, parsed.data.delta)
+    res.json({ variant })
+  } catch (err) {
+    res.status(409).json({ error: err instanceof Error ? err.message : 'Stock adjustment failed.' })
+  }
 })

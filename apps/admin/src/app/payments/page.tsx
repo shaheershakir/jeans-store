@@ -8,10 +8,15 @@ import { PageContent, PageHeader } from '@/components/ui/page-header'
 import { Card } from '@/components/ui/primitives'
 import { PaymentBadge } from '@/components/ui/status'
 import { formatINR } from '@/lib/format'
+import { fetchBackendOrders } from '@/services/commerce'
 
 export default function PaymentsPage() {
   const payments = useAdminStore((s) => s.data.payments)
   const orders = useAdminStore((s) => s.data.orders)
+
+  React.useEffect(() => {
+    void fetchBackendOrders().catch(() => undefined)
+  }, [])
 
   return (
     <div>
@@ -28,9 +33,9 @@ export default function PaymentsPage() {
                   <th className="px-4 py-3 font-semibold">Method</th>
                   <th className="px-4 py-3 font-semibold">Gateway</th>
                   <th className="px-4 py-3 font-semibold text-right">Amount</th>
-                  <th className="px-4 py-3 font-semibold text-right">Fee</th>
+                  <th className="px-4 py-3 font-semibold text-right">Gateway fee</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Settled</th>
+                  <th className="px-4 py-3 font-semibold">Paid</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-divider">
@@ -48,13 +53,13 @@ export default function PaymentsPage() {
                       <td className="px-4 py-3 text-ink">{p.method}</td>
                       <td className="px-4 py-3 text-ink-2">{p.gateway}</td>
                       <td className="px-4 py-3 text-right font-semibold tnum text-ink">{formatINR(p.amount)}</td>
-                      <td className="px-4 py-3 text-right tnum text-ink-3">{formatINR(p.gatewayFee)}</td>
+                      <td className="px-4 py-3 text-right tnum text-ink-3">{p.gatewayFee == null ? '—' : formatINR(p.gatewayFee)}</td>
                       <td className="px-4 py-3">
                         <PaymentBadge status={p.status} />
                       </td>
                       <td className="px-4 py-3 font-medium text-ink-2">
                         {p.settled ? (
-                          <span className="text-success font-semibold">Settled</span>
+                          <span className="text-success font-semibold">Yes</span>
                         ) : (
                           <span className="text-warning font-semibold">Pending</span>
                         )}

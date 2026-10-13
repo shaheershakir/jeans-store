@@ -5,6 +5,9 @@ import { createOrderSchema } from '../schemas/order.js'
 import { verifyAdminAuth } from '../middleware/auth.js'
 import { razorpayService } from '../services/razorpay.js'
 import { logger } from '../lib/logger.js'
+import { productStore } from '../store/productStore.js'
+import { calculateShipping, getShippingRates } from '../services/shipping.js'
+import type { CalculatedOrder, CreateOrder } from '../schemas/order.js'
 
 export const orderRouter = Router()
 
@@ -19,12 +22,84 @@ orderRouter.get('/api/orders/razorpay/config', (_req: Request, res: Response) =>
 
 // Public: Create Razorpay checkout order
 const createRazorpayOrderSchema = z.object({
-  amount: z.number().positive(),
   currency: z.string().default('INR'),
   orderNumber: z.string().min(1),
+  state: z.string().min(1),
+  items: z.array(z.object({ id: z.number(), variantId: z.number().int().positive().optional(), size: z.string(), quantity: z.number().int().positive() })).min(1),
   customerName: z.string().optional(),
   customerEmail: z.string().optional(),
   customerPhone: z.string().optional()
+})
+
+async function calculateCheckout(itemsRequest: CreateOrder['items'], state: string): Promise<Pick<CalculatedOrder, 'items' | 'subtotal' | 'shipping' | 'total'> & { weightGrams: number }> {
+  let subtotal = 0
+  let weightGrams = 0
+  const items: CalculatedOrder['items'] = []
+
+  for (const requested of itemsRequest) {
+    const product = await productStore.getById(requested.id)
+    if (!product) throw new Error(`Product ${requested.id} is no longer available.`)
+    const productStatus = (product.adminData as Record<string, unknown> | undefined)?.status
+    if (productStatus && productStatus !== 'Active') throw new Error(`${product.name} is not available for purchase.`)
+    const variant = product.variants?.find((candidate) =>
+      requested.variantId ? candidate.id === requested.variantId : String(candidate.size) === requested.size
+    )
+    if (!variant || String(variant.size) !== requested.size || variant.status !== 'Active') {
+      throw new Error(`Size ${requested.size} for ${product.name} is no longer available.`)
+    }
+    if (variant.stock - variant.reserved < requested.quantity) {
+      throw new Error(`${product.name} (${requested.size}) does not have enough stock.`)
+    }
+    const unitPrice = typeof variant.price === 'number' && variant.price > 0 ? variant.price : product.priceNum
+    const lineTotal = unitPrice * requested.quantity
+    subtotal += lineTotal
+    weightGrams += variant.weight * requested.quantity
+    items.push({
+      id: product.id,
+      variantId: variant.id!,
+      name: product.name,
+      fit: product.fit,
+      size: String(variant.size),
+      price: `₹${unitPrice.toLocaleString('en-IN')}`,
+      priceNum: unitPrice,
+      sku: variant.sku,
+      quantity: requested.quantity,
+      img: product.img
+    })
+  }
+
+  const rates = await getShippingRates()
+  const shipping = calculateShipping(weightGrams, state, rates)
+  return { items, subtotal, shipping, total: subtotal + shipping, weightGrams }
+}
+
+async function calculateOrder(input: CreateOrder): Promise<CalculatedOrder> {
+  const calculated = await calculateCheckout(input.items, input.state)
+  return { ...input, ...calculated }
+}
+
+const quoteSchema = z.object({
+  state: z.string().trim().min(1).max(100),
+  items: z.array(z.object({
+    id: z.number(),
+    variantId: z.number().int().positive().optional(),
+    size: z.string().min(1),
+    quantity: z.number().int().positive().max(50)
+  })).min(1)
+})
+
+orderRouter.post('/api/orders/quote', async (req: Request, res: Response) => {
+  const parsed = quoteSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'A delivery state and valid cart items are required.' })
+    return
+  }
+  try {
+    const quote = await calculateCheckout(parsed.data.items, parsed.data.state)
+    res.json({ subtotal: quote.subtotal, shipping: quote.shipping, total: quote.total, weightGrams: quote.weightGrams })
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Unable to quote this cart.' })
+  }
 })
 
 orderRouter.post('/api/orders/razorpay/create-order', async (req: Request, res: Response) => {
@@ -38,8 +113,9 @@ orderRouter.post('/api/orders/razorpay/create-order', async (req: Request, res: 
   }
 
   try {
-    const { amount, currency, orderNumber, customerName, customerEmail, customerPhone } = parsed.data
-    const amountInPaise = Math.round(amount * 100)
+    const { currency, orderNumber, customerName, customerEmail, customerPhone, state, items } = parsed.data
+    const quote = await calculateCheckout(items, state)
+    const amountInPaise = Math.round(quote.total * 100)
 
     const rzpOrder = await razorpayService.createOrder({
       amount: amountInPaise,
@@ -47,6 +123,8 @@ orderRouter.post('/api/orders/razorpay/create-order', async (req: Request, res: 
       receipt: orderNumber,
       notes: {
         orderNumber,
+        shipping: String(quote.shipping),
+        weightGrams: String(quote.weightGrams),
         customerName: customerName || '',
         customerEmail: customerEmail || '',
         customerPhone: customerPhone || ''
@@ -58,7 +136,10 @@ orderRouter.post('/api/orders/razorpay/create-order', async (req: Request, res: 
       amount: rzpOrder.amount,
       currency: rzpOrder.currency,
       keyId: razorpayService.getKeyId(),
-      orderNumber
+      orderNumber,
+      subtotal: quote.subtotal,
+      shipping: quote.shipping,
+      total: quote.total
     })
   } catch (err: any) {
     logger.error({ err }, 'Failed to create Razorpay order')
@@ -99,9 +180,23 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
   }
 
   try {
+    const calculatedOrder = await calculateOrder(order)
+    const razorpayOrder = await razorpayService.fetchOrder(razorpay_order_id)
+    const payment = await razorpayService.fetchPayment(razorpay_payment_id)
+    if (
+      razorpayOrder.receipt !== order.orderNumber ||
+      razorpayOrder.amount !== Math.round(calculatedOrder.total * 100) ||
+      razorpayOrder.currency !== 'INR' ||
+      payment.order_id !== razorpay_order_id ||
+      payment.amount !== razorpayOrder.amount ||
+      payment.status !== 'captured'
+    ) {
+      res.status(400).json({ error: 'Payment amount or status could not be verified.' })
+      return
+    }
     const paymentNote = `Razorpay Payment ID: ${razorpay_payment_id} | Order ID: ${razorpay_order_id}`
     const finalOrder = await orderStore.create({
-      ...order,
+      ...calculatedOrder,
       status: 'paid',
       handoffType: 'razorpay',
       paymentMethod: 'razorpay',
@@ -135,8 +230,14 @@ orderRouter.post('/api/orders', async (req: Request, res: Response) => {
     return
   }
 
+  if (parsed.data.handoffType !== 'cod') {
+    res.status(400).json({ error: 'Online payments must be completed through the verified Razorpay checkout.' })
+    return
+  }
+
   try {
-    const order = await orderStore.create(parsed.data)
+    const calculatedOrder = await calculateOrder(parsed.data)
+    const order = await orderStore.create(calculatedOrder)
     res.status(201).json({ order })
   } catch (err) {
     logger.error({ err }, 'Failed to save order')
@@ -171,4 +272,83 @@ orderRouter.get('/api/orders/:id', verifyAdminAuth, async (req: Request, res: Re
   }
 
   res.json({ order })
+})
+
+const adminOrderPatchSchema = z.object({
+  status: z.enum(['Pending', 'Confirmed', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned']).optional(),
+  paymentStatus: z.enum(['Pending', 'Paid', 'Failed']).optional(),
+  carrier: z.string().trim().min(1).max(100).optional(),
+  trackingNumber: z.string().trim().min(1).max(100).optional()
+}).refine((value) => Object.values(value).some((field) => field !== undefined), 'At least one update is required.')
+
+const ORDER_TRANSITIONS: Record<string, string[]> = {
+  Pending: ['Confirmed', 'Cancelled'],
+  Confirmed: ['Processing', 'Cancelled'],
+  Processing: ['Shipped', 'Cancelled'],
+  Shipped: ['Out for Delivery', 'Delivered', 'Returned'],
+  'Out for Delivery': ['Delivered', 'Returned'],
+  Delivered: ['Returned'],
+  Returned: [],
+  Cancelled: []
+}
+
+orderRouter.patch('/api/orders/:id', verifyAdminAuth, async (req: Request, res: Response) => {
+  const id = Number(req.params.id)
+  if (!Number.isInteger(id) || id < 1) {
+    res.status(400).json({ error: 'Order id must be a positive integer.' })
+    return
+  }
+  const parsed = adminOrderPatchSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Enter a valid order update.' })
+    return
+  }
+  try {
+    const current = await orderStore.getById(id)
+    if (!current) {
+      res.status(404).json({ error: `Order ${id} not found.` })
+      return
+    }
+    const patch = parsed.data
+    if (patch.status && patch.status !== current.status && !ORDER_TRANSITIONS[current.status]?.includes(patch.status)) {
+      res.status(409).json({ error: `Order cannot move from ${current.status} to ${patch.status}.` })
+      return
+    }
+    if (patch.status === 'Shipped' && (!(patch.carrier || current.carrier) || !(patch.trackingNumber || current.trackingNumber))) {
+      res.status(400).json({ error: 'Set a carrier and tracking number before shipping this order.' })
+      return
+    }
+    if (patch.paymentStatus === 'Paid' && current.handoffType !== 'cod') {
+      res.status(409).json({ error: 'Online payment status can only be changed by verified payment records.' })
+      return
+    }
+    const author = process.env.ADMIN_NAME || process.env.ADMIN_EMAIL || 'Administrator'
+    const order = await orderStore.updateAdmin(id, patch, author)
+    res.json({ order })
+  } catch (err) {
+    logger.error({ err, id }, 'Failed to update order')
+    res.status(503).json({ error: 'Order update is unavailable.' })
+  }
+})
+
+const adminNoteSchema = z.object({ text: z.string().trim().min(1).max(5000) })
+orderRouter.post('/api/orders/:id/notes', verifyAdminAuth, async (req: Request, res: Response) => {
+  const id = Number(req.params.id)
+  const parsed = adminNoteSchema.safeParse(req.body)
+  if (!Number.isInteger(id) || id < 1 || !parsed.success) {
+    res.status(400).json({ error: 'Enter a valid order id and note.' })
+    return
+  }
+  try {
+    const author = process.env.ADMIN_NAME || process.env.ADMIN_EMAIL || 'Administrator'
+    const order = await orderStore.addAdminNote(id, parsed.data.text, author)
+    if (!order) {
+      res.status(404).json({ error: `Order ${id} not found.` })
+      return
+    }
+    res.status(201).json({ order })
+  } catch (err) {
+    logger.error({ err, id }, 'Failed to add internal order note')
+    res.status(503).json({ error: 'Order note could not be saved.' })
+  }
 })

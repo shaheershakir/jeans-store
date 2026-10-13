@@ -74,9 +74,9 @@ function ProfileContent() {
   const showToast = useUIStore((s) => s.showToast)
 
   // Personal Info Form State
-  const [name, setName] = useState(user?.name || 'Devon Vance')
-  const [email, setEmail] = useState(user?.email || 'demo.member@teesgarage.in')
-  const [phone, setPhone] = useState(user?.phone || '+91 98201 44521')
+  const [name, setName] = useState(user?.name || '')
+  const [email, setEmail] = useState(user?.email || '')
+  const [phone, setPhone] = useState(user?.phone || '')
   const [infoSuccess, setInfoSuccess] = useState(false)
   const [isEditingInfo, setIsEditingInfo] = useState(false)
 
@@ -228,11 +228,11 @@ function ProfileContent() {
             <div className="apple-mobile-identity">
               <div className="apple-mobile-name-row">
                 <h2 className="apple-mobile-name truncate">
-                  {user?.name || name || 'Devon Vance'}
+                  {user?.name || name || 'Your profile'}
                 </h2>
               </div>
               <p className="apple-mobile-email truncate" title={user?.email || email}>
-                {user?.email || email || 'demo.member@teesgarage.in'}
+                {user?.email || email || 'Add an email address'}
               </p>
             </div>
           </div>
@@ -317,10 +317,10 @@ function ProfileContent() {
                   </div>
                   <div className="min-w-0">
                     <h2 className="apple-id-name truncate">
-                      {user?.name || name || 'Devon Vance'}
+                      {user?.name || name || 'Your profile'}
                     </h2>
                     <p className="apple-id-email" title={user?.email || email}>
-                      {user?.email || email || 'demo.member@teesgarage.in'}
+                      {user?.email || email || 'Add an email address'}
                     </p>
                   </div>
                 </div>
@@ -963,7 +963,7 @@ function ProfileContent() {
                       <h1 className="apple-card-title">Saved Wishlist</h1>
                       <p className="apple-card-subtitle">
                         {favoritedProducts.length === 0
-                          ? 'Bookmark denim fits to compare and shop later.'
+                          ? 'Bookmark products to compare and shop later.'
                           : `${favoritedProducts.length} saved item${favoritedProducts.length === 1 ? '' : 's'}`}
                       </p>
                     </div>
@@ -1012,7 +1012,7 @@ function ProfileContent() {
                         {/* Detail column */}
                         <div className="wishlist-row-body">
                           <div className="wishlist-row-meta">
-                            <span className="wishlist-row-category">{product.fit || 'Denim'}</span>
+                            <span className="wishlist-row-category">{product.category || product.fit || 'Apparel'}</span>
                             <Link href={`/product/${product.id}`} className="wishlist-row-name">
                               {product.name}
                             </Link>

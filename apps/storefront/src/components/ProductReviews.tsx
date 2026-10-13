@@ -304,7 +304,7 @@ export default function ProductReviews({ productId, productName }: ProductReview
                   <textarea
                     required
                     rows={4}
-                    placeholder="How does the denim feel? What do you think of the fit and wash?"
+                    placeholder="How does the fabric feel? Tell us about the fit and finish."
                     value={newContent}
                     onChange={(e) => setNewContent(e.target.value)}
                     className="apple-form-textarea"

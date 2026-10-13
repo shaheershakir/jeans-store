@@ -43,13 +43,13 @@ jeans-store/
 ### 2. Admin Dashboard (`apps/admin`)
 - **Framework**: Next.js 15 (App Router), React 19, Tailwind CSS v4, Lucide React, Recharts.
 - **Port**: `:3001`
-- **Features**: Product management, variant/SKU generator, inventory movements, order fulfillment, coupon creation, homepage layout customization, audit logging.
+- **Features**: Apparel product management, image upload, variant/SKU generator, inventory movements, order fulfillment, paid delivery-rate configuration, coupon creation, homepage layout customization, audit logging.
 - **Packages Consumed**: `@jeans-store/shared`, `@jeans-store/validators`.
 
 ### 3. REST API (`apps/api`)
 - **Framework**: Express, TypeScript, Zod, Neon Serverless PostgreSQL.
 - **Port**: `:4000`
-- **Features**: Catalog management, order manifests, JWT + Cloud IAM auth, Razorpay payments, dynamic navigation & homepage config.
+- **Features**: Catalog management, signed admin sessions, order manifests, Razorpay payments, Google Cloud Storage image uploads, weight-based delivery quotes, dynamic navigation & homepage config.
 - **Packages Consumed**: `@jeans-store/db`, `@jeans-store/shared`, `@jeans-store/validators`.
 
 ---
@@ -58,16 +58,17 @@ jeans-store/
 
 ### 1. Database (`@jeans-store/db`)
 - Manages PostgreSQL tables via Drizzle ORM:
-  - `products`: Product silhouettes, fits, prices, washes, and media.
+  - `products`: Apparel products, fits, prices, product metadata, and media.
   - `orders`: Customer checkout orders and shipping records.
-  - `users`: Registered customer and admin accounts.
+  - `users`: Customer accounts.
+  - `shipping_settings`: Paid delivery rates by Kerala/rest of India and parcel weight.
   - `product_variants`: Size × color SKU matrix with inventory tracking.
   - `navigation_items`: Dynamic store navigation items.
 - Exports typed client `db`, connection helpers, and migrations in `drizzle/`.
 
 ### 2. Shared Types & Constants (`@jeans-store/shared`)
 - Canonical TypeScript definitions: `Product`, `Variant`, `Fit`, `Order`, `OrderItem`, `HomepageConfig`, `NavigationItem`.
-- Common store constants: `FITS`, `CATEGORIES`, `DEFAULT_NAV_LINKS`, `DEFAULT_HOMEPAGE_CONFIG`, `FREE_SHIPPING_THRESHOLD`.
+- Common store constants: `FITS`, `CATEGORY_FILTERS`, `DEFAULT_NAV_LINKS`, and `DEFAULT_HOMEPAGE_CONFIG`.
 
 ### 3. Shared Validators (`@jeans-store/validators`)
 - Canonical Zod validation schemas:

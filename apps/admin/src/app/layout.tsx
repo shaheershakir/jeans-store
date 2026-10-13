@@ -11,8 +11,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'TEESGARAGE Admin — Jeans Commerce Operations',
-  description: 'Admin operations dashboard for TEESGARAGE premium denim store',
+  title: 'TEESGARAGE Admin — Store Operations',
+  description: 'Admin operations dashboard for TEESGARAGE apparel store',
 }
 
 export default function RootLayout({

@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import * as React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -23,10 +24,20 @@ import { RevenueAreaChart, BreakdownBarChart, DonutChart, CHART_COLORS } from '@
 import { OrderBadge } from '@/components/ui/status'
 import { kpis, series, salesByFit, salesByColor } from '@/lib/analytics'
 import { formatINR } from '@/lib/format'
+import { fetchBackendOrders } from '@/services/commerce'
+import { fetchBackendProducts } from '@/services/catalog'
 
 export default function DashboardPage() {
   const data = useAdminStore((s) => s.data)
   const { products, orders, returns } = data
+  const [loadError, setLoadError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    let active = true
+    void Promise.all([fetchBackendOrders(), fetchBackendProducts()])
+      .catch((error) => { if (active) setLoadError(error instanceof Error ? error.message : 'Could not load store data.') })
+    return () => { active = false }
+  }, [])
 
   // Calculate analytics metrics
   const kpiData = React.useMemo(() => kpis(data, 30), [data])
@@ -61,6 +72,7 @@ export default function DashboardPage() {
       </PageHeader>
 
       <PageContent>
+        {loadError && <div role="alert" className="mb-5 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">Live store data could not be loaded: {loadError}</div>}
         {/* KPI Cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard
@@ -142,7 +154,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader
               title="Fit Sales Distribution"
-              subtitle="Units sold by denim fit"
+              subtitle="Units sold by apparel fit"
             />
             <div className="p-4 sm:p-5">
               <DonutChart data={fitsData} colorMap={CHART_COLORS} centerLabel={`${products.length} Fits`} />
@@ -228,7 +240,7 @@ export default function DashboardPage() {
               {products.slice(0, 5).map((product) => (
                 <div key={product.id} className="flex items-center gap-3 p-3 hover:bg-surface-subtle transition-colors">
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-line bg-canvas">
-                    <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                    <Image src={product.image} alt={product.name} width={40} height={40} className="h-full w-full object-cover" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <Link href={`/products/${product.id}`} className="block truncate text-xs font-semibold text-ink hover:text-primary">

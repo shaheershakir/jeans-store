@@ -1,71 +1,19 @@
-﻿# Data architecture and catalog schema
+# Data architecture and catalog schema
 
-This document details the product data contract, catalog seed dataset, and the snapshot fallback synchronization pipeline.
+TEESGARAGE sells apparel in these categories: Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants.
 
-## Product contract
+## Product catalog
 
-All denim items in the TEESGARAGE ecosystem adhere to the `Product` TypeScript definition.
+The Express API and PostgreSQL database are the production source of truth. `products` stores the catalog record, product images, merchandising metadata, and variant list. Each variant stores its SKU, size, color, stock, price, and shipping weight in grams. Product images are uploaded to Google Cloud Storage through the authenticated API upload endpoint.
 
-```typescript
-export type Fit = 'Straight' | 'Baggy' | 'Wide' | 'Relaxed' | 'Bootcut'
+Product categories and fits are validated by `apps/api/src/schemas/product.ts`. The admin form provides apparel-specific sizes, materials, product attributes, inventory, price, and weight controls. Products begin as drafts and only active products are visible to customers.
 
-export interface Product {
-  id: number
-  name: string
-  fit: Fit
-  price: string
-  priceNum: number
-  img: string
-  img2: string
-  badge?: string
-  desc: string
-  wash: string
-}
-```
+## Orders and delivery
 
-### Field semantics
+Checkout sends product and variant IDs, quantities, and the destination state to the API. The API reloads active product data, validates stock, calculates item prices and parcel weight, then applies the saved Kerala or rest-of-India rate bands. It returns the quote used for checkout and recalculates the amount again when it creates an order or payment. Delivery is paid for every order.
 
-- `id`: Non-negative unique integer.
-- `name`: Human-readable silhouette title.
-- `fit`: One of the 5 canonical denim cuts.
-- `price`: Formatted Indian Rupee display string (e.g. `₹1,699`).
-- `priceNum`: Numeric INR integer for arithmetic calculations and filter comparisons.
-- `img`: Primary product photography URL hosted on Unsplash.
-- `img2`: Alternate detail or reverse angle image URL.
-- `badge`: Optional merchandising tag (`New`, `Bestseller`, `Sale`).
-- `desc`: Craft description, fabric weight, and weaving details.
-- `wash`: Primary wash name (e.g. `Classic Indigo`, `Washed Black`).
+Delivery rates are persisted in the `shipping_settings` table and edited in the admin. The initial rates are configurable defaults; each location group has a base weight and charge plus an additional weight band and charge.
 
-## Seed catalog
+## Database and local data
 
-The initial catalog comprises 8 denim silhouettes:
-
-1. `id: 0` — Classic Straight Indigo (Straight, ₹1,699, New)
-2. `id: 1` — Heavy Wash Baggy (Baggy, ₹1,899, Bestseller)
-3. `id: 2` — Vintage Blue Wide Leg (Wide, ₹1,999)
-4. `id: 3` — Relaxed Black Denim (Relaxed, ₹1,699)
-5. `id: 4` — Dark Indigo Bootcut (Bootcut, ₹2,199, New)
-6. `id: 5` — Washed Grey Straight (Straight, ₹1,499, Sale)
-7. `id: 6` — Raw Denim Relaxed (Relaxed, ₹1,899, 14.5oz rigid raw selvedge)
-8. `id: 7` — Faded Blue Baggy (Baggy, ₹1,799)
-
-## Data sources and synchronization
-
-### Source of truth
-
-The Fastify backend (`backend/src/data/products.ts`) serves as the authoritative source of truth. When running in production on Render, the backend exposes:
-- `GET /api/products`: Lists products with optional filtering by fit, price range, and search query.
-- `GET /api/products/:id`: Returns a single product by numeric id.
-- `POST /api/products`: Adds a product to the catalog.
-- `PUT /api/products/:id`: Updates an existing product.
-- `DELETE /api/products/:id`: Removes a product.
-
-### Bundled snapshot fallback
-
-`frontend/src/lib/constants.ts` maintains a static mirror of the 8 seed products.
-
-During `next build`, `frontend/src/lib/products.ts` sends a request to `${BACKEND_URL}/api/products` with a 3 second timeout.
-- When the backend responds with HTTP 200, the build uses the returned catalog array.
-- When the backend is unreachable or returns an error, the build catches the exception, logs a clear warning to stdout, and uses the bundled snapshot.
-
-This guarantee allows local developers and CI runners to test and build the storefront without booting a backend instance.
+Drizzle schemas live in `apps/api/src/db/schema.ts` and `packages/db/src/schema.ts`. Apply database schema changes with `npm run db:push` before deploying the API. Local admin preview data is for development only and is never used as production catalog or order data.

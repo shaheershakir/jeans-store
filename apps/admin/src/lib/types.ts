@@ -17,6 +17,7 @@ export type Fit =
   | 'Baggy'
   | 'Bootcut'
   | 'Wide'
+  | 'Tapered'
   | 'Slim'
   | 'Skinny'
 
@@ -43,7 +44,7 @@ export type Wash =
   | 'Dark Wash'
 export type Gender = 'Men' | 'Women' | 'Unisex'
 export type Rise = 'Low' | 'Mid' | 'High'
-export type Material = 'Cotton' | 'Cotton Stretch' | 'Selvedge Denim' | 'Tencel Denim'
+export type Material = 'Cotton' | 'Cotton Stretch' | 'French Terry' | 'Fleece' | 'Jersey' | 'Waffle Knit'
 
 export type ProductStatus = 'Active' | 'Draft' | 'Archived'
 export type StockStatus = 'Healthy' | 'Low Stock' | 'Out of Stock'
@@ -61,6 +62,7 @@ export interface Product {
   gender: Gender
   rise: Rise
   material: Material
+  pattern?: string
   wash: Wash
   inseam: number
   price: number
@@ -69,6 +71,7 @@ export interface Product {
   taxRate: number
   status: ProductStatus
   featured: boolean
+  weightGrams?: number
   views: number
   wishlists: number
   image: string
@@ -117,7 +120,7 @@ export interface Collection {
   status: 'Active' | 'Inactive'
 }
 
-export type PaymentMethod = 'Card' | 'UPI' | 'Net Banking' | 'Wallet' | 'COD'
+export type PaymentMethod = 'Card' | 'UPI' | 'Net Banking' | 'Wallet' | 'Razorpay' | 'COD'
 export type PaymentStatus = 'Pending' | 'Paid' | 'Failed' | 'Refunded'
 
 export type FulfillmentStatus =
@@ -336,7 +339,6 @@ export interface ShippingZone {
   name: string
   regions: string[]
   methods: ShippingMethod[]
-  freeShippingThreshold: number
 }
 
 export interface ShippingMethod {
@@ -366,7 +368,7 @@ export interface PaymentRecord {
   amount: number
   status: PaymentStatus
   gateway: string
-  gatewayFee: number
+  gatewayFee: number | null
   settled: boolean
   createdAt: string
   settledAt: string | null
@@ -421,7 +423,6 @@ export interface StoreSettings {
   returnWindowDays: number
   cancellationAllowedAfter: string
   defaultShippingMethod: string
-  freeShippingThreshold: number
   notify: {
     email: boolean
     orderUpdates: boolean

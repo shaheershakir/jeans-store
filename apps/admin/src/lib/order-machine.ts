@@ -65,9 +65,8 @@ export interface OrderDraft {
 export function computeTotals(
   subtotal: number,
   discount: number,
-  freeShippingThreshold: number
+  shippingFee: number
 ): { shippingFee: number; tax: number; total: number } {
-  const shippingFee = subtotal - discount >= freeShippingThreshold ? 0 : 99
   const tax = Math.round((subtotal - discount) * 0.18)
   const total = subtotal - discount + shippingFee + tax
   return { shippingFee, tax, total }

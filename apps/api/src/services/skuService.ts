@@ -48,23 +48,8 @@ export const CATEGORY_CODES: Record<string, string> = {
   sweatpant: 'SWT',
   sweats: 'SWT',
 
-  // Additional store categories
   't-shirts': 'TSH',
-  't-shirt': 'TSH',
-  tees: 'TSH',
-  tee: 'TSH',
-
-  shirts: 'SHT',
-  shirt: 'SHT',
-
-  hoodies: 'HOD',
-  hoodie: 'HOD',
-
-  accessories: 'ACC',
-  accessory: 'ACC',
-
-  jeans: 'JNS',
-  denim: 'JNS'
+  tees: 'TSH'
 }
 
 export const PRODUCT_TYPE_CODES: Record<string, string> = {
@@ -79,7 +64,8 @@ export const PRODUCT_TYPE_CODES: Record<string, string> = {
   bootcut: 'BTC',
   wide: 'WID',
   standard: 'REG',
-  classic: 'REG'
+  classic: 'REG',
+  tapered: 'TAP'
 }
 
 export const COLOR_CODES: Record<string, string> = {

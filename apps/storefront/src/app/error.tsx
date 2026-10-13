@@ -20,7 +20,7 @@ export default function Error({
         <span className="error-badge">SYSTEM NOTICE</span>
         <h1 className="error-title">Something interrupted your session</h1>
         <p className="error-desc">
-          We encountered an unexpected issue while preparing the denim catalog. You can retry loading
+          We encountered an unexpected issue while preparing the product catalog. You can retry loading
           the view or return to the main archive.
         </p>
         <div className="error-actions">

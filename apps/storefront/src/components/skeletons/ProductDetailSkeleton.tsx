@@ -120,7 +120,7 @@ export default function ProductDetailSkeleton() {
 
           {/* Accordion tabs */}
           <div style={{ borderTop: '1px solid var(--line, rgba(12,14,18,0.09))', paddingTop: 16 }}>
-            {['Fabric & Denim Weight (GSM)', 'Fit Guide & Silhouette', 'Complimentary Shipping & Returns'].map((_, i) => (
+            {['Fabric & product weight', 'Fit guide & sizing', 'Delivery & returns'].map((_, i) => (
               <div
                 key={i}
                 style={{

@@ -489,8 +489,8 @@ export function paymentMetrics(data: DbState, days: number | null = null): Payme
     const mt = methodMap.get(p.method) ?? { count: 0, amount: 0, fees: 0 }
     mt.count += 1
     mt.amount += p.amount
-    mt.fees += p.gatewayFee
-    gatewayFees += p.gatewayFee
+    mt.fees += p.gatewayFee ?? 0
+    gatewayFees += p.gatewayFee ?? 0
     methodMap.set(p.method, mt)
     if (p.settled) settled += p.amount
   }

@@ -18,7 +18,6 @@ import {
   ArrowRight,
   Check
 } from 'lucide-react'
-import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@/lib/constants'
 import { cartCount, cartSubtotal, useCartStore, useAuthStore, type UserAddress } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
 
@@ -47,6 +46,15 @@ interface SubmittedOrder {
   paymentId?: string
   total: number
 }
+
+interface DeliveryQuote {
+  subtotal: number
+  shipping: number
+  total: number
+  weightGrams: number
+}
+
+const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:4000'
 
 const INITIAL_FORM: CheckoutForm = {
   name: '',
@@ -96,6 +104,9 @@ export default function CheckoutClient() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [submittedOrder, setSubmittedOrder] = useState<SubmittedOrder | null>(null)
+  const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuote | null>(null)
+  const [quoteLoading, setQuoteLoading] = useState(false)
+  const [quoteError, setQuoteError] = useState<string | null>(null)
 
   // Profile Autofill State
   const [isAutofilled, setIsAutofilled] = useState(false)
@@ -105,9 +116,9 @@ export default function CheckoutClient() {
   const [isManuallyEdited, setIsManuallyEdited] = useState(false)
 
   const count = cartCount(items)
-  const subtotal = cartSubtotal(items)
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIPPING_FEE
-  const total = subtotal + shipping
+  const subtotal = deliveryQuote?.subtotal ?? cartSubtotal(items)
+  const shipping = deliveryQuote?.shipping ?? 0
+  const total = deliveryQuote?.total ?? subtotal
 
   const applySavedAddress = useCallback((addr: UserAddress) => {
     setForm((prev) => ({
@@ -129,6 +140,48 @@ export default function CheckoutClient() {
     void useAuthStore.persist.rehydrate()
     void loadRazorpayScript()
   }, [])
+
+  useEffect(() => {
+    if (!form.state.trim() || items.length === 0) {
+      setDeliveryQuote(null)
+      setQuoteError(null)
+      setQuoteLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    setDeliveryQuote(null)
+    setQuoteError(null)
+    setQuoteLoading(true)
+    const timer = window.setTimeout(() => {
+      void fetch(`${backendUrl}/api/orders/quote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          state: form.state.trim(),
+          items: items.map((item) => ({ id: item.id, variantId: item.variantId, size: String(item.size), quantity: item.qty }))
+        }),
+        signal: controller.signal
+      })
+        .then(async (response) => {
+          const payload = await response.json().catch(() => ({}))
+          if (!response.ok) throw new Error(payload.error || 'Could not calculate delivery for this cart.')
+          setDeliveryQuote(payload as DeliveryQuote)
+        })
+        .catch((error: unknown) => {
+          if (error instanceof DOMException && error.name === 'AbortError') return
+          setQuoteError(error instanceof Error ? error.message : 'Could not calculate delivery for this cart.')
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setQuoteLoading(false)
+        })
+    }, 250)
+
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [form.state, items])
 
   // Auto-populate from profile if available
   useEffect(() => {
@@ -260,10 +313,10 @@ export default function CheckoutClient() {
       '',
       '*Bill Summary:*',
       `Subtotal: ${formatPrice(subtotal)}`,
-      `Shipping: ${shipping === 0 ? 'FREE' : formatPrice(shipping)}`,
+      `Delivery charge: ${formatPrice(shipping)}`,
       `Total: ${formatPrice(total)}`,
       '--------------------------------',
-      'Confirmed and queued for Mumbai studio dispatch.'
+      'Confirmed and queued for TEESGARAGE dispatch.'
     ]
       .filter(Boolean)
       .join('\n')
@@ -272,10 +325,12 @@ export default function CheckoutClient() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!validate()) return
+    if (!deliveryQuote) {
+      setPaymentError(quoteError || 'Enter a delivery state and wait for the delivery charge to calculate.')
+      return
+    }
 
     const orderId = `TGE-${Date.now().toString().slice(-6)}`
-    const backendUrl =
-      process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:4000'
 
     const orderPayload = {
       orderNumber: orderId,
@@ -289,19 +344,7 @@ export default function CheckoutClient() {
       state: form.state.trim(),
       pincode: form.pincode.trim(),
       notes: form.notes.trim() || undefined,
-      items: items.map((item) => ({
-        id: item.id,
-        name: item.name,
-        fit: item.fit,
-        size: String(item.size),
-        price: item.price,
-        priceNum: item.priceNum,
-        quantity: item.qty,
-        img: item.img
-      })),
-      subtotal,
-      shipping,
-      total
+      items: items.map((item) => ({ id: item.id, variantId: item.variantId, size: String(item.size), quantity: item.qty }))
     }
 
     if (paymentMethod === 'razorpay') {
@@ -320,9 +363,10 @@ export default function CheckoutClient() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount: total,
             currency: 'INR',
             orderNumber: orderId,
+            state: form.state.trim(),
+            items: orderPayload.items,
             customerName: form.name.trim(),
             customerEmail: form.email.trim(),
             customerPhone: form.phone.trim()
@@ -335,10 +379,8 @@ export default function CheckoutClient() {
         }
 
         const rzpData = await createRes.json()
-        const activeKey =
-          rzpData.keyId ||
-          process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-          'rzp_test_TnN4mtRGLw9wJy'
+        const activeKey = rzpData.keyId
+        if (!activeKey) throw new Error('Online payment is not configured. Select Cash on Delivery or contact support.')
 
         const options = {
           key: activeKey,
@@ -380,8 +422,9 @@ export default function CheckoutClient() {
                 })
               })
 
+              const verifyData = await verifyRes.json().catch(() => ({}))
               if (!verifyRes.ok) {
-                const verifyErr = await verifyRes.json().catch(() => ({}))
+                const verifyErr = verifyData as { error?: string }
                 throw new Error(verifyErr.error || 'Payment signature verification failed')
               }
 
@@ -403,7 +446,7 @@ export default function CheckoutClient() {
                 orderId,
                 paymentMethod: 'razorpay',
                 paymentId: response.razorpay_payment_id,
-                total,
+                total: Number(verifyData.order?.total ?? rzpData.total ?? total),
                 summary: buildSummaryText(orderId, 'Razorpay (Paid Online)', response.razorpay_payment_id)
               })
 
@@ -438,7 +481,7 @@ export default function CheckoutClient() {
       setPaymentError(null)
 
       try {
-        await fetch(`${backendUrl}/api/orders`, {
+        const orderResponse = await fetch(`${backendUrl}/api/orders`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -446,9 +489,9 @@ export default function CheckoutClient() {
             handoffType: 'cod',
             status: 'pending'
           })
-        }).catch((err) => {
-          console.warn('[TEESGARAGE] Order persistence note:', err)
         })
+        const orderResult = await orderResponse.json().catch(() => ({}))
+        if (!orderResponse.ok) throw new Error(orderResult.error || 'Could not place this order. Please try again.')
 
         saveLocalOrder(orderId, 'Cash on Delivery')
 
@@ -467,7 +510,7 @@ export default function CheckoutClient() {
         setSubmittedOrder({
           orderId,
           paymentMethod: 'cod',
-          total,
+          total: Number(orderResult.order?.total ?? total),
           summary: buildSummaryText(orderId, 'Cash on Delivery')
         })
 
@@ -556,10 +599,10 @@ export default function CheckoutClient() {
           <span className="cart-empty-badge">BAG EMPTY</span>
           <h1 className="empty-title">Your shopping bag is empty</h1>
           <p className="empty-desc">
-            Select a denim silhouette and choose your waist size before checking out.
+            Find a tee, Henley, or bottomwear style to start your order.
           </p>
           <Link href="/" className="button primary">
-            Explore All Silhouettes <i>↗</i>
+            Explore products <i>↗</i>
           </Link>
         </div>
       </main>
@@ -881,25 +924,31 @@ export default function CheckoutClient() {
                   <span>{paymentError}</span>
                 </div>
               )}
+              {quoteError && !paymentError && (
+                <div className="payment-error-alert" role="alert">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{quoteError}</span>
+                </div>
+              )}
             </div>
 
             <div className="form-section submit-section">
               <button
                 type="submit"
-                disabled={isProcessing}
+                disabled={isProcessing || quoteLoading || !deliveryQuote}
                 className="button primary checkout-submit-btn"
                 aria-label="Place you order"
               >
                 <span>
                   {isProcessing ? 'Processing Order...' : 'Place you order'}
                 </span>
-                <span>{formatPrice(total)} ↗</span>
+                <span>{deliveryQuote ? `${formatPrice(total)} ↗` : quoteLoading ? 'Calculating…' : 'Enter delivery state'}</span>
               </button>
 
               <p className="submit-footnote">
                 {paymentMethod === 'razorpay'
-                  ? 'Your transaction is secured with end-to-end 256-bit encryption by Razorpay. Free 7-day size exchanges included.'
-                  : 'Pay upon delivery. We will verify your sizing and dispatch within 24 hours.'}
+                  ? 'Your transaction is secured by Razorpay. Delivery is charged by destination and cart weight.'
+                  : 'Pay upon delivery. Delivery charges are calculated by destination and cart weight.'}
               </p>
             </div>
           </form>
@@ -914,7 +963,7 @@ export default function CheckoutClient() {
 
               <div className="summary-items">
                 {items.map((item) => (
-                  <div key={`${item.id}-${item.size}`} className="summary-item">
+                  <div key={`${item.id}-${item.variantId ?? item.size}`} className="summary-item">
                     <Image
                       src={item.img}
                       alt={item.name}
@@ -925,7 +974,7 @@ export default function CheckoutClient() {
                     <div className="summary-item-info">
                       <h3 className="summary-item-name">{item.name}</h3>
                       <p className="summary-item-meta">
-                        {[item.fit ? `${item.fit} Fit` : null, `Size ${item.size}`, `Qty ${item.qty}`]
+                        {[item.color, item.fit ? `${item.fit} Fit` : null, `Size ${item.size}`, `Qty ${item.qty}`]
                           .filter(Boolean)
                           .join(' · ')}
                       </p>
@@ -943,11 +992,11 @@ export default function CheckoutClient() {
                   <span>{formatPrice(subtotal)}</span>
                 </div>
                 <div className="total-row">
-                  <span>Shipping</span>
-                  <span>{shipping === 0 ? 'FREE' : formatPrice(shipping)}</span>
+                  <span>Delivery charge</span>
+                  <span>{deliveryQuote ? formatPrice(shipping) : quoteLoading ? 'Calculating…' : 'Enter state'}</span>
                 </div>
                 <div className="total-row total-row-final">
-                  <span>Estimated Total</span>
+                  <span>{deliveryQuote ? 'Order total' : 'Estimated subtotal'}</span>
                   <span>{formatPrice(total)}</span>
                 </div>
               </div>

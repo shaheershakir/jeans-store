@@ -2720,13 +2720,13 @@ button {
 }
 
 /* Shipping Progress Bar in Drawer */
-.free-shipping-bar {
+.cart-delivery-note {
   padding: 14px 24px;
   background: var(--bone);
   border-bottom: 1px solid var(--line);
 }
 
-.free-shipping-text {
+.cart-delivery-note-text {
   font: 500 11px var(--font-ui);
   margin-bottom: 8px;
   display: flex;

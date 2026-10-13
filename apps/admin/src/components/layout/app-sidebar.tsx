@@ -33,7 +33,7 @@ export function AppSidebar() {
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold tracking-tight">TEESGARAGE Admin</span>
-                  <span className="truncate text-xs text-muted-foreground">Jeans Commerce Ops</span>
+                  <span className="truncate text-xs text-muted-foreground">Apparel Store Operations</span>
                 </div>
               </Link>
             </SidebarMenuButton>

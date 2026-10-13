@@ -40,11 +40,15 @@ const FIT_OPTIONS = [
 ]
 
 const CATEGORY_OPTIONS = [
-  { value: 'all', label: 'All Garments' },
-  { value: 'jeans', label: 'Denim' },
-  { value: 'tops', label: 'Tops & Shirts' },
-  { value: 'hoodies', label: 'Hoodies' },
-  { value: 'hats', label: 'Accessories' },
+  { value: 'all', label: 'All products' },
+  { value: 'stripes', label: 'Stripes' },
+  { value: 'fullsleeve', label: 'Fullsleeve' },
+  { value: 'drsleeve', label: 'Drsleeve' },
+  { value: 'printed-tees', label: 'Printed tees' },
+  { value: 'ringer-tees', label: 'Ringer tees' },
+  { value: 'henley', label: 'Henley' },
+  { value: 'trackpants', label: 'Trackpants' },
+  { value: 'sweatpants', label: 'Sweatpants' },
 ]
 
 export default function StorefrontNavigationPage() {
@@ -90,7 +94,7 @@ export default function StorefrontNavigationPage() {
   const handleOpenAdd = () => {
     setFormLabel('')
     setFormType('fit')
-    setFormTarget('Straight')
+    setFormTarget('Regular')
     setFormHref('/')
     setFormBadge('')
     setFormActive(true)
@@ -101,7 +105,7 @@ export default function StorefrontNavigationPage() {
   const handleOpenEdit = (item: NavigationItem) => {
     setFormLabel(item.label)
     setFormType(item.type)
-    setFormTarget(item.targetValue || (item.type === 'category' ? 'jeans' : 'Straight'))
+    setFormTarget(item.targetValue || (item.type === 'category' ? 'stripes' : 'Regular'))
     setFormHref(item.href)
     setFormBadge(item.badge || '')
     setFormActive(item.isActive)
@@ -117,9 +121,9 @@ export default function StorefrontNavigationPage() {
       setFormTarget(target)
       setFormHref(target === 'all' ? '/' : `/?fit=${encodeURIComponent(target)}`)
     } else if (newType === 'category') {
-      const target = 'jeans'
+      const target = 'stripes'
       setFormTarget(target)
-      setFormHref('/?category=jeans')
+      setFormHref('/?category=stripes')
     } else {
       setFormHref('/')
     }
@@ -216,7 +220,7 @@ export default function StorefrontNavigationPage() {
   }
 
   const handleResetDefaults = async () => {
-    if (!window.confirm('Reset all navigation items to default denim silhouettes? Any custom links will be replaced.')) {
+    if (!window.confirm('Reset storefront navigation to the default apparel categories? Custom links will be replaced.')) {
       return
     }
 
@@ -238,7 +242,7 @@ export default function StorefrontNavigationPage() {
     <div>
       <PageHeader
         title="Storefront Navigation"
-        description="Configure header links, denim silhouette shortcuts, category menus, and promotional banners on the customer storefront."
+        description="Configure storefront category links, fit shortcuts, and promotional banners."
       >
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleResetDefaults} disabled={saving}>
@@ -557,14 +561,14 @@ export default function StorefrontNavigationPage() {
                       value={formType}
                       onChange={(e) => handleTypeChange(e.target.value as NavItemType)}
                     >
-                      <option value="fit">Denim Fit Filter</option>
+                      <option value="fit">Fit filter</option>
                       <option value="category">Wardrobe Category</option>
                       <option value="custom">Custom URL / Page</option>
                     </Select>
                   </Field>
 
                   {formType === 'fit' && (
-                    <Field label="Denim Fit Target" required hint="Silhouettes in catalog">
+                    <Field label="Fit target" required hint="Available apparel fits">
                       <Select
                         value={formTarget}
                         onChange={(e) => handleTargetChange(e.target.value)}

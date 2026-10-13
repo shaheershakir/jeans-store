@@ -35,16 +35,16 @@ export class RazorpayService {
   private keySecret: string
 
   constructor() {
-    this.keyId = process.env.RAZORPAY_KEY_ID?.trim() || 'rzp_test_TnN4mtRGLw9wJy'
-    this.keySecret = process.env.RAZORPAY_KEY_SECRET?.trim() || '6HCOI0Fg4exVQWYG2AK7KeSf'
+    this.keyId = process.env.RAZORPAY_KEY_ID?.trim() || ''
+    this.keySecret = process.env.RAZORPAY_KEY_SECRET?.trim() || ''
   }
 
   public getKeyId(): string {
-    return process.env.RAZORPAY_KEY_ID?.trim() || this.keyId || 'rzp_test_TnN4mtRGLw9wJy'
+    return process.env.RAZORPAY_KEY_ID?.trim() || this.keyId
   }
 
   public getKeySecret(): string {
-    return process.env.RAZORPAY_KEY_SECRET?.trim() || this.keySecret || '6HCOI0Fg4exVQWYG2AK7KeSf'
+    return process.env.RAZORPAY_KEY_SECRET?.trim() || this.keySecret
   }
 
   public getStatus() {
@@ -63,20 +63,7 @@ export class RazorpayService {
     const keyId = this.getKeyId()
     const keySecret = this.getKeySecret()
 
-    if (!keyId || !keySecret) {
-      logger.info({ receipt, amount }, 'Mocking Razorpay order creation')
-      return {
-        id: `order_mock_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        entity: 'order',
-        amount,
-        amount_paid: 0,
-        amount_due: amount,
-        currency,
-        receipt,
-        status: 'created',
-        created_at: Math.floor(Date.now() / 1000)
-      }
-    }
+    if (!keyId || !keySecret) throw new Error('Razorpay is not configured.')
 
     const authHeader = 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64')
 
@@ -108,9 +95,7 @@ export class RazorpayService {
    */
   public verifyPaymentSignature(params: PaymentVerificationParams): boolean {
     const keySecret = this.getKeySecret()
-    if (!keySecret) {
-      return params.razorpay_signature.startsWith('mock_') || Boolean(params.razorpay_payment_id)
-    }
+    if (!keySecret) return false
 
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = params
     const body = `${razorpay_order_id}|${razorpay_payment_id}`
@@ -120,7 +105,29 @@ export class RazorpayService {
       .update(body)
       .digest('hex')
 
-    return expectedSignature === razorpay_signature
+    const received = Buffer.from(razorpay_signature)
+    const expected = Buffer.from(expectedSignature)
+    return received.length === expected.length && crypto.timingSafeEqual(received, expected)
+  }
+
+  public async fetchOrder(orderId: string): Promise<RazorpayOrderResponse> {
+    return this.fetchResource<RazorpayOrderResponse>(`orders/${encodeURIComponent(orderId)}`)
+  }
+
+  public async fetchPayment(paymentId: string): Promise<{ order_id: string; amount: number; status: string }> {
+    return this.fetchResource<{ order_id: string; amount: number; status: string }>(`payments/${encodeURIComponent(paymentId)}`)
+  }
+
+  private async fetchResource<T>(path: string): Promise<T> {
+    const keyId = this.getKeyId()
+    const keySecret = this.getKeySecret()
+    if (!keyId || !keySecret) throw new Error('Razorpay is not configured.')
+    const response = await fetch(`https://api.razorpay.com/v1/${path}`, {
+      headers: { Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}` },
+      signal: AbortSignal.timeout(8000)
+    })
+    if (!response.ok) throw new Error('Razorpay verification lookup failed.')
+    return (await response.json()) as T
   }
 
   /**

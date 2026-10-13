@@ -62,7 +62,7 @@ export default function CategoriesPage() {
 
   return (
     <div>
-      <PageHeader title="Categories" description="Manage denim product categories and taxonomy">
+      <PageHeader title="Categories" description="Manage product categories and taxonomy">
         <Button size="sm" onClick={handleOpenNew}>
           <Plus className="h-4 w-4" /> Add Category
         </Button>
@@ -84,7 +84,7 @@ export default function CategoriesPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Field label="Category Name" required>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Baggy Jeans" />
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Printed tees" />
                 </Field>
 
                 <Field label="Description">

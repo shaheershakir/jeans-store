@@ -1,13 +1,11 @@
 import type { Request, Response, NextFunction } from 'express'
+import { verifyAdminSession } from '../services/adminSession.js'
 
 export function verifyAdminAuth(req: Request, res: Response, next: NextFunction): void {
-  const configuredKey = process.env.ADMIN_API_KEY
-  if (configuredKey) {
-    const keyHeader = req.headers['x-api-key']
-    if (!keyHeader || keyHeader !== configuredKey) {
-      res.status(401).json({ error: 'Unauthorized: Missing or invalid X-API-Key' })
-      return
-    }
+  const token = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1]
+  if (!token || !verifyAdminSession(token)) {
+    res.status(401).json({ error: 'Unauthorized: admin session required.' })
+    return
   }
   next()
 }

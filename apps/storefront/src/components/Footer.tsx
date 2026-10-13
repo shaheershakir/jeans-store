@@ -53,7 +53,7 @@ export default function Footer() {
             <li><Link href="/orders">Order tracking</Link></li>
             <li><Link href="/checkout">Checkout</Link></li>
             <li><span>7-day doorstep exchanges</span></li>
-            <li><span>Free shipping above ₹1,499</span></li>
+            <li><span>Paid delivery based on location and parcel weight</span></li>
           </ul>
         </div>
       </div>

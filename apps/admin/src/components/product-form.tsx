@@ -1,635 +1,362 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, Trash2, RefreshCw, Sparkles, CheckCircle2 } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft, ImagePlus, LoaderCircle, Plus, RefreshCw, Trash2, UploadCloud } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
-import { createProduct, updateProduct, deleteProduct } from '@/services/catalog'
+import { createProduct, deleteProduct, updateProduct, uploadProductImage } from '@/services/catalog'
 import { Button, Card, CardHeader, Field, Input, Select, Textarea, Checkbox } from '@/components/ui/primitives'
-import { toastSuccess, toastError } from '@/components/ui/toast'
-import type { Fit, Gender, Material, Product, ProductStatus, Rise, Wash, Color } from '@/lib/types'
+import { toastError, toastSuccess } from '@/components/ui/toast'
+import type { Fit, Gender, Material, Product, ProductStatus } from '@/lib/types'
 import { generateBaseSku, fetchBackendSkuPreview } from '@/lib/sku'
 
 interface VariantRow {
   id?: number
-  size: number | string
-  color: Color | string
+  size: string
+  color: string
   sku: string
   price: number
   stock: number
   reorderPoint: number
   weight: number
   barcode: string
-  isCustomSku?: boolean
+  isCustomSku: boolean
 }
 
-const AVAILABLE_COLORS = [
-  'Black',
-  'White',
-  'Navy',
-  'Grey',
-  'Blue',
-  'Dark Blue',
-  'Light Blue',
-  'Green',
-  'Olive',
-  'Red',
-  'Beige',
-]
+const APPAREL_CATEGORIES = [
+  { name: 'Stripes', slug: 'stripes' },
+  { name: 'Fullsleeve', slug: 'fullsleeve' },
+  { name: 'Drsleeve', slug: 'drsleeve' },
+  { name: 'Printed tees', slug: 'printed-tees' },
+  { name: 'Ringer tees', slug: 'ringer-tees' },
+  { name: 'Henley', slug: 'henley' },
+  { name: 'Trackpants', slug: 'trackpants' },
+  { name: 'Sweatpants', slug: 'sweatpants' },
+] as const
 
-const STANDARD_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '28', '30', '32', '34', '36', '38']
+const COLORS = ['Black', 'White', 'Navy', 'Grey', 'Blue', 'Green', 'Olive', 'Red', 'Beige']
+const TOP_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
+const BOTTOM_SIZES = ['28', '30', '32', '34', '36', '38', '40', '42']
+const FITS: Fit[] = ['Regular', 'Oversized', 'Boxy', 'Relaxed', 'Straight', 'Slim', 'Baggy', 'Wide', 'Tapered']
+const MATERIALS: Material[] = ['Cotton', 'Cotton Stretch']
+const BARCODE = () => `890${Math.floor(10000000000 + Math.random() * 89999999999)}`
+
+function isBottomwear(categorySlug: string) {
+  return categorySlug === 'trackpants' || categorySlug === 'sweatpants'
+}
+
+function defaultWeight(categorySlug: string) {
+  return isBottomwear(categorySlug) ? 650 : 350
+}
+
+function makeVariant(size: string, categorySlug: string, fit: Fit, price: number, weight: number): VariantRow {
+  return {
+    size,
+    color: 'Black',
+    sku: generateBaseSku({ category: categorySlug, productType: fit, color: 'Black', size }),
+    price,
+    stock: 0,
+    reorderPoint: 5,
+    weight,
+    barcode: BARCODE(),
+    isCustomSku: false,
+  }
+}
 
 export function ProductForm({ product }: { product?: Product }) {
   const router = useRouter()
-  const categories = useAdminStore((s) => s.data.categories)
-  const collections = useAdminStore((s) => s.data.collections)
+  const categories = useAdminStore((state) => state.data.categories)
+  const collections = useAdminStore((state) => state.data.collections)
+  const isEdit = Boolean(product)
 
-  const isEdit = !!product
-
+  const initialCategorySlug = categories.find((category) => category.id === product?.categoryId)?.slug ?? 'printed-tees'
+  const initialWeight = product?.weightGrams ?? defaultWeight(initialCategorySlug)
   const [name, setName] = React.useState(product?.name ?? '')
   const [slug, setSlug] = React.useState(product?.slug ?? '')
   const [sku, setSku] = React.useState(product?.sku ?? '')
   const [description, setDescription] = React.useState(product?.description ?? '')
   const [brand, setBrand] = React.useState(product?.brand ?? 'TEESGARAGE')
-  const [categoryId, setCategoryId] = React.useState(product?.categoryId ?? categories[0]?.id ?? 1)
+  const [categoryId, setCategoryId] = React.useState(product?.categoryId ?? categories.find((category) => category.slug === 'printed-tees')?.id ?? categories[0]?.id ?? 1)
   const [collectionId, setCollectionId] = React.useState(product?.collectionId ?? collections[0]?.id ?? 1)
   const [fit, setFit] = React.useState<Fit>(product?.fit ?? 'Regular')
-  const [gender, setGender] = React.useState<Gender>(product?.gender ?? 'Men')
-  const [rise, setRise] = React.useState<Rise>(product?.rise ?? 'Mid')
+  const [gender, setGender] = React.useState<Gender>(product?.gender ?? 'Unisex')
   const [material, setMaterial] = React.useState<Material>(product?.material ?? 'Cotton')
-  const [wash, setWash] = React.useState<Wash>(product?.wash ?? 'Raw')
+  const [pattern, setPattern] = React.useState(product?.pattern ?? '')
   const [inseam, setInseam] = React.useState(product?.inseam ?? 32)
+  const [weightGrams, setWeightGrams] = React.useState(initialWeight)
   const [price, setPrice] = React.useState(product?.price ?? 1199)
   const [compareAtPrice, setCompareAtPrice] = React.useState<number | ''>(product?.compareAtPrice ?? 1499)
-  const [costPrice, setCostPrice] = React.useState(product?.costPrice ?? 450)
-  const [taxRate, setTaxRate] = React.useState(product?.taxRate ?? 0.12)
-  const [status, setStatus] = React.useState<ProductStatus>(product?.status ?? 'Active')
+  const [costPrice, setCostPrice] = React.useState(product?.costPrice ?? 0)
+  const [taxRate, setTaxRate] = React.useState(product?.taxRate ?? 0.05)
+  const [status, setStatus] = React.useState<ProductStatus>(product?.status ?? 'Draft')
   const [featured, setFeatured] = React.useState(product?.featured ?? false)
+  const [image, setImage] = React.useState(product?.image ?? '')
+  const [image2, setImage2] = React.useState(product?.images[1]?.url ?? '')
+  const [uploading, setUploading] = React.useState<'primary' | 'secondary' | null>(null)
+  const [submitting, setSubmitting] = React.useState(false)
 
-  const [image, setImage] = React.useState(
-    product?.image ??
-      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=800'
-  )
-  const [image2, setImage2] = React.useState(
-    product?.images[1]?.url ??
-      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=800'
-  )
-
-  const currentCategorySlug = React.useMemo(() => {
-    return categories.find((c) => c.id === Number(categoryId))?.slug || 'printed-tees'
-  }, [categories, categoryId])
-
+  const category = categories.find((item) => item.id === Number(categoryId))
+  const categorySlug = category?.slug ?? 'printed-tees'
+  const sizeOptions = isBottomwear(categorySlug) ? BOTTOM_SIZES : TOP_SIZES
   const [variants, setVariants] = React.useState<VariantRow[]>(() => {
-    if (product?.variants && product.variants.length > 0) {
-      return product.variants.map((v) => ({
-        id: v.id,
-        size: v.size,
-        color: v.color,
-        sku: v.sku,
-        price: v.price,
-        stock: v.stock,
-        reorderPoint: v.reorderPoint,
-        weight: v.weight,
-        barcode: v.barcode,
+    if (product?.variants.length) {
+      return product.variants.map((variant) => ({
+        id: variant.id,
+        size: String(variant.size),
+        color: String(variant.color),
+        sku: variant.sku,
+        price: variant.price,
+        stock: variant.stock,
+        reorderPoint: variant.reorderPoint,
+        weight: variant.weight || initialWeight,
+        barcode: variant.barcode,
         isCustomSku: false,
       }))
     }
-
-    const defaultSizes = ['S', 'M', 'L', 'XL', 'XXL']
-    return defaultSizes.map((sz, idx) => ({
-      size: sz,
-      color: 'Black',
-      sku: generateBaseSku({ category: 'printed-tees', productType: 'Regular', color: 'Black', size: sz }),
-      price: 1199,
-      stock: 20,
-      reorderPoint: 5,
-      weight: 250,
-      barcode: `890${Math.floor(10000000000 + Math.random() * 89999999999)}`,
-      isCustomSku: false,
-    }))
+    const defaults = isBottomwear(initialCategorySlug) ? ['30', '32', '34', '36', '38'] : ['S', 'M', 'L', 'XL', 'XXL']
+    return defaults.map((size) => makeVariant(size, initialCategorySlug, 'Regular', 1199, initialWeight))
   })
 
-  const [submitting, setSubmitting] = React.useState(false)
-
-  // Auto-generate slug and SKU if name changes on new product
-  const handleNameChange = (val: string) => {
-    setName(val)
-    if (!isEdit) {
-      const generatedSlug = val
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '')
-      setSlug(generatedSlug)
-
-      const masterSku = generateBaseSku({
-        category: currentCategorySlug,
-        productType: fit,
-        color: 'BLK',
-        size: 'BASE',
-      })
-      setSku(masterSku.replace('-BLK-BASE', ''))
-    }
-  }
-
-  // Recalculate SKUs for unsaved variants when Category or Fit changes
-  const handleCategoryChange = (newCatId: number) => {
-    setCategoryId(newCatId)
-    const newCatSlug = categories.find((c) => c.id === newCatId)?.slug || 'printed-tees'
-
-    setVariants((prev) =>
-      prev.map((v) => {
-        // Preserve existing saved variants!
-        if (v.id !== undefined || v.isCustomSku) return v
-        const newSku = generateBaseSku({
-          category: newCatSlug,
+  const updateVariant = (index: number, patch: Partial<VariantRow>) => {
+    setVariants((current) => current.map((variant, rowIndex) => {
+      if (rowIndex !== index) return variant
+      const next = { ...variant, ...patch }
+      if ((patch.size !== undefined || patch.color !== undefined) && !variant.isCustomSku && variant.id === undefined) {
+        next.sku = generateBaseSku({
+          category: categorySlug,
           productType: fit,
-          color: String(v.color),
-          size: v.size,
-          productId: product?.id,
+          color: next.color,
+          size: next.size,
         })
-        return { ...v, sku: newSku }
-      })
-    )
+      }
+      if (patch.sku !== undefined && patch.isCustomSku === undefined) next.isCustomSku = true
+      return next
+    }))
   }
 
-  const handleFitChange = (newFit: Fit) => {
-    setFit(newFit)
-    setVariants((prev) =>
-      prev.map((v) => {
-        // Preserve existing saved variants!
-        if (v.id !== undefined || v.isCustomSku) return v
-        const newSku = generateBaseSku({
-          category: currentCategorySlug,
-          productType: newFit,
-          color: String(v.color),
-          size: v.size,
-          productId: product?.id,
-        })
-        return { ...v, sku: newSku }
-      })
-    )
+  const handleCategoryChange = (nextId: number) => {
+    const nextCategory = categories.find((item) => item.id === nextId)?.slug ?? 'printed-tees'
+    const nextWeight = defaultWeight(nextCategory)
+    setCategoryId(nextId)
+    setWeightGrams(nextWeight)
+    const nextSizes = isBottomwear(nextCategory) ? BOTTOM_SIZES : TOP_SIZES
+    setVariants((current) => current.map((variant, index) => {
+      const size = nextSizes[index] ?? nextSizes[nextSizes.length - 1]
+      return {
+        ...variant,
+        size,
+        weight: nextWeight,
+        sku: variant.isCustomSku ? variant.sku : generateBaseSku({ category: nextCategory, productType: fit, color: variant.color, size }),
+      }
+    }))
   }
 
-  const addVariantRow = () => {
-    const existingSizes = new Set(variants.map((v) => String(v.size)))
-    const nextSize = STANDARD_SIZES.find((s) => !existingSizes.has(s)) || 'M'
-    const newSku = generateBaseSku({
-      category: currentCategorySlug,
-      productType: fit,
-      color: 'Black',
-      size: nextSize,
-      productId: product?.id,
-    })
-
-    setVariants([
-      ...variants,
-      {
-        size: nextSize,
-        color: 'Black',
-        sku: newSku,
-        price: price,
-        stock: 15,
-        reorderPoint: 5,
-        weight: 250,
-        barcode: `890${Math.floor(10000000000 + Math.random() * 89999999999)}`,
-        isCustomSku: false,
-      },
-    ])
-  }
-
-  const removeVariantRow = (index: number) => {
-    if (variants.length <= 1) {
-      toastError('A product must have at least one variant.')
+  const uploadImage = async (file: File, slot: 'primary' | 'secondary') => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toastError('Choose a JPEG, PNG, or WebP product photo.')
       return
     }
-    setVariants(variants.filter((_, i) => i !== index))
-  }
-
-  const recalculateVariantSku = async (index: number) => {
-    const v = variants[index]
-    if (!v) return
-    const calculatedSku = await fetchBackendSkuPreview({
-      category: currentCategorySlug,
-      productType: fit,
-      color: String(v.color),
-      size: v.size,
-      productId: product?.id,
-    })
-
-    const next = [...variants]
-    next[index] = { ...v, sku: calculatedSku, isCustomSku: false }
-    setVariants(next)
-    toastSuccess(`Recalculated SKU: ${calculatedSku}`)
-  }
-
-  const updateVariantRow = (index: number, key: keyof VariantRow, val: any) => {
-    const next = [...variants]
-    const current = next[index]
-    let updated = { ...current, [key]: val }
-
-    // If size or color changed on an unsaved variant, automatically recalculate SKU
-    if ((key === 'size' || key === 'color') && current.id === undefined && !current.isCustomSku) {
-      const newSku = generateBaseSku({
-        category: currentCategorySlug,
-        productType: fit,
-        color: String(key === 'color' ? val : current.color),
-        size: key === 'size' ? val : current.size,
-        productId: product?.id,
-      })
-      updated.sku = newSku
+    if (file.size > 10 * 1024 * 1024) {
+      toastError('Product photos must be 10 MB or smaller.')
+      return
     }
-
-    if (key === 'sku') {
-      updated.isCustomSku = true
+    try {
+      setUploading(slot)
+      const url = await uploadProductImage(file)
+      if (slot === 'primary') setImage(url)
+      else setImage2(url)
+      toastSuccess('Product photo uploaded to Google Cloud Storage.')
+    } catch (error) {
+      toastError(error instanceof Error ? error.message : 'Could not upload this photo.')
+    } finally {
+      setUploading(null)
     }
-
-    next[index] = updated
-    setVariants(next)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const addVariant = () => {
+    const existing = new Set(variants.map((variant) => variant.size))
+    const nextSize = sizeOptions.find((size) => !existing.has(size)) ?? ''
+    setVariants((current) => [...current, makeVariant(nextSize, categorySlug, fit, price, weightGrams)])
+  }
 
+  const regenerateSku = async (index: number) => {
+    const variant = variants[index]
+    if (!variant) return
+    try {
+      const nextSku = await fetchBackendSkuPreview({ category: categorySlug, productType: fit, color: variant.color, size: variant.size, productId: product?.id })
+      updateVariant(index, { sku: nextSku, isCustomSku: false })
+      toastSuccess(`SKU updated: ${nextSku}`)
+    } catch (error) {
+      toastError(error instanceof Error ? error.message : 'Could not generate SKU.')
+    }
+  }
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     if (!name.trim()) return toastError('Product name is required.')
-    if (price <= 0) return toastError('Price must be greater than zero.')
+    if (!image) return toastError('Upload a primary product photo before saving.')
+    if (!variants.length || variants.some((variant) => !variant.size.trim())) return toastError('Every variant needs a size.')
+    if (weightGrams < 1) return toastError('Product weight must be greater than zero.')
 
-    // Check for duplicate variant color/size combination
     const seen = new Set<string>()
-    for (const v of variants) {
-      const key = `${String(v.color).toLowerCase()}__${String(v.size).toUpperCase()}`
-      if (seen.has(key)) {
-        return toastError(`Duplicate variant: A variant with color "${v.color}" and size "${v.size}" already exists.`)
-      }
+    for (const variant of variants) {
+      const key = `${variant.color.toLowerCase()}__${variant.size.trim().toUpperCase()}`
+      if (seen.has(key)) return toastError(`Duplicate variant: ${variant.color} / ${variant.size}`)
       seen.add(key)
     }
 
     try {
       setSubmitting(true)
+      const cleanSlug = slug.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      const masterSku = sku.trim() || generateBaseSku({ category: categorySlug, productType: fit, color: 'BASE', size: 'BASE' }).replace('-BASE-BASE', '')
       const input = {
         id: product?.id,
-        name: name.trim(),
-        slug: slug.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        sku: sku.trim() || generateBaseSku({ category: currentCategorySlug, productType: fit, color: 'BLK', size: 'BASE' }).replace('-BLK-BASE', ''),
-        description: description.trim(),
-        brand,
-        categoryId: Number(categoryId),
-        collectionId: Number(collectionId),
-        fit,
-        gender,
-        rise,
-        material,
-        wash,
-        inseam: Number(inseam),
-        price: Number(price),
-        compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
-        costPrice: Number(costPrice),
-        taxRate: Number(taxRate),
-        status,
-        featured,
-        image: image.trim(),
-        images: [
-          { url: image.trim(), alt: `${name} primary view` },
-          { url: image2.trim(), alt: `${name} detail view` },
-        ],
-        variants: variants.map((v) => ({
-          id: v.id,
-          size: v.size,
-          color: v.color,
-          sku: v.sku.trim(),
-          price: Number(v.price),
-          stock: Number(v.stock),
-          reorderPoint: Number(v.reorderPoint),
-          weight: Number(v.weight),
-          barcode: v.barcode,
-          status: 'Active' as const,
+        name: name.trim(), slug: cleanSlug, sku: masterSku, description: description.trim(), brand: brand.trim() || 'TEESGARAGE',
+        categoryId: Number(categoryId), collectionId: Number(collectionId), fit, gender, rise: 'Mid' as const,
+        material, pattern: pattern.trim(), wash: 'Raw' as const, inseam: isBottomwear(categorySlug) ? Number(inseam) : 0,
+        price: Number(price), compareAtPrice: compareAtPrice === '' ? null : Number(compareAtPrice),
+        costPrice: Number(costPrice), taxRate: Number(taxRate), status, featured, weightGrams: Number(weightGrams),
+        image, images: [{ url: image, alt: `${name} product photo` }, ...(image2 ? [{ url: image2, alt: `${name} alternate view` }] : [])],
+        variants: variants.map((variant) => ({
+          id: variant.id, size: variant.size.trim(), color: variant.color.trim(), sku: variant.sku.trim(),
+          price: Number(variant.price || price), stock: Math.max(0, Number(variant.stock)),
+          reorderPoint: Math.max(0, Number(variant.reorderPoint)), weight: Number(weightGrams), barcode: variant.barcode, status: 'Active' as const,
         })),
       }
-
       if (isEdit) {
         await updateProduct(input)
-        toastSuccess(`Updated product "${name}".`)
+        toastSuccess(`Updated “${name}”.`)
       } else {
         await createProduct(input)
-        toastSuccess(`Created product "${name}".`)
+        toastSuccess(`Created “${name}”.`)
       }
-
       router.push('/products')
-    } catch (err: any) {
-      toastError(err?.message || 'Failed to save product.')
+    } catch (error) {
+      toastError(error instanceof Error ? error.message : 'Failed to save product.')
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!product) return
-    if (!confirm(`Are you sure you want to delete "${product.name}"?`)) return
+    if (!product || !window.confirm(`Delete “${product.name}”? This cannot be undone.`)) return
     try {
       setSubmitting(true)
       await deleteProduct(product.id)
-      toastSuccess(`Deleted product "${product.name}".`)
+      toastSuccess(`Deleted “${product.name}”.`)
       router.push('/products')
-    } catch (err: any) {
-      toastError(err?.message || 'Failed to delete product.')
+    } catch (error) {
+      toastError(error instanceof Error ? error.message : 'Failed to delete product.')
       setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 pb-12">
-      <div className="flex items-center justify-between">
-        <Link href="/products" className="flex items-center gap-1.5 text-xs font-medium text-ink-3 hover:text-ink">
-          <ArrowLeft className="h-4 w-4" /> Back to Products
-        </Link>
+    <form onSubmit={handleSubmit} className="space-y-5 pb-12">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link href="/products" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Products</Link>
         <div className="flex items-center gap-2">
-          {isEdit && (
-            <Button type="button" variant="danger-outline" size="sm" onClick={handleDelete} disabled={submitting}>
-              <Trash2 className="h-4 w-4" /> Delete
-            </Button>
-          )}
-          <Button type="submit" size="sm" disabled={submitting}>
-            {submitting ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Product'}
-          </Button>
+          {isEdit && <Button type="button" variant="danger-outline" size="sm" onClick={handleDelete} disabled={submitting}>Delete</Button>}
+          <Button type="submit" size="sm" disabled={submitting || uploading !== null}>{submitting ? 'Saving…' : isEdit ? 'Save product' : 'Create product'}</Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Main Product Info */}
-        <div className="space-y-6 lg:col-span-2">
-          <Card className="p-5 space-y-4">
-            <CardHeader title="General Details" subtitle="Basic product identifiers and presentation" />
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Product Name" required>
-                <Input value={name} onChange={(e) => handleNameChange(e.target.value)} placeholder="e.g. Breton Heavyweight Striped Tee" />
-              </Field>
-
-              <Field label="SKU Base Prefix" hint="Master product prefix">
-                <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="e.g. STR-OVS" />
-              </Field>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-5">
+          <Card className="space-y-5 p-5">
+            <CardHeader title="Product details" subtitle="Set the garment category, fit, and customer-facing description." />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Product name" required><Input required value={name} onChange={(event) => { setName(event.target.value); if (!isEdit && !slug) setSlug(event.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')) }} placeholder="e.g. Contrast Ringer Tee" /></Field>
+              <Field label="Category" required><Select value={categoryId} onChange={(event) => handleCategoryChange(Number(event.target.value))}>{APPAREL_CATEGORIES.map((option) => { const match = categories.find((item) => item.slug === option.slug); return match ? <option key={match.id} value={match.id}>{option.name}</option> : null })}</Select></Field>
+              <Field label="Fit"><Select value={fit} onChange={(event) => setFit(event.target.value as Fit)}>{FITS.map((option) => <option key={option}>{option}</option>)}</Select></Field>
+              <Field label="Audience"><Select value={gender} onChange={(event) => setGender(event.target.value as Gender)}><option>Unisex</option><option>Men</option><option>Women</option></Select></Field>
+              <Field label="Fabric"><Select value={material} onChange={(event) => setMaterial(event.target.value as Material)}>{MATERIALS.map((option) => <option key={option}>{option}</option>)}</Select></Field>
+              <Field label="Pattern or style" hint="Optional product detail, such as graphic print or contrast trim."><Input value={pattern} onChange={(event) => setPattern(event.target.value)} placeholder="e.g. Graphic print" /></Field>
+              <Field label="Product slug"><Input value={slug} onChange={(event) => setSlug(event.target.value)} placeholder="auto-generated-from-name" /></Field>
+              <Field label="Product SKU prefix"><Input value={sku} onChange={(event) => setSku(event.target.value.toUpperCase())} placeholder="Auto-generated if blank" /></Field>
             </div>
-
-            <Field label="Description">
-              <Textarea
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Product details, fabric feel, styling tips..."
-              />
-            </Field>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Field label="Category" required>
-                <Select value={categoryId} onChange={(e) => handleCategoryChange(Number(e.target.value))}>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-
-              <Field label="Fit / Product Type" required>
-                <Select value={fit} onChange={(e) => handleFitChange(e.target.value as Fit)}>
-                  <option value="Regular">Regular</option>
-                  <option value="Oversized">Oversized</option>
-                  <option value="Boxy">Boxy</option>
-                  <option value="Relaxed">Relaxed</option>
-                  <option value="Straight">Straight</option>
-                  <option value="Slim">Slim</option>
-                  <option value="Skinny">Skinny</option>
-                  <option value="Baggy">Baggy</option>
-                  <option value="Bootcut">Bootcut</option>
-                  <option value="Wide">Wide</option>
-                </Select>
-              </Field>
-
-              <Field label="Wash / Finish" required>
-                <Select value={wash} onChange={(e) => setWash(e.target.value as Wash)}>
-                  <option value="Raw">Raw</option>
-                  <option value="Stone Wash">Stone Wash</option>
-                  <option value="Acid Wash">Acid Wash</option>
-                  <option value="Vintage Wash">Vintage Wash</option>
-                  <option value="Distressed">Distressed</option>
-                  <option value="Dark Wash">Dark Wash</option>
-                </Select>
-              </Field>
-            </div>
+            <Field label="Description"><Textarea rows={4} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the fabric, construction, fit, and care." /></Field>
           </Card>
 
-          {/* Pricing & Cost */}
-          <Card className="p-5 space-y-4">
-            <CardHeader title="Pricing & Financials" subtitle="Prices in INR (₹) and profit metrics" />
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Field label="Selling Price (₹)" required>
-                <Input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
-              </Field>
-
-              <Field label="Compare-At Price (₹)" hint="Original MSRP for discount badge">
-                <Input
-                  type="number"
-                  value={compareAtPrice}
-                  onChange={(e) => setCompareAtPrice(e.target.value ? Number(e.target.value) : '')}
-                />
-              </Field>
-
-              <Field label="Cost Price (₹)" hint="COGS for margin tracking">
-                <Input type="number" value={costPrice} onChange={(e) => setCostPrice(Number(e.target.value))} />
-              </Field>
-            </div>
-          </Card>
-
-          {/* Variants Table with Automatic SKU Generation */}
-          <Card className="p-5 space-y-4">
-            <CardHeader
-              title="Variants & Automatic SKUs"
-              subtitle="SKU format: CATEGORY-PRODUCT_TYPE-COLOR-SIZE (e.g. STR-OVS-BLK-M)"
-              action={
-                <Button type="button" variant="secondary" size="sm" onClick={addVariantRow}>
-                  <Plus className="h-3.5 w-3.5" /> Add Variant
-                </Button>
-              }
-            />
-
-            <div className="rounded-lg bg-surface-subtle/50 p-2.5 text-xs text-ink-2 flex items-center justify-between border border-line">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-accent" />
-                <span>Backend SKU format active: <strong className="font-mono text-ink">CATEGORY-PRODUCT_TYPE-COLOR-SIZE</strong></span>
-              </div>
-              <span className="text-[11px] text-ink-3">New variants auto-generate; existing SKUs preserved</span>
+          <Card className="space-y-5 p-5">
+            <CardHeader title="Pricing and inventory" subtitle="Set the selling price, stock by size, and the weight used for delivery charges." />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Field label="Selling price (₹)" required><Input required min={1} type="number" value={price} onChange={(event) => setPrice(Number(event.target.value))} /></Field>
+              <Field label="Compare-at price (₹)"><Input min={0} type="number" value={compareAtPrice} onChange={(event) => setCompareAtPrice(event.target.value ? Number(event.target.value) : '')} /></Field>
+              <Field label="Unit cost (₹)" hint="Internal margin reporting"><Input min={0} type="number" value={costPrice} onChange={(event) => setCostPrice(Number(event.target.value))} /></Field>
+              <Field label="Tax rate (%)"><Input min={0} max={100} step="0.1" type="number" value={Math.round(taxRate * 1000) / 10} onChange={(event) => setTaxRate(Number(event.target.value) / 100)} /></Field>
+              <Field label="Shipping weight (grams)" required hint="Applied to each unit in the cart."><Input required min={1} max={100000} type="number" value={weightGrams} onChange={(event) => setWeightGrams(Number(event.target.value))} /></Field>
+              {isBottomwear(categorySlug) && <Field label="Inseam (inches)"><Input min={0} type="number" value={inseam} onChange={(event) => setInseam(Number(event.target.value))} /></Field>}
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-divider bg-surface-subtle text-ink-3">
-                  <tr>
-                    <th className="px-3 py-2 font-semibold">Size</th>
-                    <th className="px-3 py-2 font-semibold">Color</th>
-                    <th className="px-3 py-2 font-semibold">Generated SKU</th>
-                    <th className="px-3 py-2 font-semibold">Stock</th>
-                    <th className="px-3 py-2 font-semibold">Reorder Pt</th>
-                    <th className="px-3 py-2 text-center font-semibold">Sync</th>
-                    <th className="px-3 py-2 text-right font-semibold">Remove</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-divider">
-                  {variants.map((v, idx) => (
-                    <tr key={idx} className="hover:bg-surface-subtle/60 transition-colors">
-                      <td className="px-3 py-2 w-28">
-                        <Select
-                          value={String(v.size)}
-                          onChange={(e) => updateVariantRow(idx, 'size', e.target.value)}
-                        >
-                          {STANDARD_SIZES.map((sz) => (
-                            <option key={sz} value={sz}>
-                              {sz}
-                            </option>
-                          ))}
-                        </Select>
-                      </td>
-                      <td className="px-3 py-2 w-36">
-                        <Select
-                          value={String(v.color)}
-                          onChange={(e) => updateVariantRow(idx, 'color', e.target.value)}
-                        >
-                          {AVAILABLE_COLORS.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </Select>
-                      </td>
-                      <td className="px-3 py-2 min-w-[200px]">
-                        <div className="flex items-center gap-1.5">
-                          <Input
-                            className="font-mono font-medium text-xs tracking-wider uppercase"
-                            value={v.sku}
-                            onChange={(e) => updateVariantRow(idx, 'sku', e.target.value)}
-                          />
-                          {v.id !== undefined ? (
-                            <span className="shrink-0 text-[10px] bg-canvas text-ink-3 px-1.5 py-0.5 rounded border border-line" title="Preserved existing variant SKU">
-                              Saved
-                            </span>
-                          ) : (
-                            <span className="shrink-0 text-[10px] bg-accent/10 text-accent font-medium px-1.5 py-0.5 rounded border border-accent/20" title="Auto-generated backend SKU">
-                              Auto
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 w-20">
-                        <Input
-                          type="number"
-                          value={v.stock}
-                          onChange={(e) => updateVariantRow(idx, 'stock', Number(e.target.value))}
-                        />
-                      </td>
-                      <td className="px-3 py-2 w-20">
-                        <Input
-                          type="number"
-                          value={v.reorderPoint}
-                          onChange={(e) => updateVariantRow(idx, 'reorderPoint', Number(e.target.value))}
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-center w-12">
-                        <button
-                          type="button"
-                          onClick={() => recalculateVariantSku(idx)}
-                          className="text-ink-3 hover:text-accent p-1 transition-colors"
-                          title="Recalculate SKU"
-                        >
-                          <RefreshCw className="h-3.5 w-3.5" />
-                        </button>
-                      </td>
-                      <td className="px-3 py-2 text-right w-12">
-                        <button
-                          type="button"
-                          onClick={() => removeVariantRow(idx)}
-                          className="text-ink-3 hover:text-danger p-1 transition-colors"
-                          title="Remove variant"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+              <div><h3 className="text-sm font-semibold">Size and color variants</h3><p className="text-xs text-muted-foreground">Apparel sizes are suggested by category; you can enter a custom size.</p></div>
+              <Button type="button" variant="secondary" size="sm" onClick={addVariant}><Plus className="h-4 w-4" /> Add size</Button>
+            </div>
+            <div className="space-y-3">
+              {variants.map((variant, index) => <div key={`${variant.id ?? 'new'}-${index}`} className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-[1fr_1fr_1.4fr_100px_100px_40px] sm:items-end">
+                <Field label="Size"><Input list={`sizes-${index}`} value={variant.size} onChange={(event) => updateVariant(index, { size: event.target.value })} placeholder={isBottomwear(categorySlug) ? '32' : 'M'} /><datalist id={`sizes-${index}`}>{sizeOptions.map((option) => <option key={option} value={option} />)}</datalist></Field>
+                <Field label="Color"><Select value={variant.color} onChange={(event) => updateVariant(index, { color: event.target.value })}>{COLORS.map((color) => <option key={color}>{color}</option>)}</Select></Field>
+                <Field label="Variant SKU"><div className="flex gap-1"><Input className="font-mono text-xs" value={variant.sku} onChange={(event) => updateVariant(index, { sku: event.target.value })} /><Button type="button" variant="ghost" size="icon" aria-label="Regenerate SKU" onClick={() => void regenerateSku(index)}><RefreshCw className="h-4 w-4" /></Button></div></Field>
+                <Field label="Stock"><Input min={0} type="number" value={variant.stock} onChange={(event) => updateVariant(index, { stock: Number(event.target.value) })} /></Field>
+                <Field label="Reorder at"><Input min={0} type="number" value={variant.reorderPoint} onChange={(event) => updateVariant(index, { reorderPoint: Number(event.target.value) })} /></Field>
+                <Button type="button" variant="ghost" size="icon" aria-label={`Remove size ${variant.size || index + 1}`} disabled={variants.length <= 1} onClick={() => setVariants((current) => current.filter((_, rowIndex) => rowIndex !== index))}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              </div>)}
             </div>
           </Card>
         </div>
 
-        {/* Sidebar Settings */}
-        <div className="space-y-6">
-          <Card className="p-5 space-y-4">
-            <CardHeader title="Status & Visibility" />
-
-            <Field label="Status">
-              <Select value={status} onChange={(e) => setStatus(e.target.value as ProductStatus)}>
-                <option value="Active">Active (Visible in Store)</option>
-                <option value="Draft">Draft (Hidden)</option>
-                <option value="Archived">Archived</option>
-              </Select>
-            </Field>
-
-            <label className="flex items-center gap-2 text-xs font-medium text-ink cursor-pointer pt-2">
-              <Checkbox checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
-              <span>Feature on homepage & top collections</span>
-            </label>
+        <aside className="space-y-5">
+          <Card className="space-y-4 p-5">
+            <CardHeader title="Product photos" subtitle="JPEG, PNG, or WebP up to 10 MB. Photos upload directly to Google Cloud Storage." />
+            <ImageUpload title="Main product photo" value={image} uploading={uploading === 'primary'} onUpload={(file) => void uploadImage(file, 'primary')} onRemove={() => setImage('')} required />
+            <ImageUpload title="Alternate photo" value={image2} uploading={uploading === 'secondary'} onUpload={(file) => void uploadImage(file, 'secondary')} onRemove={() => setImage2('')} />
           </Card>
 
-          <Card className="p-5 space-y-4">
-            <CardHeader title="Collection & Target" />
-
-            <Field label="Collection">
-              <Select value={collectionId} onChange={(e) => setCollectionId(Number(e.target.value))}>
-                {collections.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-
-            <Field label="Gender Target">
-              <Select value={gender} onChange={(e) => setGender(e.target.value as Gender)}>
-                <option value="Men">Men</option>
-                <option value="Women">Women</option>
-                <option value="Unisex">Unisex</option>
-              </Select>
-            </Field>
-
-            <Field label="Material">
-              <Select value={material} onChange={(e) => setMaterial(e.target.value as Material)}>
-                <option value="Cotton">100% Heavy Combed Cotton</option>
-                <option value="Cotton Stretch">Cotton Stretch</option>
-                <option value="Selvedge Denim">Selvedge Denim</option>
-                <option value="Tencel Denim">Tencel Denim</option>
-              </Select>
-            </Field>
+          <Card className="space-y-4 p-5">
+            <CardHeader title="Store visibility" />
+            <Field label="Status"><Select value={status} onChange={(event) => setStatus(event.target.value as ProductStatus)}><option value="Draft">Draft</option><option value="Active">Active in storefront</option><option value="Archived">Archived</option></Select></Field>
+            <Field label="Collection"><Select value={collectionId} onChange={(event) => setCollectionId(Number(event.target.value))}>{collections.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select></Field>
+            <Field label="Brand"><Input value={brand} onChange={(event) => setBrand(event.target.value)} /></Field>
+            <label className="flex items-center gap-2 text-sm"><Checkbox checked={featured} onChange={(event) => setFeatured(event.target.checked)} /> Feature this product</label>
+            <p className="text-xs text-muted-foreground">New products start as drafts so you can review photos, sizing, stock, and pricing before publishing.</p>
           </Card>
-
-          <Card className="p-5 space-y-4">
-            <CardHeader title="Images (Unsplash URLs)" />
-
-            <Field label="Primary Image URL">
-              <Input value={image} onChange={(e) => setImage(e.target.value)} placeholder="https://images.unsplash.com/..." />
-            </Field>
-
-            <Field label="Secondary / Hover Image URL">
-              <Input value={image2} onChange={(e) => setImage2(e.target.value)} placeholder="https://images.unsplash.com/..." />
-            </Field>
-
-            {image && (
-              <div className="mt-2 h-36 w-full overflow-hidden rounded-lg border border-line bg-canvas">
-                <img src={image} alt="Preview" className="h-full w-full object-cover" />
-              </div>
-            )}
-          </Card>
-        </div>
+        </aside>
       </div>
     </form>
+  )
+}
+
+function ImageUpload({
+  title,
+  value,
+  uploading,
+  onUpload,
+  onRemove,
+  required = false,
+}: {
+  title: string
+  value: string
+  uploading: boolean
+  onUpload: (file: File) => void
+  onRemove: () => void
+  required?: boolean
+}) {
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between"><span className="text-xs font-semibold">{title}{required && <span className="text-destructive"> *</span>}</span>{value && <button type="button" className="text-xs text-destructive hover:underline" onClick={onRemove}>Remove</button>}</div>
+      {value ? <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-muted">
+        <Image src={value} alt={title} fill sizes="(max-width: 768px) 100vw, 360px" className="object-cover" unoptimized />
+        {uploading && <div className="absolute inset-0 grid place-items-center bg-background/70"><LoaderCircle className="h-6 w-6 animate-spin" /></div>}
+      </div> : <button type="button" disabled={uploading} onClick={() => inputRef.current?.click()} className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/40 text-muted-foreground transition hover:border-primary hover:bg-muted">
+        {uploading ? <LoaderCircle className="h-6 w-6 animate-spin" /> : <UploadCloud className="h-6 w-6" />}
+        <span className="text-xs font-medium">{uploading ? 'Uploading photo…' : 'Choose a product photo'}</span>
+      </button>}
+      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) onUpload(file); event.currentTarget.value = '' }} />
+      {!value && <p className="flex items-center gap-1 text-[11px] text-muted-foreground"><ImagePlus className="h-3 w-3" /> Stored in your product image bucket</p>}
+    </div>
   )
 }

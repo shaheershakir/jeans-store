@@ -1,8 +1,8 @@
-# DESIGN.md - Jeans E-Commerce Admin Dashboard
+# DESIGN.md - TEESGARAGE Apparel Admin Dashboard
 
 ## 1. Product Identity
 
-This is a **modern admin dashboard for a jeans-focused e-commerce business**.
+This is a **modern admin dashboard for a single-brand apparel business** selling Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants.
 
 The interface is designed for store owners, operations teams, inventory managers, order managers, and marketing teams.
 
@@ -429,7 +429,7 @@ Example:
 ```text
 Products
 
-Manage your jeans catalog and product variants.
+Manage apparel products, product photos, sizes, colors, stock, and delivery weights.
 
                               + Add Product
 ```
@@ -1149,26 +1149,26 @@ Never use neon cyan as the primary dashboard color.
 
 ---
 
-# 34. Jeans-Specific Visual Language
+# 34. Apparel-Specific Visual Language
 
-The application is specifically for a jeans e-commerce business.
+Use product imagery and category-specific product fields to make the admin useful for tees and bottoms.
 
-Use jeans/fashion context subtly through:
+Use apparel product context subtly through:
 
 - Product photography
 - Fit labels
-- Wash labels
+- Material, print, and pattern details
 - Size indicators
 - Inventory visualization
 - Product thumbnails
 
 Do not turn the admin dashboard into a fashion landing page.
 
-The jeans identity should come primarily from the **data and product content**, not decorative denim textures or denim-blue UI everywhere.
+The apparel identity should come from product data and photography, not decorative clothing textures or a category-specific color palette.
 
 Avoid:
 
-- Denim textures
+- Fabric textures used as interface backgrounds
 - Stitching patterns
 - Clothing-shaped UI elements
 - Excessive blue
@@ -1385,7 +1385,7 @@ Never sacrifice usability for visual effects.
 - Do not use glassmorphism everywhere
 - Do not use huge rounded cards
 - Do not use emoji as UI icons
-- Do not use decorative denim textures
+- Do not use decorative fabric textures
 - Do not make every component look like a card
 - Do not create fake analytics
 - Do not prioritize aesthetics over functionality

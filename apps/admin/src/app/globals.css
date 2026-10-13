@@ -97,6 +97,31 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+
+  /* TEESGARAGE custom tokens used by the operational screens. */
+  --color-canvas: #0b0f14;
+  --color-surface: #111820;
+  --color-surface-subtle: #18212b;
+  --color-ink: #f2f5f8;
+  --color-ink-2: #c3ccd5;
+  --color-ink-3: #93a1af;
+  --color-ink-4: #71808e;
+  --color-line: #293440;
+  --color-line-strong: #3a4856;
+  --color-divider: #25313c;
+  --color-primary-hover: #c6d2df;
+  --color-primary-soft: #202e3c;
+  --color-success: #4ade80;
+  --color-success-soft: #102b20;
+  --color-warning: #fbbf24;
+  --color-warning-soft: #30250f;
+  --color-danger: #fb7185;
+  --color-danger-soft: #321820;
+  --color-info: #60a5fa;
+  --color-info-soft: #14263b;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.38);
+  --shadow-modal: 0 18px 50px rgba(0, 0, 0, 0.6);
 }
 
 @theme inline {

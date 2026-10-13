@@ -36,7 +36,7 @@ export interface AiProvider {
 }
 
 export const GUIDE_FOLLOWUPS = [
-  'What were my best-selling jeans last month?',
+  'Which apparel products sold best last month?',
   'Which sizes are likely to run out this week?',
   'Why did revenue change this month?',
   'Which products have high views but low sales?',

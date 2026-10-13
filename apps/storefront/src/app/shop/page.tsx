@@ -5,7 +5,7 @@ import ShopClient from './ShopClient'
 export const metadata: Metadata = {
   title: 'Shop All Garments — TEESGARAGE',
   description:
-    'Explore the complete TEESGARAGE archive. Heavyweight denim, everyday tops, structured shirts, hoodies, and accessories.',
+    'Explore the TEESGARAGE collection: stripes, tees, Henleys, trackpants, and sweatpants.',
 }
 
 interface ShopPageProps {

@@ -1,6 +1,6 @@
 ﻿# TEESGARAGE Admin Panel
 
-Operational dashboard for managing TEESGARAGE denim inventory, orders, analytics, marketing campaigns, and store settings.
+Operational dashboard for managing TEESGARAGE apparel products, inventory, orders, delivery charges, analytics, marketing campaigns, and store settings.
 
 ## Technology stack
 
@@ -23,8 +23,6 @@ npm run format   # Format source code with Prettier
 
 ## Current status
 
-The admin application is built and functional for local testing with simulated mock data and local state.
+The admin uses the API for production catalog, order, login, image upload, and delivery-rate operations. Configure its API origin with `API_URL`; see [the production setup guide](../docs/ADMIN_PRODUCTION.md) for required credentials, storage, and database setup.
 
-In this testing phase:
-- Admin code is maintained as-is without active modifications.
-- API endpoints and backend URLs are currently hardcoded to local defaults. Environment variable configuration is scheduled for a dedicated subsequent pass (see `docs/tasks/03-admin-env-wiring.md`).
+Local development can still use simulated data for operational screens that are not yet backed by API endpoints.

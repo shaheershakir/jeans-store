@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useCartStore, useUIStore } from '@/lib/store'
 import { searchProducts } from '@/lib/utils'
 
-const QUICK_TAGS = ['Baggy', 'Straight', 'Indigo', 'Raw Denim', 'Wide', 'Black']
+const QUICK_TAGS = ['Stripes', 'Printed tees', 'Henley', 'Oversized', 'Trackpants', 'Black']
 
 export default function SearchOverlay() {
   const overlay = useUIStore((state) => state.overlay)

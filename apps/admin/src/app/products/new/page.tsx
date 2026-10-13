@@ -8,7 +8,7 @@ export default function NewProductPage() {
     <div>
       <PageHeader
         title="Add New Product"
-        description="Create a new denim product with fit, wash, and size variants"
+        description="Create a tee or bottomwear product with custom sizes, stock, and delivery weight."
         breadcrumbs={[
           { label: 'Products', href: '/products' },
           { label: 'New Product' },

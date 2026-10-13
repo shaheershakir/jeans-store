@@ -55,7 +55,7 @@ const FIT_OPTIONS: Array<{
   {
     fit: 'Wide',
     tagline: 'Architectural Voluminous',
-    desc: 'Dramatic full-leg silhouette tailored from Japanese selvedge-inspired block.'
+    desc: 'A relaxed, full-leg shape for an easy fit through the seat and leg.'
   },
   {
     fit: 'Relaxed',

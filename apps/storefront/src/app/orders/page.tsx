@@ -46,71 +46,8 @@ export interface StoredOrder {
   trackingNumber?: string
 }
 
-const DEFAULT_SAMPLE_ORDERS: StoredOrder[] = [
-  {
-    orderId: 'TG-782910',
-    date: 'Yesterday, 4:15 PM',
-    status: 'Dispatched',
-    expectedDelivery: 'Tomorrow, by 8:00 PM',
-    trackingCourier: 'BlueDart Air Express',
-    trackingNumber: 'BD-88291024IN',
-    items: [
-      {
-        id: 0,
-        name: 'Classic Straight Indigo',
-        size: '32',
-        fit: 'Straight',
-        wash: 'Classic Indigo',
-        price: '₹1,699',
-        priceNum: 1699,
-        img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80',
-        qty: 1
-      },
-      {
-        id: 8,
-        name: 'Boxy Heavyweight Tee - Vintage Black',
-        size: 'L',
-        wash: 'Vintage Black',
-        price: '₹999',
-        priceNum: 999,
-        img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
-        qty: 1
-      }
-    ],
-    subtotal: 2698,
-    shipping: 0,
-    total: 2698,
-    shippingAddress: 'Devon Vance · Flat 402, Sea Green Apts, Perry Cross Road, Bandra West, Mumbai 400050'
-  },
-  {
-    orderId: 'TG-671822',
-    date: 'October 2, 2026',
-    status: 'Delivered',
-    expectedDelivery: 'Delivered on Oct 5, 2026',
-    trackingCourier: 'Delhivery Surface',
-    trackingNumber: 'DL-99120485IN',
-    items: [
-      {
-        id: 4,
-        name: 'Raw Selvedge 14.5oz Relaxed',
-        size: '34',
-        fit: 'Relaxed',
-        wash: 'Raw Japanese Selvedge',
-        price: '₹2,499',
-        priceNum: 2499,
-        img: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=800&q=80',
-        qty: 1
-      }
-    ],
-    subtotal: 2499,
-    shipping: 0,
-    total: 2499,
-    shippingAddress: 'Devon Vance · Flat 402, Sea Green Apts, Perry Cross Road, Bandra West, Mumbai 400050'
-  }
-]
-
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<StoredOrder[]>(DEFAULT_SAMPLE_ORDERS)
+  const [orders, setOrders] = useState<StoredOrder[]>([])
   const [filter, setFilter] = useState<'all' | 'active' | 'delivered'>('all')
 
   const addItem = useCartStore((s) => s.addItem)
@@ -128,13 +65,11 @@ export default function OrdersPage() {
         const stored = localStorage.getItem('teesgarage-orders')
         if (stored) {
           const parsed = JSON.parse(stored) as StoredOrder[]
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setOrders([...parsed, ...DEFAULT_SAMPLE_ORDERS])
-            return
-          }
+          setOrders(Array.isArray(parsed) ? parsed : [])
+          return
         }
       } catch {
-        // Fallback
+        // Ignore invalid local order history.
       }
     }
   }, [])
@@ -169,11 +104,11 @@ export default function OrdersPage() {
         <div className="teesgarage-account-hero">
           <div className="teesgarage-hero-user-cluster">
             <div className="teesgarage-hero-avatar">
-              {(user?.name || 'Devon Vance').charAt(0).toUpperCase()}
+              {(user?.name || 'Account').charAt(0).toUpperCase()}
             </div>
             <div>
               <h1 className="teesgarage-hero-name">
-                {user?.name || 'Devon Vance'}
+                {user?.name || 'Your account'}
               </h1>
               <p className="teesgarage-hero-meta">
                 Active shipments &amp; order history
@@ -225,13 +160,13 @@ export default function OrdersPage() {
             <Package className="w-12 h-12 mx-auto text-zinc-300 stroke-[1.5] mb-4" />
             <h3 className="font-brand text-lg font-bold text-zinc-900">No orders found</h3>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-6">
-              You do not have any orders in this filter yet. Explore our handcrafted raw and washed denim collection.
+              You do not have any orders in this filter yet. Explore the TEESGARAGE apparel collection.
             </p>
             <Link
               href="/shop"
               className="teesgarage-btn-primary"
             >
-              Explore Denim Catalog
+              Explore products
             </Link>
           </div>
         ) : (

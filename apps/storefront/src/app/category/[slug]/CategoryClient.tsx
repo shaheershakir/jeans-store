@@ -92,7 +92,7 @@ export default function CategoryClient({ products, category: initialCategory, ti
         <div className="cat-toolbar-inner">
           {/* Fit pills */}
           {showFitFilter ? (
-            <div className="fit-pills-scroll" role="tablist" aria-label="Filter by denim fit">
+            <div className="fit-pills-scroll" role="tablist" aria-label="Filter by product fit">
               <button
                 type="button"
                 role="tab"

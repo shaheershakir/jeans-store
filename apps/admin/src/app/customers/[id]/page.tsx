@@ -8,6 +8,7 @@ import { PageContent, PageHeader } from '@/components/ui/page-header'
 import { Avatar, Card, CardHeader } from '@/components/ui/primitives'
 import { OrderBadge } from '@/components/ui/status'
 import { formatINR } from '@/lib/format'
+import { fetchBackendOrders } from '@/services/commerce'
 
 export default function CustomerDetailPage({
   params,
@@ -16,6 +17,11 @@ export default function CustomerDetailPage({
 }) {
   const resolvedParams = React.use(params)
   const customerId = parseInt(resolvedParams.id, 10)
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    void fetchBackendOrders().catch(() => undefined).finally(() => setLoading(false))
+  }, [])
 
   const customers = useAdminStore((s) => s.data.customers)
   const orders = useAdminStore((s) => s.data.orders)
@@ -25,6 +31,10 @@ export default function CustomerDetailPage({
   const customerOrders = orders.filter((o) => o.customerId === customerId)
   const customerReturns = returns.filter((r) => r.customerId === customerId)
   const totalSpent = customerOrders.reduce((sum, o) => sum + o.total, 0)
+
+  if (loading) {
+    return <div><PageHeader title="Customer" /><PageContent><p className="py-12 text-center text-ink-3">Loading customer details…</p></PageContent></div>
+  }
 
   if (!customer) {
     return (
@@ -46,7 +56,7 @@ export default function CustomerDetailPage({
     <div>
       <PageHeader
         title={customer.name}
-        description={`Customer ID #${customer.id} &bull; Joined ${new Date(customer.joinedAt).toLocaleDateString('en-IN')}`}
+        description={`Customer ID #${customer.id} &bull; First order ${new Date(customer.joinedAt).toLocaleDateString('en-IN')}`}
         breadcrumbs={[{ label: 'Customers', href: '/customers' }, { label: customer.name }]}
       />
 

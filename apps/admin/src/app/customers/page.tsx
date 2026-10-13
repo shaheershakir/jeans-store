@@ -7,12 +7,17 @@ import { useAdminStore } from '@/store/admin-store'
 import { PageContent, PageHeader } from '@/components/ui/page-header'
 import { Avatar, Button, Card, Input } from '@/components/ui/primitives'
 import { formatINR } from '@/lib/format'
+import { fetchBackendOrders } from '@/services/commerce'
 
 export default function CustomersPage() {
   const customers = useAdminStore((s) => s.data.customers)
   const orders = useAdminStore((s) => s.data.orders)
 
   const [query, setQuery] = React.useState('')
+
+  React.useEffect(() => {
+    void fetchBackendOrders().catch(() => undefined)
+  }, [])
 
   const filteredCustomers = React.useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -60,7 +65,7 @@ export default function CustomersPage() {
                   <th className="px-4 py-3 font-semibold">Location</th>
                   <th className="px-4 py-3 font-semibold text-center">Total Orders</th>
                   <th className="px-4 py-3 font-semibold text-right">Total Spent</th>
-                  <th className="px-4 py-3 font-semibold">Joined Date</th>
+                  <th className="px-4 py-3 font-semibold">First order</th>
                   <th className="px-4 py-3 font-semibold text-right">Actions</th>
                 </tr>
               </thead>

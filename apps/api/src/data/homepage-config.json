@@ -30,7 +30,7 @@
   "announcement": {
     "enabled": true,
     "messages": [
-      "🚚 Free shipping on orders above ₹1,499",
+      "📦 Paid delivery calculated by destination and parcel weight",
       "🔄 7-Day doorstep exchanges — no questions asked",
       "🏭 24h dispatch from Mumbai",
       "💳 Cash on delivery available across India"
@@ -217,7 +217,7 @@
     "items": [
       {
         "id": "1",
-        "title": "Free shipping above ₹1,499",
+        "title": "Paid delivery by destination and weight",
         "icon": "truck"
       },
       {

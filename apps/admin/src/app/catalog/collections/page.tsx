@@ -65,7 +65,7 @@ export default function CollectionsPage() {
 
   return (
     <div>
-      <PageHeader title="Collections" description="Curate seasonal and thematic denim collections">
+      <PageHeader title="Collections" description="Curate seasonal and thematic apparel collections">
         <Button size="sm" onClick={handleOpenNew}>
           <Plus className="h-4 w-4" /> Add Collection
         </Button>

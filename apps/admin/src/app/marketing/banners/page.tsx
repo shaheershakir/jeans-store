@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Image from 'next/image'
 import { Plus, Image as ImageIcon, Trash2 } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
 import { saveBanner, deleteBanner } from '@/services/marketing'
@@ -96,7 +97,7 @@ export default function BannersPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Field label="Banner Title" required>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Heavyweight Raw Denim" />
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Heavyweight Cotton Tees" />
                 </Field>
 
                 <Field label="Subtitle / Tagline">
@@ -134,7 +135,7 @@ export default function BannersPage() {
           {banners.map((b) => (
             <Card key={b.id} className="overflow-hidden">
               <div className="h-44 w-full bg-canvas relative overflow-hidden">
-                <img src={b.image} alt={b.title} className="h-full w-full object-cover" />
+                <Image src={b.image} alt={b.title} fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/20 to-transparent p-4 flex flex-col justify-end text-white">
                   <h4 className="font-bold text-base">{b.title}</h4>
                   <p className="text-xs text-white/80">{b.subtitle}</p>

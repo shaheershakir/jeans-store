@@ -7,13 +7,18 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Maximize2, X, ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import type { Product } from '@/lib/constants'
-import { SWATCHES } from '@/lib/constants'
 import { useCartStore, useUIStore, usePreferencesStore } from '@/lib/store'
 import SizeGuideModal from '@/components/SizeGuideModal'
 import ProductReviews from '@/components/ProductReviews'
 import RelatedProducts from '@/components/RelatedProducts'
 import StickyPdpBar from '@/components/StickyPdpBar'
-import { getAvailableProductSizes, getProductSizeOptions } from '@/lib/products'
+import { getAvailableProductSizes } from '@/lib/products'
+
+const COLOR_HEX: Record<string, string> = {
+  black: '#171717', white: '#f5f3ed', navy: '#1e3157', grey: '#85878b', gray: '#85878b',
+  blue: '#436fa8', green: '#3e7558', olive: '#747947', red: '#a63836', beige: '#d8c7a7',
+  charcoal: '#414347', cream: '#eee9dd', ecru: '#eee9dd'
+}
 
 // Map category ID → breadcrumb label + route
 const CATEGORY_META: Record<string, { label: string; href: string }> = {
@@ -33,14 +38,20 @@ export default function ProductDetail({ product }: { product: Product }) {
   const router = useRouter()
   const addItem = useCartStore((state) => state.addItem)
   const selectedSize = useUIStore((state) => state.selectedSize)
-  const activeSwatch = useUIStore((state) => state.activeSwatch)
   const setSelectedSize = useUIStore((state) => state.setSelectedSize)
-  const setActiveSwatch = useUIStore((state) => state.setActiveSwatch)
   const showToast = useUIStore((state) => state.showToast)
   const openOverlay = useUIStore((state) => state.openOverlay)
 
-  const sizeOptions = useMemo(() => getProductSizeOptions(product), [product])
-  const availableSizes = useMemo(() => getAvailableProductSizes(product), [product])
+  const colorOptions = useMemo(() => product.variants?.length
+    ? Array.from(new Set(product.variants.filter((variant) => variant.status === 'Active').map((variant) => variant.color)))
+    : product.color ? [product.color] : [], [product])
+  const [selectedColor, setSelectedColor] = useState(() => colorOptions[0] ?? '')
+  const sizeOptions = useMemo(() => product.variants?.length
+    ? Array.from(new Set(product.variants.filter((variant) => variant.status === 'Active' && variant.color === selectedColor).map((variant) => String(variant.size))))
+    : product.sizes?.map(String) ?? [], [product, selectedColor])
+  const availableSizes = useMemo(() => product.variants?.length
+    ? Array.from(new Set(product.variants.filter((variant) => variant.status === 'Active' && variant.color === selectedColor && variant.stock - variant.reserved > 0).map((variant) => String(variant.size))))
+    : getAvailableProductSizes(product), [product, selectedColor])
   const isNumeric = sizeOptions.length > 0 && sizeOptions.every((s) => /^\d+$/.test(s))
 
   // Build image list — from images array or fallback [img, img2]
@@ -56,6 +67,10 @@ export default function ProductDetail({ product }: { product: Product }) {
   const catMeta =
     (product.category ? CATEGORY_META[product.category] : null) ??
     { label: 'All Garments', href: '/shop' }
+
+  useEffect(() => {
+    if (colorOptions.length > 0 && !colorOptions.includes(selectedColor)) setSelectedColor(colorOptions[0])
+  }, [colorOptions, selectedColor])
 
   const preferences = usePreferencesStore((state) => state.preferences)
   const getRecommendedSize = usePreferencesStore((state) => state.getRecommendedSize)
@@ -121,7 +136,7 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   function handleAddToCart() {
     if (!availableSizes.includes(selectedSize)) return
-    addItem(product.id, selectedSize, product)
+    addItem(product.id, selectedSize, product, selectedColor || undefined)
     setAdded(true)
     showToast(`Added ${product.name} (${isNumeric ? `Waist ${selectedSize}"` : `Size ${selectedSize}`}) to your bag`)
     setTimeout(() => setAdded(false), 1800)
@@ -130,7 +145,7 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   function handleBuyNow() {
     if (!availableSizes.includes(selectedSize)) return
-    addItem(product.id, selectedSize, product)
+    addItem(product.id, selectedSize, product, selectedColor || undefined)
     router.push('/checkout')
   }
 
@@ -204,9 +219,7 @@ export default function ProductDetail({ product }: { product: Product }) {
         <div className="pdp-sidebar">
           <div className="pdp-meta-header">
             <span className="pdp-category-eyebrow">
-              {product.fit
-                ? `${product.fit} Cut · 14oz Shuttle Loom Denim`
-                : (product.category?.toUpperCase() ?? 'WARDROBE ESSENTIAL')}
+              {[product.category?.replaceAll('-', ' '), product.fit].filter(Boolean).join(' · ') || 'APPAREL'}
             </span>
             <h1 className="pdp-headline">{product.name}</h1>
 
@@ -222,22 +235,23 @@ export default function ProductDetail({ product }: { product: Product }) {
           <p className="pdp-narrative">{product.desc}</p>
 
           {/* Colorway / Wash Switcher */}
-          {Boolean(product.wash) && (
+          {colorOptions.length > 0 && (
             <div className="pdp-option-section">
               <div className="option-label-row">
                 <span className="option-title">
-                  Wash: <strong className="option-value">{SWATCHES[activeSwatch]?.name || product.wash}</strong>
+                  Color: <strong className="option-value">{selectedColor}</strong>
                 </span>
               </div>
               <div className="swatches-row">
-                {SWATCHES.map((swatch, index) => (
+                {colorOptions.map((color) => (
                   <button
-                    key={swatch.name}
+                    key={color}
                     type="button"
-                    className={`pdp-swatch-circle ${swatch.className} ${index === activeSwatch ? 'active' : ''}`}
-                    title={swatch.name}
-                    onClick={() => setActiveSwatch(index)}
-                    aria-label={`Select ${swatch.name} wash`}
+                    className={`pdp-swatch-circle ${selectedColor === color ? 'active' : ''}`}
+                    style={{ backgroundColor: COLOR_HEX[color.toLowerCase()] ?? '#777' }}
+                    title={color}
+                    onClick={() => setSelectedColor(color)}
+                    aria-label={`Select ${color} color`}
                   />
                 ))}
               </div>
@@ -321,7 +335,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               <span className="delivery-title">Delivery and Dispatch</span>
             </div>
             <p className="delivery-detail">
-              Orders dispatch within 24 hours from our Mumbai facility. Standard transit takes 2 to 4 business days across India. Free shipping on all orders above ₹1,499.
+              Delivery is paid. Your exact charge is calculated at checkout from your delivery state and the total weight of your order.
             </p>
           </div>
 
@@ -334,7 +348,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               </summary>
               <div className="pdp-details-body">
                 <p>
-                  100% long-staple Indian cotton ring-spun yarn. 13.8 oz rigid denim with a subtle crosshatch grain. Custom copper hardware, zip fly, and reinforced bar tacks at all stress points.
+                  {product.material || product.fabric || 'See the product description for fabric composition and construction details.'}{product.pattern ? ` · ${product.pattern}` : ''}
                 </p>
               </div>
             </details>

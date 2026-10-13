@@ -22,12 +22,12 @@ import type {
 /* Domain option lists                                                 */
 /* ------------------------------------------------------------------ */
 
-export const FITS: Fit[] = ['Skinny', 'Slim', 'Straight', 'Relaxed', 'Bootcut']
-export const COLORS: Color[] = ['Blue', 'Dark Blue', 'Light Blue', 'Black', 'Grey', 'White']
-export const WASHES: Wash[] = ['Raw', 'Stone Wash', 'Acid Wash', 'Vintage Wash', 'Distressed', 'Dark Wash']
+export const FITS: Fit[] = ['Regular', 'Oversized', 'Boxy', 'Relaxed', 'Straight', 'Slim', 'Baggy', 'Wide', 'Tapered']
+export const COLORS: Color[] = ['Black', 'White', 'Navy', 'Grey', 'Blue', 'Green', 'Olive', 'Red', 'Beige']
+export const WASHES: Wash[] = ['Raw']
 export const GENDERS: Gender[] = ['Men', 'Women', 'Unisex']
 export const RISES: Rise[] = ['Low', 'Mid', 'High']
-export const MATERIALS: Material[] = ['Cotton', 'Cotton Stretch', 'Selvedge Denim', 'Tencel Denim']
+export const MATERIALS: Material[] = ['Cotton', 'Cotton Stretch', 'French Terry', 'Fleece', 'Jersey', 'Waffle Knit']
 export const WAIST_SIZES = [28, 30, 32, 34, 36, 38, 40]
 export const INSEAMS = [28, 30, 32, 34]
 export const PRODUCT_STATUSES: ProductStatus[] = ['Active', 'Draft', 'Archived']

@@ -13,7 +13,6 @@ import {
   EyeOff,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
   ShieldCheck
 } from 'lucide-react'
 import { signUp, signIn, googleAuth, getGoogleOAuthUrl } from '@/lib/auth'
@@ -192,15 +191,6 @@ function LoginForm() {
       setLoading(false)
       setError(err?.message || 'Failed to initiate Google Sign-In.')
     }
-  }
-
-  const handleFillDemo = () => {
-    setEmail('demo.member@teesgarage.in')
-    setPassword('DemoMemberPass2026!')
-    if (mode === 'signup') {
-      setName('Devon Vance')
-    }
-    setError(null)
   }
 
   return (
@@ -394,7 +384,7 @@ function LoginForm() {
           <span>or continue with</span>
         </div>
 
-        {/* Alternative Actions: Google & Demo */}
+        {/* Alternative sign-in methods */}
         <div className="apple-auth-alt-group">
           <button
             type="button"
@@ -423,15 +413,6 @@ function LoginForm() {
             <span>Continue with Google</span>
           </button>
 
-          <button
-            type="button"
-            className="apple-demo-fill-btn"
-            onClick={handleFillDemo}
-            title="Auto-fill demo member credentials"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 mr-1.5" />
-            <span>Auto-fill Demo Credentials</span>
-          </button>
         </div>
 
         {/* New account prompt */}

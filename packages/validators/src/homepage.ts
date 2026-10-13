@@ -25,13 +25,13 @@ export const heroSchema = z.object({
   enabled: z.boolean().default(true),
   eyebrow: z.string().default('New Season — SS 2026'),
   title: z.string().default('Built for\neveryday.'),
-  subtitle: z.string().default('Heavyweight denim. Honest washes.\nCuts that get better with every wear.'),
-  primaryCtaText: z.string().default('Shop Denim'),
+  subtitle: z.string().default('Everyday tees and bottoms made for comfort and movement.'),
+  primaryCtaText: z.string().default('Shop apparel'),
   primaryCtaLink: z.string().default('/#catalog'),
   secondaryCtaText: z.string().default('All Styles'),
   secondaryCtaLink: z.string().default('/#catalog'),
   imageUrl: z.string().default('/hero-man.jpg'),
-  trustBadges: z.array(z.string()).default(['⚡ 24h dispatch', '🔄 7-day exchange', '🚚 Free above ₹999'])
+  trustBadges: z.array(z.string()).default(['⚡ 24h dispatch', '🔄 7-day exchange', '🚚 Delivery priced by weight'])
 })
 
 export const categoryItemSchema = z.object({

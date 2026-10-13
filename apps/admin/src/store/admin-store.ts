@@ -77,6 +77,7 @@ export interface ProductInput {
   gender: Gender
   rise: Rise
   material: Material
+  pattern?: string
   wash: Wash
   inseam: number
   price: number
@@ -85,6 +86,7 @@ export interface ProductInput {
   taxRate: number
   status: ProductStatus
   featured: boolean
+  weightGrams?: number
   image: string
   images: { url: string; alt: string }[]
   variants: VariantInput[]
@@ -132,6 +134,7 @@ interface AdminState {
 
   setHydrated: () => void
   setReady: () => void
+  replaceProducts: (products: Product[]) => void
 
   login: (user: AdminUser) => void
   logout: () => void
@@ -315,6 +318,7 @@ export const useAdminStore = create<AdminState>()(
 
         setHydrated: () => set({ hydrated: true }),
         setReady: () => set({ ready: true }),
+        replaceProducts: (products) => set({ data: { ...get().data, products } }),
 
         login: (user) => {
           const role = roleById(user.roleId)
@@ -328,10 +332,6 @@ export const useAdminStore = create<AdminState>()(
               roleId: role.id,
               roleName: role.name,
               permissions: [...role.permissions],
-            },
-            data: {
-              ...get().data,
-              adminUsers: get().data.adminUsers.map((u) => (u.id === user.id ? { ...u, lastLoginAt: nowIso() } : u)),
             },
           })
         },
@@ -808,7 +808,7 @@ export const useAdminStore = create<AdminState>()(
           })
           const subtotal = items.reduce((sum, i) => sum + i.total, 0)
           const discount = Math.min(input.discount, subtotal)
-          const { shippingFee, tax, total } = computeTotals(subtotal, discount, get().data.settings.freeShippingThreshold)
+          const { shippingFee, tax, total } = computeTotals(subtotal, discount, 99)
           const id = nextId(get().data.orders)
           let maxSeq = 2000
           for (const o of get().data.orders) {
@@ -1263,8 +1263,8 @@ export const useAdminStore = create<AdminState>()(
     },
     {
       name: 'teesgarage-admin',
-      version: 4,
-      partialize: (s) => ({ data: s.data, session: s.session }),
+      version: 6,
+      partialize: (s) => ({ data: s.data }),
       merge: (persisted, current) => {
         const p = persisted as Partial<AdminState> | undefined
         if (!p?.data || p.data.version !== DATA_VERSION) {
@@ -1277,11 +1277,11 @@ export const useAdminStore = create<AdminState>()(
         const hp = p.data.homepage && Array.isArray(p.data.homepage.sectionsOrder)
           ? p.data.homepage
           : createDbState().homepage
-        return { ...current, data: { ...p.data, navigation: nav, homepage: hp }, session: p.session ?? null }
+        return { ...current, data: { ...p.data, navigation: nav, homepage: hp }, session: null }
       },
       onRehydrateStorage: () => (state) => {
         state?.setHydrated()
       },
-    } satisfies PersistOptions<AdminState, { data: DbState; session: Session | null }>
+    } satisfies PersistOptions<AdminState, { data: DbState }>
   )
 )

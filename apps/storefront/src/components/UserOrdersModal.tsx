@@ -39,40 +39,6 @@ export interface StoredOrder {
   shippingAddress: string
 }
 
-const DEFAULT_SAMPLE_ORDER: StoredOrder = {
-  orderId: 'TG-782910',
-  date: 'Yesterday, 4:15 PM',
-  status: 'Dispatched',
-  expectedDelivery: 'Tomorrow, by 8:00 PM',
-  items: [
-    {
-      id: 0,
-      name: 'Classic Straight Indigo',
-      size: '32',
-      fit: 'Straight',
-      wash: 'Classic Indigo',
-      price: '₹1,699',
-      priceNum: 1699,
-      img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80',
-      qty: 1
-    },
-    {
-      id: 8,
-      name: 'Boxy Heavyweight Tee - Vintage Black',
-      size: 'L',
-      wash: 'Vintage Black',
-      price: '₹999',
-      priceNum: 999,
-      img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
-      qty: 1
-    }
-  ],
-  subtotal: 2698,
-  shipping: 0,
-  total: 2698,
-  shippingAddress: 'Bandra West, Mumbai, Maharashtra · 400050'
-}
-
 interface UserOrdersModalProps {
   isOpen: boolean
   onClose: () => void
@@ -80,7 +46,7 @@ interface UserOrdersModalProps {
 }
 
 export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrdersModalProps) {
-  const [orders, setOrders] = useState<StoredOrder[]>([DEFAULT_SAMPLE_ORDER])
+  const [orders, setOrders] = useState<StoredOrder[]>([])
   const [filter, setFilter] = useState<'all' | 'active' | 'delivered'>('all')
 
   useEffect(() => {
@@ -89,16 +55,13 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
       const stored = localStorage.getItem('teesgarage-orders')
       if (stored) {
         const parsed = JSON.parse(stored) as StoredOrder[]
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Merge user placed orders with sample order
-          setOrders([...parsed, DEFAULT_SAMPLE_ORDER])
-          return
-        }
+        setOrders(Array.isArray(parsed) ? parsed : [])
+        return
       }
     } catch {
-      // Fallback to sample
+      // Ignore invalid local order history.
     }
-    setOrders([DEFAULT_SAMPLE_ORDER])
+    setOrders([])
   }, [isOpen])
 
   useEffect(() => {
@@ -194,7 +157,7 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
             <div className="apple-orders-empty">
               <Package className="w-12 h-12 text-zinc-300 mb-3" />
               <h3>No orders found in this view</h3>
-              <p>Explore our catalog to find heavyweight denim tailored to you.</p>
+              <p>Explore our tees, Henleys, trackpants, and sweatpants.</p>
               <Link href="/shop" className="apple-btn-primary mt-4" onClick={onClose}>
                 Explore Garments
               </Link>

@@ -4,12 +4,6 @@
 
 const LATENCY = 150
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== 'undefined' ? window.location.origin.replace(':3001', ':4000') : 'http://localhost:4000')
-
-export const ADMIN_API_KEY = process.env.NEXT_PUBLIC_ADMIN_API_KEY || ''
-
 export function simulateLatency(ms = LATENCY): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -24,14 +18,12 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   if (!headers.has('Content-Type') && options.body) {
     headers.set('Content-Type', 'application/json')
   }
-  if (ADMIN_API_KEY && !headers.has('x-api-key')) {
-    headers.set('x-api-key', ADMIN_API_KEY)
-  }
-
-  const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`
-  const res = await fetch(url, {
+  const proxiedPath = path.startsWith('/api/') ? `/api/admin/proxy${path}` : `/api/admin/proxy/api/${path.replace(/^\/+/, '')}`
+  const res = await fetch(proxiedPath, {
     ...options,
-    headers
+    headers,
+    credentials: 'same-origin',
+    cache: 'no-store'
   })
 
   if (!res.ok) {
@@ -41,6 +33,9 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       if (body.error) errorMsg = body.error
     } catch {
       // Ignore JSON parse failure on error body
+    }
+    if (res.status === 401 && typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.assign('/login')
     }
     throw new Error(errorMsg)
   }

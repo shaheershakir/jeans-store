@@ -9,6 +9,9 @@ import { orderRouter } from './routes/orders.js'
 import { authRouter } from './routes/auth.js'
 import { navigationRouter } from './routes/navigation.js'
 import { homepageRouter } from './routes/homepage.js'
+import { adminAuthRouter } from './routes/adminAuth.js'
+import { uploadRouter } from './routes/uploads.js'
+import { shippingRouter } from './routes/shipping.js'
 
 export interface BuildAppOptions {
   corsOrigin?: string | string[] | boolean
@@ -98,6 +101,9 @@ export function buildApp(options: BuildAppOptions = {}): Application {
   app.use(productRouter)
   app.use(orderRouter)
   app.use(authRouter)
+  app.use(adminAuthRouter)
+  app.use(uploadRouter)
+  app.use(shippingRouter)
   app.use(navigationRouter)
   app.use(homepageRouter)
 

@@ -1,8 +1,5 @@
 import type { NavigationItem, HomepageConfig } from './types.js'
 
-export const FREE_SHIPPING_THRESHOLD = 1499
-export const SHIPPING_FEE = 99
-
 export const SIZES = ['S', 'M', 'L', 'XL', 'XXL']
 
 export const SWATCHES = [
@@ -67,7 +64,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   announcement: {
     enabled: true,
     messages: [
-      '🚚 Free shipping on orders above ₹999',
+      '📦 Paid delivery calculated by destination and parcel weight',
       '🔄 7-Day doorstep exchanges — no questions asked',
       '🏭 24h dispatch from Mumbai',
       '💳 Cash on delivery available across India'
@@ -84,7 +81,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     secondaryCtaText: 'All Styles',
     secondaryCtaLink: '/#catalog',
     imageUrl: '/hero-man.jpg',
-    trustBadges: ['⚡ 24h dispatch', '🔄 7-day exchange', '🚚 Free above ₹999']
+    trustBadges: ['⚡ 24h dispatch', '🔄 7-day exchange', '🚚 Delivery priced by weight']
   },
   categories: {
     enabled: true,
@@ -276,7 +273,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   trust_bar: {
     enabled: true,
     items: [
-      { id: '1', title: 'Free shipping above ₹999', icon: 'truck' },
+      { id: '1', title: 'Paid delivery by destination and weight', icon: 'truck' },
       { id: '2', title: '7-day doorstep exchange', icon: 'repeat' },
       { id: '3', title: '24h dispatch from Mumbai', icon: 'package' },
       { id: '4', title: 'Secure payments', icon: 'shield' }
