@@ -1,6 +1,20 @@
 # Google Cloud Platform (GCP) Production Deployment Guide
 
-This document is the operational guide for deploying INFIT’s three-tier e-commerce architecture to **Google Cloud Run**, persisted with **Neon PostgreSQL** via **Drizzle ORM**.
+This document is the operational guide for deploying TEESGARAGE's three-tier e-commerce architecture to **Google Cloud Run**, persisted with **Neon PostgreSQL** via **Drizzle ORM**, with product media hosted on **Google Cloud Storage**.
+
+---
+
+## Production Architecture & Component Mapping
+
+| Component | Google Cloud service | Why |
+| :--- | :--- | :--- |
+| **Next.js storefront** | **Cloud Run** | Supports server-side rendering, API calls, and dynamic pages |
+| **Next.js admin panel** | **Cloud Run** | Separate deployment and access controls |
+| **Existing REST API** | **Cloud Run** | Keep your current Express backend with zero code rewrite |
+| **PostgreSQL** | **Neon** | Keep your existing database, branching, and connection pooling |
+| **Product images** | **Cloud Storage** | Store product photos independently of application containers |
+| **Secrets and credentials** | **Secret Manager** | Protect server-side credentials and inject them securely at runtime |
+| **Container images** | **Artifact Registry** | Stores immutable images deployed to Cloud Run |
 
 ---
 
@@ -18,7 +32,7 @@ This document is the operational guide for deploying INFIT’s three-tier e-comm
 ┌──────────────────┐          ┌──────────────────┐          ┌──────────────────┐
 │  infit-frontend  │          │  infit-backend   │          │   infit-admin    │
 │  Port: 3000      │          │  Port: 4000      │          │   Port: 3001     │
-│  (Storefront)    │          │  (Fastify API)   │          │   (Dashboard)    │
+│  (Storefront)    │          │  (Express API)   │          │   (Dashboard)    │
 └────────┬─────────┘          └────────┬─────────┘          └────────┬─────────┘
          │                             │                             │
          │  On-demand ISR Webhook      │  Authenticated Mutations    │
@@ -39,12 +53,11 @@ This document is the operational guide for deploying INFIT’s three-tier e-comm
 
 ## 1. Prerequisites
 
-1. **Google Cloud Account**: A project with billing enabled (e.g. `infit-production`).
+1. **Google Cloud Account**: A project with billing enabled (e.g. `teesgarage-production`).
 2. **Google Cloud CLI (`gcloud`)**: Installed and initialized locally (`gcloud auth login`).
 3. **Neon PostgreSQL Database**:
-   - Create a free or production project at [neon.tech](https://neon.tech).
-   - Create a database called `infit`.
-   - Copy the connection string (use the **Pooled** connection string ending with `?sslmode=require`).
+   - Create a project at [neon.tech](https://neon.tech).
+   - Use the **Pooled** connection string ending with `?sslmode=require` (`ep-xyz-pooler.neon.tech`).
 
 ---
 
@@ -63,13 +76,25 @@ gcloud services enable \
   run.googleapis.com \
   artifactregistry.googleapis.com \
   secretmanager.googleapis.com \
+  storage.googleapis.com \
   cloudbuild.googleapis.com
 
 # 3. Create Artifact Registry repository for container images
 gcloud artifacts repositories create infit \
   --repository-format=docker \
   --location=$REGION \
-  --description="INFIT Docker container images"
+  --description="TEESGARAGE Docker container images"
+
+# 4. Create Cloud Storage bucket for product images
+export ASSETS_BUCKET="teesgarage-product-assets"
+gcloud storage buckets create gs://$ASSETS_BUCKET \
+  --location=$REGION \
+  --uniform-bucket-level-access
+
+# Grant public read access to product assets
+gcloud storage buckets add-iam-policy-binding gs://$ASSETS_BUCKET \
+  --member=allUsers \
+  --role=roles/storage.objectViewer
 ```
 
 ---
@@ -182,7 +207,7 @@ docker compose up --build
 ```
 
 - Storefront: `http://localhost:3000`
-- Fastify Backend: `http://localhost:4000` (`http://localhost:4000/health`)
+- Express Backend: `http://localhost:4000` (`http://localhost:4000/health`)
 - Admin Dashboard: `http://localhost:3001`
 
 ---

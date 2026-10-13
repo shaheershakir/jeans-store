@@ -18,6 +18,9 @@ export interface BuildAppOptions {
 export function buildApp(options: BuildAppOptions = {}): Application {
   const app: Application = express()
 
+  // Trust first proxy hop (Google Front End / Cloud Run reverse proxy)
+  app.set('trust proxy', 1)
+
   // Security Headers
   app.use(
     helmet({

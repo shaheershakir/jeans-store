@@ -60,7 +60,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=4000 \
-            --set-env-vars="NODE_ENV=production" \
+            --set-env-vars="NODE_ENV=production,HOST=0.0.0.0" \
             --set-secrets="DATABASE_URL=infit-database-url:latest,ADMIN_API_KEY=infit-admin-api-key:latest,REVALIDATION_SECRET=infit-revalidation-secret:latest"
 
       # -------------------------------------------------------------
@@ -70,7 +70,10 @@ jobs:
         if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
         run: |
           IMAGE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:${{ github.sha }}"
-          docker build -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:latest" ./frontend
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL || 'https://infit-backend-f6v6jgb4qa-el.a.run.app' }}" \
+            --build-arg NEXT_PUBLIC_WHATSAPP_NUMBER="${{ secrets.NEXT_PUBLIC_WHATSAPP_NUMBER || '' }}" \
+            -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:latest" ./frontend
           docker push "$IMAGE"
           docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:latest"
 
@@ -83,7 +86,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=3000 \
-            --set-env-vars="NODE_ENV=production" \
+            --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0" \
             --set-secrets="BACKEND_URL=infit-backend-url:latest,NEXT_PUBLIC_API_URL=infit-backend-url:latest,REVALIDATION_SECRET=infit-revalidation-secret:latest,NEXT_PUBLIC_WHATSAPP_NUMBER=infit-whatsapp-number:latest"
 
       # -------------------------------------------------------------
@@ -93,7 +96,10 @@ jobs:
         if: env.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != ''
         run: |
           IMAGE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:${{ github.sha }}"
-          docker build -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:latest" ./admin
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL || 'https://infit-backend-f6v6jgb4qa-el.a.run.app' }}" \
+            --build-arg NEXT_PUBLIC_ADMIN_API_KEY="${{ secrets.ADMIN_API_KEY || '' }}" \
+            -t "$IMAGE" -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:latest" ./admin
           docker push "$IMAGE"
           docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:latest"
 
@@ -106,5 +112,5 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=3001 \
-            --set-env-vars="NODE_ENV=production" \
+            --set-env-vars="NODE_ENV=production,HOSTNAME=0.0.0.0" \
             --set-secrets="NEXT_PUBLIC_API_URL=infit-backend-url:latest,NEXT_PUBLIC_ADMIN_API_KEY=infit-admin-api-key:latest"
