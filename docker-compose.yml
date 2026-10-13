@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -21,15 +19,15 @@ services:
 
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     container_name: infit-api
     ports:
       - '4000:4000'
     environment:
       - PORT=4000
       - HOST=0.0.0.0
-      - NODE_ENV=development
+      - NODE_ENV=production
       - CORS_ORIGIN=*
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/jeans_store}
       - ADMIN_API_KEY=${ADMIN_API_KEY:-admin-secret-dev-key}
@@ -38,16 +36,19 @@ services:
       - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
       - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:4000/health']
+      test: ['CMD', 'wget', '--spider', '-q', 'http://127.0.0.1:4000/health']
       interval: 10s
       timeout: 5s
       retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   storefront:
     build:
-      context: ./apps/storefront
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/storefront/Dockerfile
     container_name: infit-storefront
     ports:
       - '3000:3000'
@@ -65,8 +66,8 @@ services:
 
   admin:
     build:
-      context: ./apps/admin
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/admin/Dockerfile
     container_name: infit-admin
     ports:
       - '3001:3001'

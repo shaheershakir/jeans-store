@@ -1,0 +1,16 @@
+node_modules
+.next
+dist
+build
+.turbo
+.git
+.github
+.agents
+.claude
+shadcn-admin
+*.log
+.env*.local
+.env
+*.tsbuildinfo
+.DS_Store
+*.pem

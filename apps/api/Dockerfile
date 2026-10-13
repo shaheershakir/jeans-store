@@ -1,30 +1,41 @@
-# Multi-stage Dockerfile for Express Backend on Google Cloud Run
+# Multi-stage Dockerfile for Express API in Monorepo
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# Stage 1: Build TypeScript
-FROM base AS builder
-COPY package*.json ./
+# Stage 1: Install dependencies
+FROM base AS deps
+COPY package.json package-lock.json turbo.json ./
+COPY packages/ ./packages/
+COPY apps/api/package.json ./apps/api/
 RUN npm ci
-COPY tsconfig.json ./
-COPY drizzle.config.ts ./
-COPY src/ ./src/
-RUN npm run build
 
-# Stage 2: Production Runner
+# Stage 2: Build
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json turbo.json ./
+COPY packages/ ./packages/
+COPY apps/api/ ./apps/api/
+RUN npx turbo run build --filter=@jeans-store/api
+RUN if [ -f apps/api/src/data/homepage-config.json ]; then mkdir -p apps/api/dist/data && cp apps/api/src/data/homepage-config.json apps/api/dist/data/; fi
+
+# Stage 3: Production Runner
 FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=4000
 ENV HOST=0.0.0.0
 
-COPY package*.json ./
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY packages/ ./packages/
+COPY apps/api/package.json ./apps/api/
 RUN npm ci --omit=dev
 
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
-# Non-root user for cloud security
+# Secure non-root user
 USER node
 
 EXPOSE 4000
 
+WORKDIR /app/apps/api
 CMD ["node", "dist/index.js"]

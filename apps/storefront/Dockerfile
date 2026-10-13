@@ -1,24 +1,31 @@
-# Multi-stage Dockerfile for Next.js Storefront on Google Cloud Run
-FROM node:20-alpine AS deps
+# Multi-stage Dockerfile for Next.js Storefront in Monorepo
+FROM node:20-alpine AS base
 WORKDIR /app
-COPY package*.json ./
+
+# Stage 1: Install dependencies
+FROM base AS deps
+COPY package.json package-lock.json turbo.json ./
+COPY packages/ ./packages/
+COPY apps/storefront/package.json ./apps/storefront/
 RUN npm ci
 
-FROM node:20-alpine AS builder
-WORKDIR /app
+# Stage 2: Build
+FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
+COPY package.json package-lock.json turbo.json ./
+COPY packages/ ./packages/
+COPY apps/storefront/ ./apps/storefront/
 
+ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-
 ARG NEXT_PUBLIC_WHATSAPP_NUMBER
 ENV NEXT_PUBLIC_WHATSAPP_NUMBER=$NEXT_PUBLIC_WHATSAPP_NUMBER
 
-RUN npm run build
+RUN npx turbo run build --filter=@jeans-store/storefront
 
-FROM node:20-alpine AS runner
+# Stage 3: Production Runner
+FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -28,13 +35,13 @@ ENV HOSTNAME="0.0.0.0"
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy public static assets and standalone bundle
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy static assets and Next.js standalone bundle
+COPY --from=builder /app/apps/storefront/public ./apps/storefront/public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/storefront/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/storefront/.next/static ./apps/storefront/.next/static
 
 USER nextjs
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["node", "apps/storefront/server.js"]

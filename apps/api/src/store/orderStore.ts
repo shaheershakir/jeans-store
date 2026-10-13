@@ -32,53 +32,69 @@ class OrderStore {
 
   async list(): Promise<Order[]> {
     if (isDatabaseConfigured() && db) {
-      const rows = await db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt))
-      return rows.map(toOrder)
+      try {
+        const rows = await db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt))
+        return rows.map(toOrder)
+      } catch (err) {
+        console.error('[OrderStore] Database query failed, returning memory orders:', err)
+      }
     }
     return [...this.memoryOrders].reverse()
   }
 
   async getById(id: number): Promise<Order | undefined> {
     if (isDatabaseConfigured() && db) {
-      const [row] = await db.select().from(ordersTable).where(eq(ordersTable.id, id))
-      return row ? toOrder(row) : undefined
+      try {
+        const [row] = await db.select().from(ordersTable).where(eq(ordersTable.id, id))
+        return row ? toOrder(row) : undefined
+      } catch (err) {
+        console.error('[OrderStore] Database query failed in getById:', err)
+      }
     }
     return this.memoryOrders.find((o) => o.id === id)
   }
 
   async getByOrderNumber(orderNumber: string): Promise<Order | undefined> {
     if (isDatabaseConfigured() && db) {
-      const [row] = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, orderNumber))
-      return row ? toOrder(row) : undefined
+      try {
+        const [row] = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, orderNumber))
+        return row ? toOrder(row) : undefined
+      } catch (err) {
+        console.error('[OrderStore] Database query failed in getByOrderNumber:', err)
+      }
     }
     return this.memoryOrders.find((o) => o.orderNumber === orderNumber)
   }
 
   async create(input: CreateOrder): Promise<Order> {
     if (isDatabaseConfigured() && db) {
-      const [row] = await db
-        .insert(ordersTable)
-        .values({
-          orderNumber: input.orderNumber,
-          store: input.store || 'jean-store',
-          customerName: input.customerName,
-          customerPhone: input.customerPhone,
-          customerEmail: input.customerEmail,
-          address: input.address,
-          apartment: input.apartment ?? null,
-          city: input.city,
-          state: input.state,
-          pincode: input.pincode,
-          notes: input.notes ?? null,
-          items: input.items,
-          subtotal: input.subtotal,
-          shipping: input.shipping,
-          total: input.total,
-          handoffType: input.handoffType,
-          status: 'pending'
-        })
-        .returning()
-      return toOrder(row)
+      try {
+        const [row] = await db
+          .insert(ordersTable)
+          .values({
+            orderNumber: input.orderNumber,
+            store: input.store || 'jean-store',
+            customerName: input.customerName,
+            customerPhone: input.customerPhone,
+            customerEmail: input.customerEmail,
+            address: input.address,
+            apartment: input.apartment ?? null,
+            city: input.city,
+            state: input.state,
+            pincode: input.pincode,
+            notes: input.notes ?? null,
+            items: input.items,
+            subtotal: input.subtotal,
+            shipping: input.shipping,
+            total: input.total,
+            handoffType: input.handoffType,
+            status: 'pending'
+          })
+          .returning()
+        return toOrder(row)
+      } catch (err) {
+        console.error('[OrderStore] Database insert failed in create:', err)
+      }
     }
 
     const id = this.memoryOrders.length + 1

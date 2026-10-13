@@ -1,10 +1,10 @@
+import path from 'node:path'
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   transpilePackages: ['@jeans-store/shared', '@jeans-store/validators'],
-  ...(process.env.NEXT_OUTPUT_STANDALONE === 'true' || process.platform !== 'win32'
-    ? { output: 'standalone' }
-    : {}),
   images: {
     remotePatterns: [
       {

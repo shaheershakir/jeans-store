@@ -13,6 +13,7 @@ import {
   generateProductScopedSku,
   type SkuComponents
 } from '../services/skuService.js'
+import { logger } from '../lib/logger.js'
 
 function toVariant(row: DbProductVariant): Variant {
   return {
@@ -170,18 +171,26 @@ export class ProductStore {
   async list(filters?: { store?: string; category?: string; fit?: string; sku?: string; q?: string }): Promise<Product[]> {
     let list: Product[]
     if (isDatabaseConfigured() && db) {
-      const productRows = await db.select().from(productsTable)
-      const variantRows = await db.select().from(productVariantsTable)
+      try {
+        const productRows = await db.select().from(productsTable)
+        const variantRows = await db.select().from(productVariantsTable)
 
-      const variantMap = new Map<number, Variant[]>()
-      for (const vr of variantRows) {
-        if (!variantMap.has(vr.productId)) {
-          variantMap.set(vr.productId, [])
+        const variantMap = new Map<number, Variant[]>()
+        for (const vr of variantRows) {
+          if (!variantMap.has(vr.productId)) {
+            variantMap.set(vr.productId, [])
+          }
+          variantMap.get(vr.productId)!.push(toVariant(vr))
         }
-        variantMap.get(vr.productId)!.push(toVariant(vr))
-      }
 
-      list = productRows.map((p) => toProduct(p, variantMap.get(p.id) || []))
+        list = productRows.map((p) => toProduct(p, variantMap.get(p.id) || []))
+      } catch (err) {
+        logger.warn({ err }, '[ProductStore] Database query failed, serving fallback memory catalog')
+        list = this.memoryProducts.map((p) => ({
+          ...p,
+          variants: this.memoryVariants.filter((v) => v.productId === p.id)
+        }))
+      }
     } else {
       list = this.memoryProducts.map((p) => ({
         ...p,
@@ -225,13 +234,17 @@ export class ProductStore {
 
   async getById(id: number): Promise<Product | undefined> {
     if (isDatabaseConfigured() && db) {
-      const [pRow] = await db.select().from(productsTable).where(eq(productsTable.id, id))
-      if (!pRow) return undefined
-      const vRows = await db
-        .select()
-        .from(productVariantsTable)
-        .where(eq(productVariantsTable.productId, id))
-      return toProduct(pRow, vRows.map(toVariant))
+      try {
+        const [pRow] = await db.select().from(productsTable).where(eq(productsTable.id, id))
+        if (!pRow) return undefined
+        const vRows = await db
+          .select()
+          .from(productVariantsTable)
+          .where(eq(productVariantsTable.productId, id))
+        return toProduct(pRow, vRows.map(toVariant))
+      } catch (err) {
+        logger.warn({ err, id }, '[ProductStore] Database query failed in getById, serving memory product')
+      }
     }
 
     const found = this.memoryProducts.find((p) => p.id === id)
