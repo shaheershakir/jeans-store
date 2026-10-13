@@ -37,6 +37,18 @@
       "skillPath": "skills/break-ui/SKILL.md",
       "computedHash": "79e9e01e3f2fe2ced55448b55de1835c6e641826ee0a81991289e79d3f50cdc7"
     },
+    "cloud-build-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/cloud-build-basics/SKILL.md",
+      "computedHash": "578c6e90c974e3e4af0867d25467657464ee082be01c0de262ace67c665f5597"
+    },
+    "cloud-run-alert-configuration": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/cloud-run-alert-configuration/SKILL.md",
+      "computedHash": "0e8b91fadc7c9738f970a4a840bf0300150e005a194f38df995e85a2f21c177a"
+    },
     "cloud-run-basics": {
       "source": "google/skills",
       "sourceType": "github",
@@ -60,6 +72,30 @@
       "sourceType": "github",
       "skillPath": "skills/frontend-design/SKILL.md",
       "computedHash": "93f53fd1c0352d3d7ec17b8f73d7351bf76f4821e55d123c9d2abc2c53ba48e4"
+    },
+    "gke-service-networking": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/gke-service-networking/SKILL.md",
+      "computedHash": "c05b80e41eebc2266db086fa45b2fff47fb68aa25d4156f9714829d99a828ec0"
+    },
+    "gke-storage": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/gke-storage/SKILL.md",
+      "computedHash": "e51dcac2fac94c80934577f5c5615da41e0536331ce8919fbc099ffde4d75e1e"
+    },
+    "gke-storage-troubleshooting": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/gke-storage-troubleshooting/SKILL.md",
+      "computedHash": "8f08a95960e5c4a771a55e941e6ceb192c3dd6d3cfde52de2a85fc08fda119d2"
+    },
+    "google-cloud-solution-architecture": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/google-cloud-solution-architecture/SKILL.md",
+      "computedHash": "fb3ee242c2642fa43f9b0505ebc46f03d9d635d2b853b52144a114996dafc299"
     },
     "google-cloud-storage-basics": {
       "source": "google/skills",

@@ -33,22 +33,25 @@ export interface PaymentVerificationParams {
 export class RazorpayService {
   private keyId: string
   private keySecret: string
-  private isConfigured: boolean
 
   constructor() {
-    this.keyId = process.env.RAZORPAY_KEY_ID?.trim() || ''
-    this.keySecret = process.env.RAZORPAY_KEY_SECRET?.trim() || ''
-    this.isConfigured = Boolean(this.keyId && this.keySecret)
+    this.keyId = process.env.RAZORPAY_KEY_ID?.trim() || 'rzp_test_TnN4mtRGLw9wJy'
+    this.keySecret = process.env.RAZORPAY_KEY_SECRET?.trim() || '6HCOI0Fg4exVQWYG2AK7KeSf'
+  }
 
-    if (!this.isConfigured) {
-      logger.warn('Razorpay credentials not fully configured. Running in sandbox / fallback mode.')
-    }
+  public getKeyId(): string {
+    return process.env.RAZORPAY_KEY_ID?.trim() || this.keyId || 'rzp_test_TnN4mtRGLw9wJy'
+  }
+
+  public getKeySecret(): string {
+    return process.env.RAZORPAY_KEY_SECRET?.trim() || this.keySecret || '6HCOI0Fg4exVQWYG2AK7KeSf'
   }
 
   public getStatus() {
+    const keyId = this.getKeyId()
     return {
-      enabled: this.isConfigured,
-      keyId: this.keyId ? `${this.keyId.substring(0, 8)}...` : undefined
+      enabled: Boolean(keyId && this.getKeySecret()),
+      keyId: keyId ? `${keyId.substring(0, 8)}...` : undefined
     }
   }
 
@@ -57,8 +60,10 @@ export class RazorpayService {
    */
   public async createOrder(options: RazorpayOrderOptions): Promise<RazorpayOrderResponse> {
     const { amount, currency = 'INR', receipt, notes = {} } = options
+    const keyId = this.getKeyId()
+    const keySecret = this.getKeySecret()
 
-    if (!this.isConfigured) {
+    if (!keyId || !keySecret) {
       logger.info({ receipt, amount }, 'Mocking Razorpay order creation')
       return {
         id: `order_mock_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -73,7 +78,7 @@ export class RazorpayService {
       }
     }
 
-    const authHeader = 'Basic ' + Buffer.from(`${this.keyId}:${this.keySecret}`).toString('base64')
+    const authHeader = 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64')
 
     const response = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
@@ -102,8 +107,8 @@ export class RazorpayService {
    * Verifies the HMAC SHA256 signature returned by Razorpay Checkout.
    */
   public verifyPaymentSignature(params: PaymentVerificationParams): boolean {
-    if (!this.isConfigured) {
-      // In sandbox mode without credentials, allow mock verification
+    const keySecret = this.getKeySecret()
+    if (!keySecret) {
       return params.razorpay_signature.startsWith('mock_') || Boolean(params.razorpay_payment_id)
     }
 
@@ -111,7 +116,7 @@ export class RazorpayService {
     const body = `${razorpay_order_id}|${razorpay_payment_id}`
 
     const expectedSignature = crypto
-      .createHmac('sha256', this.keySecret)
+      .createHmac('sha256', keySecret)
       .update(body)
       .digest('hex')
 

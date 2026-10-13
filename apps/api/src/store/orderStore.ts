@@ -22,7 +22,7 @@ function toOrder(row: DbOrder): Order {
     shipping: row.shipping,
     total: row.total,
     status: row.status,
-    handoffType: row.handoffType as 'whatsapp' | 'email',
+    handoffType: (row.handoffType as 'whatsapp' | 'email' | 'razorpay' | 'cod') || 'whatsapp',
     createdAt: row.createdAt
   }
 }
@@ -88,7 +88,7 @@ class OrderStore {
             shipping: input.shipping,
             total: input.total,
             handoffType: input.handoffType,
-            status: 'pending'
+            status: input.status || 'pending'
           })
           .returning()
         return toOrder(row)
@@ -102,7 +102,7 @@ class OrderStore {
       id,
       ...input,
       store: input.store || 'jean-store',
-      status: 'pending',
+      status: input.status || 'pending',
       createdAt: new Date()
     }
     this.memoryOrders.push(order)

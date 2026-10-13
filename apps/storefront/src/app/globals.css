@@ -2305,6 +2305,7 @@ button {
 
 .pdp-buy-now-btn:hover {
   background: var(--bone);
+  color: var(--ink);
   transform: translateY(-1px);
 }
 
@@ -3309,6 +3310,383 @@ button {
   line-height: 1.5;
   color: var(--ink-secondary);
   margin: 0;
+}
+
+/* Checkout Profile Autofill & Address Switcher */
+.checkout-autofill-banner {
+  background: #fbfbfb;
+  border: 1px solid #e4e4e7;
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.checkout-autofill-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.checkout-autofill-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.autofill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  white-space: nowrap;
+}
+
+.autofill-desc {
+  font-size: 13px;
+  color: var(--ink-secondary);
+  margin: 0;
+}
+
+.autofill-desc strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.checkout-autofill-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.autofill-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.autofill-action-btn:hover {
+  background: #f4f4f5;
+  border-color: #9ca3af;
+}
+
+.autofill-action-btn.danger {
+  color: #dc2626;
+  border-color: #fecaca;
+  background: #fff5f5;
+}
+
+.autofill-action-btn.danger:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+/* Saved Addresses Grid */
+.saved-addresses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #e4e4e7;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.saved-address-card {
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid #e4e4e7;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+  position: relative;
+}
+
+.saved-address-card:hover {
+  border-color: var(--ink);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.saved-address-card.selected {
+  border-color: var(--ink);
+  background: #fdfdfd;
+  box-shadow: 0 0 0 1.5px var(--ink);
+}
+
+.saved-address-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.saved-address-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.saved-address-default-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: #090a0c;
+  color: #ffffff;
+}
+
+.saved-address-phone {
+  font-size: 11px;
+  color: var(--ink-secondary);
+  margin: 0 0 4px;
+}
+
+.saved-address-line {
+  font-size: 12px;
+  color: var(--ink-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Save Address Checkbox */
+.save-address-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.save-address-option input[type='checkbox'] {
+  accent-color: var(--ink);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Payment Method Selection Cards */
+.payment-methods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.payment-method-card {
+  border: 1px solid #e4e4e7;
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  transition: all 0.2s ease;
+}
+
+.payment-method-card:hover {
+  border-color: #a1a1aa;
+}
+
+.payment-method-card.selected {
+  border-color: var(--ink);
+  background: #fafafa;
+  box-shadow: 0 0 0 1.5px var(--ink);
+}
+
+.payment-radio-circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #d4d4d8;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.payment-method-card.selected .payment-radio-circle {
+  border-color: var(--ink);
+}
+
+.payment-radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink);
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+
+.payment-method-card.selected .payment-radio-dot {
+  transform: scale(1);
+}
+
+.payment-method-info {
+  flex: 1;
+}
+
+.payment-method-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.payment-method-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.payment-method-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.payment-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #f4f4f5;
+  color: #3f3f46;
+  border: 1px solid #e4e4e7;
+}
+
+.payment-badge.brand-razorpay {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.payment-method-desc {
+  font-size: 12.5px;
+  color: var(--ink-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.payment-error-alert {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-xs);
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #991b1b;
+  font-size: 12.5px;
+  line-height: 1.4;
+  margin-top: 14px;
+}
+
+.payment-error-alert svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Confirmation screen enhancements */
+.confirmation-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.confirmation-status-pill.success {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.confirmation-status-pill.pending {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.confirmation-payment-meta {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--ink-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.confirmation-payment-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.confirmation-payment-meta-row strong {
+  color: var(--ink);
+  font-feature-settings: 'tnum';
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Sidebar Summary */
@@ -12571,5 +12949,746 @@ select {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========================================================================
+   STOREFRONT PAGE SYSTEM
+   Extend the homepage's paper, ink and denim palette across customer routes.
+   ======================================================================== */
+:root {
+  --store-paper: #f8f7f3;
+  --store-surface: #fff;
+  --store-ink: #172126;
+  --store-muted: #697276;
+  --store-line: #dfded8;
+  --store-denim: #294455;
+  --store-soft: #eeede7;
+}
+
+.apple-profile-page,
+.infit-account-page,
+.checkout-page,
+.apple-auth-page,
+.onboarding-page-layout,
+.shop-page {
+  background: var(--store-paper);
+  color: var(--store-ink);
+}
+
+.apple-profile-page,
+.infit-account-page,
+.checkout-page,
+.apple-auth-page,
+.shop-page,
+.pdp-container {
+  font-family: var(--font-ui);
+}
+
+.apple-profile-container,
+.infit-account-container {
+  max-width: 1320px;
+  padding-right: clamp(18px, 4.4vw, 64px);
+  padding-left: clamp(18px, 4.4vw, 64px);
+}
+
+.apple-profile-page .infit-breadcrumb-nav,
+.infit-account-page .infit-breadcrumb-nav,
+.pdp-container .pdp-breadcrumb {
+  color: #747d80;
+  font-size: 11px;
+  letter-spacing: 0.025em;
+}
+
+.apple-profile-page .infit-breadcrumb-current,
+.infit-account-page .infit-breadcrumb-current,
+.pdp-container .crumb-current {
+  color: var(--store-ink);
+}
+
+/* Account, orders and preferences */
+.infit-account-page,
+.apple-profile-page {
+  min-height: 100dvh;
+  background-color: var(--store-paper);
+  color: var(--store-ink);
+}
+
+.infit-account-hero,
+.apple-profile-page .apple-mobile-profile-card,
+.apple-profile-page .apple-glass-card,
+.apple-profile-page .apple-detail-card {
+  border: 1px solid var(--store-line);
+  border-radius: 2px;
+  background: var(--store-surface);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.infit-account-hero {
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.infit-hero-avatar,
+.apple-profile-page .apple-id-avatar,
+.apple-profile-page .apple-mobile-avatar {
+  background: var(--store-ink);
+  box-shadow: none;
+}
+
+.infit-hero-name,
+.apple-profile-page .apple-id-name,
+.apple-profile-page .apple-mobile-name,
+.apple-profile-page .apple-card-title {
+  color: var(--store-ink);
+  letter-spacing: -0.045em;
+}
+
+.infit-hero-meta,
+.apple-profile-page .apple-id-email,
+.apple-profile-page .apple-mobile-email,
+.apple-profile-page .apple-card-subtitle {
+  color: var(--store-muted);
+}
+
+.apple-profile-page .apple-mobile-profile-card {
+  padding: 16px;
+}
+
+.apple-profile-page .apple-mobile-pill,
+.apple-profile-page .apple-nav-item {
+  border-radius: 2px;
+  color: #596267;
+}
+
+.apple-profile-page .apple-mobile-pill.active,
+.apple-profile-page .apple-nav-item.active {
+  border-color: var(--store-ink);
+  background: var(--store-ink);
+  color: #fff;
+  box-shadow: none;
+}
+
+.apple-profile-page .apple-nav-item.active :is(svg, .apple-nav-badge),
+.apple-profile-page .apple-mobile-pill.active svg {
+  color: #fff;
+}
+
+.apple-profile-page .apple-nav-badge {
+  border-radius: 2px;
+  background: #efeee9;
+  color: var(--store-ink);
+}
+
+.apple-profile-page .apple-detail-card {
+  padding: clamp(20px, 3.2vw, 36px);
+}
+
+.apple-profile-page .apple-info-display-item,
+.apple-profile-page .apple-grouped-box,
+.apple-profile-page .infit-address-card {
+  border: 1px solid var(--store-line);
+  border-radius: 2px;
+  background: #fbfaf7;
+  box-shadow: none;
+}
+
+.apple-profile-page .apple-info-display-item:hover {
+  border-color: #b7c0c1;
+  background: #fff;
+  box-shadow: none;
+}
+
+.apple-profile-page .apple-info-label,
+.apple-profile-page .apple-input-label {
+  color: #697276;
+}
+
+.apple-profile-page .apple-info-value,
+.apple-profile-page .apple-card-title,
+.apple-profile-page .fit-section-title {
+  color: var(--store-ink);
+}
+
+.apple-profile-page :is(.apple-input, .apple-form-input, .infit-form-input),
+.apple-profile-page .apple-input-shell,
+.apple-profile-page .apple-input-container {
+  border-radius: 2px;
+}
+
+.apple-profile-page :is(.apple-input, .apple-form-input, .infit-form-input) {
+  border-color: #d6d7d3;
+  background: #fff;
+  color: var(--store-ink);
+}
+
+.apple-profile-page :is(.apple-input, .apple-form-input, .infit-form-input):focus {
+  border-color: var(--store-denim);
+  box-shadow: 0 0 0 2px rgb(41 68 85 / 12%);
+  outline: none;
+}
+
+.apple-profile-page :is(.apple-btn-primary, .infit-btn-primary),
+.infit-account-page .infit-btn-primary {
+  min-height: 44px;
+  border: 1px solid var(--store-ink);
+  border-radius: 2px;
+  background: var(--store-ink);
+  color: #fff;
+  box-shadow: none;
+}
+
+.apple-profile-page :is(.apple-btn-secondary, .apple-edit-btn, .infit-btn-pill-secondary),
+.infit-account-page .infit-btn-pill-secondary {
+  min-height: 40px;
+  border: 1px solid #bdc2c1;
+  border-radius: 2px;
+  background: #fff;
+  color: var(--store-ink);
+  box-shadow: none;
+}
+
+.infit-account-page .apple-segment-item.active,
+.apple-profile-page .apple-segment-item.active {
+  border-color: var(--store-ink);
+  border-radius: 2px;
+  background: var(--store-ink);
+  color: #fff;
+  box-shadow: none;
+}
+
+.infit-order-card {
+  overflow: hidden;
+  border: 1px solid var(--store-line);
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.infit-order-card:hover {
+  border-color: #c6cac6;
+  box-shadow: none;
+  transform: none;
+}
+
+.infit-order-header,
+.infit-order-footer {
+  border-color: var(--store-line);
+  background: #fff;
+}
+
+.infit-order-timeline-bar {
+  border-color: var(--store-line);
+  border-radius: 0;
+  background: #f1f0eb;
+}
+
+.infit-order-status-badge {
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.infit-order-status-badge.dispatched,
+.infit-order-status-badge.delivered,
+.infit-order-status-badge.confirmed {
+  border: 1px solid #d7dedf;
+  background: #f2f5f4;
+  color: #294455;
+}
+
+.infit-order-item-thumb {
+  border-radius: 0;
+  background: var(--store-soft);
+}
+
+.infit-order-wa-track {
+  color: var(--store-denim);
+}
+
+.apple-profile-page .fit-studio-pill,
+.apple-profile-page .fit-auto-pill {
+  padding: 5px 9px;
+  border: 1px solid var(--store-line);
+  border-radius: 2px;
+  background: #f5f4ef;
+  color: #47545a;
+}
+
+.apple-profile-page .fit-studio-pill svg,
+.apple-profile-page .fit-auto-pill svg {
+  color: var(--store-denim);
+}
+
+.apple-profile-page .fit-active-snapshot-card {
+  border: 1px solid var(--store-line);
+  border-radius: 2px;
+  background: #f4f3ee;
+  box-shadow: none;
+}
+
+.apple-profile-page .fit-snapshot-header {
+  border-color: #dfded8;
+}
+
+.apple-profile-page .fit-snapshot-title,
+.apple-profile-page .fit-snapshot-value {
+  color: var(--store-ink);
+}
+
+.apple-profile-page .fit-snapshot-status {
+  color: #50675c;
+}
+
+.apple-profile-page .fit-snapshot-dot {
+  background: #587365;
+  box-shadow: none;
+}
+
+.apple-profile-page .fit-section {
+  border-color: var(--store-line);
+}
+
+.apple-profile-page .fit-section-desc,
+.apple-profile-page .fit-snapshot-label,
+.apple-profile-page .fit-snapshot-sub {
+  color: var(--store-muted);
+}
+
+.apple-profile-page .fit-selected-indicator strong {
+  color: var(--store-denim);
+}
+
+.apple-profile-page :is(.fit-waist-btn, .fit-top-btn, .fit-cut-card, .fit-inseam-btn, .fit-comfort-card) {
+  border: 1px solid var(--store-line);
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.apple-profile-page :is(.fit-waist-btn, .fit-top-btn, .fit-cut-card, .fit-inseam-btn, .fit-comfort-card):hover {
+  border-color: #9ba8aa;
+  box-shadow: none;
+  transform: none;
+}
+
+.apple-profile-page :is(.fit-waist-btn.active, .fit-top-btn.active, .fit-cut-card.active, .fit-inseam-btn.active, .fit-comfort-card.active) {
+  border-color: var(--store-ink);
+  background: var(--store-ink);
+  color: #fff;
+  box-shadow: none;
+}
+
+.apple-profile-page :is(.fit-waist-btn.active, .fit-top-btn.active, .fit-cut-card.active, .fit-inseam-btn.active, .fit-comfort-card.active) :is(h3, span, p, strong, svg) {
+  color: #fff;
+}
+
+/* Collection browsing and product detail */
+.shop-page {
+  min-height: 100dvh;
+}
+
+.shop-container {
+  max-width: 1440px;
+}
+
+.shop-title-text,
+.pdp-headline {
+  color: var(--store-ink);
+  letter-spacing: -0.055em;
+}
+
+.shop-item-counter,
+.shop-breadcrumbs-list,
+.shop-crumb-current,
+.shop-crumb-link {
+  color: var(--store-muted);
+}
+
+.shop-top-toolbar,
+.shop-desktop-sidebar,
+.shop-mobile-filter-header,
+.shop-sort-sheet,
+.shop-mobile-drawer {
+  border-color: var(--store-line);
+  background: var(--store-paper);
+}
+
+.shop-facet-block {
+  border-color: var(--store-line);
+}
+
+.shop-facet-title,
+.shop-toolbar-filters-label,
+.shop-filters-heading {
+  color: #59666c;
+}
+
+.shop-active-filter-chips .shop-chip,
+.shop-size-pill-btn,
+.category-tab-chip {
+  border-color: #d2d3ce;
+  border-radius: 2px;
+  background: #fff;
+  color: var(--store-ink);
+}
+
+.shop-active-filter-chips .shop-chip:hover,
+.shop-size-pill-btn:hover,
+.category-tab-chip:hover {
+  border-color: #8f9da0;
+  background: #f2f1ed;
+}
+
+.shop-size-pill-btn.active,
+.category-tab-chip.active {
+  border-color: var(--store-ink);
+  background: var(--store-ink);
+  color: #fff;
+}
+
+.shop-sort-select-native,
+.shop-facet-box,
+.shop-facet-radio {
+  border-color: #c8cbc7;
+  border-radius: 2px;
+}
+
+.shop-facet-row input:checked ~ .shop-facet-box,
+.shop-facet-row input:checked ~ .shop-facet-radio {
+  border-color: var(--store-ink);
+  background: var(--store-ink);
+}
+
+.shop-mobile-bottom-bar,
+.shop-mobile-filter-footer {
+  border-color: var(--store-line);
+  background: rgba(248, 247, 243, 0.97);
+}
+
+.shop-mobile-btn-apply,
+.shop-mobile-btn-close,
+.shop-empty-cta-btn {
+  border-radius: 2px;
+  background: var(--store-ink);
+  color: #fff;
+}
+
+.pdp-gallery-card {
+  border: 0;
+  border-radius: 0;
+  background: var(--store-soft);
+}
+
+.pdp-sidebar {
+  color: var(--store-ink);
+}
+
+.pdp-category-eyebrow,
+.pdp-reviews-count {
+  color: var(--store-muted);
+}
+
+.pdp-current-price,
+.pdp-size-cell.selected {
+  color: var(--store-ink);
+}
+
+.pdp-size-cell {
+  border-radius: 2px;
+}
+
+.pdp-size-cell.selected {
+  border-color: var(--store-ink);
+  background: var(--store-ink);
+  color: #fff;
+}
+
+.pdp-add-to-cart-btn,
+.pdp-buy-now-btn {
+  min-height: 48px;
+  border-radius: 2px;
+  background: var(--store-ink);
+  color: #fff;
+}
+
+.pdp-pref-match-banner,
+.pdp-delivery-card,
+.pdp-pincode-card {
+  border-radius: 2px;
+  background: #f1f0eb;
+}
+
+/* Checkout and authentication */
+.checkout-page {
+  min-height: calc(100dvh - 120px);
+  padding: clamp(28px, 5vw, 64px) clamp(18px, 4vw, 56px) 80px;
+}
+
+.checkout-title,
+.summary-title,
+.confirmation-title,
+.empty-title {
+  color: var(--store-ink);
+  letter-spacing: -0.05em;
+}
+
+.form-section,
+.summary-card,
+.confirmation-card,
+.empty-checkout-card {
+  border: 1px solid var(--store-line);
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.section-heading {
+  color: var(--store-ink);
+  letter-spacing: 0.045em;
+}
+
+.field-group input,
+.field-group textarea,
+.checkout-page select {
+  min-height: 46px;
+  border-color: #d6d7d3;
+  border-radius: 2px;
+  background: #fff;
+  color: var(--store-ink);
+  font-size: 16px;
+}
+
+.field-group input:focus,
+.field-group textarea:focus,
+.checkout-page select:focus {
+  border-color: var(--store-denim);
+  box-shadow: 0 0 0 2px rgb(41 68 85 / 12%);
+}
+
+.checkout-submit-btn,
+.apple-auth-submit-btn {
+  min-height: 48px;
+  border: 1px solid var(--store-ink);
+  border-radius: 2px;
+  background: var(--store-ink);
+  color: #fff;
+  box-shadow: none;
+}
+
+.apple-auth-page {
+  min-height: calc(100dvh - 100px);
+  padding: clamp(28px, 7vw, 72px) 18px;
+}
+
+.apple-auth-card {
+  max-width: 480px;
+  border: 1px solid var(--store-line);
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: none;
+  padding: clamp(24px, 5vw, 40px);
+}
+
+.apple-auth-title {
+  color: var(--store-ink);
+  font-size: clamp(24px, 4vw, 30px);
+  letter-spacing: -0.055em;
+}
+
+.apple-auth-subtitle,
+.apple-auth-footer-note {
+  color: var(--store-muted);
+}
+
+.apple-auth-error-banner {
+  border-radius: 2px;
+}
+
+.apple-auth-page .apple-form-input {
+  min-height: 46px;
+  border-color: #d6d7d3;
+  border-radius: 2px;
+  background: #fff;
+  color: var(--store-ink);
+  font-size: 16px;
+}
+
+.apple-auth-page .apple-form-input:focus {
+  border-color: var(--store-denim);
+  box-shadow: 0 0 0 2px rgb(41 68 85 / 12%);
+}
+
+.apple-auth-page .apple-segment-item.active {
+  border-radius: 2px;
+  background: var(--store-ink);
+  color: #fff;
+}
+
+.onboarding-modal-card {
+  border: 1px solid var(--store-line);
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 18px 60px rgb(23 33 38 / 14%);
+}
+
+.onboarding-title {
+  color: var(--store-ink);
+  letter-spacing: -0.05em;
+}
+
+.onboarding-input,
+.onboarding-chip,
+.onboarding-cut-card,
+.onboarding-chip-row {
+  border-radius: 2px;
+}
+
+.onboarding-input {
+  border-color: #d6d7d3;
+  background: #fff;
+  font-size: 16px;
+}
+
+.onboarding-chip.active,
+.onboarding-cut-card.active,
+.onboarding-chip-row.active,
+.onboarding-btn-primary {
+  border-color: var(--store-ink);
+  background: var(--store-ink);
+  color: #fff;
+}
+
+/* Shared focus, press and narrow-screen behavior */
+:is(.apple-profile-page, .infit-account-page, .checkout-page, .apple-auth-page, .shop-page, .pdp-container)
+  :is(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid #31586f;
+  outline-offset: 3px;
+}
+
+@media (max-width: 639px) {
+  .apple-profile-container,
+  .infit-account-container {
+    padding-top: 16px;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .infit-account-hero {
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .infit-hero-user-cluster {
+    gap: 12px;
+  }
+
+  .infit-hero-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+
+  .apple-profile-page .apple-sidebar-nav-mobile {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 1px 10px;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .apple-profile-page .apple-sidebar-nav-mobile::-webkit-scrollbar {
+    display: none;
+  }
+
+  .apple-profile-page .apple-mobile-pill {
+    flex: 0 0 auto;
+    min-height: 40px;
+    border: 1px solid var(--store-line);
+    background: #fff;
+  }
+
+  .apple-profile-page .apple-mobile-pill.active {
+    border-color: var(--store-ink);
+    background: var(--store-ink);
+  }
+
+  .apple-profile-page .apple-detail-card {
+    padding: 20px 16px;
+  }
+
+  .infit-account-page .apple-segmented-control {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .infit-account-page .apple-segment-item {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+
+  .infit-order-header {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .infit-order-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .infit-order-item-row {
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .infit-order-item-row > .flex {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .checkout-page {
+    padding: 24px 16px calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .checkout-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .checkout-summary-sidebar {
+    position: static;
+  }
+
+  .form-section,
+  .summary-card {
+    padding: 18px 16px;
+  }
+
+  .form-row,
+  .form-row-2,
+  .form-row-3 {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .shop-page .shop-container {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .pdp-container {
+    padding: 18px 16px calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apple-profile-page .fit-snapshot-dot {
+    animation: none;
   }
 }

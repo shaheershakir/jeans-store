@@ -112,7 +112,11 @@ export interface Order {
   shipping: number
   total: number
   status: string
-  handoffType: 'whatsapp' | 'email'
+  handoffType: 'whatsapp' | 'email' | 'razorpay' | 'cod'
+  paymentMethod?: string
+  paymentId?: string
+  razorpayOrderId?: string
+  razorpayPaymentId?: string
   createdAt: Date | string
 }
 
@@ -132,7 +136,13 @@ export interface CreateOrderInput {
   subtotal: number
   shipping: number
   total: number
-  handoffType?: 'whatsapp' | 'email'
+  handoffType?: 'whatsapp' | 'email' | 'razorpay' | 'cod'
+  status?: string
+  paymentMethod?: string
+  paymentId?: string
+  razorpayOrderId?: string
+  razorpayPaymentId?: string
+  razorpaySignature?: string
 }
 
 export interface UserProfile {

@@ -1,11 +1,32 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import {
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  CreditCard,
+  Truck,
+  RotateCcw,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
+  Lock,
+  ArrowRight,
+  Check
+} from 'lucide-react'
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@/lib/constants'
-import { cartCount, cartSubtotal, useCartStore } from '@/lib/store'
+import { cartCount, cartSubtotal, useCartStore, useAuthStore, type UserAddress } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
+
+declare global {
+  interface Window {
+    Razorpay?: any
+  }
+}
 
 interface CheckoutForm {
   name: string
@@ -17,6 +38,14 @@ interface CheckoutForm {
   state: string
   pincode: string
   notes: string
+}
+
+interface SubmittedOrder {
+  orderId: string
+  summary: string
+  paymentMethod: 'razorpay' | 'cod'
+  paymentId?: string
+  total: number
 }
 
 const INITIAL_FORM: CheckoutForm = {
@@ -31,26 +60,129 @@ const INITIAL_FORM: CheckoutForm = {
   notes: ''
 }
 
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') return resolve(false)
+    if (window.Razorpay) return resolve(true)
+
+    const existing = document.getElementById('razorpay-checkout-script')
+    if (existing) {
+      existing.addEventListener('load', () => resolve(true))
+      existing.addEventListener('error', () => resolve(false))
+      return
+    }
+
+    const script = document.createElement('script')
+    script.id = 'razorpay-checkout-script'
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.async = true
+    script.onload = () => resolve(true)
+    script.onerror = () => resolve(false)
+    document.body.appendChild(script)
+  })
+}
+
 export default function CheckoutClient() {
   const items = useCartStore((state) => state.items)
   const clearCart = useCartStore((state) => state.clearCart)
 
+  const user = useAuthStore((state) => state.user)
+  const addresses = useAuthStore((state) => state.addresses)
+  const addAddress = useAuthStore((state) => state.addAddress)
+
   const [form, setForm] = useState<CheckoutForm>(INITIAL_FORM)
   const [errors, setErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({})
-  const [submittedOrder, setSubmittedOrder] = useState<{
-    orderId: string
-    summary: string
-    handoffType: 'whatsapp' | 'email'
-  } | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay')
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [submittedOrder, setSubmittedOrder] = useState<SubmittedOrder | null>(null)
 
-  useEffect(() => {
-    void useCartStore.persist.rehydrate()
-  }, [])
+  // Profile Autofill State
+  const [isAutofilled, setIsAutofilled] = useState(false)
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+  const [showAddressPicker, setShowAddressPicker] = useState(false)
+  const [saveToProfile, setSaveToProfile] = useState(false)
+  const [isManuallyEdited, setIsManuallyEdited] = useState(false)
 
   const count = cartCount(items)
   const subtotal = cartSubtotal(items)
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIPPING_FEE
   const total = subtotal + shipping
+
+  const applySavedAddress = useCallback((addr: UserAddress) => {
+    setForm((prev) => ({
+      ...prev,
+      name: addr.fullName || prev.name,
+      phone: (addr.phone || prev.phone).replace(/\D/g, '').slice(-10),
+      address: addr.addressLine || prev.address,
+      city: addr.city || prev.city,
+      state: addr.state || prev.state,
+      pincode: (addr.pincode || prev.pincode).replace(/\D/g, '').slice(0, 6)
+    }))
+    setSelectedAddressId(addr.id)
+    setIsAutofilled(true)
+    setIsManuallyEdited(false)
+  }, [])
+
+  useEffect(() => {
+    void useCartStore.persist.rehydrate()
+    void useAuthStore.persist.rehydrate()
+    void loadRazorpayScript()
+  }, [])
+
+  // Auto-populate from profile if available
+  useEffect(() => {
+    if (addresses && addresses.length > 0) {
+      const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0]
+      applySavedAddress(defaultAddr)
+      if (user?.email) {
+        setForm((prev) => ({ ...prev, email: user.email }))
+      }
+    } else if (user) {
+      setForm((prev) => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        phone: (user.phone || prev.phone).replace(/\D/g, '').slice(-10)
+      }))
+      setIsAutofilled(true)
+    }
+  }, [user, addresses, applySavedAddress])
+
+  function handleFieldChange(field: keyof CheckoutForm, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+    setIsManuallyEdited(true)
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
+  }
+
+  function handleClearAutofill() {
+    setForm(INITIAL_FORM)
+    setIsAutofilled(false)
+    setSelectedAddressId(null)
+    setShowAddressPicker(false)
+    setIsManuallyEdited(true)
+  }
+
+  function handleRestoreProfile() {
+    if (addresses && addresses.length > 0) {
+      const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0]
+      applySavedAddress(defaultAddr)
+      if (user?.email) {
+        setForm((prev) => ({ ...prev, email: user.email }))
+      }
+    } else if (user) {
+      setForm((prev) => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        phone: (user.phone || prev.phone).replace(/\D/g, '').slice(-10)
+      }))
+      setIsAutofilled(true)
+      setIsManuallyEdited(false)
+    }
+  }
 
   function validate(): boolean {
     const nextErrors: Partial<Record<keyof CheckoutForm, string>> = {}
@@ -73,13 +205,32 @@ export default function CheckoutClient() {
     return Object.keys(nextErrors).length === 0
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!validate()) return
+  function saveLocalOrder(orderId: string, statusText: string, paymentId?: string) {
+    try {
+      if (typeof window === 'undefined') return
+      const existingStr =
+        localStorage.getItem('teesgarage-orders') || localStorage.getItem('infit-orders')
+      const existing = existingStr ? JSON.parse(existingStr) : []
+      const newStoredOrder = {
+        orderId,
+        date: 'Today, Just now',
+        status: statusText,
+        expectedDelivery: 'In 2–4 business days',
+        items: items.map((i) => ({ ...i })),
+        subtotal,
+        shipping,
+        total,
+        paymentId,
+        shippingAddress: `${form.address.trim()}, ${form.city.trim()}, ${form.state.trim()} · ${form.pincode.trim()}`
+      }
+      localStorage.setItem('teesgarage-orders', JSON.stringify([newStoredOrder, ...existing]))
+      localStorage.setItem('infit-orders', JSON.stringify([newStoredOrder, ...existing]))
+    } catch (e) {
+      console.warn('Failed to store order in local history', e)
+    }
+  }
 
-    const orderId = `TGE-${Date.now().toString().slice(-6)}`
-    const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '')
-
+  function buildSummaryText(orderId: string, methodTitle: string, paymentId?: string) {
     const itemLines = items
       .map((item, index) => {
         const spec = [item.fit ? `${item.fit} Fit` : null, `Size ${item.size}`, item.wash]
@@ -89,9 +240,12 @@ export default function CheckoutClient() {
       })
       .join('\n')
 
-    const messageLines = [
-      `*TEESGARAGE ORDER REQUEST [${orderId}]*`,
+    return [
+      `*TEESGARAGE ORDER CONFIRMATION [${orderId}]*`,
       '--------------------------------',
+      `Payment Method: ${methodTitle}`,
+      paymentId ? `Razorpay Payment ID: ${paymentId}` : null,
+      '',
       '*Customer Information:*',
       `Name: ${form.name.trim()}`,
       `Phone: ${form.phone.trim()}`,
@@ -103,101 +257,229 @@ export default function CheckoutClient() {
       `${form.city.trim()}, ${form.state.trim()} - ${form.pincode.trim()}`,
       form.notes.trim() ? `Delivery Notes: ${form.notes.trim()}` : null,
       '',
-      '*Ordered Silhouettes:*',
+      '*Ordered Items:*',
       itemLines,
       '',
       '*Bill Summary:*',
       `Subtotal: ${formatPrice(subtotal)}`,
       `Shipping: ${shipping === 0 ? 'FREE' : formatPrice(shipping)}`,
-      `Total Payable: ${formatPrice(total)}`,
-      'Payment Preference: Cash on Delivery / UPI on Confirmation',
+      `Total: ${formatPrice(total)}`,
       '--------------------------------',
-      'Please confirm availability and dispatch schedule.'
+      'Confirmed and queued for Mumbai studio dispatch.'
     ]
       .filter(Boolean)
       .join('\n')
+  }
 
-    let handoffType: 'whatsapp' | 'email' = 'email'
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!validate()) return
 
-    if (whatsappNumber) {
-      handoffType = 'whatsapp'
-      const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(messageLines)}`
-      window.open(waUrl, '_blank')
-    } else {
-      handoffType = 'email'
-      const mailtoUrl = `mailto:orders@teesgarage.in?subject=${encodeURIComponent(
-        `TEESGARAGE Order ${orderId} - ${form.name.trim()}`
-      )}&body=${encodeURIComponent(messageLines)}`
-      window.open(mailtoUrl, '_blank')
+    const orderId = `TGE-${Date.now().toString().slice(-6)}`
+    const backendUrl =
+      process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:4000'
+
+    const orderPayload = {
+      orderNumber: orderId,
+      store: 'teesgarage',
+      customerName: form.name.trim(),
+      customerPhone: form.phone.trim(),
+      customerEmail: form.email.trim(),
+      address: form.address.trim(),
+      apartment: form.apartment.trim() || undefined,
+      city: form.city.trim(),
+      state: form.state.trim(),
+      pincode: form.pincode.trim(),
+      notes: form.notes.trim() || undefined,
+      items: items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        fit: item.fit,
+        size: String(item.size),
+        price: item.price,
+        priceNum: item.priceNum,
+        quantity: item.qty,
+        img: item.img
+      })),
+      subtotal,
+      shipping,
+      total
     }
 
-    // Persist order manifest to backend database
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:4000'
-    void fetch(`${backendUrl}/api/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        orderNumber: orderId,
-        store: 'teesgarage',
-        customerName: form.name.trim(),
-        customerPhone: form.phone.trim(),
-        customerEmail: form.email.trim(),
-        address: form.address.trim(),
-        apartment: form.apartment.trim() || undefined,
-        city: form.city.trim(),
-        state: form.state.trim(),
-        pincode: form.pincode.trim(),
-        notes: form.notes.trim() || undefined,
-        items: items.map((item) => ({
-          id: item.id,
-          name: item.name,
-          fit: item.fit,
-          size: String(item.size),
-          price: item.price,
-          priceNum: item.priceNum,
-          quantity: item.qty,
-          img: item.img
-        })),
-        subtotal,
-        shipping,
-        total,
-        handoffType
-      })
-    }).catch((err) => {
-      console.warn('[TEESGARAGE] Order persistence note:', err)
-    })
+    if (paymentMethod === 'razorpay') {
+      setIsProcessing(true)
+      setPaymentError(null)
 
-    // Save to local storage for user order history
-    try {
-      const existingOrdersStr =
-        typeof window !== 'undefined'
-          ? localStorage.getItem('teesgarage-orders') || localStorage.getItem('infit-orders')
-          : null
-      const existingOrders = existingOrdersStr ? JSON.parse(existingOrdersStr) : []
-      const newStoredOrder = {
-        orderId,
-        date: 'Today, Just now',
-        status: 'Confirmed',
-        expectedDelivery: 'In 2–4 business days',
-        items: items.map((i) => ({ ...i })),
-        subtotal,
-        shipping,
-        total,
-        shippingAddress: `${form.address.trim()}, ${form.city.trim()}, ${form.state.trim()} · ${form.pincode.trim()}`
+      const scriptLoaded = await loadRazorpayScript()
+      if (!scriptLoaded || typeof window === 'undefined' || !window.Razorpay) {
+        setPaymentError('Unable to load Razorpay payment SDK. Please select Cash on Delivery or reload the page.')
+        setIsProcessing(false)
+        return
       }
-      localStorage.setItem('teesgarage-orders', JSON.stringify([newStoredOrder, ...existingOrders]))
-      localStorage.setItem('infit-orders', JSON.stringify([newStoredOrder, ...existingOrders]))
-    } catch (e) {
-      console.warn('Failed to store order locally', e)
+
+      try {
+        const createRes = await fetch(`${backendUrl}/api/orders/razorpay/create-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: total,
+            currency: 'INR',
+            orderNumber: orderId,
+            customerName: form.name.trim(),
+            customerEmail: form.email.trim(),
+            customerPhone: form.phone.trim()
+          })
+        })
+
+        if (!createRes.ok) {
+          const errData = await createRes.json().catch(() => ({}))
+          throw new Error(errData.error || 'Failed to create payment order')
+        }
+
+        const rzpData = await createRes.json()
+        const activeKey =
+          rzpData.keyId ||
+          process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+          'rzp_test_TnN4mtRGLw9wJy'
+
+        const options = {
+          key: activeKey,
+          amount: rzpData.amount,
+          currency: rzpData.currency || 'INR',
+          name: 'TEESGARAGE',
+          description: `Order ${orderId}`,
+          order_id: rzpData.razorpayOrderId,
+          prefill: {
+            name: form.name.trim(),
+            email: form.email.trim(),
+            contact: form.phone.trim()
+          },
+          notes: {
+            orderNumber: orderId,
+            address: `${form.address.trim()}, ${form.city.trim()} - ${form.pincode.trim()}`
+          },
+          theme: {
+            color: '#090a0c'
+          },
+          handler: async function (response: {
+            razorpay_order_id: string
+            razorpay_payment_id: string
+            razorpay_signature: string
+          }) {
+            try {
+              const verifyRes = await fetch(`${backendUrl}/api/orders/razorpay/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  order: {
+                    ...orderPayload,
+                    status: 'paid',
+                    handoffType: 'razorpay'
+                  }
+                })
+              })
+
+              if (!verifyRes.ok) {
+                const verifyErr = await verifyRes.json().catch(() => ({}))
+                throw new Error(verifyErr.error || 'Payment signature verification failed')
+              }
+
+              saveLocalOrder(orderId, 'Paid via Razorpay', response.razorpay_payment_id)
+
+              if (saveToProfile) {
+                addAddress({
+                  fullName: form.name.trim(),
+                  phone: form.phone.trim(),
+                  addressLine: form.address.trim(),
+                  city: form.city.trim(),
+                  state: form.state.trim(),
+                  pincode: form.pincode.trim(),
+                  isDefault: false
+                })
+              }
+
+              setSubmittedOrder({
+                orderId,
+                paymentMethod: 'razorpay',
+                paymentId: response.razorpay_payment_id,
+                total,
+                summary: buildSummaryText(orderId, 'Razorpay (Paid Online)', response.razorpay_payment_id)
+              })
+
+              clearCart()
+            } catch (err: any) {
+              setPaymentError(err.message || 'Payment verification encountered an issue. Please contact support.')
+            } finally {
+              setIsProcessing(false)
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setIsProcessing(false)
+              setPaymentError('Payment window was closed. You can retry payment or select Cash on Delivery.')
+            }
+          }
+        }
+
+        const rzp = new window.Razorpay(options)
+        rzp.on('payment.failed', function (resp: any) {
+          setIsProcessing(false)
+          setPaymentError(resp.error?.description || 'Payment was declined. Please try another card or UPI account.')
+        })
+        rzp.open()
+      } catch (err: any) {
+        setIsProcessing(false)
+        setPaymentError(err.message || 'Failed to initialize payment gateway')
+      }
+    } else {
+      // Cash on Delivery
+      setIsProcessing(true)
+      setPaymentError(null)
+
+      try {
+        await fetch(`${backendUrl}/api/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...orderPayload,
+            handoffType: 'cod',
+            status: 'pending'
+          })
+        }).catch((err) => {
+          console.warn('[TEESGARAGE] Order persistence note:', err)
+        })
+
+        saveLocalOrder(orderId, 'Cash on Delivery')
+
+        if (saveToProfile) {
+          addAddress({
+            fullName: form.name.trim(),
+            phone: form.phone.trim(),
+            addressLine: form.address.trim(),
+            city: form.city.trim(),
+            state: form.state.trim(),
+            pincode: form.pincode.trim(),
+            isDefault: false
+          })
+        }
+
+        setSubmittedOrder({
+          orderId,
+          paymentMethod: 'cod',
+          total,
+          summary: buildSummaryText(orderId, 'Cash on Delivery')
+        })
+
+        clearCart()
+      } catch (err: any) {
+        setPaymentError(err.message || 'Failed to place Cash on Delivery order')
+      } finally {
+        setIsProcessing(false)
+      }
     }
-
-    setSubmittedOrder({
-      orderId,
-      summary: messageLines,
-      handoffType
-    })
-
-    clearCart()
   }
 
   if (submittedOrder) {
@@ -205,7 +487,15 @@ export default function CheckoutClient() {
       <main className="checkout-page">
         <div className="checkout-container confirmation-card">
           <div className="confirmation-header">
-            <span className="confirmation-badge">ORDER INITIATED</span>
+            <span
+              className={`confirmation-status-pill ${
+                submittedOrder.paymentMethod === 'razorpay' ? 'success' : 'pending'
+              }`}
+            >
+              {submittedOrder.paymentMethod === 'razorpay'
+                ? '✓ Paid via Razorpay'
+                : 'Cash on Delivery'}
+            </span>
             <h1 className="confirmation-title">Thank you, {form.name.split(' ')[0]}.</h1>
             <p className="confirmation-lead">
               Reference code: <strong>{submittedOrder.orderId}</strong>
@@ -213,12 +503,34 @@ export default function CheckoutClient() {
           </div>
 
           <div className="confirmation-body">
-            <p>
-              Your order summary was handed off via{' '}
-              {submittedOrder.handoffType === 'whatsapp' ? 'WhatsApp' : 'email'} to our studio team.
-              We will confirm your sizing, reserve the pairs from inventory, and send tracking
-              details once dispatched.
-            </p>
+            {submittedOrder.paymentMethod === 'razorpay' ? (
+              <p>
+                Your payment of <strong>{formatPrice(submittedOrder.total)}</strong> has been verified
+                through Razorpay. Our studio is preparing your pieces for dispatch from Mumbai.
+              </p>
+            ) : (
+              <p>
+                Your order is confirmed for Cash on Delivery. You can pay{' '}
+                <strong>{formatPrice(submittedOrder.total)}</strong> in cash or UPI upon delivery.
+              </p>
+            )}
+
+            {submittedOrder.paymentId && (
+              <div className="confirmation-payment-meta">
+                <div className="confirmation-payment-meta-row">
+                  <span>Razorpay Payment ID:</span>
+                  <strong>{submittedOrder.paymentId}</strong>
+                </div>
+                <div className="confirmation-payment-meta-row">
+                  <span>Payment Status:</span>
+                  <strong className="text-emerald-700">Verified &amp; Captured</strong>
+                </div>
+                <div className="confirmation-payment-meta-row">
+                  <span>Shipping Address:</span>
+                  <span>{form.address}, {form.city}</span>
+                </div>
+              </div>
+            )}
 
             <details className="confirmation-details">
               <summary>View order transmission copy</summary>
@@ -226,7 +538,10 @@ export default function CheckoutClient() {
             </details>
           </div>
 
-          <div className="confirmation-actions">
+          <div className="confirmation-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <Link href="/orders" className="button secondary">
+              View My Orders
+            </Link>
             <Link href="/" className="button primary">
               Return to Catalog
             </Link>
@@ -253,6 +568,8 @@ export default function CheckoutClient() {
     )
   }
 
+  const activeAddrObj = addresses.find((a) => a.id === selectedAddressId)
+
   return (
     <main className="checkout-page">
       <div className="checkout-container">
@@ -272,6 +589,92 @@ export default function CheckoutClient() {
         <div className="checkout-grid">
           {/* Order Form */}
           <form className="checkout-form" onSubmit={handleSubmit} noValidate>
+            {/* Autofill Notification & Address Switcher */}
+            {isAutofilled && (
+              <div className="checkout-autofill-banner">
+                <div className="checkout-autofill-header">
+                  <div className="checkout-autofill-info">
+                    <span className="autofill-badge">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Profile Connected</span>
+                    </span>
+                    <p className="autofill-desc">
+                      {activeAddrObj ? (
+                        <>
+                          Autofilled with saved address for <strong>{activeAddrObj.fullName}</strong>.
+                        </>
+                      ) : (
+                        <>Autofilled with account credentials.</>
+                      )}
+                      {isManuallyEdited && ' (Modified)'}
+                    </p>
+                  </div>
+
+                  <div className="checkout-autofill-actions">
+                    {addresses.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAddressPicker(!showAddressPicker)}
+                        className="autofill-action-btn"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>{showAddressPicker ? 'Hide Saved Addresses' : 'Switch Address'}</span>
+                      </button>
+                    )}
+                    {isManuallyEdited ? (
+                      <button
+                        type="button"
+                        onClick={handleRestoreProfile}
+                        className="autofill-action-btn"
+                        title="Reset fields to profile defaults"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Reset to Profile</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleClearAutofill}
+                        className="autofill-action-btn danger"
+                        title="Clear autofilled information and enter new details"
+                      >
+                        <span>Change Information</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Multiple Saved Addresses Picker */}
+                {showAddressPicker && addresses.length > 1 && (
+                  <div className="saved-addresses-grid">
+                    {addresses.map((addr) => (
+                      <div
+                        key={addr.id}
+                        onClick={() => {
+                          applySavedAddress(addr)
+                          setShowAddressPicker(false)
+                        }}
+                        className={`saved-address-card ${
+                          selectedAddressId === addr.id ? 'selected' : ''
+                        }`}
+                      >
+                        <div className="saved-address-card-header">
+                          <span className="saved-address-name">{addr.fullName}</span>
+                          {addr.isDefault && (
+                            <span className="saved-address-default-tag">Default</span>
+                          )}
+                        </div>
+                        <p className="saved-address-phone">{addr.phone}</p>
+                        <p className="saved-address-line">
+                          {addr.addressLine}, {addr.city} · {addr.pincode}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="form-section">
               <h2 className="section-heading">1. Contact Information</h2>
               <div className="form-row">
@@ -281,7 +684,7 @@ export default function CheckoutClient() {
                     id="name"
                     type="text"
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(e) => handleFieldChange('name', e.target.value)}
                     placeholder="Kabir Mehta"
                     className={errors.name ? 'has-error' : ''}
                   />
@@ -297,7 +700,7 @@ export default function CheckoutClient() {
                     type="tel"
                     maxLength={10}
                     value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })}
+                    onChange={(e) => handleFieldChange('phone', e.target.value.replace(/\D/g, ''))}
                     placeholder="9876543210"
                     className={errors.phone ? 'has-error' : ''}
                   />
@@ -310,7 +713,7 @@ export default function CheckoutClient() {
                     id="email"
                     type="email"
                     value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    onChange={(e) => handleFieldChange('email', e.target.value)}
                     placeholder="kabir@example.com"
                     className={errors.email ? 'has-error' : ''}
                   />
@@ -328,7 +731,7 @@ export default function CheckoutClient() {
                     id="address"
                     type="text"
                     value={form.address}
-                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    onChange={(e) => handleFieldChange('address', e.target.value)}
                     placeholder="14 Lotus Court, Bandra West"
                     className={errors.address ? 'has-error' : ''}
                   />
@@ -343,7 +746,7 @@ export default function CheckoutClient() {
                     id="apartment"
                     type="text"
                     value={form.apartment}
-                    onChange={(e) => setForm({ ...form, apartment: e.target.value })}
+                    onChange={(e) => handleFieldChange('apartment', e.target.value)}
                     placeholder="Flat 4B, 4th Floor"
                   />
                 </div>
@@ -356,7 +759,7 @@ export default function CheckoutClient() {
                     id="city"
                     type="text"
                     value={form.city}
-                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                    onChange={(e) => handleFieldChange('city', e.target.value)}
                     placeholder="Mumbai"
                     className={errors.city ? 'has-error' : ''}
                   />
@@ -369,7 +772,7 @@ export default function CheckoutClient() {
                     id="state"
                     type="text"
                     value={form.state}
-                    onChange={(e) => setForm({ ...form, state: e.target.value })}
+                    onChange={(e) => handleFieldChange('state', e.target.value)}
                     placeholder="Maharashtra"
                     className={errors.state ? 'has-error' : ''}
                   />
@@ -383,7 +786,7 @@ export default function CheckoutClient() {
                     type="text"
                     maxLength={6}
                     value={form.pincode}
-                    onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g, '') })}
+                    onChange={(e) => handleFieldChange('pincode', e.target.value.replace(/\D/g, ''))}
                     placeholder="400050"
                     className={errors.pincode ? 'has-error' : ''}
                   />
@@ -398,25 +801,107 @@ export default function CheckoutClient() {
                     id="notes"
                     rows={2}
                     value={form.notes}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                    onChange={(e) => handleFieldChange('notes', e.target.value)}
                     placeholder="Leave with security or call on arrival"
                   />
                 </div>
               </div>
+
+              {/* Option to Save Modified Address to Profile */}
+              {isManuallyEdited && (
+                <label className="save-address-option">
+                  <input
+                    type="checkbox"
+                    checked={saveToProfile}
+                    onChange={(e) => setSaveToProfile(e.target.checked)}
+                  />
+                  <span>Save this address to my profile for faster checkout next time</span>
+                </label>
+              )}
+            </div>
+
+            {/* Payment Gateway Selection */}
+            <div className="form-section">
+              <h2 className="section-heading">3. Payment Method</h2>
+
+              <div className="payment-methods-list">
+                {/* Razorpay Option */}
+                <div
+                  className={`payment-method-card ${paymentMethod === 'razorpay' ? 'selected' : ''}`}
+                  onClick={() => setPaymentMethod('razorpay')}
+                >
+                  <div className="payment-radio-circle">
+                    <div className="payment-radio-dot" />
+                  </div>
+                  <div className="payment-method-info">
+                    <div className="payment-method-title-row">
+                      <span className="payment-method-title">
+                        <CreditCard className="w-4 h-4" />
+                        <span>Pay Online via Razorpay</span>
+                      </span>
+                      <div className="payment-method-badges">
+                        <span className="payment-badge brand-razorpay">Razorpay Secure</span>
+                        <span className="payment-badge">UPI / Cards</span>
+                        <span className="payment-badge">NetBanking</span>
+                      </div>
+                    </div>
+                    <p className="payment-method-desc">
+                      Pay instantly with UPI (Google Pay, PhonePe, Paytm), Visa, Mastercard, RuPay,
+                      or NetBanking. 256-bit encrypted checkout.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Cash on Delivery Option */}
+                <div
+                  className={`payment-method-card ${paymentMethod === 'cod' ? 'selected' : ''}`}
+                  onClick={() => setPaymentMethod('cod')}
+                >
+                  <div className="payment-radio-circle">
+                    <div className="payment-radio-dot" />
+                  </div>
+                  <div className="payment-method-info">
+                    <div className="payment-method-title-row">
+                      <span className="payment-method-title">
+                        <Truck className="w-4 h-4" />
+                        <span>Cash on Delivery</span>
+                      </span>
+                      <div className="payment-method-badges">
+                        <span className="payment-badge">Pay on Doorstep</span>
+                      </div>
+                    </div>
+                    <p className="payment-method-desc">
+                      Pay in cash or via UPI QR code directly to the courier upon doorstep delivery.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {paymentError && (
+                <div className="payment-error-alert" role="alert">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{paymentError}</span>
+                </div>
+              )}
             </div>
 
             <div className="form-section submit-section">
-              <button type="submit" className="button primary checkout-submit-btn">
+              <button
+                type="submit"
+                disabled={isProcessing}
+                className="button primary checkout-submit-btn"
+                aria-label="Place you order"
+              >
                 <span>
-                  {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER
-                    ? 'Place Order via WhatsApp'
-                    : 'Place Order via Email'}
+                  {isProcessing ? 'Processing Order...' : 'Place you order'}
                 </span>
                 <span>{formatPrice(total)} ↗</span>
               </button>
+
               <p className="submit-footnote">
-                No upfront card payment required. Payment is collected via Cash on Delivery or UPI
-                upon order confirmation by our studio.
+                {paymentMethod === 'razorpay'
+                  ? 'Your transaction is secured with end-to-end 256-bit encryption by Razorpay. Free 7-day size exchanges included.'
+                  : 'Pay upon delivery. We will verify your sizing and dispatch within 24 hours.'}
               </p>
             </div>
           </form>
@@ -442,7 +927,9 @@ export default function CheckoutClient() {
                     <div className="summary-item-info">
                       <h3 className="summary-item-name">{item.name}</h3>
                       <p className="summary-item-meta">
-                        {[item.fit ? `${item.fit} Fit` : null, `Size ${item.size}`, `Qty ${item.qty}`].filter(Boolean).join(' · ')}
+                        {[item.fit ? `${item.fit} Fit` : null, `Size ${item.size}`, `Qty ${item.qty}`]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </p>
                       <span className="summary-item-price">
                         {formatPrice(item.priceNum * item.qty)}
@@ -478,7 +965,7 @@ export default function CheckoutClient() {
                 </div>
                 <div className="badge-item">
                   <span className="badge-icon">✓</span>
-                  <span>Cash on Delivery Supported</span>
+                  <span>Razorpay Verified &amp; Encrypted</span>
                 </div>
               </div>
             </div>

@@ -46,9 +46,34 @@ export function buildApp(options: BuildAppOptions = {}): Application {
   // CORS
   app.use(
     cors({
-      origin: options.corsOrigin ?? true,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true)
+
+        // In development/test environments, allow any localhost or 127.0.0.1 port
+        if (process.env.NODE_ENV !== 'production') {
+          if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+            return callback(null, true)
+          }
+        }
+
+        const allowed = options.corsOrigin ?? true
+        if (allowed === true || allowed === '*') {
+          return callback(null, true)
+        }
+
+        if (Array.isArray(allowed)) {
+          if (allowed.includes('*') || allowed.includes(origin)) {
+            return callback(null, true)
+          }
+        } else if (typeof allowed === 'string' && allowed === origin) {
+          return callback(null, true)
+        }
+
+        return callback(null, false)
+      },
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+      credentials: true
     })
   )
 

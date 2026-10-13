@@ -159,9 +159,13 @@ describe('ProductStore Variant Operations & Concurrency Safety', () => {
 
     assert.ok(product.id !== undefined)
     assert.equal(product.variants?.length, 2)
-    assert.ok(product.variants![0].sku.startsWith('STR-OVS-'))
-    assert.ok(product.variants![0].sku.endsWith('-BLK-M'))
-    assert.ok(product.variants![1].sku.endsWith('-BLK-L'))
+    const mVariant = product.variants?.find((v) => v.size === 'M')
+    const lVariant = product.variants?.find((v) => v.size === 'L')
+    assert.ok(mVariant, 'Variant M should exist')
+    assert.ok(lVariant, 'Variant L should exist')
+    assert.ok(mVariant.sku.startsWith('STR-OVS-'))
+    assert.ok(mVariant.sku.endsWith('-BLK-M'))
+    assert.ok(lVariant.sku.endsWith('-BLK-L'))
   })
 
   test('prevents duplicate variants for the same product', async () => {

@@ -27,7 +27,13 @@ export const createOrderSchema = z.object({
   subtotal: z.number().nonnegative(),
   shipping: z.number().nonnegative(),
   total: z.number().positive(),
-  handoffType: z.enum(['whatsapp', 'email']).default('whatsapp')
+  handoffType: z.enum(['whatsapp', 'email', 'razorpay', 'cod']).default('whatsapp'),
+  status: z.string().optional(),
+  paymentMethod: z.string().optional(),
+  paymentId: z.string().optional(),
+  razorpayOrderId: z.string().optional(),
+  razorpayPaymentId: z.string().optional(),
+  razorpaySignature: z.string().optional()
 })
 
 export type CreateOrder = z.infer<typeof createOrderSchema>

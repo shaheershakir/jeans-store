@@ -310,7 +310,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             </button>
 
             <button type="button" className="pdp-buy-now-btn" onClick={handleBuyNow} disabled={!availableSizes.includes(selectedSize)}>
-              Buy Now with Instant Express
+              Buy Now
             </button>
           </div>
 
