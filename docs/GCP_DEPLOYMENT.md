@@ -13,9 +13,17 @@ The runtime account must have access to the production database. Make the produc
 
 ## Required configuration
 
-Set these GitHub repository **variables** for `.github/workflows/deploy-gcp.yml`:
+Set these GitHub repository **variables** or **secrets** for `.github/workflows/deploy-gcp.yml`:
 
-- `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_WIF_SA`
+### Authentication (choose one):
+- **Option A (Workload Identity Federation - Recommended)**:
+  - `GCP_WIF_PROVIDER`: Full provider path (`projects/{PROJECT_NUMBER}/locations/global/workloadIdentityPools/{POOL}/providers/{PROVIDER}`)
+  - `GCP_WIF_SA`: The GitHub Actions service account email (e.g. `github-deployer@{PROJECT_ID}.iam.gserviceaccount.com`)
+- **Option B (Service Account JSON Key)**:
+  - `GCP_SA_KEY`: Complete JSON key of a service account with Cloud Run & Artifact Registry deploy permissions.
+
+### General Configuration (in Variables or Secrets):
+- `GCP_PROJECT_ID`: Your Google Cloud Project ID (e.g. `clothing-store-511300`)
 - `GCP_REGION` (optional; defaults to `asia-south1`) and `GAR_REPOSITORY` (optional; defaults to `teesgarage`)
 - `ADMIN_EMAIL`, `ADMIN_NAME`, `GCS_PRODUCT_IMAGES_BUCKET`
 - `FRONTEND_URL`, `ADMIN_URL`

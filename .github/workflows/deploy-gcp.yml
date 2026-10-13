@@ -1,4 +1,4 @@
-﻿name: Deploy to Google Cloud Run
+name: Deploy to Google Cloud Run
 
 on:
   push:
@@ -29,11 +29,12 @@ permissions:
   id-token: write
 
 env:
-  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-  GAR_LOCATION: ${{ vars.GCP_REGION || 'asia-south1' }}
-  GAR_REPOSITORY: ${{ vars.GAR_REPOSITORY || 'teesgarage' }}
-  WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
-  WIF_SERVICE_ACCOUNT: ${{ vars.GCP_WIF_SA }}
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID || secrets.GCP_PROJECT_ID }}
+  GAR_LOCATION: ${{ vars.GCP_REGION || secrets.GCP_REGION || 'asia-south1' }}
+  GAR_REPOSITORY: ${{ vars.GAR_REPOSITORY || secrets.GAR_REPOSITORY || 'teesgarage' }}
+  WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER || secrets.GCP_WIF_PROVIDER }}
+  WIF_SERVICE_ACCOUNT: ${{ vars.GCP_WIF_SA || secrets.GCP_WIF_SA }}
+  GCP_SA_KEY: ${{ secrets.GCP_SA_KEY || secrets.GOOGLE_CREDENTIALS || secrets.GCP_CREDENTIALS }}
   BACKEND_SERVICE: teesgarage-backend
   FRONTEND_SERVICE: teesgarage-frontend
   ADMIN_SERVICE: teesgarage-admin
@@ -91,11 +92,35 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Check GCP Authentication Configuration
+        run: |
+          if [ -z "${{ env.WIF_PROVIDER }}" ] && [ -z "${{ env.GCP_SA_KEY }}" ]; then
+            echo "::error::Google Cloud credentials not found in repository Secrets or Variables!"
+            echo "::error::Please configure Workload Identity Federation (set GCP_WIF_PROVIDER and GCP_WIF_SA) or a Service Account JSON Key (set GCP_SA_KEY)."
+            echo "::error::Also ensure GCP_PROJECT_ID is defined. See docs/GCP_DEPLOYMENT.md for step-by-step setup."
+            exit 1
+          fi
+          if [ -n "${{ env.WIF_PROVIDER }}" ] && [ -z "${{ env.WIF_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::GCP_WIF_PROVIDER is set, but GCP_WIF_SA (service account email) is missing!"
+            exit 1
+          fi
+          if [ -z "${{ env.GCP_PROJECT_ID }}" ]; then
+            echo "::error::GCP_PROJECT_ID is not configured in repository Variables or Secrets!"
+            exit 1
+          fi
+
       - name: Authenticate to Google Cloud (Workload Identity Federation)
+        if: env.WIF_PROVIDER != '' && env.WIF_SERVICE_ACCOUNT != ''
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+
+      - name: Authenticate to Google Cloud (Service Account Key)
+        if: (env.WIF_PROVIDER == '' || env.WIF_SERVICE_ACCOUNT == '') && env.GCP_SA_KEY != ''
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ env.GCP_SA_KEY }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -115,12 +140,19 @@ jobs:
       - name: Deploy Backend to Cloud Run
         run: |
           SECRET_BINDINGS="DATABASE_URL=database-url:latest,ADMIN_PASSWORD=admin-password:latest,ADMIN_SESSION_SECRET=admin-session-secret:latest,JWT_SECRET=customer-jwt-secret:latest"
-          if [ -n "${{ vars.GOOGLE_CLIENT_ID }}" ]; then
+          if [ -n "${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}" ]; then
             SECRET_BINDINGS="$SECRET_BINDINGS,GOOGLE_CLIENT_SECRET=google-client-secret:latest"
           fi
-          if [ -n "${{ vars.RAZORPAY_KEY_ID }}" ]; then
+          if [ -n "${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID }}" ]; then
             SECRET_BINDINGS="$SECRET_BINDINGS,RAZORPAY_KEY_SECRET=razorpay-key-secret:latest"
           fi
+          ADMIN_EMAIL_VAL="${{ vars.ADMIN_EMAIL || secrets.ADMIN_EMAIL }}"
+          ADMIN_NAME_VAL="${{ vars.ADMIN_NAME || secrets.ADMIN_NAME || 'Store administrator' }}"
+          BUCKET_VAL="${{ vars.GCS_PRODUCT_IMAGES_BUCKET || secrets.GCS_PRODUCT_IMAGES_BUCKET }}"
+          GOOGLE_CLIENT_ID_VAL="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}"
+          RAZORPAY_KEY_ID_VAL="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID }}"
+          FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"
+          ADMIN_URL_VAL="${{ vars.ADMIN_URL || secrets.ADMIN_URL }}"
           gcloud run deploy ${{ env.BACKEND_SERVICE }} \
             --project="${{ env.GCP_PROJECT_ID }}" \
             --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:${{ github.sha }}" \
@@ -128,7 +160,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=4000 \
-            --set-env-vars="^;^NODE_ENV=production;HOST=0.0.0.0;PORT=4000;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};ADMIN_EMAIL=${{ vars.ADMIN_EMAIL }};ADMIN_NAME=${{ vars.ADMIN_NAME }};GCS_PRODUCT_IMAGES_BUCKET=${{ vars.GCS_PRODUCT_IMAGES_BUCKET }};GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }};RAZORPAY_KEY_ID=${{ vars.RAZORPAY_KEY_ID }};FRONTEND_URL=${{ vars.FRONTEND_URL }};CORS_ORIGIN=${{ vars.FRONTEND_URL }},${{ vars.ADMIN_URL }}" \
+            --set-env-vars="^;^NODE_ENV=production;HOST=0.0.0.0;PORT=4000;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID_VAL};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID_VAL};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${FRONTEND_URL_VAL},${ADMIN_URL_VAL}" \
             --set-secrets="$SECRET_BINDINGS"
 
   # -------------------------------------------------------------
@@ -149,11 +181,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Check GCP Authentication Configuration
+        run: |
+          if [ -z "${{ env.WIF_PROVIDER }}" ] && [ -z "${{ env.GCP_SA_KEY }}" ]; then
+            echo "::error::Google Cloud credentials not found in repository Secrets or Variables!"
+            exit 1
+          fi
+
       - name: Authenticate to Google Cloud (Workload Identity Federation)
+        if: env.WIF_PROVIDER != '' && env.WIF_SERVICE_ACCOUNT != ''
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+
+      - name: Authenticate to Google Cloud (Service Account Key)
+        if: (env.WIF_PROVIDER == '' || env.WIF_SERVICE_ACCOUNT == '') && env.GCP_SA_KEY != ''
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ env.GCP_SA_KEY }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -165,8 +211,11 @@ jobs:
       - name: Get Backend URL
         id: backend_url
         run: |
-          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.url)')
-          test -n "$URL" || { echo "Backend URL was not returned by Cloud Run."; exit 1; }
+          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || true)
+          if [ -z "$URL" ]; then
+            URL="${{ vars.BACKEND_URL || secrets.BACKEND_URL }}"
+          fi
+          test -n "$URL" || { echo "Backend URL was not returned by Cloud Run. Deploy the backend API first or set BACKEND_URL."; exit 1; }
           echo "url=$URL" >> $GITHUB_OUTPUT
 
       - name: Build & Push Storefront Container
@@ -175,9 +224,9 @@ jobs:
           LATEST="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:latest"
           docker build \
             --build-arg NEXT_PUBLIC_API_URL="${{ steps.backend_url.outputs.url }}" \
-            --build-arg NEXT_PUBLIC_WHATSAPP_NUMBER="${{ vars.WHATSAPP_NUMBER }}" \
-            --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="${{ vars.GOOGLE_CLIENT_ID }}" \
-            --build-arg NEXT_PUBLIC_SITE_URL="${{ vars.FRONTEND_URL }}" \
+            --build-arg NEXT_PUBLIC_WHATSAPP_NUMBER="${{ vars.WHATSAPP_NUMBER || secrets.WHATSAPP_NUMBER }}" \
+            --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}" \
+            --build-arg NEXT_PUBLIC_SITE_URL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}" \
             -t "$IMAGE" -t "$LATEST" \
             -f apps/storefront/Dockerfile .
           docker push "$IMAGE"
@@ -185,6 +234,7 @@ jobs:
 
       - name: Deploy Storefront to Cloud Run
         run: |
+          FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"
           gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
             --project="${{ env.GCP_PROJECT_ID }}" \
             --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:${{ github.sha }}" \
@@ -192,7 +242,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=3000 \
-            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_SITE_URL=${{ vars.FRONTEND_URL }}"
+            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_SITE_URL=${FRONTEND_URL_VAL}"
 
   # -------------------------------------------------------------
   # 3. Admin Dashboard Service (Next.js 15)
@@ -212,11 +262,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Check GCP Authentication Configuration
+        run: |
+          if [ -z "${{ env.WIF_PROVIDER }}" ] && [ -z "${{ env.GCP_SA_KEY }}" ]; then
+            echo "::error::Google Cloud credentials not found in repository Secrets or Variables!"
+            exit 1
+          fi
+
       - name: Authenticate to Google Cloud (Workload Identity Federation)
+        if: env.WIF_PROVIDER != '' && env.WIF_SERVICE_ACCOUNT != ''
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+
+      - name: Authenticate to Google Cloud (Service Account Key)
+        if: (env.WIF_PROVIDER == '' || env.WIF_SERVICE_ACCOUNT == '') && env.GCP_SA_KEY != ''
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ env.GCP_SA_KEY }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -228,8 +292,11 @@ jobs:
       - name: Get Backend URL
         id: backend_url
         run: |
-          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.url)')
-          test -n "$URL" || { echo "Backend URL was not returned by Cloud Run."; exit 1; }
+          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || true)
+          if [ -z "$URL" ]; then
+            URL="${{ vars.BACKEND_URL || secrets.BACKEND_URL }}"
+          fi
+          test -n "$URL" || { echo "Backend URL was not returned by Cloud Run. Deploy the backend API first or set BACKEND_URL."; exit 1; }
           echo "url=$URL" >> $GITHUB_OUTPUT
 
       - name: Build & Push Admin Container
@@ -244,6 +311,7 @@ jobs:
 
       - name: Deploy Admin to Cloud Run
         run: |
+          FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"
           gcloud run deploy ${{ env.ADMIN_SERVICE }} \
             --project="${{ env.GCP_PROJECT_ID }}" \
             --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:${{ github.sha }}" \
@@ -251,4 +319,4 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=3001 \
-            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_STOREFRONT_URL=${{ vars.FRONTEND_URL }}"
+            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_STOREFRONT_URL=${FRONTEND_URL_VAL}"
