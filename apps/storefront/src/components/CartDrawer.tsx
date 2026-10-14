@@ -20,6 +20,10 @@ export default function CartDrawer() {
   const addresses = useAuthStore((state) => state.addresses)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [deliveryState, setDeliveryState] = useState('')
+  const [pincode, setPincode] = useState('')
+  const [pincodeLocation, setPincodeLocation] = useState('')
+  const [pincodeLoading, setPincodeLoading] = useState(false)
+  const [pincodeError, setPincodeError] = useState('')
   const [quote, setQuote] = useState<DeliveryQuote | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState('')
@@ -35,9 +39,48 @@ export default function CartDrawer() {
       const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0]
       if (defaultAddr?.state) {
         setDeliveryState(defaultAddr.state)
+        if (defaultAddr.pincode) {
+          setPincode(defaultAddr.pincode)
+        }
+        if (defaultAddr.city && defaultAddr.state) {
+          setPincodeLocation(`${defaultAddr.city}, ${defaultAddr.state}`)
+        }
       }
     }
   }, [addresses, deliveryState])
+
+  const handlePincodeChange = async (val: string) => {
+    const cleaned = val.replace(/\D/g, '').slice(0, 6)
+    setPincode(cleaned)
+    setPincodeError('')
+
+    if (cleaned.length === 6) {
+      setPincodeLoading(true)
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${cleaned}`)
+        const data = await res.json()
+        if (Array.isArray(data) && data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
+          const po = data[0].PostOffice[0]
+          const district = po.District || po.Name || ''
+          const state = po.State || ''
+          setPincodeLocation(district ? `${district}, ${state}` : state)
+          setDeliveryState(state)
+          setPincodeError('')
+        } else {
+          setPincodeError('Invalid PIN code or location not found')
+          setPincodeLocation('')
+          setDeliveryState('')
+        }
+      } catch {
+        setPincodeError('Unable to verify PIN code')
+      } finally {
+        setPincodeLoading(false)
+      }
+    } else {
+      setPincodeLocation('')
+      setDeliveryState('')
+    }
+  }
 
   useEffect(() => {
     if (!deliveryState || items.length === 0) {
@@ -93,7 +136,7 @@ export default function CartDrawer() {
         <div className="cart-delivery-note">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-2)' }}>
-              Delivery Location
+              Delivery PIN Code
             </span>
             {addresses && addresses.length > 0 ? (
               <Link
@@ -113,36 +156,71 @@ export default function CartDrawer() {
               </Link>
             )}
           </div>
-          <select
-            id="cart-delivery-state"
-            value={deliveryState}
-            onChange={(event) => setDeliveryState(event.target.value)}
-            style={{
-              height: '40px',
-              width: '100%',
-              borderRadius: '6px',
-              border: '1px solid var(--line)',
-              background: 'var(--surface)',
-              padding: '0 12px',
-              fontSize: '13px',
-              color: 'var(--ink)',
-              fontFamily: 'inherit'
-            }}
-          >
-            <option value="">Select location</option>
-            {STATES.map((state) => (
-              <option key={state} value={state}>
-                {state}
-              </option>
-            ))}
-          </select>
-          {quoteLoading && <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'var(--ink-3)' }}>Calculating delivery…</p>}
-          {quote && (
-            <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'var(--ink-2)' }}>
-              Estimated parcel weight: {quote.weightGrams.toLocaleString('en-IN')} g
+          <div style={{ position: 'relative' }}>
+            <input
+              id="cart-delivery-pincode"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={pincode}
+              onChange={(e) => handlePincodeChange(e.target.value)}
+              placeholder="Enter 6-digit PIN code (e.g. 682001)"
+              aria-label="Delivery PIN code"
+              style={{
+                height: '42px',
+                width: '100%',
+                borderRadius: '2px',
+                border: pincodeError ? '1px solid #dc2626' : '1px solid var(--line, #d6d7d3)',
+                background: 'var(--surface, #ffffff)',
+                padding: '0 12px',
+                fontSize: '13px',
+                color: 'var(--ink, #0c0e12)',
+                fontFamily: 'inherit',
+                outline: 'none',
+                boxShadow: 'none',
+                transition: 'border-color 0.15s ease'
+              }}
+            />
+            {pincodeLoading && (
+              <span
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  fontSize: '11px',
+                  color: 'var(--ink-3, #71717a)'
+                }}
+              >
+                Locating…
+              </span>
+            )}
+          </div>
+          {pincodeLocation && (
+            <div style={{ margin: '8px 0 0', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--ink, #0c0e12)' }}>
+              <span style={{ fontSize: '13px' }}>📍</span>
+              <span>
+                Delivering to <strong>{pincodeLocation}</strong>
+              </span>
+            </div>
+          )}
+          {quoteLoading && (
+            <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'var(--ink-3, #71717a)' }}>
+              Calculating delivery…
             </p>
           )}
-          {quoteError && (
+          {quote && (
+            <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'var(--ink-2, #374151)' }}>
+              Delivery charge: <strong>{formatPrice(quote.shipping)}</strong>
+            </p>
+          )}
+          {pincodeError && (
+            <p role="alert" style={{ margin: '6px 0 0', fontSize: '11px', color: '#dc2626' }}>
+              {pincodeError}
+            </p>
+          )}
+          {quoteError && !pincodeError && (
             <p role="alert" style={{ margin: '6px 0 0', fontSize: '11px', color: '#dc2626' }}>
               {quoteError}
             </p>
@@ -207,7 +285,7 @@ export default function CartDrawer() {
               </div>
               <div className="summary-line">
                 <span>Delivery charge</span>
-                <span>{quote ? formatPrice(quote.shipping) : deliveryState ? 'Calculating…' : 'Select location'}</span>
+                <span>{quote ? formatPrice(quote.shipping) : deliveryState ? 'Calculating…' : 'Enter PIN code'}</span>
               </div>
               <div className="summary-line total-line">
                 <span>{quote ? 'Estimated total' : 'Subtotal before delivery'}</span>

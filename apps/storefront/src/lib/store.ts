@@ -460,7 +460,13 @@ export const useOnboardingStore = create<OnboardingState>()(
       hasPromptedAfterRegister: false,
       isOpen: false,
       step: 1,
-      openOnboarding: (step = 1) => set({ isOpen: true, step }),
+      openOnboarding: (step = 1) =>
+        set((state) => {
+          if (state.hasCompletedOnboarding || state.hasSkippedOnboarding || state.hasPromptedAfterRegister) {
+            return state
+          }
+          return { isOpen: true, step }
+        }),
       triggerAfterRegister: () =>
         set((state) => {
           if (state.hasCompletedOnboarding || state.hasSkippedOnboarding || state.hasPromptedAfterRegister) {
@@ -468,7 +474,7 @@ export const useOnboardingStore = create<OnboardingState>()(
           }
           return { hasPromptedAfterRegister: true, isOpen: true, step: 1 }
         }),
-      closeOnboarding: () => set({ isOpen: false }),
+      closeOnboarding: () => set({ isOpen: false, hasPromptedAfterRegister: true }),
       completeOnboarding: () =>
         set({ hasCompletedOnboarding: true, hasPromptedAfterRegister: true, isOpen: false }),
       skipOnboarding: () =>
@@ -479,6 +485,7 @@ export const useOnboardingStore = create<OnboardingState>()(
           hasCompletedOnboarding: false,
           hasSkippedOnboarding: false,
           hasPromptedAfterRegister: false,
+          isOpen: false,
           step: 1
         })
     }),

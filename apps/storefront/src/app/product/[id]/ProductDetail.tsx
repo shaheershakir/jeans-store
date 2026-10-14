@@ -335,7 +335,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               <span className="delivery-title">Delivery and Dispatch</span>
             </div>
             <p className="delivery-detail">
-              Delivery is paid. Your exact charge is calculated at checkout from your delivery state and the total weight of your order.
+              Delivery is paid. Your exact charge is calculated at checkout based on your delivery destination.
             </p>
           </div>
 

@@ -11,9 +11,11 @@ export default function Toast() {
     void useUIStore.persist.rehydrate()
   }, [])
 
+  if (!toast) return null
+
   return (
-    <div className={`toast${toast ? ' show' : ''}`} role="status" aria-live="polite">
-      {toast ?? ''}
+    <div className="toast show" role="status" aria-live="polite">
+      <span>{toast}</span>
       <button type="button" aria-label="Dismiss notification" onClick={hideToast}>
         ×
       </button>

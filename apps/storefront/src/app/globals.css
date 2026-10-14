@@ -3075,6 +3075,10 @@ button {
   animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.toast:not(.show) {
+  display: none !important;
+}
+
 @keyframes toastIn {
   from {
     opacity: 0;
@@ -8032,6 +8036,11 @@ button:active,
   background: #e5e7eb;
 }
 
+.apple-auth-social-wrap {
+  margin-top: 16px;
+  margin-bottom: 2px;
+}
+
 .apple-auth-alt-group {
   display: flex;
   flex-direction: column;
@@ -8040,24 +8049,39 @@ button:active,
 
 .apple-google-btn {
   width: 100%;
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   background: #ffffff;
-  border: 1px solid #d1d5db;
-  padding: 10px 16px;
-  border-radius: 9999px;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 500;
-  color: #1f2937;
+  border: 1px solid #d6d7d3;
+  padding: 12px 20px;
+  border-radius: 2px;
+  font-family: var(--font-brand);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #0c0e12;
   cursor: pointer;
-  transition: all 0.15s ease;
+  box-shadow: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .apple-google-btn:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: #fafaf9;
+  border-color: #0c0e12;
+  color: #0c0e12;
+}
+
+.apple-google-btn:focus-visible {
+  outline: 2px solid #31586f;
+  outline-offset: 3px;
+}
+
+.apple-google-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .apple-demo-fill-btn {
@@ -8171,18 +8195,50 @@ button:active,
 /* User Popover Menu */
 .apple-user-popover {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   right: 0;
-  width: 270px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 18px;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.8) inset;
-  padding: 14px;
+  width: 260px;
+  max-width: calc(100vw - 24px);
+  padding: 8px;
   z-index: 100;
-  animation: appleSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 12px;
+  transform-origin: top right;
+  animation: applePopoverEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  /* Notice we removed background and backdrop-filter from the main box */
+  background: transparent;
+  isolation: isolate;
+}
+
+/* This layer does the heavy frosted glass work */
+.apple-user-popover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  
+  /* Higher opacity white base + double blur to completely melt text behind it */
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(60px) blur(40px) saturate(210%) contrast(80%) brightness(108%);
+  -webkit-backdrop-filter: blur(60px) blur(40px) saturate(210%) contrast(80%) brightness(108%);
+  
+  border: 1px solid rgba(12, 14, 18, 0.08);
+  box-shadow:
+    0 16px 36px -4px rgba(12, 14, 18, 0.1),
+    0 4px 12px -2px rgba(12, 14, 18, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+}
+
+@keyframes applePopoverEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .apple-popover-profile {
@@ -8190,9 +8246,9 @@ button:active,
   align-items: center;
   gap: 12px;
   padding: 8px 10px;
-  border-radius: 12px;
+  border-radius: 8px;
   text-decoration: none;
-  transition: background 0.18s ease, transform 0.18s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .apple-popover-profile.clickable {
@@ -8200,16 +8256,16 @@ button:active,
 }
 
 .apple-popover-profile.clickable:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(12, 14, 18, 0.05);
 }
 
 .apple-popover-profile.clickable:active {
-  transform: scale(0.98);
+  transform: scale(0.99);
 }
 
 .apple-popover-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: #0c0e12;
   color: #ffffff;
@@ -8217,7 +8273,7 @@ button:active,
   align-items: center;
   justify-content: center;
   font-family: var(--font-brand);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -8229,7 +8285,7 @@ button:active,
 
 .apple-popover-name {
   font-family: var(--font-brand);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
   color: #0c0e12;
   margin: 0;
@@ -8261,8 +8317,8 @@ button:active,
 
 .apple-popover-divider {
   height: 1px;
-  background: rgba(0, 0, 0, 0.06);
-  margin: 6px 0;
+  background: rgba(12, 14, 18, 0.07);
+  margin: 5px 2px;
 }
 
 .apple-popover-actions {
@@ -8275,23 +8331,28 @@ button:active,
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 9px 10px;
-  border-radius: 10px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 8px;
   background: transparent;
   border: none;
   font-family: var(--font-ui);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
   color: #1f2937;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
   text-align: left;
 }
 
 .apple-popover-item:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(12, 14, 18, 0.05);
   color: #0c0e12;
+}
+
+.apple-popover-item:active {
+  transform: scale(0.99);
 }
 
 .apple-popover-item.logout {
@@ -8300,7 +8361,7 @@ button:active,
 }
 
 .apple-popover-item.logout:hover {
-  background: #fef2f2;
+  background: rgba(220, 38, 38, 0.08);
   color: #b91c1c;
 }
 
@@ -13474,6 +13535,25 @@ select {
   background: var(--store-ink);
   color: #fff;
   box-shadow: none;
+}
+
+.apple-google-btn {
+  min-height: 48px;
+  border: 1px solid #d6d7d3;
+  border-radius: 2px;
+  background: #fff;
+  color: var(--store-ink);
+  box-shadow: none;
+  font-family: var(--font-brand);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.apple-google-btn:hover {
+  background: #fafaf9;
+  border-color: var(--store-ink);
+  color: var(--store-ink);
 }
 
 .apple-auth-page {

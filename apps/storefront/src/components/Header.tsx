@@ -20,10 +20,9 @@ import {
   ArrowRight,
   Heart,
   Settings,
-  ChevronRight,
-  MapPin
+  ChevronRight
 } from 'lucide-react'
-import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore, useFavoriteStore, useOnboardingStore } from '@/lib/store'
+import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore, useFavoriteStore } from '@/lib/store'
 import { DEFAULT_NAV_LINKS, type NavigationItem, type Fit, PRODUCTS } from '@/lib/constants'
 import { searchProducts } from '@/lib/utils'
 import UserOrdersModal from '@/components/UserOrdersModal'
@@ -395,18 +394,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
                           <Sparkles className="h-4 w-4 mr-2.5 text-amber-600" />
                           <span>Fit &amp; Size Preferences</span>
                         </Link>
-
-                        <button
-                          type="button"
-                          className="apple-popover-item"
-                          onClick={() => {
-                            setUserMenuOpen(false)
-                            useOnboardingStore.getState().openOnboarding(1)
-                          }}
-                        >
-                          <MapPin className="h-4 w-4 mr-2.5 text-indigo-600" />
-                          <span>Onboarding &amp; Setup</span>
-                        </button>
 
                         {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (
                           <a

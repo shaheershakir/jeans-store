@@ -115,6 +115,8 @@ export default function CheckoutClient() {
   const [showAddressPicker, setShowAddressPicker] = useState(false)
   const [saveToProfile, setSaveToProfile] = useState(false)
   const [isManuallyEdited, setIsManuallyEdited] = useState(false)
+  const [pincodeLoading, setPincodeLoading] = useState(false)
+  const [pincodeDetected, setPincodeDetected] = useState<string | null>(null)
 
   const count = cartCount(items)
   const subtotal = deliveryQuote?.subtotal ?? cartSubtotal(items)
@@ -134,6 +136,9 @@ export default function CheckoutClient() {
     setSelectedAddressId(addr.id)
     setIsAutofilled(true)
     setIsManuallyEdited(false)
+    if (addr.state) {
+      setPincodeDetected(addr.city ? `${addr.city}, ${addr.state}` : addr.state)
+    }
   }, [])
 
   useEffect(() => {
@@ -208,6 +213,41 @@ export default function CheckoutClient() {
     setIsManuallyEdited(true)
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
+  }
+
+  async function handlePincodeLookup(pin: string) {
+    const cleanPin = pin.replace(/\D/g, '').slice(0, 6)
+    handleFieldChange('pincode', cleanPin)
+
+    if (cleanPin.length === 6) {
+      setPincodeLoading(true)
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${cleanPin}`)
+        const data = await res.json()
+        if (Array.isArray(data) && data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
+          const po = data[0].PostOffice[0]
+          const district = po.District || po.Name || ''
+          const state = po.State || ''
+          setForm((prev) => ({
+            ...prev,
+            pincode: cleanPin,
+            city: prev.city.trim() ? prev.city : district,
+            state: state
+          }))
+          setPincodeDetected(district ? `${district}, ${state}` : state)
+          setErrors((prev) => ({ ...prev, pincode: undefined, state: undefined }))
+        } else {
+          setPincodeDetected(null)
+          setErrors((prev) => ({ ...prev, pincode: 'Invalid PIN code or location not found' }))
+        }
+      } catch {
+        setPincodeDetected(null)
+      } finally {
+        setPincodeLoading(false)
+      }
+    } else {
+      setPincodeDetected(null)
     }
   }
 
@@ -775,13 +815,45 @@ export default function CheckoutClient() {
 
               <div className="form-row form-row-3">
                 <div className="field-group">
+                  <label htmlFor="pincode">PIN / ZIP Code *</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      id="pincode"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      value={form.pincode}
+                      onChange={(e) => handlePincodeLookup(e.target.value)}
+                      placeholder="e.g. 682001"
+                      className={errors.pincode ? 'has-error' : ''}
+                    />
+                    {pincodeLoading && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          right: '12px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          fontSize: '11px',
+                          color: 'var(--store-muted, #71717a)'
+                        }}
+                      >
+                        Locating…
+                      </span>
+                    )}
+                  </div>
+                  {errors.pincode && <span className="error-text">{errors.pincode}</span>}
+                </div>
+
+                <div className="field-group">
                   <label htmlFor="city">City *</label>
                   <input
                     id="city"
                     type="text"
                     value={form.city}
                     onChange={(e) => handleFieldChange('city', e.target.value)}
-                    placeholder="Mumbai"
+                    placeholder="City / District"
                     className={errors.city ? 'has-error' : ''}
                   />
                   {errors.city && <span className="error-text">{errors.city}</span>}
@@ -794,26 +866,19 @@ export default function CheckoutClient() {
                     type="text"
                     value={form.state}
                     onChange={(e) => handleFieldChange('state', e.target.value)}
-                    placeholder="Select location (e.g. Kerala, Maharashtra)"
+                    placeholder="State"
                     className={errors.state ? 'has-error' : ''}
                   />
                   {errors.state && <span className="error-text">{errors.state}</span>}
                 </div>
-
-                <div className="field-group">
-                  <label htmlFor="pincode">PIN Code *</label>
-                  <input
-                    id="pincode"
-                    type="text"
-                    maxLength={6}
-                    value={form.pincode}
-                    onChange={(e) => handleFieldChange('pincode', e.target.value.replace(/\D/g, ''))}
-                    placeholder="400050"
-                    className={errors.pincode ? 'has-error' : ''}
-                  />
-                  {errors.pincode && <span className="error-text">{errors.pincode}</span>}
-                </div>
               </div>
+
+              {pincodeDetected && (
+                <div style={{ margin: '-4px 0 16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#047857' }}>
+                  <span>✓</span>
+                  <span>Detected Location: <strong>{pincodeDetected}</strong></span>
+                </div>
+              )}
 
               <div className="form-row">
                 <div className="field-group">
@@ -922,13 +987,13 @@ export default function CheckoutClient() {
                 <span>
                   {isProcessing ? 'Processing Order...' : 'Place you order'}
                 </span>
-                <span>{deliveryQuote ? `${formatPrice(total)} ↗` : quoteLoading ? 'Calculating…' : 'Select delivery location'}</span>
+                <span>{deliveryQuote ? `${formatPrice(total)} ↗` : quoteLoading ? 'Calculating…' : 'Enter PIN code'}</span>
               </button>
 
               <p className="submit-footnote">
                 {paymentMethod === 'razorpay'
-                  ? 'Your transaction is secured by Razorpay. Delivery is charged by destination and cart weight.'
-                  : 'Pay upon delivery. Delivery charges are calculated by destination and cart weight.'}
+                  ? 'Your transaction is secured by Razorpay. Delivery is charged by destination.'
+                  : 'Pay upon delivery. Delivery charges are calculated by destination.'}
               </p>
             </div>
           </form>
@@ -973,7 +1038,7 @@ export default function CheckoutClient() {
                 </div>
                 <div className="total-row">
                   <span>Delivery charge</span>
-                  <span>{deliveryQuote ? formatPrice(shipping) : quoteLoading ? 'Calculating…' : 'Select location'}</span>
+                  <span>{deliveryQuote ? formatPrice(shipping) : quoteLoading ? 'Calculating…' : 'Enter PIN code'}</span>
                 </div>
                 <div className="total-row total-row-final">
                   <span>{deliveryQuote ? 'Order total' : 'Estimated subtotal'}</span>

@@ -6,7 +6,7 @@ import HomepageClient from '@/components/HomepageClient'
 export const metadata: Metadata = {
   title: 'TEESGARAGE — T-Shirts & Bottomwear',
   description:
-    'Tees, henleys, trackpants, and sweatpants made for everyday wear. Delivery is charged by location and parcel weight.',
+    'Tees, henleys, trackpants, and sweatpants made for everyday wear. Delivery is calculated by location.',
 }
 
 export default async function HomePage() {

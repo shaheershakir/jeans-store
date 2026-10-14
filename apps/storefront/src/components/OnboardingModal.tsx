@@ -113,6 +113,7 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
     step,
     hasCompletedOnboarding,
     hasSkippedOnboarding,
+    hasPromptedAfterRegister,
     closeOnboarding,
     completeOnboarding,
     skipOnboarding,
@@ -160,6 +161,15 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
       setPhone(user.phone)
     }
   }, [user, fullName, phone])
+
+  useEffect(() => {
+    if (standalone && mounted && (hasCompletedOnboarding || hasSkippedOnboarding || hasPromptedAfterRegister)) {
+      const redirect = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('redirect') || '/shop'
+        : '/shop'
+      router.replace(redirect)
+    }
+  }, [standalone, mounted, hasCompletedOnboarding, hasSkippedOnboarding, hasPromptedAfterRegister, router])
 
   const handleGlobalSkip = React.useCallback(() => {
     skipOnboarding()
@@ -232,7 +242,8 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
 
   if (!mounted) return null
   if (!standalone && pathname === '/onboarding') return null
-  if (!isOpen && !standalone) return null
+  if (!standalone && (!isOpen || hasCompletedOnboarding || hasSkippedOnboarding || hasPromptedAfterRegister)) return null
+  if (standalone && (hasCompletedOnboarding || hasSkippedOnboarding || hasPromptedAfterRegister)) return null
 
   const content = (
     <div className={`onboarding-modal-card ${standalone ? 'standalone' : ''}`}>

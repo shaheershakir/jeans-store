@@ -1012,7 +1012,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   announcement: {
     enabled: true,
     messages: [
-      '📦 Paid delivery calculated by destination and parcel weight',
+      '📦 Paid delivery calculated by destination',
       '🔄 7-Day doorstep exchanges — no questions asked',
       '🏭 24h dispatch from Kerala',
       '💳 Cash on delivery available across India'
@@ -1189,7 +1189,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   trust_bar: {
     enabled: true,
     items: [
-      { id: '1', title: 'Paid delivery by destination and weight', icon: 'truck' },
+      { id: '1', title: 'Paid delivery calculated by destination', icon: 'truck' },
       { id: '2', title: '7-day doorstep exchange', icon: 'repeat' },
       { id: '3', title: '24h dispatch from Mumbai', icon: 'package' },
       { id: '4', title: 'Secure payments', icon: 'shield' }
