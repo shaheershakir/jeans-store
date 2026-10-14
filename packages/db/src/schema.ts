@@ -105,6 +105,9 @@ export interface ShippingRate {
   baseCharge: number
   additionalWeightGrams: number
   additionalCharge: number
+  estimatedDaysMin?: number
+  estimatedDaysMax?: number
+  exactDeliveryDate?: string
 }
 
 export interface ShippingRates {

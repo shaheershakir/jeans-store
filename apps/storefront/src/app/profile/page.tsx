@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -807,7 +807,7 @@ function ProfileContent() {
                       </div>
 
                       <p className="font-ui text-xs text-zinc-700 leading-relaxed mb-6">
-                        {addr.addressLine}, {addr.city}, {addr.state} —{' '}
+                        {addr.addressLine}, {addr.place ? `${addr.place}, ` : ''}{addr.district || addr.city}, {addr.state} —{' '}
                         <strong className="text-zinc-900">{addr.pincode}</strong>
                       </p>
 

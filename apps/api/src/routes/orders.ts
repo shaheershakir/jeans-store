@@ -6,7 +6,7 @@ import { verifyAdminAuth } from '../middleware/auth.js'
 import { razorpayService } from '../services/razorpay.js'
 import { logger } from '../lib/logger.js'
 import { productStore } from '../store/productStore.js'
-import { calculateShipping, getShippingRates } from '../services/shipping.js'
+import { calculateShipping, getShippingRates, getDeliveryEstimation } from '../services/shipping.js'
 import { verifyCloudIamToken } from '../services/cloudIam.js'
 import type { CalculatedOrder, CreateOrder } from '../schemas/order.js'
 
@@ -34,14 +34,19 @@ orderRouter.get('/api/orders/razorpay/config', (_req: Request, res: Response) =>
 const createRazorpayOrderSchema = z.object({
   currency: z.string().default('INR'),
   orderNumber: z.string().min(1),
-  state: z.string().min(1),
+  state: z.string().default(''),
+  pincode: z.string().optional(),
   items: z.array(z.object({ id: z.number(), variantId: z.number().int().positive().optional(), size: z.string(), quantity: z.number().int().positive() })).min(1),
   customerName: z.string().optional(),
   customerEmail: z.string().optional(),
   customerPhone: z.string().optional()
 })
 
-async function calculateCheckout(itemsRequest: CreateOrder['items'], state: string): Promise<Pick<CalculatedOrder, 'items' | 'subtotal' | 'shipping' | 'total'> & { weightGrams: number }> {
+async function calculateCheckout(
+  itemsRequest: CreateOrder['items'],
+  state: string,
+  pincode?: string
+): Promise<Pick<CalculatedOrder, 'items' | 'subtotal' | 'shipping' | 'total'> & { weightGrams: number; deliveryEstimation: ReturnType<typeof getDeliveryEstimation> }> {
   let subtotal = 0
   let weightGrams = 0
   const items: CalculatedOrder['items'] = []
@@ -79,34 +84,44 @@ async function calculateCheckout(itemsRequest: CreateOrder['items'], state: stri
   }
 
   const rates = await getShippingRates()
-  const shipping = calculateShipping(weightGrams, state, rates)
-  return { items, subtotal, shipping, total: subtotal + shipping, weightGrams }
+  const shipping = calculateShipping(weightGrams, state, rates, pincode)
+  const deliveryEstimation = getDeliveryEstimation(state, rates, pincode)
+  return { items, subtotal, shipping, total: subtotal + shipping, weightGrams, deliveryEstimation }
 }
 
 async function calculateOrder(input: CreateOrder): Promise<CalculatedOrder> {
-  const calculated = await calculateCheckout(input.items, input.state)
+  const calculated = await calculateCheckout(input.items, input.state, (input as { pincode?: string }).pincode)
   return { ...input, ...calculated }
 }
 
 const quoteSchema = z.object({
-  state: z.string().trim().min(1).max(100),
+  state: z.string().trim().max(100).optional().default(''),
+  pincode: z.string().trim().max(10).optional().default(''),
   items: z.array(z.object({
     id: z.number(),
     variantId: z.number().int().positive().optional(),
     size: z.string().min(1),
     quantity: z.number().int().positive().max(50)
   })).min(1)
+}).refine((data) => data.state.length > 0 || data.pincode.replace(/\D/g, '').length === 6, {
+  message: 'A delivery state or 6-digit PIN code is required.'
 })
 
 orderRouter.post('/api/orders/quote', async (req: Request, res: Response) => {
   const parsed = quoteSchema.safeParse(req.body)
   if (!parsed.success) {
-    res.status(400).json({ error: 'A delivery state and valid cart items are required.' })
+    res.status(400).json({ error: 'A delivery state or 6-digit PIN code and valid cart items are required.' })
     return
   }
   try {
-    const quote = await calculateCheckout(parsed.data.items, parsed.data.state)
-    res.json({ subtotal: quote.subtotal, shipping: quote.shipping, total: quote.total, weightGrams: quote.weightGrams })
+    const quote = await calculateCheckout(parsed.data.items, parsed.data.state, parsed.data.pincode)
+    res.json({
+      subtotal: quote.subtotal,
+      shipping: quote.shipping,
+      total: quote.total,
+      weightGrams: quote.weightGrams,
+      deliveryEstimation: quote.deliveryEstimation
+    })
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : 'Unable to quote this cart.' })
   }
@@ -123,8 +138,8 @@ orderRouter.post('/api/orders/razorpay/create-order', async (req: Request, res: 
   }
 
   try {
-    const { currency, orderNumber, customerName, customerEmail, customerPhone, state, items } = parsed.data
-    const quote = await calculateCheckout(items, state)
+    const { currency, orderNumber, customerName, customerEmail, customerPhone, state, pincode, items } = parsed.data
+    const quote = await calculateCheckout(items, state, pincode)
     const amountInPaise = Math.round(quote.total * 100)
 
     const rzpOrder = await razorpayService.createOrder({

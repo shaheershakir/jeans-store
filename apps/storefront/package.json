@@ -13,6 +13,7 @@
     "@jeans-store/shared": "*",
     "@jeans-store/validators": "*",
     "@sentry/nextjs": "^10.73.0",
+    "date-fns": "^4.4.0",
     "lucide-react": "^1.49.0",
     "next": "15.5.24",
     "react": "^19.2.8",

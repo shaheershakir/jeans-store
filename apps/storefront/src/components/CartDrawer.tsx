@@ -299,7 +299,7 @@ export default function CartDrawer() {
             >
               Proceed to Checkout <i>↗</i>
             </Link>
-            <p className="cart-guarantee">✦ Free 7-day exchanges · COD available across India</p>
+            <p className="cart-guarantee">✦ Free 7-day exchanges · Secure Razorpay payment</p>
           </div>
         )}
       </div>

@@ -242,6 +242,8 @@ export interface UserAddress {
   fullName: string
   phone: string
   addressLine: string
+  place?: string
+  district?: string
   city: string
   state: string
   pincode: string

@@ -311,3 +311,26 @@ export interface HomepageConfig {
     showFilters: boolean
   }
 }
+
+export interface ShippingRate {
+  baseWeightGrams: number
+  baseCharge: number
+  additionalWeightGrams: number
+  additionalCharge: number
+  estimatedDaysMin?: number
+  estimatedDaysMax?: number
+  exactDeliveryDate?: string
+}
+
+export interface ShippingRates {
+  kerala: ShippingRate
+  restOfIndia: ShippingRate
+}
+
+export interface DeliveryEstimation {
+  minDays: number
+  maxDays: number
+  exactDeliveryDate?: string
+  zone: 'kerala' | 'restOfIndia'
+}
+
