@@ -223,6 +223,7 @@ jobs:
               --platform=managed \
               --allow-unauthenticated \
               --port=4000 \
+              --clear-secrets \
               --set-env-vars="${ENV_VARS}"
           fi
 

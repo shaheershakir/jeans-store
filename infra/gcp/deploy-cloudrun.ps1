@@ -75,6 +75,7 @@ function Deploy-Api {
       --platform=managed `
       --allow-unauthenticated `
       --port=4000 `
+      --clear-secrets `
       "--set-env-vars=$apiEnv"
   }
 }

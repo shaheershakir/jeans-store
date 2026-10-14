@@ -62,6 +62,7 @@ deploy_api() {
       --platform=managed \
       --allow-unauthenticated \
       --port=4000 \
+      --clear-secrets \
       --set-env-vars="${env_vars}"
   fi
 }
