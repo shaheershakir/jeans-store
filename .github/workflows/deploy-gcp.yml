@@ -147,20 +147,22 @@ jobs:
           ADMIN_EMAIL_VAL="${{ vars.ADMIN_EMAIL || secrets.ADMIN_EMAIL || 'admin@teesgarage.in' }}"
           ADMIN_NAME_VAL="${{ vars.ADMIN_NAME || secrets.ADMIN_NAME || 'Store administrator' }}"
           BUCKET_VAL="${{ vars.GCS_PRODUCT_IMAGES_BUCKET || secrets.GCS_PRODUCT_IMAGES_BUCKET || format('{0}-product-images', env.GCP_PROJECT_ID) }}"
-          GOOGLE_CLIENT_ID_VAL="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}"
+          GOOGLE_CLIENT_ID_VAL="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }}"
           GOOGLE_CLIENT_SECRET_VAL="${{ secrets.GOOGLE_CLIENT_SECRET || vars.GOOGLE_CLIENT_SECRET }}"
           RAZORPAY_KEY_ID_VAL="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID }}"
           RAZORPAY_KEY_SECRET_VAL="${{ secrets.RAZORPAY_KEY_SECRET || vars.RAZORPAY_KEY_SECRET }}"
           FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"
           ADMIN_URL_VAL="${{ vars.ADMIN_URL || secrets.ADMIN_URL }}"
 
+          STORE_URL=$(gcloud run services describe ${{ env.FRONTEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || true)
+          ADM_URL=$(gcloud run services describe ${{ env.ADMIN_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || true)
           if [ -z "$FRONTEND_URL_VAL" ]; then
-            FRONTEND_URL_VAL="https://${{ env.FRONTEND_SERVICE }}-${{ env.GCP_PROJECT_ID }}.${{ env.GAR_LOCATION }}.run.app"
+            FRONTEND_URL_VAL="${STORE_URL:-https://${{ env.FRONTEND_SERVICE }}-${{ env.GCP_PROJECT_ID }}.${{ env.GAR_LOCATION }}.run.app}"
           fi
           if [ -z "$ADMIN_URL_VAL" ]; then
-            ADMIN_URL_VAL="https://${{ env.ADMIN_SERVICE }}-${{ env.GCP_PROJECT_ID }}.${{ env.GAR_LOCATION }}.run.app"
+            ADMIN_URL_VAL="${ADM_URL:-https://${{ env.ADMIN_SERVICE }}-${{ env.GCP_PROJECT_ID }}.${{ env.GAR_LOCATION }}.run.app}"
           fi
-          CORS_VAL="${FRONTEND_URL_VAL},${ADMIN_URL_VAL},http://localhost:3000,http://localhost:3001"
+          CORS_VAL="${STORE_URL},${ADM_URL},${FRONTEND_URL_VAL},${ADMIN_URL_VAL},http://localhost:3000,http://localhost:3001"
 
           if [ "$USE_SM" = "true" ]; then
             echo "::notice::Deploying backend with Google Secret Manager bindings..."
@@ -307,7 +309,7 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_API_URL="${{ steps.backend_url.outputs.url }}" \
             --build-arg NEXT_PUBLIC_WHATSAPP_NUMBER="${{ vars.WHATSAPP_NUMBER || secrets.WHATSAPP_NUMBER }}" \
-            --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}" \
+            --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }}" \
             --build-arg NEXT_PUBLIC_SITE_URL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}" \
             -t "$IMAGE" -t "$LATEST" \
             -f apps/storefront/Dockerfile .
@@ -328,7 +330,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=3000 \
-            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_SITE_URL=${FRONTEND_URL_VAL}"
+            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }};NEXT_PUBLIC_SITE_URL=${FRONTEND_URL_VAL}"
 
   # -------------------------------------------------------------
   # 3. Admin Dashboard Service (Next.js 15)

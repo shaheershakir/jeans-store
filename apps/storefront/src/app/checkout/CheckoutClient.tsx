@@ -250,7 +250,7 @@ export default function CheckoutClient() {
     }
     if (!form.address.trim()) nextErrors.address = 'Street address is required'
     if (!form.city.trim()) nextErrors.city = 'City is required'
-    if (!form.state.trim()) nextErrors.state = 'State is required'
+    if (!form.state.trim()) nextErrors.state = 'Delivery location is required'
     if (!form.pincode.trim() || form.pincode.replace(/\D/g, '').length !== 6) {
       nextErrors.pincode = 'Valid 6-digit PIN code is required'
     }
@@ -304,7 +304,7 @@ export default function CheckoutClient() {
     e.preventDefault()
     if (!validate()) return
     if (!deliveryQuote) {
-      setPaymentError(quoteError || 'Enter a delivery state and wait for the delivery charge to calculate.')
+      setPaymentError(quoteError || 'Select a delivery location and wait for the delivery charge to calculate.')
       return
     }
 
@@ -788,13 +788,13 @@ export default function CheckoutClient() {
                 </div>
 
                 <div className="field-group">
-                  <label htmlFor="state">State *</label>
+                  <label htmlFor="state">Delivery Location *</label>
                   <input
                     id="state"
                     type="text"
                     value={form.state}
                     onChange={(e) => handleFieldChange('state', e.target.value)}
-                    placeholder="Maharashtra"
+                    placeholder="Select location (e.g. Kerala, Maharashtra)"
                     className={errors.state ? 'has-error' : ''}
                   />
                   {errors.state && <span className="error-text">{errors.state}</span>}
@@ -922,7 +922,7 @@ export default function CheckoutClient() {
                 <span>
                   {isProcessing ? 'Processing Order...' : 'Place you order'}
                 </span>
-                <span>{deliveryQuote ? `${formatPrice(total)} ↗` : quoteLoading ? 'Calculating…' : 'Enter delivery state'}</span>
+                <span>{deliveryQuote ? `${formatPrice(total)} ↗` : quoteLoading ? 'Calculating…' : 'Select delivery location'}</span>
               </button>
 
               <p className="submit-footnote">
@@ -973,7 +973,7 @@ export default function CheckoutClient() {
                 </div>
                 <div className="total-row">
                   <span>Delivery charge</span>
-                  <span>{deliveryQuote ? formatPrice(shipping) : quoteLoading ? 'Calculating…' : 'Enter state'}</span>
+                  <span>{deliveryQuote ? formatPrice(shipping) : quoteLoading ? 'Calculating…' : 'Select location'}</span>
                 </div>
                 <div className="total-row total-row-final">
                   <span>{deliveryQuote ? 'Order total' : 'Estimated subtotal'}</span>

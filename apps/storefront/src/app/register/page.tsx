@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   Check
 } from 'lucide-react'
-import { signUp, signIn, googleAuth, getGoogleOAuthUrl } from '@/lib/auth'
+import { signUp, signIn, googleAuth, getGoogleOAuthUrl, getGoogleClientId } from '@/lib/auth'
 import { useAuthStore, useUIStore, useOnboardingStore } from '@/lib/store'
 
 function RegisterForm() {
@@ -115,7 +115,7 @@ function RegisterForm() {
   // Initialize Google Identity Services (One Tap & Credential API) if available
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
+    const clientId = getGoogleClientId()
     if (!clientId) return
 
     const handleCredentialResponse = async (response: any) => {
@@ -382,7 +382,7 @@ function RegisterForm() {
           </button>
         </form>
 
-        {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && <>
+        {Boolean(getGoogleClientId()) && <>
         <div className="apple-auth-divider">
           <span>or sign up with</span>
         </div>

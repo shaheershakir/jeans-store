@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { cartCount, cartSubtotal, useCartStore, useUIStore } from '@/lib/store'
+import { cartCount, cartSubtotal, useCartStore, useUIStore, useAuthStore } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
 
 const STATES = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Puducherry']
@@ -17,6 +17,8 @@ export default function CartDrawer() {
   const closeOverlay = useUIStore((state) => state.closeOverlay)
   const updateQty = useCartStore((state) => state.updateQty)
   const removeItem = useCartStore((state) => state.removeItem)
+  const addresses = useAuthStore((state) => state.addresses)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [deliveryState, setDeliveryState] = useState('')
   const [quote, setQuote] = useState<DeliveryQuote | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
@@ -25,7 +27,17 @@ export default function CartDrawer() {
   useEffect(() => {
     void useCartStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
+    void useAuthStore.persist.rehydrate()
   }, [])
+
+  useEffect(() => {
+    if (!deliveryState && addresses && addresses.length > 0) {
+      const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0]
+      if (defaultAddr?.state) {
+        setDeliveryState(defaultAddr.state)
+      }
+    }
+  }, [addresses, deliveryState])
 
   useEffect(() => {
     if (!deliveryState || items.length === 0) {
@@ -79,14 +91,62 @@ export default function CartDrawer() {
         </div>
 
         <div className="cart-delivery-note">
-          <label htmlFor="cart-delivery-state" className="cart-delivery-note-text">Delivery is paid and based on location and total parcel weight.</label>
-          <select id="cart-delivery-state" value={deliveryState} onChange={(event) => setDeliveryState(event.target.value)} className="mt-2 h-10 w-full rounded-md border border-line bg-surface px-3 text-sm text-ink">
-            <option value="">Choose delivery state to calculate</option>
-            {STATES.map((state) => <option key={state} value={state}>{state}</option>)}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-2)' }}>
+              Delivery Location
+            </span>
+            {addresses && addresses.length > 0 ? (
+              <Link
+                href="/profile?tab=addresses"
+                onClick={closeOverlay}
+                style={{ fontSize: '12px', color: 'var(--ink-3)', textDecoration: 'underline', textUnderlineOffset: '2px' }}
+              >
+                Saved address
+              </Link>
+            ) : (
+              <Link
+                href={isAuthenticated ? '/profile?tab=addresses' : '/login?redirect=/profile'}
+                onClick={closeOverlay}
+                style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink)', textDecoration: 'none' }}
+              >
+                + Add location
+              </Link>
+            )}
+          </div>
+          <select
+            id="cart-delivery-state"
+            value={deliveryState}
+            onChange={(event) => setDeliveryState(event.target.value)}
+            style={{
+              height: '40px',
+              width: '100%',
+              borderRadius: '6px',
+              border: '1px solid var(--line)',
+              background: 'var(--surface)',
+              padding: '0 12px',
+              fontSize: '13px',
+              color: 'var(--ink)',
+              fontFamily: 'inherit'
+            }}
+          >
+            <option value="">Select location</option>
+            {STATES.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
           </select>
-          {quoteLoading && <p className="mt-1 text-xs text-ink-3">Calculating delivery…</p>}
-          {quote && <p className="mt-1 text-xs text-ink-2">Estimated parcel weight: {quote.weightGrams.toLocaleString('en-IN')} g</p>}
-          {quoteError && <p role="alert" className="mt-1 text-xs text-danger">{quoteError}</p>}
+          {quoteLoading && <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'var(--ink-3)' }}>Calculating delivery…</p>}
+          {quote && (
+            <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'var(--ink-2)' }}>
+              Estimated parcel weight: {quote.weightGrams.toLocaleString('en-IN')} g
+            </p>
+          )}
+          {quoteError && (
+            <p role="alert" style={{ margin: '6px 0 0', fontSize: '11px', color: '#dc2626' }}>
+              {quoteError}
+            </p>
+          )}
         </div>
 
         <div className="cart-items-list">
@@ -147,7 +207,7 @@ export default function CartDrawer() {
               </div>
               <div className="summary-line">
                 <span>Delivery charge</span>
-                <span>{quote ? formatPrice(quote.shipping) : deliveryState ? 'Calculating…' : 'Choose state'}</span>
+                <span>{quote ? formatPrice(quote.shipping) : deliveryState ? 'Calculating…' : 'Select location'}</span>
               </div>
               <div className="summary-line total-line">
                 <span>{quote ? 'Estimated total' : 'Subtotal before delivery'}</span>

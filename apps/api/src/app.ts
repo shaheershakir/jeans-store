@@ -29,7 +29,8 @@ export function buildApp(options: BuildAppOptions = {}): Application {
   app.use(
     helmet({
       contentSecurityPolicy: false,
-      crossOriginEmbedderPolicy: false
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' }
     })
   )
 
@@ -53,11 +54,14 @@ export function buildApp(options: BuildAppOptions = {}): Application {
       origin: (origin, callback) => {
         if (!origin) return callback(null, true)
 
-        // In development/test environments, allow any localhost or 127.0.0.1 port
-        if (process.env.NODE_ENV !== 'production') {
-          if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-            return callback(null, true)
-          }
+        // In development/test environments or local testing against remote API, allow localhost
+        if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+          return callback(null, true)
+        }
+
+        // Allow any Google Cloud Run domain (*.run.app)
+        if (/^https:\/\/(teesgarage-[a-z0-9-]+|[a-z0-9-]+)\.[a-z0-9-]+\.run\.app$/.test(origin) || /^https:\/\/.*\.run\.app$/.test(origin)) {
+          return callback(null, true)
         }
 
         const allowed = options.corsOrigin ?? true
@@ -69,7 +73,7 @@ export function buildApp(options: BuildAppOptions = {}): Application {
           if (allowed.includes('*') || allowed.includes(origin)) {
             return callback(null, true)
           }
-        } else if (typeof allowed === 'string' && allowed === origin) {
+        } else if (typeof allowed === 'string' && (allowed === origin || allowed === '*')) {
           return callback(null, true)
         }
 
@@ -89,6 +93,17 @@ export function buildApp(options: BuildAppOptions = {}): Application {
   if (options.enableLogging !== false) {
     app.use(pinoHttp({ logger }))
   }
+
+  // Root information endpoint
+  app.get('/', (_req: Request, res: Response) => {
+    res.json({
+      name: 'TEESGARAGE Backend API',
+      status: 'ok',
+      version: '1.0.0',
+      health: '/health',
+      docs: '/api/products'
+    })
+  })
 
   // Health check for Cloud Run / load balancers
   app.get('/health', (_req: Request, res: Response) => {

@@ -15,7 +15,7 @@ export interface AuthSuccessPayload {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : '')
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com'
 
 async function postAuth(path: string, payload: unknown, failureMessage: string): Promise<AuthSuccessPayload> {
   if (!API_BASE) throw new Error('Customer authentication is not configured for this storefront.')
