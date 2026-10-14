@@ -5,18 +5,18 @@ on:
     branches:
       - main
     paths:
-      - 'apps/**'
-      - 'packages/**'
-      - '.github/workflows/deploy-gcp.yml'
-      - 'package.json'
-      - 'turbo.json'
-      - 'package-lock.json'
+      - "apps/**"
+      - "packages/**"
+      - ".github/workflows/deploy-gcp.yml"
+      - "package.json"
+      - "turbo.json"
+      - "package-lock.json"
   workflow_dispatch:
     inputs:
       service:
-        description: 'Service to deploy'
+        description: "Service to deploy"
         required: true
-        default: 'all'
+        default: "all"
         type: choice
         options:
           - all
@@ -148,7 +148,7 @@ jobs:
           ADMIN_NAME_VAL="${{ vars.ADMIN_NAME || secrets.ADMIN_NAME || 'Store administrator' }}"
           BUCKET_VAL="${{ vars.GCS_PRODUCT_IMAGES_BUCKET || secrets.GCS_PRODUCT_IMAGES_BUCKET || format('{0}-product-images', env.GCP_PROJECT_ID) }}"
           GOOGLE_CLIENT_ID_VAL="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }}"
-          GOOGLE_CLIENT_SECRET_VAL="${{ secrets.GOOGLE_CLIENT_SECRET || vars.GOOGLE_CLIENT_SECRET }}"
+          GOOGLE_CLIENT_SECRET_VAL="${{ secrets.GOOGLE_CLIENT_SECRET || vars.GOOGLE_CLIENT_SECRET || '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' }}"
           RAZORPAY_KEY_ID_VAL="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID }}"
           RAZORPAY_KEY_SECRET_VAL="${{ secrets.RAZORPAY_KEY_SECRET || vars.RAZORPAY_KEY_SECRET }}"
           FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"

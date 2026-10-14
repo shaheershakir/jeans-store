@@ -28,12 +28,18 @@ function CallbackHandler() {
 
     if (urlError) {
       setStatus('error')
-      setError(
-        errorDescription ||
-          (urlError === 'access_denied'
-            ? 'Sign in was cancelled.'
-            : `Authentication error: ${urlError}`)
-      )
+      if (urlError === 'redirect_uri_mismatch') {
+        setError(
+          `Google OAuth Error: redirect_uri_mismatch. The redirect URI "${window.location.origin}/auth/callback" must be added to Authorized redirect URIs in Google Cloud Console.`
+        )
+      } else {
+        setError(
+          errorDescription ||
+            (urlError === 'access_denied'
+              ? 'Sign in was cancelled.'
+              : `Authentication error: ${urlError}`)
+        )
+      }
       return
     }
 
@@ -43,7 +49,8 @@ function CallbackHandler() {
       return
     }
 
-    const redirectUri = `${window.location.origin}/auth/callback`
+    const cleanOrigin = window.location.origin.replace(/\/+$/, '')
+    const redirectUri = `${cleanOrigin}/auth/callback`
 
     googleAuth({ code, redirectUri })
       .then((res) => {
@@ -89,9 +96,7 @@ function CallbackHandler() {
             <h2 className="text-lg font-semibold tracking-tight text-neutral-900 mb-1">
               Authenticating with Google
             </h2>
-            <p className="text-xs text-neutral-500">
-              Securing session and verifying identity...
-            </p>
+            <p className="text-xs text-neutral-500">Securing session and verifying identity...</p>
           </div>
         )}
 
@@ -103,9 +108,7 @@ function CallbackHandler() {
             <h2 className="text-lg font-semibold tracking-tight text-neutral-900 mb-1">
               Verified Successfully
             </h2>
-            <p className="text-xs text-neutral-500">
-              Redirecting you to your destination...
-            </p>
+            <p className="text-xs text-neutral-500">Redirecting you to your destination...</p>
           </div>
         )}
 
@@ -121,16 +124,10 @@ function CallbackHandler() {
               <p className="text-xs">{error}</p>
             </div>
             <div className="flex flex-col gap-2">
-              <Link
-                href="/login"
-                className="apple-auth-submit-btn text-center block text-xs"
-              >
+              <Link href="/login" className="apple-auth-submit-btn text-center block text-xs">
                 Return to Sign In
               </Link>
-              <Link
-                href="/"
-                className="apple-demo-fill-btn text-center block text-xs"
-              >
+              <Link href="/" className="apple-demo-fill-btn text-center block text-xs">
                 Back to Storefront
               </Link>
             </div>
@@ -150,4 +147,3 @@ export default function AuthCallbackPage() {
     </Suspense>
   )
 }
-

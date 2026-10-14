@@ -23,7 +23,8 @@
     "db:push": "turbo db:push --filter=@jeans-store/db",
     "db:seed": "turbo db:seed --filter=@jeans-store/db",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
+    "verify:oauth": "node scripts/verify-google-oauth.mjs"
   },
   "devDependencies": {
     "prettier": "^3.9.6",
