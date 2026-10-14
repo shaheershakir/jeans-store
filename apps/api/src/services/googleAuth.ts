@@ -1,13 +1,9 @@
-const GOOGLE_CLIENT_ID =
-  process.env.GOOGLE_CLIENT_ID?.trim() ||
-  "777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com";
-const GOOGLE_CLIENT_SECRET =
-  process.env.GOOGLE_CLIENT_SECRET?.trim() ||
-  "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";
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID?.trim() || ''
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET?.trim() || ''
 const GOOGLE_PROJECT_ID =
-  process.env.GCP_PROJECT_ID ||
-  process.env.GOOGLE_PROJECT_ID ||
-  "clothing-store-511300";
+  process.env.GCP_PROJECT_ID?.trim() ||
+  process.env.GOOGLE_PROJECT_ID?.trim() ||
+  ''
 
 export interface GoogleUserPayload {
   sub: string;

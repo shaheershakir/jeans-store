@@ -148,7 +148,7 @@ jobs:
           ADMIN_NAME_VAL="${{ vars.ADMIN_NAME || secrets.ADMIN_NAME || 'Store administrator' }}"
           BUCKET_VAL="${{ vars.GCS_PRODUCT_IMAGES_BUCKET || secrets.GCS_PRODUCT_IMAGES_BUCKET || format('{0}-product-images', env.GCP_PROJECT_ID) }}"
           GOOGLE_CLIENT_ID_VAL="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }}"
-          GOOGLE_CLIENT_SECRET_VAL="${{ secrets.GOOGLE_CLIENT_SECRET || vars.GOOGLE_CLIENT_SECRET || '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' }}"
+          GOOGLE_CLIENT_SECRET_VAL="${{ secrets.GOOGLE_CLIENT_SECRET || vars.GOOGLE_CLIENT_SECRET }}"
           RAZORPAY_KEY_ID_VAL="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID }}"
           RAZORPAY_KEY_SECRET_VAL="${{ secrets.RAZORPAY_KEY_SECRET || vars.RAZORPAY_KEY_SECRET }}"
           FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"
@@ -208,33 +208,19 @@ jobs:
             if [ -n "$GOOGLE_CLIENT_ID_VAL" ]; then
               ENV_VARS="${ENV_VARS};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID_VAL}"
             fi
-            if [ -n "$GOOGLE_CLIENT_SECRET_VAL" ]; then
+
+            SECRETS_FLAG=""
+            if gcloud secrets describe google-client-secret --project="${{ env.GCP_PROJECT_ID }}" >/dev/null 2>&1; then
+              SECRETS_FLAG="--set-secrets=GOOGLE_CLIENT_SECRET=google-client-secret:latest"
+            elif [ -n "$GOOGLE_CLIENT_SECRET_VAL" ]; then
               ENV_VARS="${ENV_VARS};GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET_VAL}"
             fi
+
             if [ -n "$RAZORPAY_KEY_ID_VAL" ]; then
               ENV_VARS="${ENV_VARS};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID_VAL}"
             fi
             if [ -n "$RAZORPAY_KEY_SECRET_VAL" ]; then
               ENV_VARS="${ENV_VARS};RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET_VAL}"
-            fi
-
-            # Resolve any type conflicts from previous Secret Manager bindings on Cloud Run
-            if gcloud run services describe ${{ env.BACKEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" >/dev/null 2>&1; then
-              LATEST_READY=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.latestReadyRevisionName)' 2>/dev/null || true)
-              if [ -z "$LATEST_READY" ]; then
-                echo "::notice::Cloud Run service has no ready revisions from prior failed attempts; resetting service for clean environment configuration..."
-                gcloud run services delete ${{ env.BACKEND_SERVICE }} \
-                  --project="${{ env.GCP_PROJECT_ID }}" \
-                  --region="${{ env.GAR_LOCATION }}" \
-                  --quiet 2>/dev/null || true
-              else
-                echo "::notice::Clearing old secret bindings from existing Cloud Run service..."
-                gcloud run services update ${{ env.BACKEND_SERVICE }} \
-                  --project="${{ env.GCP_PROJECT_ID }}" \
-                  --region="${{ env.GAR_LOCATION }}" \
-                  --clear-secrets \
-                  --quiet 2>/dev/null || true
-              fi
             fi
 
             gcloud run deploy ${{ env.BACKEND_SERVICE }} \
@@ -244,7 +230,8 @@ jobs:
               --platform=managed \
               --allow-unauthenticated \
               --port=4000 \
-              --set-env-vars="${ENV_VARS}"
+              --set-env-vars="${ENV_VARS}" \
+              ${SECRETS_FLAG}
           fi
 
   # -------------------------------------------------------------
