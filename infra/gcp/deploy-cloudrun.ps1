@@ -68,6 +68,16 @@ function Deploy-Api {
     if ($env:RAZORPAY_KEY_ID) { $apiEnv += ";RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID)" }
     if ($env:RAZORPAY_KEY_SECRET) { $apiEnv += ";RAZORPAY_KEY_SECRET=$($env:RAZORPAY_KEY_SECRET)" }
 
+    $serviceExists = gcloud run services describe teesgarage-backend --project=$Project --region=$Region --format='value(metadata.name)' 2>$null
+    if ($serviceExists) {
+      $latestReady = gcloud run services describe teesgarage-backend --project=$Project --region=$Region --format='value(status.latestReadyRevisionName)' 2>$null
+      if (-not $latestReady) {
+        gcloud run services delete teesgarage-backend --project=$Project --region=$Region --quiet 2>$null
+      } else {
+        gcloud run services update teesgarage-backend --project=$Project --region=$Region --clear-secrets --quiet 2>$null
+      }
+    }
+
     gcloud run deploy teesgarage-backend `
       --project=$Project `
       --image=$image `
@@ -75,7 +85,6 @@ function Deploy-Api {
       --platform=managed `
       --allow-unauthenticated `
       --port=4000 `
-      --clear-secrets `
       "--set-env-vars=$apiEnv"
   }
 }

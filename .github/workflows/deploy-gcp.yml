@@ -216,6 +216,25 @@ jobs:
               ENV_VARS="${ENV_VARS};RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET_VAL}"
             fi
 
+            # Resolve any type conflicts from previous Secret Manager bindings on Cloud Run
+            if gcloud run services describe ${{ env.BACKEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" >/dev/null 2>&1; then
+              LATEST_READY=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.latestReadyRevisionName)' 2>/dev/null || true)
+              if [ -z "$LATEST_READY" ]; then
+                echo "::notice::Cloud Run service has no ready revisions from prior failed attempts; resetting service for clean environment configuration..."
+                gcloud run services delete ${{ env.BACKEND_SERVICE }} \
+                  --project="${{ env.GCP_PROJECT_ID }}" \
+                  --region="${{ env.GAR_LOCATION }}" \
+                  --quiet 2>/dev/null || true
+              else
+                echo "::notice::Clearing old secret bindings from existing Cloud Run service..."
+                gcloud run services update ${{ env.BACKEND_SERVICE }} \
+                  --project="${{ env.GCP_PROJECT_ID }}" \
+                  --region="${{ env.GAR_LOCATION }}" \
+                  --clear-secrets \
+                  --quiet 2>/dev/null || true
+              fi
+            fi
+
             gcloud run deploy ${{ env.BACKEND_SERVICE }} \
               --project="${{ env.GCP_PROJECT_ID }}" \
               --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:${{ github.sha }}" \
@@ -223,7 +242,6 @@ jobs:
               --platform=managed \
               --allow-unauthenticated \
               --port=4000 \
-              --clear-secrets \
               --set-env-vars="${ENV_VARS}"
           fi
 

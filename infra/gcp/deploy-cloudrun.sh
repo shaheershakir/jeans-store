@@ -55,6 +55,15 @@ deploy_api() {
     if [[ -n "${RAZORPAY_KEY_ID:-}" ]]; then env_vars+=";RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}"; fi
     if [[ -n "${RAZORPAY_KEY_SECRET:-}" ]]; then env_vars+=";RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}"; fi
 
+    if gcloud run services describe teesgarage-backend --project="${PROJECT}" --region="${REGION}" >/dev/null 2>&1; then
+      latest_ready=$(gcloud run services describe teesgarage-backend --project="${PROJECT}" --region="${REGION}" --format='value(status.latestReadyRevisionName)' 2>/dev/null || true)
+      if [[ -z "${latest_ready}" ]]; then
+        gcloud run services delete teesgarage-backend --project="${PROJECT}" --region="${REGION}" --quiet 2>/dev/null || true
+      else
+        gcloud run services update teesgarage-backend --project="${PROJECT}" --region="${REGION}" --clear-secrets --quiet 2>/dev/null || true
+      fi
+    fi
+
     gcloud run deploy teesgarage-backend \
       --project="${PROJECT}" \
       --image="${REGISTRY}/backend:${TAG}" \
@@ -62,7 +71,6 @@ deploy_api() {
       --platform=managed \
       --allow-unauthenticated \
       --port=4000 \
-      --clear-secrets \
       --set-env-vars="${env_vars}"
   fi
 }
