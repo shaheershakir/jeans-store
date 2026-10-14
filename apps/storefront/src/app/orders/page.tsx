@@ -18,6 +18,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { useCartStore, useUIStore, useAuthStore } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
+import { getProductUrl } from '@/lib/products'
 import { fetchCustomerOrders, isActiveCustomerOrder, type CustomerOrder, type CustomerOrderItem } from '@/lib/customerOrders'
 
 export default function OrdersPage() {
@@ -255,7 +256,7 @@ export default function OrdersPage() {
                           </div>
                           <div>
                             <Link
-                              href={`/product/${item.id}`}
+                              href={getProductUrl(item)}
                               className="teesgarage-order-item-title"
                             >
                               <span>{item.name}</span>
@@ -283,7 +284,7 @@ export default function OrdersPage() {
                           </button>
 
                           <Link
-                            href={`/product/${item.id}`}
+                            href={getProductUrl(item)}
                             className="teesgarage-btn-primary !py-2 !px-4 !text-xs"
                           >
                             <span>View Product</span>

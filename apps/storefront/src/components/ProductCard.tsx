@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Heart } from 'lucide-react'
 import type { Product } from '@/lib/constants'
 import { useCartStore, useUIStore, useFavoriteStore } from '@/lib/store'
-import { getAvailableProductSizes } from '@/lib/products'
+import { getAvailableProductSizes, getProductUrl } from '@/lib/products'
 
 export default function ProductCard({ product }: { product: Product }) {
   const addItem = useCartStore((state) => state.addItem)
@@ -77,7 +77,7 @@ export default function ProductCard({ product }: { product: Product }) {
           />
         </button>
 
-        <Link href={`/product/${product.id}`} className="product-image-link" aria-label={product.name}>
+        <Link href={getProductUrl(product)} className="product-image-link" aria-label={product.name}>
           <div className="image-wrapper">
             <Image
               src={product.img}
@@ -96,7 +96,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className="product-info-wrap">
         <div className="product-brand-name">{product.store && product.store.toLowerCase() === 'jean-store' ? 'JEAN-STORE' : 'TEESGARAGE'}</div>
 
-        <Link href={`/product/${product.id}`} className="product-title-link">
+        <Link href={getProductUrl(product)} className="product-title-link">
           <h3 className="product-title">{product.name}</h3>
         </Link>
 

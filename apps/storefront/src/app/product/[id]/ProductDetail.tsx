@@ -12,7 +12,7 @@ import SizeGuideModal from '@/components/SizeGuideModal'
 import ProductReviews from '@/components/ProductReviews'
 import RelatedProducts from '@/components/RelatedProducts'
 import StickyPdpBar from '@/components/StickyPdpBar'
-import { getAvailableProductSizes } from '@/lib/products'
+import { getAvailableProductSizes, getProductCheckoutUrl, getProductUrl } from '@/lib/products'
 
 const COLOR_HEX: Record<string, string> = {
   black: '#171717', white: '#f5f3ed', navy: '#1e3157', grey: '#85878b', gray: '#85878b',
@@ -145,8 +145,12 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   function handleBuyNow() {
     if (!availableSizes.includes(selectedSize)) return
-    addItem(product.id, selectedSize, product, selectedColor || undefined)
-    router.push('/checkout')
+    const checkoutUrl = getProductCheckoutUrl(product, {
+      size: selectedSize,
+      color: selectedColor || undefined,
+      qty: 1
+    })
+    router.push(checkoutUrl)
   }
 
   function handleSizeGuide(e: MouseEvent<HTMLAnchorElement>) {

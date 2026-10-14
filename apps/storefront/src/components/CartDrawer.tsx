@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { cartCount, cartSubtotal, useCartStore, useUIStore, useAuthStore } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
+import { getProductUrl } from '@/lib/products'
 
 const STATES = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Puducherry']
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
@@ -128,9 +129,24 @@ export default function CartDrawer() {
               Your Bag <span className="cart-count-badge">({cartCount(items)})</span>
             </h2>
           </div>
-          <button className="modal-close" type="button" aria-label="Close bag" onClick={closeOverlay}>
-            ✕
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <Link
+              href="/bag"
+              onClick={closeOverlay}
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: 'var(--ink-secondary, #3f4753)',
+                textDecoration: 'underline',
+                textUnderlineOffset: '3px'
+              }}
+            >
+              View Full Bag ↗
+            </Link>
+            <button className="modal-close" type="button" aria-label="Close bag" onClick={closeOverlay}>
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="cart-delivery-note">
@@ -240,11 +256,15 @@ export default function CartDrawer() {
           ) : (
             items.map((item) => (
               <div className="cart-item" key={`${item.id}-${item.variantId ?? item.size}`}>
-                <Image src={item.img} alt={item.name} width={68} height={84} className="cart-item-img" />
+                <Link href={getProductUrl(item)} onClick={closeOverlay}>
+                  <Image src={item.img} alt={item.name} width={68} height={84} className="cart-item-img" />
+                </Link>
                 <div className="cart-item-details">
                   <div className="cart-item-top">
                     <div>
-                      <h4 className="cart-item-title">{item.name}</h4>
+                      <Link href={getProductUrl(item)} onClick={closeOverlay}>
+                        <h4 className="cart-item-title">{item.name}</h4>
+                      </Link>
                       <p className="cart-item-spec">
                         {[item.color, item.fit ? `${item.fit} Fit` : null, `Size ${item.size}`].filter(Boolean).join(' · ')}
                       </p>
@@ -292,13 +312,40 @@ export default function CartDrawer() {
                 <span>{formatPrice(quote?.total ?? subtotal)}</span>
               </div>
             </div>
-            <Link
-              href="/checkout"
-              className="button primary checkout-btn"
-              onClick={closeOverlay}
-            >
-              Proceed to Checkout <i>↗</i>
-            </Link>
+            <div className="cart-footer-actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <Link
+                href="/bag/checkout"
+                className="button primary checkout-btn"
+                onClick={closeOverlay}
+              >
+                Proceed to Checkout <i>↗</i>
+              </Link>
+              <Link
+                href="/bag"
+                className="button secondary cart-view-bag-btn"
+                onClick={closeOverlay}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  width: '100%',
+                  padding: '11px 16px',
+                  background: 'var(--bone, #f8f8f6)',
+                  color: 'var(--ink, #0c0e12)',
+                  border: '1px solid var(--line-strong, #d1d5db)',
+                  borderRadius: '2px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  transition: 'background 0.15s ease'
+                }}
+              >
+                <span>View Shopping Bag</span>
+                <span style={{ fontSize: '11px', opacity: 0.7 }}>({cartCount(items)})</span>
+                <i>↗</i>
+              </Link>
+            </div>
             <p className="cart-guarantee">✦ Free 7-day exchanges · Secure Razorpay payment</p>
           </div>
         )}

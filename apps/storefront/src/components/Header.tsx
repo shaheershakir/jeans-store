@@ -25,6 +25,7 @@ import {
 import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore, useFavoriteStore } from '@/lib/store'
 import { DEFAULT_NAV_LINKS, type NavigationItem, type Fit, PRODUCTS } from '@/lib/constants'
 import { searchProducts } from '@/lib/utils'
+import { getProductUrl } from '@/lib/products'
 import UserOrdersModal from '@/components/UserOrdersModal'
 
 interface HeaderProps {
@@ -257,7 +258,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                       {matchingResults.map((product) => (
                         <Link
                           key={product.id}
-                          href={`/product/${product.id}`}
+                          href={getProductUrl(product)}
                           className="macy-search-result-item"
                           onClick={() => {
                             setIsSearchFocused(false)

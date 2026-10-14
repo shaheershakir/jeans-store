@@ -1,34 +1,15 @@
-import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import { getProduct, getProducts } from '@/lib/products'
-import ProductDetail from './ProductDetail'
+import { notFound, redirect } from 'next/navigation'
+import { getProduct, getProductSlug } from '@/lib/products'
 
-export async function generateStaticParams() {
-  const products = await getProducts()
-  return products.slice(0, 24).map((product) => ({ id: String(product.id) }))
-}
-
-export async function generateMetadata({
-  params,
+export default async function ProductRedirectPage({
+  params
 }: {
   params: Promise<{ id: string }>
-}): Promise<Metadata> {
-  const { id } = await params
-  const product = await getProduct(Number(id))
-  if (!product) {
-    return { title: 'Not found — TEESGARAGE' }
-  }
-  return {
-    title: `${product.name} — TEESGARAGE`,
-    description: product.desc
-  }
-}
-
-export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+}) {
   const { id } = await params
   const product = await getProduct(Number(id))
   if (!product) {
     notFound()
   }
-  return <ProductDetail product={product} />
+  redirect(`/${getProductSlug(product)}`)
 }

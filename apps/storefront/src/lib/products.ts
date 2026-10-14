@@ -67,3 +67,42 @@ export async function getProduct(id: number): Promise<Product | undefined> {
   const products = await getProducts()
   return products.find((p) => p.id === id)
 }
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+export function getProductSlug(product: { id: number; name: string }): string {
+  return slugify(product.name) || String(product.id)
+}
+
+export function getProductUrl(product: { id: number; name: string }): string {
+  return `/${getProductSlug(product)}`
+}
+
+export function getProductCheckoutUrl(
+  product: { id: number; name: string },
+  options?: { size?: string; color?: string; qty?: number }
+): string {
+  const base = `/${getProductSlug(product)}/checkout`
+  if (!options) return base
+  const params = new URLSearchParams()
+  if (options.size) params.set('size', options.size)
+  if (options.color) params.set('color', options.color)
+  if (options.qty && options.qty > 1) params.set('qty', String(options.qty))
+  const qs = params.toString()
+  return qs ? `${base}?${qs}` : base
+}
+
+export async function getProductBySlug(slug: string): Promise<Product | undefined> {
+  const products = await getProducts()
+  const cleanSlug = slug.toLowerCase().trim()
+  return products.find(
+    (p) => slugify(p.name) === cleanSlug || String(p.id) === cleanSlug
+  )
+}
+

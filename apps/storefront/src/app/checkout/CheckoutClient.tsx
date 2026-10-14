@@ -19,6 +19,24 @@ import {
 } from 'lucide-react'
 import { cartCount, cartSubtotal, useCartStore, useAuthStore, type UserAddress } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
+import type { Product } from '@/lib/constants'
+import { getProductSlug, getProductUrl, getAvailableProductSizes } from '@/lib/products'
+
+export type CheckoutMode =
+  | { type: 'bag' }
+  | {
+      type: 'product'
+      product: Product
+      initialSize?: string
+      initialColor?: string
+      initialQty?: number
+    }
+
+export interface CheckoutClientProps {
+  mode?: CheckoutMode
+  checkoutUrl?: string
+}
+
 
 declare global {
   interface Window {
@@ -143,11 +161,61 @@ function NetBankingIcon() {
   )
 }
 
-export default function CheckoutClient() {
+export default function CheckoutClient({ mode = { type: 'bag' }, checkoutUrl }: CheckoutClientProps) {
   const router = useRouter()
 
-  const items = useCartStore((state) => state.items)
+  const isProductMode = mode.type === 'product'
+  const product = isProductMode ? mode.product : null
+
+  const cartItems = useCartStore((state) => state.items)
   const clearCart = useCartStore((state) => state.clearCart)
+
+  const [productSize, setProductSize] = useState<string>(() => {
+    if (!product) return ''
+    if (mode.type === 'product' && mode.initialSize) return mode.initialSize
+    const available = getAvailableProductSizes(product)
+    return available[0] || (product.sizes?.[0] ? String(product.sizes[0]) : '')
+  })
+  const [productColor, setProductColor] = useState<string>(() => {
+    if (!product) return ''
+    if (mode.type === 'product' && mode.initialColor) return mode.initialColor
+    return product.color || ''
+  })
+  const [productQty, setProductQty] = useState<number>(() => {
+    if (mode.type === 'product' && mode.initialQty && mode.initialQty > 0) return mode.initialQty
+    return 1
+  })
+
+  const matchedVariant = useMemo(() => {
+    if (!product?.variants) return undefined
+    return product.variants.find(
+      (v) =>
+        v.status === 'Active' &&
+        String(v.size) === String(productSize) &&
+        (!productColor || v.color.toLowerCase() === productColor.toLowerCase())
+    )
+  }, [product, productSize, productColor])
+
+  const singleProductItems = useMemo(() => {
+    if (!product) return []
+    return [
+      {
+        id: product.id,
+        variantId: matchedVariant?.id,
+        name: product.name,
+        price: product.price,
+        priceNum: product.priceNum,
+        img: product.img,
+        size: productSize,
+        color: productColor,
+        wash: product.wash,
+        fit: product.fit,
+        qty: productQty
+      }
+    ]
+  }, [product, matchedVariant, productSize, productColor, productQty])
+
+  const items = isProductMode ? singleProductItems : cartItems
 
   const user = useAuthStore((state) => state.user)
   const authToken = useAuthStore((state) => state.token)
@@ -173,6 +241,10 @@ export default function CheckoutClient() {
   const [pincodeLoading, setPincodeLoading] = useState(false)
   const [pincodeDetected, setPincodeDetected] = useState<string | null>(null)
 
+  // Target URL to return to if redirected to login
+  const targetRedirect =
+    checkoutUrl || (isProductMode && product ? `/${getProductSlug(product)}/checkout` : '/bag/checkout')
+
   // Check if user has completed saved information (address, name, and phone number)
   const completedSavedAddress = useMemo(() => {
     if (!addresses || addresses.length === 0) return null
@@ -190,10 +262,11 @@ export default function CheckoutClient() {
   const hasSavedInfo = Boolean(completedSavedAddress)
   const [deliveryMode, setDeliveryMode] = useState<'saved' | 'new'>('saved')
 
-  const count = cartCount(items)
-  const subtotal = deliveryQuote?.subtotal ?? cartSubtotal(items)
+  const count = isProductMode ? productQty : cartCount(cartItems)
+  const subtotal = deliveryQuote?.subtotal ?? (isProductMode ? (product?.priceNum ?? 0) * productQty : cartSubtotal(cartItems))
   const shipping = deliveryQuote?.shipping ?? 0
   const total = deliveryQuote?.total ?? subtotal
+
 
   const applySavedAddress = useCallback((addr: UserAddress) => {
     const recipientName = addr.fullName?.trim() || user?.name?.trim() || ''
@@ -506,7 +579,7 @@ export default function CheckoutClient() {
 
     // 1. Enforce Authentication Requirement
     if (!isAuthenticated || !user || !authToken) {
-      router.push('/login?redirect=/checkout')
+      router.push(`/login?redirect=${encodeURIComponent(targetRedirect)}`)
       return
     }
 
@@ -645,7 +718,9 @@ export default function CheckoutClient() {
               summary: buildSummaryText(orderId, response.razorpay_payment_id)
             })
 
-            clearCart()
+            if (!isProductMode) {
+              clearCart()
+            }
           } catch (err: any) {
             setPaymentError(err.message || 'Payment verification encountered an issue. Please contact support.')
           } finally {
@@ -743,7 +818,7 @@ export default function CheckoutClient() {
   }
 
   // 2. Empty Bag View
-  if (count === 0) {
+  if (!isProductMode && count === 0) {
     return (
       <main className="checkout-page">
         <div className="checkout-container empty-checkout-card">
@@ -752,9 +827,14 @@ export default function CheckoutClient() {
           <p className="empty-desc">
             Find a tee, Henley, or bottomwear style to start your order.
           </p>
-          <Link href="/" className="button primary">
-            Explore products <i>↗</i>
-          </Link>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '16px' }}>
+            <Link href="/bag" className="button secondary">
+              View Shopping Bag
+            </Link>
+            <Link href="/shop" className="button primary">
+              Explore products <i>↗</i>
+            </Link>
+          </div>
         </div>
       </main>
     )
@@ -767,13 +847,29 @@ export default function CheckoutClient() {
         <div className="checkout-container">
           <div className="checkout-header">
             <nav className="pdp-breadcrumb" aria-label="Breadcrumb">
-              <Link href="/">Storefront</Link>
+              <Link href="/">Home</Link>
               <span className="crumb-sep">/</span>
-              <span className="crumb-current">Checkout</span>
+              {isProductMode && product ? (
+                <>
+                  <Link href={getProductUrl(product)}>{product.name}</Link>
+                  <span className="crumb-sep">/</span>
+                  <span className="crumb-current">Checkout</span>
+                </>
+              ) : (
+                <>
+                  <Link href="/bag">Shopping Bag</Link>
+                  <span className="crumb-sep">/</span>
+                  <span className="crumb-current">Checkout</span>
+                </>
+              )}
             </nav>
-            <h1 className="checkout-title">Sign in to complete your order</h1>
+            <h1 className="checkout-title">
+              {isProductMode && product ? `Sign in to order ${product.name}` : 'Sign in to complete your order'}
+            </h1>
             <p className="checkout-subtitle">
-              An account is required to place an order, view live delivery tracking, and protect your purchase.
+              {isProductMode && product
+                ? `An account is required to place your direct order for ${product.name}, calculate live courier delivery, and protect your purchase.`
+                : 'An account is required to place an order, view live delivery tracking, and protect your purchase.'}
             </p>
           </div>
 
@@ -792,11 +888,11 @@ export default function CheckoutClient() {
               </div>
 
               <div className="auth-gate-actions">
-                <Link href="/login?redirect=/checkout" className="button primary auth-gate-btn">
+                <Link href={`/login?redirect=${encodeURIComponent(targetRedirect)}`} className="button primary auth-gate-btn">
                   <span>Sign in to your account</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
-                <Link href="/register?redirect=/checkout" className="button secondary auth-gate-btn">
+                <Link href={`/register?redirect=${encodeURIComponent(targetRedirect)}`} className="button secondary auth-gate-btn">
                   <span>Create new account</span>
                 </Link>
               </div>
@@ -821,8 +917,10 @@ export default function CheckoutClient() {
             <aside className="checkout-summary-sidebar">
               <div className="summary-card">
                 <div className="summary-header">
-                  <span className="summary-label">MANIFEST // {count} ITEMS</span>
-                  <h2 className="summary-title">Order Summary</h2>
+                  <span className="summary-label">
+                    {isProductMode ? `DIRECT // 1 ITEM (${productQty} QTY)` : `MANIFEST // ${count} ITEMS`}
+                  </span>
+                  <h2 className="summary-title">{isProductMode ? 'Product Summary' : 'Order Summary'}</h2>
                 </div>
 
                 <div className="summary-items">
@@ -1038,13 +1136,43 @@ export default function CheckoutClient() {
       <div className="checkout-container">
         <div className="checkout-header">
           <nav className="pdp-breadcrumb" aria-label="Breadcrumb">
-            <Link href="/">Storefront</Link>
+            <Link href="/">Home</Link>
             <span className="crumb-sep">/</span>
-            <span className="crumb-current">Checkout</span>
+            {isProductMode && product ? (
+              <>
+                <Link href={getProductUrl(product)}>{product.name}</Link>
+                <span className="crumb-sep">/</span>
+                <span className="crumb-current">Checkout</span>
+              </>
+            ) : (
+              <>
+                <Link href="/bag">Shopping Bag</Link>
+                <span className="crumb-sep">/</span>
+                <span className="crumb-current">Checkout</span>
+              </>
+            )}
           </nav>
-          <h1 className="checkout-title">Order Checkout</h1>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+            <span className="checkout-sys-badge">
+              {isProductMode ? 'DIRECT PRODUCT ORDER // INSTANT CHECKOUT' : 'BAG CHECKOUT // MULTI-ITEM ORDER'}
+            </span>
+            {isProductMode && product ? (
+              <Link href={getProductUrl(product)} style={{ fontSize: '12px', color: 'var(--ink-secondary)', textDecoration: 'underline' }}>
+                ← Back to {product.name}
+              </Link>
+            ) : (
+              <Link href="/bag" style={{ fontSize: '12px', color: 'var(--ink-secondary)', textDecoration: 'underline' }}>
+                ← Return to Shopping Bag
+              </Link>
+            )}
+          </div>
+          <h1 className="checkout-title">
+            {isProductMode && product ? `Direct Checkout: ${product.name}` : 'Order Checkout'}
+          </h1>
           <p className="checkout-subtitle">
-            Provide your delivery details. We will prepare your pieces for delivery and dispatch through verified courier partners.
+            {isProductMode
+              ? 'Complete your single-product order with verified delivery and payment.'
+              : 'Provide your delivery details. We will prepare your pieces for delivery and dispatch through verified courier partners.'}
           </p>
         </div>
 
@@ -1291,8 +1419,10 @@ export default function CheckoutClient() {
           <aside className="checkout-summary-sidebar">
             <div className="summary-card">
               <div className="summary-header">
-                <span className="summary-label">MANIFEST // {count} ITEMS</span>
-                <h2 className="summary-title">Bag Summary</h2>
+                <span className="summary-label">
+                  {isProductMode ? `DIRECT // 1 PRODUCT (${productQty} QTY)` : `MANIFEST // ${count} ITEMS`}
+                </span>
+                <h2 className="summary-title">{isProductMode ? 'Product Summary' : 'Bag Summary'}</h2>
               </div>
 
               <div className="summary-items">

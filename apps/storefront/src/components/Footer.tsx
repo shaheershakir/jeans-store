@@ -50,8 +50,8 @@ export default function Footer() {
           <h3 className="footer-heading">CUSTOMER CARE</h3>
           <ul className="footer-list">
             <li><a href="mailto:concierge@teesgarage.in">concierge@teesgarage.in</a></li>
-            <li><Link href="/orders">Order tracking</Link></li>
-            <li><Link href="/checkout">Checkout</Link></li>
+            <li><Link href="/bag">Shopping bag</Link></li>
+            <li><Link href="/bag/checkout">Checkout</Link></li>
             <li><span>7-day doorstep exchanges</span></li>
             <li><span>Paid delivery based on delivery destination</span></li>
           </ul>

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useCartStore, useUIStore } from '@/lib/store'
 import { searchProducts } from '@/lib/utils'
+import { getProductUrl } from '@/lib/products'
 
 const QUICK_TAGS = ['Stripes', 'Printed tees', 'Henley', 'Oversized', 'Trackpants', 'Black']
 
@@ -89,11 +90,11 @@ export default function SearchOverlay() {
           ) : (
             results.map((p) => (
               <div className="search-item" key={p.id}>
-                <Link href={`/product/${p.id}`} onClick={closeOverlay}>
+                <Link href={getProductUrl(p)} onClick={closeOverlay}>
                   <Image src={p.img} alt={p.name} width={90} height={112} className="search-item-img" />
                 </Link>
                 <div className="search-item-info">
-                  <Link href={`/product/${p.id}`} onClick={closeOverlay}>
+                  <Link href={getProductUrl(p)} onClick={closeOverlay}>
                     <h4>{p.name}</h4>
                   </Link>
                   <p>

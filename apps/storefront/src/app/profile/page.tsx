@@ -41,6 +41,7 @@ import {
   type UserAddress
 } from '@/lib/store'
 import { PRODUCTS, type Product } from '@/lib/constants'
+import { getProductUrl } from '@/lib/products'
 import { ProfileSkeleton } from '@/components/skeletons'
 
 function ProfileContent() {
@@ -996,7 +997,7 @@ function ProfileContent() {
                       <div key={product.id} className="wishlist-row">
                         {/* Fixed portrait image */}
                         <Link
-                          href={`/product/${product.id}`}
+                          href={getProductUrl(product)}
                           className="wishlist-row-img-wrap"
                           aria-label={`View ${product.name}`}
                         >
@@ -1013,7 +1014,7 @@ function ProfileContent() {
                         <div className="wishlist-row-body">
                           <div className="wishlist-row-meta">
                             <span className="wishlist-row-category">{product.category || product.fit || 'Apparel'}</span>
-                            <Link href={`/product/${product.id}`} className="wishlist-row-name">
+                            <Link href={getProductUrl(product)} className="wishlist-row-name">
                               {product.name}
                             </Link>
                             <span className="wishlist-row-price">{product.price}</span>
