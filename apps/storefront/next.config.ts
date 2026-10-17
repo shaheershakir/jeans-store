@@ -1,5 +1,6 @@
 import path from 'node:path'
 import type { NextConfig } from 'next'
+import { withSentryConfig } from '@sentry/nextjs'
 
 const nextConfig: NextConfig = {
   output: 'standalone',
@@ -64,4 +65,10 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+  org: 'self-t5i',
+  project: 'teesgarage-storefront',
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  disableLogger: true,
+})
