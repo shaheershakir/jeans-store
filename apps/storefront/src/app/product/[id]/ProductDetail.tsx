@@ -12,7 +12,8 @@ import SizeGuideModal from '@/components/SizeGuideModal'
 import ProductReviews from '@/components/ProductReviews'
 import RelatedProducts from '@/components/RelatedProducts'
 import StickyPdpBar from '@/components/StickyPdpBar'
-import { getAvailableProductSizes, getProductCheckoutUrl, getProductUrl } from '@/lib/products'
+import { getAvailableProductSizes, getProductCheckoutUrl, getProductUrl, getProductSlug } from '@/lib/products'
+import { trackEvent } from '@/lib/analytics'
 
 const COLOR_HEX: Record<string, string> = {
   black: '#171717', white: '#f5f3ed', navy: '#1e3157', grey: '#85878b', gray: '#85878b',
@@ -134,17 +135,91 @@ export default function ProductDetail({ product }: { product: Product }) {
     }
   }, [lightboxIndex, images.length, closeLightbox])
 
-  function handleAddToCart() {
+  // Track PDP view on mount or when product ID changes
+  useEffect(() => {
+    trackEvent('product_viewed', {
+      product_id: product.id,
+      product_name: product.name,
+      product_slug: getProductSlug(product),
+      category: product.category,
+      price: product.priceNum,
+      currency: 'INR',
+      fit: product.fit,
+      color: selectedColor || product.color,
+      selected_size: selectedSize,
+      sizes_available: availableSizes,
+      in_stock: availableSizes.length > 0
+    })
+  }, [product.id])
+
+  function handleSelectColor(color: string) {
+    setSelectedColor(color)
+    trackEvent('product_variant_selected', {
+      product_id: product.id,
+      product_name: product.name,
+      product_slug: getProductSlug(product),
+      variant_type: 'color',
+      color,
+      size: selectedSize,
+      in_stock: availableSizes.length > 0
+    })
+  }
+
+  function handleSelectSize(size: string) {
+    setSelectedSize(size)
+    trackEvent('product_variant_selected', {
+      product_id: product.id,
+      product_name: product.name,
+      product_slug: getProductSlug(product),
+      variant_type: 'size',
+      color: selectedColor,
+      size,
+      in_stock: availableSizes.includes(size)
+    })
+  }
+
+  function handleAddToCart(sourceLocation: 'pdp' | 'sticky_bar' = 'pdp') {
     if (!availableSizes.includes(selectedSize)) return
     addItem(product.id, selectedSize, product, selectedColor || undefined)
     setAdded(true)
     showToast(`Added ${product.name} (${isNumeric ? `Waist ${selectedSize}"` : `Size ${selectedSize}`}) to your bag`)
     setTimeout(() => setAdded(false), 1800)
     openOverlay('cart')
+
+    trackEvent('product_added_to_cart', {
+      product_id: product.id,
+      product_name: product.name,
+      product_slug: getProductSlug(product),
+      category: product.category,
+      price: product.priceNum,
+      currency: 'INR',
+      fit: product.fit,
+      color: selectedColor || product.color,
+      size: selectedSize,
+      quantity: 1,
+      source_location: sourceLocation,
+      in_stock: true
+    })
   }
 
-  function handleBuyNow() {
+  function handleBuyNow(sourceLocation: 'pdp' | 'sticky_bar' = 'pdp') {
     if (!availableSizes.includes(selectedSize)) return
+
+    trackEvent('product_buy_now_clicked', {
+      product_id: product.id,
+      product_name: product.name,
+      product_slug: getProductSlug(product),
+      category: product.category,
+      price: product.priceNum,
+      currency: 'INR',
+      fit: product.fit,
+      color: selectedColor || product.color,
+      size: selectedSize,
+      quantity: 1,
+      source_location: sourceLocation,
+      in_stock: true
+    })
+
     const checkoutUrl = getProductCheckoutUrl(product, {
       size: selectedSize,
       color: selectedColor || undefined,
@@ -155,6 +230,11 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   function handleSizeGuide(e: MouseEvent<HTMLAnchorElement>) {
     e.preventDefault()
+    trackEvent('product_size_guide_opened', {
+      product_id: product.id,
+      product_name: product.name,
+      category: product.category
+    })
     setIsSizeGuideOpen(true)
   }
 
@@ -254,7 +334,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                     className={`pdp-swatch-circle ${selectedColor === color ? 'active' : ''}`}
                     style={{ backgroundColor: COLOR_HEX[color.toLowerCase()] ?? '#777' }}
                     title={color}
-                    onClick={() => setSelectedColor(color)}
+                    onClick={() => handleSelectColor(color)}
                     aria-label={`Select ${color} color`}
                   />
                 ))}
@@ -297,7 +377,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                   key={size}
                   type="button"
                   className={`pdp-size-cell ${size === selectedSize ? 'selected' : ''}`}
-                  onClick={() => setSelectedSize(size)}
+                  onClick={() => handleSelectSize(size)}
                   disabled={!isAvailable}
                   aria-label={isAvailable ? `Select size ${size}` : `Size ${size} is out of stock`}
                 >
@@ -314,7 +394,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             <button
               type="button"
               className={`pdp-add-to-cart-btn ${added ? 'added' : ''}`}
-              onClick={handleAddToCart}
+              onClick={() => handleAddToCart('pdp')}
               disabled={!availableSizes.includes(selectedSize)}
             >
               {added ? (
@@ -327,7 +407,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               )}
             </button>
 
-            <button type="button" className="pdp-buy-now-btn" onClick={handleBuyNow} disabled={!availableSizes.includes(selectedSize)}>
+            <button type="button" className="pdp-buy-now-btn" onClick={() => handleBuyNow('pdp')} disabled={!availableSizes.includes(selectedSize)}>
               Buy Now
             </button>
           </div>
@@ -394,8 +474,8 @@ export default function ProductDetail({ product }: { product: Product }) {
       <StickyPdpBar
         product={product}
         selectedSize={selectedSize}
-        onSizeChange={(sz) => setSelectedSize(sz)}
-        onAddToCart={handleAddToCart}
+        onSizeChange={(sz) => handleSelectSize(sz)}
+        onAddToCart={() => handleAddToCart('sticky_bar')}
         isAdded={added}
       />
 

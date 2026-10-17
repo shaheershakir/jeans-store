@@ -8,6 +8,7 @@ import { logger } from '../lib/logger.js'
 import { productStore } from '../store/productStore.js'
 import { calculateShipping, getShippingRates, getDeliveryEstimation } from '../services/shipping.js'
 import { verifyCloudIamToken } from '../services/cloudIam.js'
+import { trackServerEvent } from '../services/posthog.js'
 import type { CalculatedOrder, CreateOrder } from '../schemas/order.js'
 
 export const orderRouter = Router()
@@ -242,6 +243,25 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
       notes: order.notes ? `${order.notes} | ${paymentNote}` : paymentNote
     })
 
+    trackServerEvent(finalOrder.customerEmail || finalOrder.orderNumber, 'order_completed', {
+      order_id: finalOrder.id || finalOrder.orderNumber,
+      order_number: finalOrder.orderNumber,
+      total: Number(finalOrder.total ?? calculatedOrder.total ?? 0),
+      subtotal: Number(finalOrder.subtotal ?? calculatedOrder.subtotal ?? 0),
+      shipping: Number(finalOrder.shipping ?? calculatedOrder.shipping ?? 0),
+      currency: 'INR',
+      item_count: finalOrder.items.reduce((sum, item) => sum + item.quantity, 0),
+      customer_email: finalOrder.customerEmail,
+      payment_method: 'razorpay',
+      items: finalOrder.items.map((item) => ({
+        product_id: item.id,
+        product_name: item.name || `Product #${item.id}`,
+        size: item.size,
+        price: Number(item.priceNum ?? (parseFloat(item.price || '0') || 0)),
+        quantity: item.quantity
+      }))
+    })
+
     logger.info({ orderNumber: finalOrder.orderNumber, paymentId: razorpay_payment_id }, 'Order successfully paid and recorded')
     res.status(201).json({
       success: true,
@@ -283,6 +303,26 @@ orderRouter.post('/api/orders', async (req: Request, res: Response) => {
   try {
     const calculatedOrder = await calculateOrder(parsed.data)
     const order = await orderStore.create(calculatedOrder)
+
+    trackServerEvent(order.customerEmail || order.orderNumber, 'order_completed', {
+      order_id: order.id || order.orderNumber,
+      order_number: order.orderNumber,
+      total: Number(order.total ?? calculatedOrder.total ?? 0),
+      subtotal: Number(order.subtotal ?? calculatedOrder.subtotal ?? 0),
+      shipping: Number(order.shipping ?? calculatedOrder.shipping ?? 0),
+      currency: 'INR',
+      item_count: order.items.reduce((sum, item) => sum + item.quantity, 0),
+      customer_email: order.customerEmail,
+      payment_method: order.paymentMethod || 'cod',
+      items: order.items.map((item) => ({
+        product_id: item.id,
+        product_name: item.name || `Product #${item.id}`,
+        size: item.size,
+        price: Number(item.priceNum ?? (parseFloat(item.price || '0') || 0)),
+        quantity: item.quantity
+      }))
+    })
+
     res.status(201).json({ order })
   } catch (err) {
     logger.error({ err }, 'Failed to save order')

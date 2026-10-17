@@ -1,10 +1,13 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import type { Product } from '@/lib/constants'
 import { PRODUCTS } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
 import ProductCard from '@/components/ProductCard'
+import { trackEvent } from '@/lib/analytics'
+import { getProductSlug } from '@/lib/products'
 
 interface RelatedProductsProps {
   currentProduct: Product
@@ -21,6 +24,23 @@ export default function RelatedProducts({ currentProduct }: RelatedProductsProps
     }
     return p.category === 'trackpants' || p.category === 'sweatpants' || p.category !== currentProduct.category
   }).slice(0, 4)
+
+  useEffect(() => {
+    if (relatedList.length > 0) {
+      trackEvent('product_list_viewed', {
+        list_id: 'related_products',
+        list_name: 'Complete the Fit',
+        products: relatedList.map((p, idx) => ({
+          product_id: p.id,
+          product_name: p.name,
+          product_slug: getProductSlug(p),
+          category: p.category,
+          price: p.priceNum,
+          position: idx + 1
+        }))
+      })
+    }
+  }, [currentProduct.id])
 
   return (
     <section className="apple-related-section" aria-labelledby="related-heading">

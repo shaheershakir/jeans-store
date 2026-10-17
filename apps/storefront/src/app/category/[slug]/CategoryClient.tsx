@@ -9,6 +9,8 @@ import { filterAndSortProducts } from '@/lib/utils'
 import type { PriceRange, SortMode } from '@/lib/store'
 import ProductCard from '@/components/ProductCard'
 import { useState } from 'react'
+import { trackEvent } from '@/lib/analytics'
+import { getProductSlug } from '@/lib/products'
 
 const PRICE_LABELS: Record<PriceRange, string> = {
   'under-1500': 'Under ₹1,500',
@@ -47,6 +49,23 @@ export default function CategoryClient({ products, category: initialCategory, ti
     void useFilterStore.persist.rehydrate()
     setCategory(initialCategory)
   }, [initialCategory, setCategory])
+
+  useEffect(() => {
+    if (products && products.length > 0) {
+      trackEvent('product_list_viewed', {
+        list_id: `category_${initialCategory}`,
+        list_name: title || initialCategory,
+        products: products.slice(0, 24).map((p, idx) => ({
+          product_id: p.id,
+          product_name: p.name,
+          product_slug: getProductSlug(p),
+          category: p.category,
+          price: p.priceNum,
+          position: idx + 1
+        }))
+      })
+    }
+  }, [initialCategory, title])
 
   const filtered = filterAndSortProducts(fit, prices, sort, products, category, searchQuery)
   const activeFilterCount =

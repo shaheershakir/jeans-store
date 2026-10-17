@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { Heart } from 'lucide-react'
 import type { Product } from '@/lib/constants'
 import { useCartStore, useUIStore, useFavoriteStore } from '@/lib/store'
-import { getAvailableProductSizes, getProductUrl } from '@/lib/products'
+import { getAvailableProductSizes, getProductUrl, getProductSlug } from '@/lib/products'
+import { trackEvent } from '@/lib/analytics'
 
 export default function ProductCard({ product }: { product: Product }) {
   const addItem = useCartStore((state) => state.addItem)
@@ -40,6 +41,21 @@ export default function ProductCard({ product }: { product: Product }) {
     setIsAdded(true)
     showToast(`Added ${product.name} to bag`)
 
+    trackEvent('product_added_to_cart', {
+      product_id: product.id,
+      product_name: product.name,
+      product_slug: getProductSlug(product),
+      category: product.category,
+      price: product.priceNum,
+      currency: 'INR',
+      fit: product.fit,
+      color: product.color,
+      size,
+      quantity: 1,
+      source_location: 'product_card',
+      in_stock: true
+    })
+
     setTimeout(() => {
       setIsAdded(false)
     }, 1500)
@@ -57,6 +73,33 @@ export default function ProductCard({ product }: { product: Product }) {
 
     const nextState = !isFavorite
     showToast(nextState ? `Saved ${product.name} to favorites` : `Removed from favorites`)
+
+    if (nextState) {
+      trackEvent('product_favorited', {
+        product_id: product.id,
+        product_name: product.name,
+        category: product.category,
+        price: product.priceNum
+      })
+    } else {
+      trackEvent('product_unfavorited', {
+        product_id: product.id,
+        product_name: product.name
+      })
+    }
+  }
+
+  function handleCardClick() {
+    trackEvent('product_card_clicked', {
+      product_id: product.id,
+      product_name: product.name,
+      product_slug: getProductSlug(product),
+      category: product.category,
+      price: product.priceNum,
+      fit: product.fit,
+      source_location: 'product_card',
+      in_stock: availableSizes.length > 0
+    })
   }
 
   return (
@@ -77,7 +120,12 @@ export default function ProductCard({ product }: { product: Product }) {
           />
         </button>
 
-        <Link href={getProductUrl(product)} className="product-image-link" aria-label={product.name}>
+        <Link
+          href={getProductUrl(product)}
+          className="product-image-link"
+          aria-label={product.name}
+          onClick={handleCardClick}
+        >
           <div className="image-wrapper">
             <Image
               src={product.img}
@@ -96,7 +144,11 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className="product-info-wrap">
         <div className="product-brand-name">{product.store && product.store.toLowerCase() === 'jean-store' ? 'JEAN-STORE' : 'TEESGARAGE'}</div>
 
-        <Link href={getProductUrl(product)} className="product-title-link">
+        <Link
+          href={getProductUrl(product)}
+          className="product-title-link"
+          onClick={handleCardClick}
+        >
           <h3 className="product-title">{product.name}</h3>
         </Link>
 

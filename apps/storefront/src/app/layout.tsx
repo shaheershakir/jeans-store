@@ -7,6 +7,7 @@ import SearchOverlay from '@/components/SearchOverlay'
 import Toast from '@/components/Toast'
 import OnboardingModal from '@/components/OnboardingModal'
 import { getNavigationItems } from '@/lib/navigation'
+import { PostHogProvider } from '@/lib/analytics'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -55,18 +56,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body>
-        <main className="site-shell">
-          <Header initialNavItems={navItems} />
-          {children}
-          <Footer />
-        </main>
-        <CartDrawer />
-        <SearchOverlay />
-        <Toast />
-        <OnboardingModal />
-        <noscript>
-          <Link href="/">TEESGARAGE</Link>
-        </noscript>
+        <PostHogProvider>
+          <main className="site-shell">
+            <Header initialNavItems={navItems} />
+            {children}
+            <Footer />
+          </main>
+          <CartDrawer />
+          <SearchOverlay />
+          <Toast />
+          <OnboardingModal />
+          <noscript>
+            <Link href="/">TEESGARAGE</Link>
+          </noscript>
+        </PostHogProvider>
       </body>
     </html>
   )

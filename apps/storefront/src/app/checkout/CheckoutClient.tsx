@@ -21,6 +21,7 @@ import { cartCount, cartSubtotal, useCartStore, useAuthStore, type UserAddress }
 import { formatPrice } from '@/lib/utils'
 import type { Product } from '@/lib/constants'
 import { getProductSlug, getProductUrl, getAvailableProductSizes } from '@/lib/products'
+import { trackEvent } from '@/lib/analytics'
 
 export type CheckoutMode =
   | { type: 'bag' }
@@ -320,6 +321,26 @@ export default function CheckoutClient({ mode = { type: 'bag' }, checkoutUrl }: 
     void useAuthStore.persist.rehydrate()
     void loadRazorpayScript()
   }, [])
+
+  // Track checkout initiation
+  useEffect(() => {
+    if (items.length > 0) {
+      trackEvent('checkout_started', {
+        item_count: items.reduce((sum, item) => sum + item.qty, 0),
+        subtotal,
+        currency: 'INR',
+        direct_buy: isProductMode,
+        items: items.map((item) => ({
+          product_id: item.id,
+          product_name: item.name,
+          size: item.size,
+          color: item.color,
+          price: item.priceNum,
+          quantity: item.qty
+        }))
+      })
+    }
+  }, [items.length, isProductMode])
 
   // Auto-populate from profile if available on sign-in
   useEffect(() => {
@@ -716,6 +737,26 @@ export default function CheckoutClient({ mode = { type: 'bag' }, checkoutUrl }: 
               paymentId: response.razorpay_payment_id,
               total: Number(verifyData.order?.total ?? rzpData.total ?? total),
               summary: buildSummaryText(orderId, response.razorpay_payment_id)
+            })
+
+            trackEvent('order_completed', {
+              order_id: orderId,
+              order_number: orderId,
+              total: Number(verifyData.order?.total ?? rzpData.total ?? total),
+              subtotal,
+              shipping,
+              currency: 'INR',
+              item_count: items.reduce((sum, item) => sum + item.qty, 0),
+              customer_email: user?.email,
+              payment_method: 'razorpay',
+              items: items.map((item) => ({
+                product_id: item.id,
+                product_name: item.name,
+                size: item.size,
+                color: item.color,
+                price: item.priceNum,
+                quantity: item.qty
+              }))
             })
 
             if (!isProductMode) {
@@ -1178,7 +1219,7 @@ export default function CheckoutClient({ mode = { type: 'bag' }, checkoutUrl }: 
 
         <div className="checkout-grid">
           {/* Order Form */}
-          <form className="checkout-form" onSubmit={handleSubmit} noValidate>
+          <form className="checkout-form ph-no-capture" onSubmit={handleSubmit} noValidate>
 
             {/* If user has saved info in profile: render the 2 radio options with animated expansion */}
             {hasSavedInfo ? (

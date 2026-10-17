@@ -15,6 +15,8 @@ import type { PriceRange, SortMode } from '@/lib/store'
 import { useCartStore, useFilterStore } from '@/lib/store'
 import { filterAndSortProducts } from '@/lib/utils'
 import ProductCard from '@/components/ProductCard'
+import { trackEvent } from '@/lib/analytics'
+import { getProductSlug } from '@/lib/products'
 
 const PRICE_LABELS: Record<PriceRange, string> = {
   'under-1500': 'Under ₹1,500',
@@ -272,6 +274,23 @@ export default function ShopClient({
   // Drawer & Sheet state
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [sortSheetOpen, setSortSheetOpen] = useState(false)
+
+  useEffect(() => {
+    if (initialProducts && initialProducts.length > 0) {
+      trackEvent('product_list_viewed', {
+        list_id: `shop_${slug}`,
+        list_name: title || 'Shop',
+        products: initialProducts.slice(0, 24).map((p, idx) => ({
+          product_id: p.id,
+          product_name: p.name,
+          product_slug: getProductSlug(p),
+          category: p.category,
+          price: p.priceNum,
+          position: idx + 1
+        }))
+      })
+    }
+  }, [slug, title])
 
   // Category-specific and store-wide filter states
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])

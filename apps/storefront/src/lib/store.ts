@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Fit, Product } from './constants'
 import { PRODUCTS } from './constants'
+import { identifyUser, resetUser } from './analytics'
 
 
 export interface CartItem {
@@ -280,7 +281,14 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       addresses: [],
-      setAuth: (user, token) => set({ user, token, isAuthenticated: true }),
+      setAuth: (user, token) => {
+        identifyUser(user.id || user.uid, {
+          email: user.email,
+          name: user.name,
+          phone: user.phone,
+        })
+        set({ user, token, isAuthenticated: true })
+      },
       updateProfile: (updated) =>
         set((state) => ({
           user: state.user ? { ...state.user, ...updated } : null
@@ -323,7 +331,10 @@ export const useAuthStore = create<AuthState>()(
             isDefault: addr.id === id
           }))
         })),
-      logout: () => set({ user: null, token: null, isAuthenticated: false })
+      logout: () => {
+        resetUser()
+        set({ user: null, token: null, isAuthenticated: false })
+      }
     }),
     {
       name: 'teesgarage-auth',
