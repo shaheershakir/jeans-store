@@ -1,7 +1,7 @@
 'use client'
 
 import type { MouseEvent } from 'react'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -390,8 +390,9 @@ export default function ProductDetail({ product }: { product: Product }) {
           </div>
 
           {/* CTAs */}
-          <div className="pdp-actions-group">
+          <div id="pdp-main-actions" className="pdp-actions-group">
             <button
+              id="pdp-add-to-cart-btn"
               type="button"
               className={`pdp-add-to-cart-btn ${added ? 'added' : ''}`}
               onClick={() => handleAddToCart('pdp')}
@@ -407,7 +408,13 @@ export default function ProductDetail({ product }: { product: Product }) {
               )}
             </button>
 
-            <button type="button" className="pdp-buy-now-btn" onClick={() => handleBuyNow('pdp')} disabled={!availableSizes.includes(selectedSize)}>
+            <button
+              id="pdp-buy-now-btn"
+              type="button"
+              className="pdp-buy-now-btn"
+              onClick={() => handleBuyNow('pdp')}
+              disabled={!availableSizes.includes(selectedSize)}
+            >
               Buy Now
             </button>
           </div>
@@ -470,15 +477,18 @@ export default function ProductDetail({ product }: { product: Product }) {
       {/* ── Curated Recommendations / Complete the Fit ── */}
       <RelatedProducts currentProduct={product} />
 
-      {/* ── Sticky Quick-Order Bar on Scroll ── */}
+      {/* ── Sticky Bottom Floating Bar on Scroll (Past Buy Now) ── */}
       <StickyPdpBar
         product={product}
+        selectedColor={selectedColor}
         selectedSize={selectedSize}
-        onSizeChange={(sz) => handleSelectSize(sz)}
+        sizeOptions={sizeOptions}
+        availableSizes={availableSizes}
+        productImage={images[0] || product.img}
+        onSizeChange={handleSelectSize}
         onAddToCart={() => handleAddToCart('sticky_bar')}
         isAdded={added}
       />
-
       {/* ── Interactive Apple-style Size & Fit Guide Modal ── */}
       <SizeGuideModal
         isOpen={isSizeGuideOpen}

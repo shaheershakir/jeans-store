@@ -20,7 +20,15 @@ export default function Template({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <div ref={ref} className="page-transition-wrapper">
+    <div
+      ref={ref}
+      className="page-transition-wrapper"
+      onAnimationEnd={(e) => {
+        if (e.target === ref.current) {
+          ref.current.style.transform = 'none'
+        }
+      }}
+    >
       {children}
     </div>
   )

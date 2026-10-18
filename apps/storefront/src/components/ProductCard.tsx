@@ -41,6 +41,7 @@ export default function ProductCard({ product }: { product: Product }) {
     addItem(product.id, size, product)
     setIsAdded(true)
     showToast(`Added ${product.name} to bag`)
+    openOverlay('cart')
 
     trackEvent('product_added_to_cart', {
       product_id: product.id,
