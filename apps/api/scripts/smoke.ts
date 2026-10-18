@@ -47,8 +47,24 @@ record(
 const notFoundRes = await request('/api/products/999')
 record('GET /api/products/999 → 404', notFoundRes.status === 404, `status ${notFoundRes.status}`)
 
-const adminKey = process.env.ADMIN_API_KEY
-const authHeader = adminKey ? { 'x-api-key': adminKey } : {}
+let authHeader: Record<string, string> = {}
+const adminEmail = process.env.ADMIN_EMAIL || 'admin@teesgarage.in'
+const adminPassword = process.env.ADMIN_PASSWORD || 'YourPasswordHere123!'
+try {
+  const loginRes = await request('/api/admin/auth/login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: adminEmail, password: adminPassword })
+  })
+  if (loginRes.ok) {
+    const loginData = (await loginRes.json()) as { token?: string }
+    if (loginData.token) {
+      authHeader = { authorization: `Bearer ${loginData.token}` }
+    }
+  }
+} catch {
+  // If login endpoint unavailable, proceed with fallback
+}
 
 const createRes = await request('/api/products', {
   method: 'POST',
@@ -95,10 +111,10 @@ const orderRes = await request('/api/orders', {
     city: 'Mumbai',
     state: 'Maharashtra',
     pincode: '400001',
-    items: [{ id: 1, name: 'The Standard 01', size: '32', price: '₹1,499', priceNum: 1499, quantity: 1 }],
-    subtotal: 1499,
+    items: [{ id: 1, name: 'Vintage Skate Micro-Stripe Tee', size: 'M', price: '₹1,249', priceNum: 1249, quantity: 1 }],
+    subtotal: 1249,
     shipping: 0,
-    total: 1499,
+    total: 1249,
     handoffType: 'whatsapp'
   })
 })
