@@ -190,12 +190,19 @@ export const useFilterStore = create<FilterState>()(
 
 export type OverlayKind = 'search' | 'cart' | null
 
+export interface SizePromptData {
+  product: Product
+  selectedColor?: string
+  availableSizes?: string[]
+}
+
 interface UIState {
   overlay: OverlayKind
   selectedSize: string
   activeSwatch: number
   deliveryChecked: boolean
   toast: string | null
+  sizePrompt: SizePromptData | null
   openOverlay: (kind: Exclude<OverlayKind, null>) => void
   closeOverlay: () => void
   setSelectedSize: (size: string) => void
@@ -203,6 +210,8 @@ interface UIState {
   setDeliveryChecked: (checked: boolean) => void
   showToast: (message: string) => void
   hideToast: () => void
+  openSizePrompt: (data: SizePromptData) => void
+  closeSizePrompt: () => void
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null
@@ -215,20 +224,26 @@ export const useUIStore = create<UIState>()(
       activeSwatch: 0,
       deliveryChecked: false,
       toast: null,
-      openOverlay: (kind) => set({ overlay: kind, toast: null }),
+      sizePrompt: null,
+      openOverlay: (kind) => set({ overlay: kind, toast: null, sizePrompt: null }),
       closeOverlay: () => set({ overlay: null }),
       setSelectedSize: (selectedSize) => set({ selectedSize }),
       setActiveSwatch: (activeSwatch) => set({ activeSwatch }),
       setDeliveryChecked: (deliveryChecked) => set({ deliveryChecked }),
       showToast: (message) => {
         if (toastTimer) clearTimeout(toastTimer)
-        set({ toast: message })
+        set({ toast: message, sizePrompt: null })
         toastTimer = setTimeout(() => set({ toast: null }), 3000)
       },
       hideToast: () => {
         if (toastTimer) clearTimeout(toastTimer)
         set({ toast: null })
-      }
+      },
+      openSizePrompt: (data) => {
+        if (toastTimer) clearTimeout(toastTimer)
+        set({ sizePrompt: data, toast: null })
+      },
+      closeSizePrompt: () => set({ sizePrompt: null })
     }),
     {
       name: 'teesgarage-ui',

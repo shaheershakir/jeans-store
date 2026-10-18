@@ -1,27 +1,48 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Heart } from 'lucide-react'
+import { Heart, ShoppingBag, ArrowRight, Check } from 'lucide-react'
 import type { Product } from '@/lib/constants'
 import { useCartStore, useUIStore, useFavoriteStore } from '@/lib/store'
 import { getAvailableProductSizes, getProductUrl, getProductSlug } from '@/lib/products'
 import { trackEvent } from '@/lib/analytics'
 
+const COLOR_HEX: Record<string, string> = {
+  black: '#171717',
+  white: '#f5f3ed',
+  navy: '#1e3157',
+  grey: '#85878b',
+  gray: '#85878b',
+  ash: '#85878b',
+  blue: '#436fa8',
+  green: '#3e7558',
+  olive: '#747947',
+  red: '#a63836',
+  beige: '#d8c7a7',
+  charcoal: '#414347',
+  cream: '#eee9dd',
+  ecru: '#eee9dd',
+  'washed black': '#1e1e1e',
+  'vintage acid black': '#242426'
+}
+
 export default function ProductCard({ product }: { product: Product }) {
   const addItem = useCartStore((state) => state.addItem)
   const openOverlay = useUIStore((state) => state.openOverlay)
   const showToast = useUIStore((state) => state.showToast)
+  const openSizePrompt = useUIStore((state) => state.openSizePrompt)
   const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite)
   const isFavorite = useFavoriteStore((state) => state.isFavorite(product.id))
 
   const [mounted, setMounted] = useState<boolean>(false)
   const [isAdded, setIsAdded] = useState<boolean>(false)
   const [favAnimate, setFavAnimate] = useState<boolean>(false)
-  const [selectedSize, setSelectedSize] = useState('')
-  const availableSizes = getAvailableProductSizes(product)
-  const chosenSize = availableSizes.includes(selectedSize) ? selectedSize : ''
+  const [activeImageIdx, setActiveImageIdx] = useState<number>(0)
+  const [activeColorIdx, setActiveColorIdx] = useState<number>(0)
+
+  const availableSizes = useMemo(() => getAvailableProductSizes(product), [product])
   const secondaryImg = product.img2 || product.images?.[1] || null
 
   useEffect(() => {
@@ -31,38 +52,78 @@ export default function ProductCard({ product }: { product: Product }) {
     void useFavoriteStore.persist.rehydrate()
   }, [])
 
+  // Derive swatches matching the reference design
+  const swatches = useMemo(() => {
+    if (product.variants?.length) {
+      const uniqueColors = Array.from(new Set(product.variants.map((v) => v.color).filter(Boolean)))
+      if (uniqueColors.length > 1) {
+        return uniqueColors.slice(0, 3).map((col) => ({
+          name: col,
+          hex: COLOR_HEX[col.toLowerCase()] || '#171717'
+        }))
+      }
+    }
+    if (product.color && product.color.includes('/')) {
+      const parts = product.color.split('/').map((s) => s.trim())
+      return parts.map((name, idx) => ({
+        name,
+        hex: idx === 0 ? (COLOR_HEX[name.toLowerCase()] || '#171717') : (COLOR_HEX[name.toLowerCase()] || '#85878b')
+      }))
+    }
+    const mainCol = product.color || 'Washed Black'
+    const altCol = mainCol.toLowerCase().includes('black') || mainCol.toLowerCase().includes('charcoal') ? 'Ash' : 'Black'
+    return [
+      { name: mainCol, hex: COLOR_HEX[mainCol.toLowerCase()] || '#171717' },
+      { name: altCol, hex: COLOR_HEX[altCol.toLowerCase()] || '#85878b' }
+    ]
+  }, [product])
+
+  const activeColor = swatches[activeColorIdx]?.name || product.color || 'Standard'
+  const colorWashLabel =
+    product.wash ||
+    (swatches.length > 1 ? `${swatches[0].name} / ${swatches[1].name}` : product.color || 'Washed Black / Ash')
+
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
 
-    const size = availableSizes.length === 1 ? availableSizes[0] : chosenSize
-    if (!size) return
+    if (availableSizes.length === 0) return
 
-    addItem(product.id, size, product)
-    setIsAdded(true)
-    showToast(`Added ${product.name} to bag`)
-    openOverlay('cart')
+    // If only 1 size exists, add directly
+    if (availableSizes.length === 1) {
+      const singleSize = availableSizes[0]
+      addItem(product.id, singleSize, product, activeColor)
+      setIsAdded(true)
+      showToast(`Added ${product.name} (${singleSize}) to bag`)
+      openOverlay('cart')
 
-    trackEvent('product_added_to_cart', {
-      product_id: product.id,
-      product_name: product.name,
-      product_slug: getProductSlug(product),
-      category: product.category,
-      price: product.priceNum,
-      currency: 'INR',
-      fit: product.fit,
-      color: product.color,
-      size,
-      quantity: 1,
-      source_location: 'product_card',
-      in_stock: true
+      trackEvent('product_added_to_cart', {
+        product_id: product.id,
+        product_name: product.name,
+        product_slug: getProductSlug(product),
+        category: product.category,
+        price: product.priceNum,
+        currency: 'INR',
+        fit: product.fit,
+        color: activeColor,
+        size: singleSize,
+        quantity: 1,
+        source_location: 'product_card',
+        in_stock: true
+      })
+
+      setTimeout(() => setIsAdded(false), 1500)
+      return
+    }
+
+    // Multiple sizes: prompt user in the toast to choose their size!
+    openSizePrompt({
+      product,
+      selectedColor: activeColor,
+      availableSizes
     })
 
-    setTimeout(() => {
-      setIsAdded(false)
-    }, 1500)
 
-    openOverlay('cart')
   }
 
   function handleFavoriteClick(e: React.MouseEvent) {
@@ -104,10 +165,18 @@ export default function ProductCard({ product }: { product: Product }) {
     })
   }
 
+  const badgeText = product.badge || 'NEW'
+  const fitText = product.fit ? `${product.fit.toUpperCase()} FIT` : 'RELAXED FIT'
+
   return (
-    <article className="product-card">
+    <article
+      className="product-card apple-product-card"
+      onMouseEnter={() => secondaryImg && setActiveImageIdx(1)}
+      onMouseLeave={() => setActiveImageIdx(0)}
+    >
+      {/* ── 1. Image Container with Badge, Heart & Dots ── */}
       <div className="product-image-container">
-        {/* Top-Left Love/Favourite Icon Button */}
+        {/* Top-Left Circular Favorite Button */}
         <button
           type="button"
           className={`product-fav-btn ${mounted && isFavorite ? 'active' : ''} ${favAnimate ? 'pop' : ''}`}
@@ -118,9 +187,17 @@ export default function ProductCard({ product }: { product: Product }) {
           <Heart
             className={`fav-heart-icon ${mounted && isFavorite ? 'filled' : ''}`}
             fill={mounted && isFavorite ? '#e11d48' : 'none'}
-            stroke={mounted && isFavorite ? '#e11d48' : 'currentColor'}
+            stroke={mounted && isFavorite ? '#e11d48' : '#18181b'}
+            strokeWidth={mounted && isFavorite ? 2 : 1.75}
           />
         </button>
+
+        {/* Top-Right Bold Black Badge */}
+        {badgeText && (
+          <span className="product-badge-pill" aria-label={`Badge: ${badgeText}`}>
+            {badgeText}
+          </span>
+        )}
 
         <Link
           href={getProductUrl(product)}
@@ -135,7 +212,7 @@ export default function ProductCard({ product }: { product: Product }) {
               width={600}
               height={800}
               sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 24vw"
-              className={`primary-img ${secondaryImg ? 'has-secondary' : ''}`}
+              className={`primary-img ${activeImageIdx === 1 ? 'faded' : ''}`}
               loading="lazy"
             />
             {secondaryImg && (
@@ -145,83 +222,91 @@ export default function ProductCard({ product }: { product: Product }) {
                 width={600}
                 height={800}
                 sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 24vw"
-                className="secondary-img"
+                className={`secondary-img ${activeImageIdx === 1 ? 'visible' : ''}`}
                 loading="lazy"
               />
             )}
           </div>
-          {product.badge && <span className="product-badge top-right">{product.badge}</span>}
         </Link>
+
+        {/* Bottom-Left 3-Dot Carousel Indicator */}
+        <div className="card-pagination-dots" aria-hidden="true">
+          <span className={`dot ${activeImageIdx === 0 ? 'active' : ''}`} />
+          <span className={`dot ${activeImageIdx === 1 ? 'active' : ''}`} />
+          <span className="dot" />
+        </div>
       </div>
 
+      {/* ── 2. Product Information Section ── */}
       <div className="product-info-wrap">
-        <div className="product-brand-name">{product.store && product.store.toLowerCase() === 'jean-store' ? 'JEAN-STORE' : 'TEESGARAGE'}</div>
+        {/* Overline / Fit Tag */}
+        <div className="product-fit-overline">{fitText}</div>
 
+        {/* Product Title */}
         <Link
           href={getProductUrl(product)}
           className="product-title-link"
           onClick={handleCardClick}
         >
-          <h3 className="product-title">{product.name}</h3>
+          <h3 className="product-title" title={product.name}>
+            {product.name}
+          </h3>
         </Link>
 
-        <div className="product-price-row">
+        {/* Price & Color Swatches Row */}
+        <div className="product-price-swatches-row">
           <span className="product-price">{product.price}</span>
-          {product.fit && <span className="product-fit-tag">{product.fit} fit</span>}
+
+          {/* Interactive Swatches on the Right */}
+          <div className="product-color-swatches" role="group" aria-label="Color choices">
+            {swatches.map((swatch, idx) => (
+              <button
+                key={swatch.name}
+                type="button"
+                className={`product-color-swatch-dot ${activeColorIdx === idx ? 'active' : ''}`}
+                style={{ backgroundColor: swatch.hex }}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setActiveColorIdx(idx)
+                }}
+                title={swatch.name}
+                aria-label={`Select ${swatch.name}`}
+              />
+            ))}
+          </div>
         </div>
 
-        <p className="product-wash-label">{product.wash || product.desc.slice(0, 50) + '...'}</p>
+        {/* Color / Wash Label */}
+        <p className="product-wash-label">{colorWashLabel}</p>
 
-        {availableSizes.length > 1 && (
-          <label className="product-size-select-label">
-            <span className="sr-only">Choose a size for {product.name}</span>
-            <select
-              className="product-size-select"
-              value={chosenSize}
-              onChange={(event) => setSelectedSize(event.target.value)}
-              aria-label={`Choose an available size for ${product.name}`}
-            >
-              <option value="">Choose size</option>
-              {availableSizes.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
+        {/* ── 3. Full-Width "ADD TO BAG →" Action Button ── */}
         <button
           type="button"
           className={`card-add-btn ${isAdded ? 'added' : ''}`}
           onClick={handleAddToCart}
-          disabled={availableSizes.length === 0 || (availableSizes.length > 1 && !chosenSize)}
+          disabled={availableSizes.length === 0}
           aria-label={
             availableSizes.length === 0
               ? `${product.name} is out of stock`
-              : availableSizes.length > 1 && !chosenSize
-                ? `Choose a size for ${product.name} before adding it to your bag`
-                : `Add ${product.name} to bag`
+              : `Add ${product.name} to bag`
           }
         >
           {availableSizes.length === 0 ? (
             <span>Out of stock</span>
           ) : isAdded ? (
-            <>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              <span>Added to Bag</span>
-            </>
+            <div className="card-btn-content">
+              <Check className="w-4 h-4 stroke-[2.5]" />
+              <span className="card-btn-text">ADDED</span>
+            </div>
           ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
-              <span>Add to Bag</span>
-            </>
+            <div className="card-btn-content">
+              <div className="card-btn-center">
+                <ShoppingBag className="w-4 h-4 stroke-[2]" />
+                <span className="card-btn-text">ADD TO BAG</span>
+              </div>
+              <ArrowRight className="card-btn-arrow w-4 h-4 stroke-[2]" />
+            </div>
           )}
         </button>
       </div>
