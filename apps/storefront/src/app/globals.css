@@ -654,6 +654,7 @@ button {
   background: #08090b;
   position: relative;
   overflow: hidden;
+  touch-action: pan-y;
 }
 
 .hero-carousel-track {
@@ -6665,6 +6666,8 @@ button {
   .shop-mobile-bottom-bar {
     display: flex;
     align-items: stretch;
+    height: calc(52px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 
@@ -14235,6 +14238,7 @@ select {
   .shop-page .shop-container {
     padding-right: 16px;
     padding-left: 16px;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
   }
 
   .pdp-container {
@@ -15086,4 +15090,929 @@ select {
   }
 }
 
+/* ==========================================================================
+   10. MOBILE-FIRST NATIVE POLISH (mobile-native & anti-ui-slop)
+   ========================================================================== */
+
+/* 1. Global Platform Touch & Highlight Hygiene */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+button, a, [role="button"], .tappable {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 2. Prevent iOS Safari auto-zoom on form focus */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* 3. Button / Control Select Prevention */
+button, [role="button"], .apple-segment-item, .search-pill-btn, .search-cat-tab {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ==========================================================================
+   11. DEDICATED SEARCH PAGE (/search)
+   ========================================================================== */
+.search-page-container {
+  min-height: calc(100dvh - 120px);
+  background: var(--paper, #ffffff);
+  padding-bottom: clamp(48px, 8vw, 96px);
+}
+
+.search-page-header {
+  position: sticky;
+  top: 0;
+  z-index: 35;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line, #e5e5e7);
+  padding-top: max(8px, env(safe-area-inset-top, 0px));
+}
+
+.search-page-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 16px;
+}
+
+.search-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink, #0c0e12);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+}
+
+.search-back-btn:hover {
+  background: var(--bone, #f4f4f5);
+}
+
+.search-form-control {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: var(--bone, #f4f4f5);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.search-form-control:focus-within {
+  background: #ffffff;
+  border-color: var(--ink, #0c0e12);
+  box-shadow: 0 0 0 3px rgba(12, 14, 18, 0.08);
+}
+
+.search-input-icon {
+  position: absolute;
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  color: #71717a;
+  pointer-events: none;
+}
+
+.search-main-input {
+  width: 100%;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  padding: 0 40px 0 42px;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 16px;
+  color: var(--ink, #0c0e12);
+  outline: none;
+}
+
+.search-main-input::placeholder {
+  color: #a1a1aa;
+  font-size: 13.5px;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 0;
+  background: #e4e4e7;
+  color: #52525b;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.search-filter-pills-bar {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 16px 10px;
+}
+
+.search-pills-scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.search-pills-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.search-pill-label {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-brand);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted, #71717a);
+  white-space: nowrap;
+}
+
+.search-pill-btn {
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line, #e4e4e7);
+  background: var(--paper, #ffffff);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-secondary, #3f4753);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+}
+
+.search-pill-btn:hover {
+  border-color: var(--ink, #0c0e12);
+  color: var(--ink, #0c0e12);
+}
+
+.search-pill-btn.active {
+  background: var(--ink, #0c0e12);
+  color: #ffffff;
+  border-color: var(--ink, #0c0e12);
+}
+
+.search-page-content {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+.search-meta-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 768px) {
+  .search-meta-bar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.search-categories-scroll {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.search-categories-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.search-cat-tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  background: var(--bone, #f4f4f5);
+  border: 1px solid transparent;
+  color: #52525b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+}
+
+.search-cat-tab.active {
+  background: var(--ink, #0c0e12);
+  color: #ffffff;
+}
+
+.search-results-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-count-text {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: #52525b;
+}
+
+.search-term-highlight {
+  font-weight: 600;
+  color: var(--ink, #0c0e12);
+}
+
+.search-sort-wrap {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bone, #f4f4f5);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line, #e4e4e7);
+}
+
+.search-sort-select {
+  border: 0;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  color: #18181b;
+  outline: none;
+  cursor: pointer;
+}
+
+.search-grid-spacing {
+  margin-top: 10px;
+}
+
+.search-zero-state {
+  text-align: center;
+  padding: 64px 20px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.search-zero-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--bone, #f4f4f5);
+  margin-bottom: 12px;
+}
+
+.search-zero-title {
+  font-family: var(--font-brand);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink, #0c0e12);
+  margin-bottom: 8px;
+}
+
+.search-zero-desc {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  color: var(--ink-muted, #71717a);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.search-zero-tags {
+  margin-bottom: 28px;
+}
+
+.search-zero-tags > span {
+  display: block;
+  font-family: var(--font-brand);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted, #71717a);
+  margin-bottom: 10px;
+}
+
+.search-zero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.search-zero-pill {
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line, #e4e4e7);
+  background: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.search-zero-pill:hover {
+  background: var(--ink, #0c0e12);
+  color: #ffffff;
+}
+
+.search-zero-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 24px;
+  border-radius: 6px;
+  background: var(--ink, #0c0e12);
+  color: #ffffff;
+  font-family: var(--font-brand);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.03em;
+  transition: opacity 0.15s ease;
+}
+
+.search-zero-cta:hover {
+  opacity: 0.9;
+}
+
+/* ==========================================================================
+   12. MOBILE AUTH REFINEMENTS (/login & /register)
+   Focused Mobile-Native Screen (No redundant boxed borders or margins)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .apple-auth-page {
+    min-height: calc(100dvh - 60px) !important;
+    padding: 16px 16px 40px !important;
+    background: #ffffff !important;
+    align-items: flex-start !important;
+  }
+
+  .apple-auth-card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .apple-auth-nav-header {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .apple-auth-back-btn {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink, #0c0e12);
+  }
+
+  .apple-auth-title {
+    font-size: 24px !important;
+    letter-spacing: -0.04em !important;
+    text-align: left !important;
+  }
+
+  .apple-auth-subtitle {
+    font-size: 13.5px !important;
+    text-align: left !important;
+    margin-top: 4px !important;
+    line-height: 1.45 !important;
+  }
+
+  .apple-auth-title-group {
+    text-align: left !important;
+    margin-bottom: 20px !important;
+  }
+
+  .auth-segmented {
+    min-height: 44px;
+    background: var(--bone, #f4f4f5);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 20px;
+  }
+
+  .auth-segmented .apple-segment-item {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13.5px;
+    font-weight: 600;
+    border-radius: 6px;
+  }
+
+  .apple-auth-page .apple-form-input {
+    min-height: 48px !important;
+    font-size: 16px !important;
+    border-radius: 8px !important;
+    padding-left: 42px !important;
+  }
+
+  .apple-google-btn,
+  .apple-auth-submit-btn {
+    min-height: 48px !important;
+    font-size: 14.5px !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+  }
+
+  .apple-auth-divider {
+    margin: 20px 0 !important;
+  }
+}
+
+/* ==========================================================================
+   13. SEARCH OVERLAY RESPONSIVE FIX (Eliminating condensed UI)
+   ========================================================================== */
+@media (max-width: 640px) {
+  .search-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+
+  .search-modal {
+    max-width: 100% !important;
+    height: 90dvh !important;
+    border-radius: 16px 16px 0 0 !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-header {
+    padding: 14px 16px;
+  }
+
+  .search-input-wrap input {
+    font-size: 16px !important;
+  }
+
+  .search-results-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    padding: 14px 16px !important;
+    flex: 1;
+    max-height: none !important;
+  }
+
+  .search-item {
+    padding: 10px 12px;
+  }
+
+  .search-item-img {
+    width: 60px !important;
+    height: 75px !important;
+  }
+
+  .search-item-info h4 {
+    font-size: 13px !important;
+  }
+
+  .search-item-add {
+    min-height: 34px;
+    padding: 6px 14px;
+    font-size: 11px;
+  }
+}
+
+/* ==========================================================================
+   14. PDP, MODALS & CART DRAWER MOBILE SAFE-AREA INSETS
+   ========================================================================== */
+@media (max-width: 640px) {
+  .cart-drawer {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+  }
+
+  .cart-footer {
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .apple-sticky-bar {
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .apple-sticky-thumb {
+    display: none !important;
+  }
+
+  .apple-sticky-size-pill-group {
+    display: none !important;
+  }
+
+  .apple-sticky-title {
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .apple-modal-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+
+  .apple-modal-card,
+  .apple-orders-modal-card {
+    max-height: 92dvh !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .pdp-gallery-card:first-child {
+    grid-column: span 2;
+  }
+}
+
+/* ==========================================================================
+   MOBILE FULL-SCREEN SEARCH OVERLAY — Flipkart Style
+   ========================================================================== */
+
+.mobile-search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #faf9f6;
+  display: flex;
+  flex-direction: column;
+  overscroll-behavior: contain;
+  animation: mobileSearchSlideIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes mobileSearchSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Top bar: back button + input */
+.mobile-search-overlay-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 10px;
+  background: rgba(250, 249, 246, 0.96);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.mobile-search-back-btn {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: #182126;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-search-back-btn:active {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.mobile-search-overlay-form {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.mobile-search-overlay-icon {
+  position: absolute;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.mobile-search-overlay-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 40px 0 40px;
+  background: rgba(0, 0, 0, 0.055);
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 400;
+  color: #182126;
+  outline: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.mobile-search-overlay-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.mobile-search-overlay-input::placeholder {
+  color: #9ca3af;
+}
+
+.mobile-search-overlay-input:focus {
+  background: #fff;
+  border-color: rgba(40, 72, 92, 0.25);
+  box-shadow: 0 0 0 3px rgba(40, 72, 92, 0.08);
+}
+
+.mobile-search-overlay-clear {
+  position: absolute;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 50%;
+  color: #6b7280;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-search-overlay-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Trending state */
+.mobile-search-trending {
+  padding: 20px 16px;
+}
+
+.mobile-search-section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #9ca3af;
+  margin: 0 0 14px;
+}
+
+.mobile-search-trending-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mobile-search-trending-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: #f0efeb;
+  border: 1px solid #e4e2dd;
+  border-radius: 9999px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: #182126;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-search-trending-pill:active {
+  background: #e4e2dd;
+}
+
+/* No results */
+.mobile-search-no-results {
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  color: #9ca3af;
+}
+
+.mobile-search-no-results p {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: #182126;
+  margin: 0;
+}
+
+.mobile-search-no-results span {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Suggestions list */
+.mobile-search-suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.mobile-search-suggestion-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-search-suggestion-row:active {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.mobile-search-suggestion-row.search-for {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: 14px;
+  margin-bottom: 4px;
+}
+
+.mobile-suggestion-icon {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0efeb;
+  border-radius: 8px;
+  color: #6b7280;
+}
+
+.mobile-suggestion-text {
+  flex: 1;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: #182126;
+}
+
+.mobile-suggestion-text strong {
+  font-weight: 600;
+}
+
+.mobile-suggestion-thumb {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 54px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #eeede7;
+}
+
+.mobile-suggestion-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mobile-suggestion-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mobile-suggestion-name {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #182126;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-suggestion-meta {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.mobile-suggestion-arrow {
+  flex-shrink: 0;
+  color: #d1d5db;
+}
+
+/* ==========================================================================
+   PROFILE POPOVER — Backdrop blur fix + Liquid Glass Apple style
+   ========================================================================== */
+
+/* Full-viewport backdrop behind the profile popover */
+.apple-user-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 98;
+  background: rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(8px) saturate(75%);
+  -webkit-backdrop-filter: blur(8px) saturate(75%);
+  animation: popoverBackdropIn 0.18s ease both;
+}
+
+@keyframes popoverBackdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Ensure popover floats above backdrop */
+.apple-user-menu-wrap {
+  position: relative;
+}
+
+.apple-user-popover {
+  z-index: 99;
+}
+
+/* Liquid glass glass layer — warmer, more vibrant */
+.apple-user-popover::before {
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(52px) saturate(230%) brightness(110%);
+  -webkit-backdrop-filter: blur(52px) saturate(230%) brightness(110%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.9) inset,
+    0 24px 52px -6px rgba(0, 0, 0, 0.14),
+    0 6px 18px -3px rgba(0, 0, 0, 0.07);
+}
+
+/* Specular top-left highlight — liquid glass depth */
+.apple-user-popover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0.0) 48%
+  );
+  pointer-events: none;
+}
 

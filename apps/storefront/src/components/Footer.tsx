@@ -15,9 +15,9 @@ export default function Footer() {
             <Image src="/teesgarage_logo.svg" alt="TEESGARAGE" width={160} height={48} />
           </Link>
           <p>Heavyweight tees and everyday bottomwear.</p>
-          <button type="button" className="footer-search-trigger" onClick={() => openOverlay('search')}>
+          <Link href="/search" className="footer-search-trigger">
             Search the store
-          </button>
+          </Link>
         </div>
 
         <nav className="footer-shop-nav" aria-label="Shop categories">

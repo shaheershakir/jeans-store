@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
@@ -20,13 +20,17 @@ import {
   ArrowRight,
   Heart,
   Settings,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft,
+  TrendingUp
 } from 'lucide-react'
 import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore, useFavoriteStore } from '@/lib/store'
 import { DEFAULT_NAV_LINKS, type NavigationItem, type Fit, PRODUCTS } from '@/lib/constants'
 import { searchProducts } from '@/lib/utils'
 import { getProductUrl } from '@/lib/products'
 import UserOrdersModal from '@/components/UserOrdersModal'
+
+const TRENDING_SEARCHES = ['Stripes', 'Printed Tees', 'Henley', 'Trackpants', 'Oversized', 'Sweatpants']
 
 interface HeaderProps {
   initialNavItems?: NavigationItem[]
@@ -53,6 +57,10 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [ordersModalOpen, setOrdersModalOpen] = useState(false)
+  // Mobile full-screen search overlay (Flipkart-style)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [mobileQuery, setMobileQuery] = useState('')
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null)
   const searchWrapRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
@@ -98,6 +106,39 @@ export default function Header({ initialNavItems }: HeaderProps) {
   useEffect(() => {
     setLocalQuery(searchQuery)
   }, [searchQuery])
+
+  // Lock body scroll when mobile search overlay is open
+  useEffect(() => {
+    if (mobileSearchOpen) {
+      document.body.style.overflow = 'hidden'
+      const t = setTimeout(() => mobileSearchInputRef.current?.focus(), 80)
+      return () => clearTimeout(t)
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [mobileSearchOpen])
+
+  const openMobileSearch = useCallback(() => {
+    setMobileQuery('')
+    setMobileSearchOpen(true)
+  }, [])
+
+  const closeMobileSearch = useCallback(() => {
+    setMobileSearchOpen(false)
+    setMobileQuery('')
+  }, [])
+
+  const handleMobileSearchSubmit = useCallback((q: string) => {
+    const trimmed = q.trim()
+    closeMobileSearch()
+    if (trimmed) {
+      setSearchQuery(trimmed)
+      router.push(`/search?q=${encodeURIComponent(trimmed)}`)
+    } else {
+      router.push('/search')
+    }
+  }, [closeMobileSearch, setSearchQuery, router])
 
   const isLinkActive = (href: string) => {
     if (href === '/shop') {
@@ -158,8 +199,10 @@ export default function Header({ initialNavItems }: HeaderProps) {
     setIsSearchFocused(false)
     setSearchQuery(localQuery)
 
-    if (pathname !== '/shop' && !pathname.startsWith('/shop/')) {
-      router.push(`/shop?q=${encodeURIComponent(localQuery)}`)
+    if (localQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(localQuery.trim())}`)
+    } else {
+      router.push('/search')
     }
   }
 
@@ -178,6 +221,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const count = cartCount(items)
   const activeLinks = navLinks.filter((l) => l.isActive)
   const matchingResults = localQuery.trim() ? searchProducts(localQuery, PRODUCTS).slice(0, 5) : []
+  const mobileSuggestions = mobileQuery.trim() ? searchProducts(mobileQuery, PRODUCTS).slice(0, 8) : []
 
   return (
     <>
@@ -298,10 +342,10 @@ export default function Header({ initialNavItems }: HeaderProps) {
             </div>
 
             <button
-              className="macy-mobile-search"
               type="button"
+              className="macy-mobile-search"
               aria-label="Search products"
-              onClick={() => openOverlay('search')}
+              onClick={openMobileSearch}
             >
               <Search className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -327,6 +371,13 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
                   {/* User Controls Dropdown Popover */}
                   {userMenuOpen && (
+                    <>
+                    {/* Backdrop: dims + blurs page behind the popover */}
+                    <div
+                      className="apple-user-popover-backdrop"
+                      aria-hidden="true"
+                      onClick={() => setUserMenuOpen(false)}
+                    />
                     <div className="apple-user-popover">
                       <Link
                         href="/profile"
@@ -424,6 +475,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                         <span>Sign Out</span>
                       </button>
                     </div>
+                    </>
                   )}
                 </div>
               ) : (
@@ -493,6 +545,25 @@ export default function Header({ initialNavItems }: HeaderProps) {
         {menuOpen && (
           <div className="mobile-nav-panel">
             <div className="mobile-nav-links">
+              <Link
+                href="/search"
+                className="mobile-nav-item"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  background: 'var(--paper-subtle, #f4f4f5)',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  marginBottom: '10px',
+                  fontWeight: 600
+                }}
+                onClick={() => setMenuOpen(false)}
+              >
+                <Search className="h-4 w-4 text-zinc-500" />
+                <span>Search Garments &amp; Fits...</span>
+              </Link>
+
               <button
                 type="button"
                 className={`mobile-nav-item ${pathname === '/shop' ? 'active' : ''}`}
@@ -591,6 +662,134 @@ export default function Header({ initialNavItems }: HeaderProps) {
           userEmail={user?.email}
         />
       </header>
+
+      {/* ============================================================
+          MOBILE FULL-SCREEN SEARCH OVERLAY (Flipkart-style)
+          ============================================================ */}
+      {mobileSearchOpen && (
+        <div className="mobile-search-overlay" role="dialog" aria-modal="true" aria-label="Search">
+          {/* Top bar */}
+          <div className="mobile-search-overlay-bar">
+            <button
+              type="button"
+              className="mobile-search-back-btn"
+              onClick={closeMobileSearch}
+              aria-label="Close search"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+
+            <form
+              className="mobile-search-overlay-form"
+              onSubmit={(e) => { e.preventDefault(); handleMobileSearchSubmit(mobileQuery) }}
+              role="search"
+            >
+              <Search className="mobile-search-overlay-icon" aria-hidden="true" />
+              <input
+                ref={mobileSearchInputRef}
+                type="search"
+                className="mobile-search-overlay-input"
+                placeholder="Search garments, fits, styles…"
+                value={mobileQuery}
+                onChange={(e) => setMobileQuery(e.target.value)}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                enterKeyHint="search"
+                aria-label="Search"
+              />
+              {mobileQuery && (
+                <button
+                  type="button"
+                  className="mobile-search-overlay-clear"
+                  onClick={() => { setMobileQuery(''); mobileSearchInputRef.current?.focus() }}
+                  aria-label="Clear"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </form>
+          </div>
+
+          {/* Body */}
+          <div className="mobile-search-overlay-body">
+            {mobileQuery.trim().length === 0 ? (
+              <div className="mobile-search-trending">
+                <p className="mobile-search-section-label">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  TRENDING NOW
+                </p>
+                <div className="mobile-search-trending-pills">
+                  {TRENDING_SEARCHES.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      className="mobile-search-trending-pill"
+                      onClick={() => handleMobileSearchSubmit(t)}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : mobileSuggestions.length === 0 ? (
+              <div className="mobile-search-no-results">
+                <Search className="h-8 w-8" />
+                <p>No results for <strong>&ldquo;{mobileQuery}&rdquo;</strong></p>
+                <span>Try checking your spelling or different keywords</span>
+              </div>
+            ) : (
+              <ul className="mobile-search-suggestions" role="listbox">
+                <li>
+                  <button
+                    type="button"
+                    className="mobile-search-suggestion-row search-for"
+                    onClick={() => handleMobileSearchSubmit(mobileQuery)}
+                    role="option"
+                  >
+                    <span className="mobile-suggestion-icon">
+                      <Search className="h-4 w-4" />
+                    </span>
+                    <span className="mobile-suggestion-text">
+                      Search for <strong>&ldquo;{mobileQuery}&rdquo;</strong>
+                    </span>
+                    <ArrowRight className="mobile-suggestion-arrow h-3.5 w-3.5" />
+                  </button>
+                </li>
+
+                {mobileSuggestions.map((product) => (
+                  <li key={product.id}>
+                    <Link
+                      href={getProductUrl(product)}
+                      className="mobile-search-suggestion-row product-row"
+                      onClick={closeMobileSearch}
+                      role="option"
+                    >
+                      <div className="mobile-suggestion-thumb">
+                        <Image
+                          src={product.img}
+                          alt={product.name}
+                          width={44}
+                          height={54}
+                          className="mobile-suggestion-thumb-img"
+                        />
+                      </div>
+                      <div className="mobile-suggestion-details">
+                        <span className="mobile-suggestion-name">{product.name}</span>
+                        <span className="mobile-suggestion-meta">
+                          {product.fit ? `${product.fit} fit` : product.category} · {product.price}
+                        </span>
+                      </div>
+                      <ArrowRight className="mobile-suggestion-arrow h-3.5 w-3.5" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -199,10 +199,24 @@ function LoginForm() {
       <div className="apple-auth-card">
         {/* Navigation & Brand Header */}
         <div className="apple-auth-nav-header">
-          <Link href="/" className="apple-auth-back-btn" title="Back to storefront">
+          <button
+            type="button"
+            className="apple-auth-back-btn"
+            title="Back"
+            onClick={() => {
+              const redirect = searchParams.get('redirect')
+              if (redirect) {
+                router.push(redirect)
+              } else if (window.history.length > 1) {
+                router.back()
+              } else {
+                router.push('/')
+              }
+            }}
+          >
             <ArrowLeft className="w-4 h-4 mr-1.5" />
-            <span>Storefront</span>
-          </Link>
+            <span>Back</span>
+          </button>
 
           <Link href="/" aria-label="TEESGARAGE Home">
             <Image

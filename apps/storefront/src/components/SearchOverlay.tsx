@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import { useCartStore, useUIStore } from '@/lib/store'
 import { searchProducts } from '@/lib/utils'
 import { getProductUrl } from '@/lib/products'
@@ -115,6 +116,24 @@ export default function SearchOverlay() {
               </div>
             ))
           )}
+        </div>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--line)', background: 'var(--bone, #f8f8f6)', display: 'flex', justifyContent: 'center' }}>
+          <Link
+            href={query.trim() ? `/search?q=${encodeURIComponent(query.trim())}` : '/search'}
+            onClick={closeOverlay}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px',
+              fontWeight: 600,
+              color: 'var(--ink, #0c0e12)',
+              textDecoration: 'none'
+            }}
+          >
+            <span>Open Dedicated Search Page</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
     </div>
