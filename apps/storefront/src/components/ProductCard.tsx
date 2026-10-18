@@ -43,7 +43,13 @@ export default function ProductCard({ product }: { product: Product }) {
   const [activeColorIdx, setActiveColorIdx] = useState<number>(0)
 
   const availableSizes = useMemo(() => getAvailableProductSizes(product), [product])
-  const secondaryImg = product.img2 || product.images?.[1] || null
+  const secondaryImg = useMemo(() => {
+    if (product.img2 && product.img2 !== product.img) return product.img2
+    if (product.images && product.images.length > 1 && product.images[1] !== product.img) {
+      return product.images[1]
+    }
+    return null
+  }, [product])
 
   useEffect(() => {
     setMounted(true)
@@ -229,12 +235,13 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         </Link>
 
-        {/* Bottom-Left 3-Dot Carousel Indicator */}
-        <div className="card-pagination-dots" aria-hidden="true">
-          <span className={`dot ${activeImageIdx === 0 ? 'active' : ''}`} />
-          <span className={`dot ${activeImageIdx === 1 ? 'active' : ''}`} />
-          <span className="dot" />
-        </div>
+        {/* Bottom-Left Carousel Indicator — only when multiple images exist */}
+        {secondaryImg && (
+          <div className="card-pagination-dots" aria-hidden="true">
+            <span className={`dot ${activeImageIdx === 0 ? 'active' : ''}`} />
+            <span className={`dot ${activeImageIdx === 1 ? 'active' : ''}`} />
+          </div>
+        )}
       </div>
 
       {/* ── 2. Product Information Section ── */}
