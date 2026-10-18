@@ -70,7 +70,7 @@ function CallbackHandler() {
 
         if (res.isNewUser) {
           const onboarding = useOnboardingStore.getState()
-          onboarding.triggerAfterRegister()
+          onboarding.triggerAfterRegister(res.user.id || (res.user as any).uid)
 
           const onboardingTarget =
             target && target !== '/'

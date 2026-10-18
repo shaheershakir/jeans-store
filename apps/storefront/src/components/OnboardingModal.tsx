@@ -162,17 +162,21 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
     }
   }, [user, fullName, phone])
 
+  const uid = user?.uid || (user?.id ? String(user.id) : '') || user?.email || ''
+  const isUserOnboarded = useOnboardingStore((s) => s.isUserOnboarded)
+  const isDone = uid ? isUserOnboarded(uid) : (hasCompletedOnboarding || hasSkippedOnboarding)
+
   useEffect(() => {
-    if (standalone && mounted && (hasCompletedOnboarding || hasSkippedOnboarding || hasPromptedAfterRegister)) {
+    if (standalone && mounted && isDone) {
       const redirect = typeof window !== 'undefined'
         ? new URLSearchParams(window.location.search).get('redirect') || '/shop'
         : '/shop'
       router.replace(redirect)
     }
-  }, [standalone, mounted, hasCompletedOnboarding, hasSkippedOnboarding, hasPromptedAfterRegister, router])
+  }, [standalone, mounted, isDone, router])
 
   const handleGlobalSkip = React.useCallback(() => {
-    skipOnboarding()
+    skipOnboarding(uid)
     showToast('Setup skipped. You can update address & sizing anytime in your Profile.')
     if (standalone) {
       const redirect = typeof window !== 'undefined'
@@ -180,7 +184,7 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
         : '/shop'
       router.push(redirect)
     }
-  }, [skipOnboarding, showToast, standalone, router])
+  }, [skipOnboarding, showToast, standalone, router, uid])
 
   // ESC to skip/close modal
   useEffect(() => {
@@ -230,7 +234,7 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
       inseam,
       comfortFit
     })
-    completeOnboarding()
+    completeOnboarding(uid)
     showToast('Size profile saved! Recommended sizes are now auto-selected.')
     if (standalone) {
       const redirect = typeof window !== 'undefined'
@@ -242,8 +246,8 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
 
   if (!mounted) return null
   if (!standalone && pathname === '/onboarding') return null
-  if (!standalone && (!isOpen || hasCompletedOnboarding || hasSkippedOnboarding || hasPromptedAfterRegister)) return null
-  if (standalone && (hasCompletedOnboarding || hasSkippedOnboarding || hasPromptedAfterRegister)) return null
+  if (!standalone && (!isOpen || isDone)) return null
+  if (standalone && isDone) return null
 
   const content = (
     <div className={`onboarding-modal-card ${standalone ? 'standalone' : ''}`}>

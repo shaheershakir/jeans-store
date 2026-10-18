@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { useCartStore, useUIStore } from '@/lib/store'
@@ -17,6 +17,8 @@ export default function SearchOverlay() {
   const addItem = useCartStore((state) => state.addItem)
   const showToast = useUIStore((state) => state.showToast)
   const [query, setQuery] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     void useUIStore.persist.rehydrate()
@@ -26,6 +28,47 @@ export default function SearchOverlay() {
   const open = overlay === 'search'
   const results = searchProducts(query)
 
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus()
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        closeOverlay()
+        return
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open, closeOverlay])
+
   return (
     <div
       className={`search-overlay${open ? ' open' : ''}`}
@@ -34,7 +77,7 @@ export default function SearchOverlay() {
         if (e.target === e.currentTarget) closeOverlay()
       }}
     >
-      <div className="search-modal" role="dialog" aria-modal="true" aria-label="Search catalog">
+      <div className="search-modal" ref={modalRef} role="dialog" aria-modal="true" aria-label="Search catalog">
         <div className="search-header">
           <div className="search-input-wrap">
             <span className="search-icon">
@@ -53,6 +96,7 @@ export default function SearchOverlay() {
               </svg>
             </span>
             <input
+              ref={inputRef}
               type="text"
               placeholder="SEARCH BY FIT, STYLE, OR WASH..."
               autoComplete="off"

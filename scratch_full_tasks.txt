@@ -1,0 +1,78 @@
+<USER_REQUEST>
+/emil-design-eng use emil skill for design philosophy
+You are working in the jeans-store monorepo (TEESGARAGE apparel store). All tasks are in apps/storefront unless stated. Read AGENTS.md, DESIGN.md and docs/CONVENTIONS.md first and follow them.
+
+## Stack and rules to respect
+- Next.js 15 App Router, React 19, Zustand, lucide-react, vanilla CSS with custom properties in apps/storefront/src/app/globals.css (about 15k lines).
+- Do NOT add Tailwind or a new animation library to the storefront. Use CSS keyframes/transitions and small React hooks.
+- DESIGN.md: palette (--ink, --paper, --bone, --navy, --line), fonts (DM Sans / DM Mono / Playfair), 3:4 product images. No strike-through pricing, fake sale countdowns, or fake review counters.
+- Conventions: strict TypeScript, no new `any`. Persisted Zustand stores must be rehydrated in useEffect. Every interactive element needs hover, focus and active states. Breakpoints: 900px, 640px, 480px.
+- Verify with `npm run typecheck`, `npm run lint` and `npm run test` from the repo root, and check pages at 375px, 768px and 1280px+ with `npm run dev:storefront`. Don't break existing flows.
+
+## 1. Gaussian blur on the menu
+- The mobile menu is the `.mobile-nav-panel` rendered in components/Header.tsx. Give it a backdrop blur (`backdrop-filter` plus `-webkit-backdrop-filter`) with a semi-transparent --paper background and a solid fallback via `@supports not (backdrop-filter: blur(1px))`.
+- Apply the same treatment to the user account popover (`.apple-user-popover`) and any other floating menu/dropdown for consistency.
+- Keep text contrast at WCAG AA, and animate open/close with opacity and transform.
+
+## 2. Search: desktop should match the mobile experience
+- Today, mobile (`.macy-mobile-search`) opens components/SearchOverlay.tsx via `useUIStore.openOverlay('search')`. Desktop uses a separate inline bar with a dropdown (`.macy-search-container` plus `.macy-search-dropdown` in Header.tsx). The mobile overlay UI and its animation are the reference, so keep them unchanged.
+- Make desktop use the same SearchOverlay UI and animation, scaled for desktop (centered modal, comfortable max-width, results in a roomier grid or list). The desktop header should show a search trigger (a styled field or icon) that opens it. Remove the old inline dropdown once it is no longer used.
+- Reuse one component and one set of styles. Only layout and size should differ per breakpoint.
+- Add keyboard support: `/` opens, `Esc` closes, focus moves to the input, and focus is trapped while open.
+
+## 3. Site-wide animations
+- Define shared motion tokens in :root (durations ~150/250/400ms, 1-2 easings) and reuse them everywhere instead of ad-hoc values.
+- Add: scroll-reveal for sections and product grids (a reusable IntersectionObserver hook, staggered, once per element); route/page transition via app/template.tsx; consistent button, link and icon hover/press feedback; cart-add and wishlist feedback; smooth skeleton-to-content transitions (skeleton components already exist in components/skeletons); menu, drawer and modal transitions.
+- Animate only transform and opacity. Avoid layout shift. Honor `prefers-reduced-motion: reduce` (disable or minimize).
+- Don't animate whole product cards (see task 6).
+
+## 4. Fix onboarding showing only once
+Root cause (confirm it first): `useOnboardingStore` in lib/store.ts persists device-wide flags (`hasCompletedOnboarding`, `hasSkippedOnboarding`, `hasPromptedAfterRegister`) under the localStorage key 'teesgarage-onboarding'. `triggerAfterRegister()` returns early if any flag is true, and `resetOnboarding()` is never called anywhere. So after the first registration on a browser, no later new account ever sees onboarding. The email register/login pages, One Tap handlers and app/auth/callback/page.tsx all go through this same guard.
+Fix:
+- Track onboarding per user with an explicit variable instead of device-wide flags. For example, persist a map keyed by user uid (`{ [uid]: 'pending' | 'completed' | 'skipped' }`).
+- On a successful registration (email, Google One Tap, or Google OAuth with `isNewUser`), set that user's status to 'pending' unconditionally and open onboarding. On complete or skip, update only that user's status.
+- Existing users with no entry must not suddenly see onboarding. Logging out and registering a different account on the same browser must show it again.
+- If it is small and clean, consider also storing the flag on the user record (packages/db users table, API auth responses) so it follows the account across devices. Otherwise note it as a follow-up.
+- Check both entry points: the global `<OnboardingModal />` in app/layout.tsx and the standalone /onboarding page.
+
+## 5. Continue with Google on the login route
+- /login already renders "Continue with Google" (gated by `Boolean(getGoogleClientId())`), and POST /api/auth/google in apps/api/src/routes/auth.ts already creates a user for unknown emails and returns `isNewUser`. Don't rebuild this. Verify end to end that a brand-new Google user on /login is created, treated as a registration, and routed to onboarding (with the `redirect` param preserved), for both the OAuth redirect flow (/auth/callback) and the One Tap credential flow.
+- Fix anything broken. Note that task 4's bug currently blocks onboarding for new Google users. Handle errors with clear messages (popup closed, network failure, a Google email that matches an existing email/password account).
+- Keep the button visually identical on /login and /register. Prefer an env var for the client ID over the hardcoded fallback in lib/auth.ts, and flag it if you leave it.
+
+## 6. Product card: remove pop-up, swap image on hover
+- `.product-card:hover` (and `.product-card:hover .primary-img` / `.product-image-container img`) is styled in several overlapping places in globals.css (around lines 1341, 6470, 7133, 12696, 13092). Consolidate these into one authoritative card block and delete the dead, conflicting rules. Remove all lift/scale/shadow-grow on card hover.
+- On hover, only the image changes: crossfade from `product.img` to `product.img2` (fall back to `product.images?.[1]`). If neither exists, show no hover effect on the image. Preload or eager-decode the second image to avoid flicker, and keep next/image sizing correct.
+- Wrap the hover effect in `@media (hover: hover)` so touch devices don't get stuck states, and keep the card keyboard-focus accessible.
+
+## 7. Modern card design (components/ProductCard.tsx)
+- Clean editorial layout in line with DESIGN.md: 3:4 image with small rounded corners, subtle --line border or soft shadow, generous spacing, clear hierarchy (brand label, DM Sans title, DM Mono price, fit/wash meta).
+- Wishlist heart as a refined overlay. Size select and "Add to bag" should look intentional, for example a compact row where the add button is revealed or emphasized on hover/focus without changing card height. Badges (`product.badge`) styled consistently.
+- Responsive grid: 2 columns on mobile, 3 on tablet, 4 on desktop. Skeletons (ProductCardSkeleton) must match the new layout.
+- No strike-through prices or invented urgency.
+
+## Deliverable
+Work task by task with small commits. Finish with a summary of what changed per task, files touched, assumptions made (especially onboarding tracking and search), and anything left unfinished.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-18T14:32:02+05:30.
+
+The user's current state is as follows:
+Active Document: f:\jeans store\apps\storefront\src\components\Header.tsx (LANGUAGE_TSX)
+Cursor is on line: 1
+Other open documents:
+- f:\jeans store\apps\api\.env (LANGUAGE_UNSPECIFIED)
+- f:\jeans store\apps\storefront\src\app\global-error.tsx (LANGUAGE_TSX)
+- f:\jeans store\apps\api\.env.example (LANGUAGE_UNSPECIFIED)
+- f:\jeans store\apps\storefront\src\app\category\[slug]\CategoryClient.tsx (LANGUAGE_TSX)
+- f:\jeans store\apps\storefront\src\app\shop\ShopClient.tsx (LANGUAGE_TSX)
+
+The user has mentioned some items in the form @[ITEM]. Here is extra information about the items that were mentioned by the user, in the order that they appear:
+
+/emil-design-eng is a [Slash Command]:
+<SKILL>The user requested you read and use the "emil-design-eng" skill. The path to the skill file is:
+f:\jeans store\.agents\skills\emil-design-eng\SKILL.md</SKILL>
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from None to Claude Sonnet 4.6 (Thinking). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>

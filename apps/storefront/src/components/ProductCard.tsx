@@ -22,6 +22,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const [selectedSize, setSelectedSize] = useState('')
   const availableSizes = getAvailableProductSizes(product)
   const chosenSize = availableSizes.includes(selectedSize) ? selectedSize : ''
+  const secondaryImg = product.img2 || product.images?.[1] || null
 
   useEffect(() => {
     setMounted(true)
@@ -131,11 +132,22 @@ export default function ProductCard({ product }: { product: Product }) {
               src={product.img}
               alt={product.name}
               width={600}
-              height={780}
+              height={800}
               sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 24vw"
-              className="primary-img"
+              className={`primary-img ${secondaryImg ? 'has-secondary' : ''}`}
               loading="lazy"
             />
+            {secondaryImg && (
+              <Image
+                src={secondaryImg}
+                alt={`${product.name} alternate view`}
+                width={600}
+                height={800}
+                sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 24vw"
+                className="secondary-img"
+                loading="lazy"
+              />
+            )}
           </div>
           {product.badge && <span className="product-badge top-right">{product.badge}</span>}
         </Link>
@@ -154,6 +166,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
         <div className="product-price-row">
           <span className="product-price">{product.price}</span>
+          {product.fit && <span className="product-fit-tag">{product.fit} fit</span>}
         </div>
 
         <p className="product-wash-label">{product.wash || product.desc.slice(0, 50) + '...'}</p>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import {
   SlidersHorizontal,
@@ -274,6 +275,19 @@ export default function ShopClient({
   // Drawer & Sheet state
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [sortSheetOpen, setSortSheetOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setDrawerOpen(false)
+        setSortSheetOpen(false)
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     if (initialProducts && initialProducts.length > 0) {
@@ -1941,143 +1955,159 @@ export default function ShopClient({
         </div>
       </div>
 
-      {/* 5. Mobile Fixed Bottom Action Bar */}
-      <div className="shop-mobile-bottom-bar" aria-label="Mobile filter actions">
-        <button
-          type="button"
-          className="shop-mobile-bar-btn"
-          onClick={() => setSortSheetOpen(true)}
-        >
-          <ArrowUpDown className="h-4 w-4" />
-          <span>SORT</span>
-        </button>
-        <div className="shop-mobile-bar-divider" />
-        <button
-          type="button"
-          className="shop-mobile-bar-btn"
-          onClick={() => setDrawerOpen(true)}
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          <span>FILTER</span>
-          {activeFilterCount > 0 && (
-            <span className="shop-mobile-badge">{activeFilterCount}</span>
-          )}
-        </button>
-      </div>
-
-      {/* 6. Mobile Sort Bottom Sheet */}
-      {sortSheetOpen && (
-        <div
-          className="shop-modal-backdrop"
-          onClick={() => setSortSheetOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-      <div
-        className={`shop-sort-sheet ${sortSheetOpen ? 'open' : ''}`}
-        aria-hidden={!sortSheetOpen}
-        role="dialog"
-        aria-label="Sort options"
-      >
-        <div className="shop-sort-sheet-header">
-          <span className="shop-sort-sheet-title">SORT BY</span>
-          <button
-            type="button"
-            className="shop-sheet-close-btn"
-            onClick={() => setSortSheetOpen(false)}
-            aria-label="Close sort dialog"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="shop-sort-sheet-options">
-          {SORT_OPTIONS.map((opt) => (
-            <label
-              key={opt.mode}
-              className={`shop-sort-sheet-row ${sort === opt.mode ? 'selected' : ''}`}
-              onClick={() => {
-                setSort(opt.mode)
-                setSortSheetOpen(false)
-              }}
-            >
-              <span className="shop-sort-radio-outer">
-                {sort === opt.mode && <span className="shop-sort-radio-inner" />}
-              </span>
-              <span className="shop-sort-sheet-text">{opt.label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* 7. Mobile Filter Modal (2-Column Split Body) */}
-      <div
-        className={`shop-mobile-drawer ${drawerOpen ? 'open' : ''}`}
-        aria-hidden={!drawerOpen}
-        role="dialog"
-        aria-label="Filter catalog"
-      >
-        {/* Header */}
-        <div className="shop-mobile-filter-header">
-          <span className="shop-mobile-filter-title">FILTERS</span>
-          {activeFilterCount > 0 && (
+      {/* 5 & 6. Mobile Actions & Modals (Portaled to document.body to stick directly to device viewport) */}
+      {mounted && typeof document !== 'undefined' && createPortal(
+        <>
+          {/* Mobile Fixed Bottom Action Bar */}
+          <div className="shop-mobile-bottom-bar" aria-label="Mobile filter actions">
             <button
               type="button"
-              className="shop-mobile-filter-clear-link"
-              onClick={clearAllFilters}
+              className="shop-mobile-bar-btn"
+              onClick={() => setSortSheetOpen(true)}
             >
-              CLEAR ALL
+              <ArrowUpDown className="h-4 w-4" />
+              <span>SORT</span>
             </button>
-          )}
-        </div>
-
-        {/* 2-Column Body */}
-        <div className="shop-mobile-filter-body">
-          {/* Left Column: Facet Tabs for Active Category */}
-          <div className="shop-mobile-filter-tabs">
-            {activeFacets.map((facetKey) => {
-              const hasSelection = checkFacetHasSelection(facetKey)
-              return (
-                <button
-                  key={facetKey}
-                  type="button"
-                  className={`shop-mobile-tab-btn ${activeMobileTab === facetKey ? 'active' : ''}`}
-                  onClick={() => setActiveMobileTab(facetKey)}
-                >
-                  <span className="shop-mobile-tab-label">
-                    {FACET_TITLES[facetKey]}
-                  </span>
-                  {hasSelection && <span className="shop-mobile-tab-dot" />}
-                </button>
-              )
-            })}
+            <div className="shop-mobile-bar-divider" />
+            <button
+              type="button"
+              className="shop-mobile-bar-btn"
+              onClick={() => setDrawerOpen(true)}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span>FILTER</span>
+              {activeFilterCount > 0 && (
+                <span className="shop-mobile-badge">{activeFilterCount}</span>
+              )}
+            </button>
           </div>
 
-          {/* Right Column: Facet Options for Active Tab */}
-          <div className="shop-mobile-filter-pane">
-            <div style={{ padding: '12px 16px' }}>
-              {renderFacetBlock(activeMobileTab, true)}
+          {/* Mobile Sort Bottom Sheet */}
+          {sortSheetOpen && (
+            <div
+              className="shop-modal-backdrop"
+              onClick={() => setSortSheetOpen(false)}
+              aria-hidden="true"
+            />
+          )}
+          <div
+            className={`shop-sort-sheet ${sortSheetOpen ? 'open' : ''}`}
+            aria-hidden={!sortSheetOpen}
+            role="dialog"
+            aria-label="Sort options"
+          >
+            <div className="shop-sort-sheet-header">
+              <span className="shop-sort-sheet-title">SORT BY</span>
+              <button
+                type="button"
+                className="shop-sheet-close-btn"
+                onClick={() => setSortSheetOpen(false)}
+                aria-label="Close sort dialog"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="shop-sort-sheet-options">
+              {SORT_OPTIONS.map((opt) => (
+                <label
+                  key={opt.mode}
+                  className={`shop-sort-sheet-row ${sort === opt.mode ? 'selected' : ''}`}
+                  onClick={() => {
+                    setSort(opt.mode)
+                    setSortSheetOpen(false)
+                  }}
+                >
+                  <span className="shop-sort-radio-outer">
+                    {sort === opt.mode && <span className="shop-sort-radio-inner" />}
+                  </span>
+                  <span className="shop-sort-sheet-text">{opt.label}</span>
+                </label>
+              ))}
             </div>
           </div>
-        </div>
 
-        {/* Bottom Action Footer */}
-        <div className="shop-mobile-filter-footer">
-          <button
-            type="button"
-            className="shop-mobile-btn-close"
-            onClick={() => setDrawerOpen(false)}
+          {/* Mobile Filter Modal (2-Column Split Body) */}
+          <div
+            className={`shop-mobile-drawer ${drawerOpen ? 'open' : ''}`}
+            aria-hidden={!drawerOpen}
+            role="dialog"
+            aria-label="Filter catalog"
           >
-            CLOSE
-          </button>
-          <button
-            type="button"
-            className="shop-mobile-btn-apply"
-            onClick={() => setDrawerOpen(false)}
-          >
-            APPLY {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
-          </button>
-        </div>
-      </div>
+            {/* Header */}
+            <div className="shop-mobile-filter-header">
+              <span className="shop-mobile-filter-title">FILTERS</span>
+              <div className="shop-mobile-filter-header-actions">
+                {activeFilterCount > 0 && (
+                  <button
+                    type="button"
+                    className="shop-mobile-filter-clear-link"
+                    onClick={clearAllFilters}
+                  >
+                    CLEAR ALL
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="shop-mobile-filter-close-btn"
+                  onClick={() => setDrawerOpen(false)}
+                  aria-label="Close filters"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* 2-Column Body */}
+            <div className="shop-mobile-filter-body">
+              {/* Left Column: Facet Tabs for Active Category */}
+              <div className="shop-mobile-filter-tabs">
+                {activeFacets.map((facetKey) => {
+                  const hasSelection = checkFacetHasSelection(facetKey)
+                  return (
+                    <button
+                      key={facetKey}
+                      type="button"
+                      className={`shop-mobile-tab-btn ${activeMobileTab === facetKey ? 'active' : ''}`}
+                      onClick={() => setActiveMobileTab(facetKey)}
+                    >
+                      <span className="shop-mobile-tab-label">
+                        {FACET_TITLES[facetKey]}
+                      </span>
+                      {hasSelection && <span className="shop-mobile-tab-dot" />}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Right Column: Facet Options for Active Tab */}
+              <div className="shop-mobile-filter-pane">
+                <div style={{ padding: '12px 16px' }}>
+                  {renderFacetBlock(activeMobileTab, true)}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Action Footer */}
+            <div className="shop-mobile-filter-footer">
+              <button
+                type="button"
+                className="shop-mobile-btn-close"
+                onClick={() => setDrawerOpen(false)}
+              >
+                CLOSE
+              </button>
+              <button
+                type="button"
+                className="shop-mobile-btn-apply"
+                onClick={() => setDrawerOpen(false)}
+              >
+                APPLY {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
+              </button>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
     </div>
   )
 }

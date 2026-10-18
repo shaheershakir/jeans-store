@@ -10,6 +10,7 @@ import ProductCard from '@/components/ProductCard'
 import CategoryGroups from '@/components/homepage/CategoryGroups'
 import CollectionClient from '@/app/CollectionClient'
 import { isProductAvailable } from '@/lib/products'
+import { useScrollReveal } from '@/lib/hooks'
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -32,10 +33,13 @@ function AnnouncementBar({ messages, intervalSeconds }: { messages: string[]; in
 
   if (!messages || messages.length === 0) return null
 
+  const rawMessage = messages[idx % messages.length] || ''
+  const cleanMessage = rawMessage.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim()
+
   return (
     <div className="hp-announcement-bar" role="status" aria-live="polite" aria-atomic="true">
       <span className={`hp-announcement-text ${visible ? 'hp-ann-visible' : 'hp-ann-hidden'}`}>
-        {messages[idx % messages.length]}
+        {cleanMessage}
       </span>
     </div>
   )
@@ -72,6 +76,7 @@ interface HomepageClientProps {
 export default function HomepageClient({ products, config }: HomepageClientProps) {
   const setCategory = useFilterStore((s) => s.setCategory)
   const [activeReview, setActiveReview] = useState(0)
+  const containerRef = useScrollReveal({ childSelector: '.reveal-item' })
 
   const cfg = config || DEFAULT_HOMEPAGE_CONFIG
 
@@ -174,10 +179,6 @@ export default function HomepageClient({ products, config }: HomepageClientProps
                 )}
               </div>
             </div>
-            <div className="hp-hero-scroll-hint" aria-hidden="true">
-              <span className="hp-scroll-label">Scroll</span>
-              <div className="hp-scroll-line" />
-            </div>
           </section>
         )
       }
@@ -186,7 +187,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
         if (!cfg.categories?.enabled) return null
         const cats = cfg.categories
         return (
-          <section key="categories" className="hp-section hp-categories-section" aria-labelledby="hp-cat-heading">
+          <section key="categories" className="hp-section hp-categories-section reveal-item" aria-labelledby="hp-cat-heading">
             <div className="hp-section-header">
               {cats.eyebrow && <span className="hp-section-eyebrow">{cats.eyebrow}</span>}
               <h2 className="hp-section-title" id="hp-cat-heading">
@@ -202,7 +203,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
         if (!cfg.new_arrivals?.enabled) return null
         const na = cfg.new_arrivals
         return (
-          <section key="new_arrivals" id="new-arrivals" className="hp-section hp-arrivals-section" aria-labelledby="hp-arrivals-heading">
+          <section key="new_arrivals" id="new-arrivals" className="hp-section hp-arrivals-section reveal-item" aria-labelledby="hp-arrivals-heading">
             <div className="hp-section-header">
               {na.eyebrow && <span className="hp-section-eyebrow">{na.eyebrow}</span>}
               <h2 className="hp-section-title" id="hp-arrivals-heading">
@@ -239,7 +240,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
         if (!cfg.featured_collection?.enabled) return null
         const fc = cfg.featured_collection
         return (
-          <section key="featured_collection" className="hp-section hp-featured-section" aria-labelledby="hp-featured-heading">
+          <section key="featured_collection" className="hp-section hp-featured-section reveal-item" aria-labelledby="hp-featured-heading">
             <div className="hp-featured-inner">
               <div className="hp-featured-media">
                 <Image
@@ -272,7 +273,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
         if (!cfg.best_sellers?.enabled || bestSellers.length === 0) return null
         const bs = cfg.best_sellers
         return (
-          <section key="best_sellers" className="hp-section hp-bestsellers-section" aria-labelledby="hp-bs-heading">
+          <section key="best_sellers" className="hp-section hp-bestsellers-section reveal-item" aria-labelledby="hp-bs-heading">
             <div className="hp-section-header">
               {bs.eyebrow && <span className="hp-section-eyebrow">{bs.eyebrow}</span>}
               <h2 className="hp-section-title" id="hp-bs-heading">
@@ -293,7 +294,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
         if (!cfg.brand_story?.enabled) return null
         const bs = cfg.brand_story
         return (
-          <section key="brand_story" className="hp-section hp-brand-section" aria-labelledby="hp-brand-heading">
+          <section key="brand_story" className="hp-section hp-brand-section reveal-item" aria-labelledby="hp-brand-heading">
             <div className="hp-brand-inner">
               <div className="hp-brand-media">
                 <Image
@@ -342,7 +343,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
         if (!cfg.looks?.enabled || cfg.looks.items.length === 0) return null
         const lk = cfg.looks
         return (
-          <section key="looks" className="hp-section hp-looks-section" aria-labelledby="hp-looks-heading">
+          <section key="looks" className="hp-section hp-looks-section reveal-item" aria-labelledby="hp-looks-heading">
             <div className="hp-section-header">
               {lk.eyebrow && <span className="hp-section-eyebrow">{lk.eyebrow}</span>}
               <h2 className="hp-section-title" id="hp-looks-heading">
@@ -378,7 +379,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
         if (!cfg.instagram?.enabled || cfg.instagram.photos.length === 0) return null
         const ig = cfg.instagram
         return (
-          <section key="instagram" className="hp-section hp-instagram-section" aria-labelledby="hp-ig-heading">
+          <section key="instagram" className="hp-section hp-instagram-section reveal-item" aria-labelledby="hp-ig-heading">
             <div className="hp-section-header">
               {ig.eyebrow && <span className="hp-section-eyebrow">{ig.eyebrow}</span>}
               <h2 className="hp-section-title" id="hp-ig-heading">
@@ -421,7 +422,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
         if (!cfg.reviews?.enabled || reviewsCount === 0) return null
         const rev = cfg.reviews
         return (
-          <section key="reviews" className="hp-section hp-reviews-section" aria-labelledby="hp-reviews-heading">
+          <section key="reviews" className="hp-section hp-reviews-section reveal-item" aria-labelledby="hp-reviews-heading">
             <div className="hp-section-header">
               <div className="hp-review-rating-summary">
                 <StarRating count={5} />
@@ -473,7 +474,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
         if (!cfg.trust_bar?.enabled) return null
         const tb = cfg.trust_bar
         return (
-          <div key="trust_bar" className="hp-trust-bar">
+          <div key="trust_bar" className="hp-trust-bar reveal-item">
             {tb.items.map((item, idx) => (
               <div key={item.id || idx} className="hp-trust-item">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
@@ -516,7 +517,7 @@ export default function HomepageClient({ products, config }: HomepageClientProps
   const catalogEnabled = cfg.sectionsEnabled?.catalog ?? true
 
   return (
-    <div className="hp-root">
+    <div className="hp-root" ref={containerRef as any}>
       {cfg.sectionsOrder.map((sectionId) => renderSection(sectionId))}
       {/* If catalog was not in sectionsOrder but is enabled, render at bottom as fallback */}
       {!catalogInOrder && catalogEnabled && <CollectionClient initialProducts={products} />}

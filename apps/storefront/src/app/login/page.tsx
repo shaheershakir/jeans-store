@@ -84,7 +84,7 @@ function LoginForm() {
 
         // Direct redirection to onboarding after registration
         const onboarding = useOnboardingStore.getState()
-        onboarding.triggerAfterRegister()
+        onboarding.triggerAfterRegister(res.user.id || (res.user as any).uid)
 
         const redirectParam = searchParams.get('redirect')
         const target = redirectParam && redirectParam !== '/'

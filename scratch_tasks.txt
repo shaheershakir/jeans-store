@@ -1,0 +1,49 @@
+<USER_REQUEST>
+/emil-design-eng use emil skill for design philosophy
+You are working in the jeans-store monorepo (TEESGARAGE apparel store). All tasks are in apps/storefront unless stated. Read AGENTS.md, DESIGN.md and docs/CONVENTIONS.md first and follow them.
+
+## Stack and rules to respect
+- Next.js 15 App Router, React 19, Zustand, lucide-react, vanilla CSS with custom properties in apps/storefront/src/app/globals.css (about 15k lines).
+- Do NOT add Tailwind or a new animation library to the storefront. Use CSS keyframes/transitions and small React hooks.
+- DESIGN.md: palette (--ink, --paper, --bone, --navy, --line), fonts (DM Sans / DM Mono / Playfair), 3:4 product images. No strike-through pricing, fake sale countdowns, or fake review counters.
+- Conventions: strict TypeScript, no new `any`. Persisted Zustand stores must be rehydrated in useEffect. Every interactive element needs hover, focus and active states. Breakpoints: 900px, 640px, 480px.
+- Verify with `npm run typecheck`, `npm run lint` and `npm run test` from the repo root, and check pages at 375px, 768px and 1280px+ with `npm run dev:storefront`. Don't break existing flows.
+
+## 1. Gaussian blur on the menu
+- The mobile menu is the `.mobile-nav-panel` rendered in components/Header.tsx. Give it a backdrop blur (`backdrop-filter` plus `-webkit-backdrop-filter`) with a semi-transparent --paper background and a solid fallback via `@supports not (backdrop-filter: blur(1px))`.
+- Apply the same treatment to the user account popover (`.apple-user-popover`) and any other floating menu/dropdown for consistency.
+- Keep text contrast at WCAG AA, and animate open/close with opacity and transform.
+
+## 2. Search: desktop should match the mobile experience
+- Today, mobile (`.macy-mobile-search`) opens components/SearchOverlay.tsx via `useUIStore.openOverlay('search')`. Desktop uses a separate inline bar with a dropdown (`.macy-search-container` plus `.macy-search-dropdown` in Header.tsx). The mobile overlay UI and its animation are the reference, so k
+<truncated 4625 bytes>
+ generous spacing, clear hierarchy (brand label, DM Sans title, DM Mono price, fit/wash meta).
+- Wishlist heart as a refined overlay. Size select and "Add to bag" should look intentional, for example a compact row where the add button is revealed or emphasized on hover/focus without changing card height. Badges (`product.badge`) styled consistently.
+- Responsive grid: 2 columns on mobile, 3 on tablet, 4 on desktop. Skeletons (ProductCardSkeleton) must match the new layout.
+- No strike-through prices or invented urgency.
+
+## Deliverable
+Work task by task with small commits. Finish with a summary of what changed per task, files touched, assumptions made (especially onboarding tracking and search), and anything left unfinished.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-18T14:32:02+05:30.
+
+The user's current state is as follows:
+Active Document: f:\jeans store\apps\storefront\src\components\Header.tsx (LANGUAGE_TSX)
+Cursor is on line: 1
+Other open documents:
+- f:\jeans store\apps\api\.env (LANGUAGE_UNSPECIFIED)
+- f:\jeans store\apps\storefront\src\app\global-error.tsx (LANGUAGE_TSX)
+- f:\jeans store\apps\api\.env.example (LANGUAGE_UNSPECIFIED)
+- f:\jeans store\apps\storefront\src\app\category\[slug]\CategoryClient.tsx (LANGUAGE_TSX)
+- f:\jeans store\apps\storefront\src\app\shop\ShopClient.tsx (LANGUAGE_TSX)
+
+The user has mentioned some items in the form @[ITEM]. Here is extra information about the items that were mentioned by the user, in the order that they appear:
+
+/emil-design-eng is a [Slash Command]:
+<SKILL>The user requested you read and use the "emil-design-eng" skill. The path to the skill file is:
+f:\jeans store\.agents\skills\emil-design-eng\SKILL.md</SKILL>
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from None to Claude Sonnet 4.6 (Thinking). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>

@@ -450,57 +450,128 @@ export const usePreferencesStore = create<PreferencesState>()(
   )
 )
 
+export type OnboardingUserStatus = 'pending' | 'completed' | 'skipped'
+
 export interface OnboardingState {
+  userStatus: Record<string, OnboardingUserStatus>
   hasCompletedOnboarding: boolean
   hasSkippedOnboarding: boolean
   hasPromptedAfterRegister: boolean
   isOpen: boolean
   step: 1 | 2
-  openOnboarding: (step?: 1 | 2) => void
-  triggerAfterRegister: () => void
-  closeOnboarding: () => void
-  completeOnboarding: () => void
-  skipOnboarding: () => void
+  isUserOnboarded: (uid?: string | null) => boolean
+  openOnboarding: (step?: 1 | 2, uid?: string | null) => void
+  triggerAfterRegister: (uid?: string | null) => void
+  closeOnboarding: (uid?: string | null) => void
+  completeOnboarding: (uid?: string | null) => void
+  skipOnboarding: (uid?: string | null) => void
   setStep: (step: 1 | 2) => void
-  resetOnboarding: () => void
+  resetOnboarding: (uid?: string | null) => void
+}
+
+function resolveUid(uid?: string | null): string {
+  if (uid) return String(uid)
+  const currentUser = useAuthStore.getState().user
+  if (!currentUser) return ''
+  return currentUser.uid || (currentUser.id ? String(currentUser.id) : '') || currentUser.email || ''
 }
 
 export const useOnboardingStore = create<OnboardingState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      userStatus: {},
       hasCompletedOnboarding: false,
       hasSkippedOnboarding: false,
       hasPromptedAfterRegister: false,
       isOpen: false,
       step: 1,
-      openOnboarding: (step = 1) =>
-        set((state) => {
-          if (state.hasCompletedOnboarding || state.hasSkippedOnboarding || state.hasPromptedAfterRegister) {
-            return state
-          }
-          return { isOpen: true, step }
-        }),
-      triggerAfterRegister: () =>
-        set((state) => {
-          if (state.hasCompletedOnboarding || state.hasSkippedOnboarding || state.hasPromptedAfterRegister) {
-            return state
-          }
-          return { hasPromptedAfterRegister: true, isOpen: true, step: 1 }
-        }),
-      closeOnboarding: () => set({ isOpen: false, hasPromptedAfterRegister: true }),
-      completeOnboarding: () =>
-        set({ hasCompletedOnboarding: true, hasPromptedAfterRegister: true, isOpen: false }),
-      skipOnboarding: () =>
-        set({ hasSkippedOnboarding: true, hasPromptedAfterRegister: true, isOpen: false }),
-      setStep: (step) => set({ step }),
-      resetOnboarding: () =>
-        set({
+
+      isUserOnboarded: (uid) => {
+        const key = resolveUid(uid)
+        if (!key) return false
+        const status = get().userStatus?.[key]
+        return status === 'completed' || status === 'skipped'
+      },
+
+      openOnboarding: (step = 1, uid) => {
+        const key = resolveUid(uid)
+        if (key && (get().userStatus?.[key] === 'completed' || get().userStatus?.[key] === 'skipped')) {
+          return
+        }
+        set({ isOpen: true, step })
+      },
+
+      triggerAfterRegister: (uid) => {
+        const key = resolveUid(uid)
+        set((state) => ({
+          userStatus: key ? { ...state.userStatus, [key]: 'pending' } : state.userStatus,
           hasCompletedOnboarding: false,
           hasSkippedOnboarding: false,
-          hasPromptedAfterRegister: false,
-          isOpen: false,
+          hasPromptedAfterRegister: true,
+          isOpen: true,
           step: 1
-        })
+        }))
+      },
+
+      closeOnboarding: (uid) => {
+        const key = resolveUid(uid)
+        set((state) => ({
+          isOpen: false,
+          hasPromptedAfterRegister: true,
+          userStatus: key && state.userStatus?.[key] === 'pending'
+            ? { ...state.userStatus, [key]: 'skipped' }
+            : state.userStatus
+        }))
+      },
+
+      completeOnboarding: (uid) => {
+        const key = resolveUid(uid)
+        set((state) => ({
+          userStatus: key ? { ...state.userStatus, [key]: 'completed' } : state.userStatus,
+          hasCompletedOnboarding: true,
+          hasPromptedAfterRegister: true,
+          isOpen: false
+        }))
+      },
+
+      skipOnboarding: (uid) => {
+        const key = resolveUid(uid)
+        set((state) => ({
+          userStatus: key ? { ...state.userStatus, [key]: 'skipped' } : state.userStatus,
+          hasSkippedOnboarding: true,
+          hasPromptedAfterRegister: true,
+          isOpen: false
+        }))
+      },
+
+      setStep: (step) => set({ step }),
+
+      resetOnboarding: (uid) => {
+        const key = resolveUid(uid)
+        if (key) {
+          set((state) => {
+            const nextStatus = { ...state.userStatus }
+            delete nextStatus[key]
+            return {
+              userStatus: nextStatus,
+              hasCompletedOnboarding: false,
+              hasSkippedOnboarding: false,
+              hasPromptedAfterRegister: false,
+              isOpen: false,
+              step: 1
+            }
+          })
+        } else {
+          set({
+            userStatus: {},
+            hasCompletedOnboarding: false,
+            hasSkippedOnboarding: false,
+            hasPromptedAfterRegister: false,
+            isOpen: false,
+            step: 1
+          })
+        }
+      }
     }),
     {
       name: 'teesgarage-onboarding',

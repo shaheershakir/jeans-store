@@ -1012,10 +1012,10 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   announcement: {
     enabled: true,
     messages: [
-      '📦 Paid delivery calculated by destination',
-      '🔄 7-Day doorstep exchanges — no questions asked',
-      '🏭 24h dispatch from Kerala',
-      '💳 Cash on delivery available across India'
+      'Paid delivery calculated by destination',
+      '7-Day doorstep exchanges — no questions asked',
+      '24h dispatch from Kerala atelier',
+      'Cash on delivery available across India'
     ],
     intervalSeconds: 4
   },
@@ -1039,56 +1039,56 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
       {
         id: 'stripes',
         label: 'Stripes',
-        icon: '💈',
+        icon: '',
         img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80',
         count: '3 styles'
       },
       {
         id: 'fullsleeve',
         label: 'Fullsleeve',
-        icon: '🧥',
+        icon: '',
         img: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=600&q=80',
         count: '3 styles'
       },
       {
         id: 'drsleeve',
         label: 'Drsleeve',
-        icon: '👕',
+        icon: '',
         img: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=600&q=80',
         count: '3 styles'
       },
       {
         id: 'printed-tees',
         label: 'Printed Tees',
-        icon: '🎨',
+        icon: '',
         img: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
         count: '3 styles'
       },
       {
         id: 'ringer-tees',
         label: 'Ringer Tees',
-        icon: '⚡',
+        icon: '',
         img: 'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=600&q=80',
         count: '3 styles'
       },
       {
         id: 'henley',
         label: 'Henley',
-        icon: '👔',
+        icon: '',
         img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=600&q=80',
         count: '3 styles'
       },
       {
         id: 'trackpants',
         label: 'Trackpants',
-        icon: '👖',
+        icon: '',
         img: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=600&q=80',
         count: '3 styles'
       },
       {
         id: 'sweatpants',
         label: 'Sweatpants',
-        icon: '🩳',
+        icon: '',
         img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80',
         count: '3 styles'
       }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
@@ -9,8 +10,6 @@ import {
   X,
   Menu,
   ShoppingBag,
-  Store,
-  Gift,
   User,
   ChevronDown,
   Package,
@@ -27,7 +26,6 @@ import {
 import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore, useFavoriteStore } from '@/lib/store'
 import { DEFAULT_NAV_LINKS, type NavigationItem, type Fit, PRODUCTS } from '@/lib/constants'
 import { searchProducts } from '@/lib/utils'
-import { getProductUrl } from '@/lib/products'
 import UserOrdersModal from '@/components/UserOrdersModal'
 
 const TRENDING_SEARCHES = ['Stripes', 'Printed Tees', 'Henley', 'Trackpants', 'Oversized', 'Sweatpants']
@@ -41,10 +39,9 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const pathname = usePathname()
   const items = useCartStore((state) => state.items)
   const openOverlay = useUIStore((state) => state.openOverlay)
+  const closeOverlay = useUIStore((state) => state.closeOverlay)
   const setFit = useFilterStoreSync()
   const setCategory = useFilterStore((state) => state.setCategory)
-  const searchQuery = useFilterStore((state) => state.searchQuery)
-  const setSearchQuery = useFilterStore((state) => state.setSearchQuery)
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const logout = useAuthStore((state) => state.logout)
@@ -53,15 +50,12 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const [mounted, setMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [localQuery, setLocalQuery] = useState(searchQuery || '')
-  const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [ordersModalOpen, setOrdersModalOpen] = useState(false)
   // Mobile full-screen search overlay (Flipkart-style)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [mobileQuery, setMobileQuery] = useState('')
   const mobileSearchInputRef = useRef<HTMLInputElement>(null)
-  const searchWrapRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
   const [navLinks, setNavLinks] = useState<NavigationItem[]>(
@@ -77,35 +71,44 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
+      setUserMenuOpen(false)
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
 
-    // Click outside search dropdown & user menu popover
+    // Click outside user menu popover
     const handleClickOutside = (e: MouseEvent) => {
-      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
-        setIsSearchFocused(false)
-      }
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
 
+    // Keyboard shortcut: '/' opens search overlay (no animation per Emil — frequent action)
+    // 'Escape' closes any open overlay
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.key === '/') {
+        e.preventDefault()
+        openOverlay('search')
+      } else if (e.key === 'Escape') {
+        closeOverlay()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+
     return () => {
       window.removeEventListener('scroll', handleScroll)
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [])
+  }, [openOverlay, closeOverlay])
 
   useEffect(() => {
     if (initialNavItems && initialNavItems.length > 0) {
       setNavLinks(initialNavItems)
     }
   }, [initialNavItems])
-
-  useEffect(() => {
-    setLocalQuery(searchQuery)
-  }, [searchQuery])
 
   // Lock body scroll when mobile search overlay is open
   useEffect(() => {
@@ -133,12 +136,11 @@ export default function Header({ initialNavItems }: HeaderProps) {
     const trimmed = q.trim()
     closeMobileSearch()
     if (trimmed) {
-      setSearchQuery(trimmed)
       router.push(`/search?q=${encodeURIComponent(trimmed)}`)
     } else {
       router.push('/search')
     }
-  }, [closeMobileSearch, setSearchQuery, router])
+  }, [closeMobileSearch, router])
 
   const isLinkActive = (href: string) => {
     if (href === '/shop') {
@@ -182,8 +184,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const handleShopAllClick = () => {
     setCategory('all')
     setFit('all')
-    setSearchQuery('')
-    setLocalQuery('')
     router.push('/shop')
   }
 
@@ -194,39 +194,14 @@ export default function Header({ initialNavItems }: HeaderProps) {
     }
   }
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSearchFocused(false)
-    setSearchQuery(localQuery)
-
-    if (localQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(localQuery.trim())}`)
-    } else {
-      router.push('/search')
-    }
-  }
-
-  const handleSearchChange = (val: string) => {
-    setLocalQuery(val)
-    setSearchQuery(val)
-    if (!isSearchFocused) setIsSearchFocused(true)
-  }
-
-  const handleClearSearch = () => {
-    setLocalQuery('')
-    setSearchQuery('')
-    setIsSearchFocused(false)
-  }
-
   const count = cartCount(items)
   const activeLinks = navLinks.filter((l) => l.isActive)
-  const matchingResults = localQuery.trim() ? searchProducts(localQuery, PRODUCTS).slice(0, 5) : []
   const mobileSuggestions = mobileQuery.trim() ? searchProducts(mobileQuery, PRODUCTS).slice(0, 8) : []
 
   return (
     <>
-      <header className={`macy-header ${scrolled ? 'scrolled' : ''}`}>
-        {/* Tier 1: Main Brand, Wide Search Bar & Customer Action Utilities */}
+      <header className={`macy-header ${scrolled ? 'scrolled' : ''} ${userMenuOpen ? 'user-popover-open' : ''}`}>
+        {/* Tier 1: Main Brand, Search Trigger & Customer Action Utilities */}
         <div className="macy-header-main">
           <div className="macy-header-main-inner">
             {/* Mobile Menu Hamburger */}
@@ -252,95 +227,19 @@ export default function Header({ initialNavItems }: HeaderProps) {
               />
             </Link>
 
-            {/* Centered Reworked Search Bar with Shadcn/Lucide Search Icon */}
-            <div className="macy-search-container" ref={searchWrapRef}>
-              <form className="macy-search-form" onSubmit={handleSearchSubmit} role="search">
-                <Search className="macy-search-icon" aria-hidden="true" />
-                <input
-                  type="text"
-                  className="macy-search-input"
-                  placeholder="What are you looking for?"
-                  value={localQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  aria-label="What are you looking for?"
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-                {localQuery && (
-                  <button
-                    type="button"
-                    className="macy-search-clear"
-                    onClick={handleClearSearch}
-                    aria-label="Clear search text"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </form>
+            {/* Desktop search trigger — opens shared SearchOverlay (same UI as mobile) */}
+            <button
+              type="button"
+              className="macy-search-trigger"
+              aria-label="Search products (press / to open)"
+              onClick={() => openOverlay('search')}
+            >
+              <Search className="macy-search-trigger-icon" aria-hidden="true" />
+              <span className="macy-search-trigger-text">What are you looking for?</span>
+              <kbd className="macy-search-shortcut" aria-hidden="true">/</kbd>
+            </button>
 
-              {/* Instant Search Suggestions Dropdown */}
-              {isSearchFocused && localQuery.trim().length > 0 && (
-                <div className="macy-search-dropdown">
-                  <div className="macy-search-dropdown-header">
-                    <span>MATCHING PRODUCTS ({matchingResults.length})</span>
-                    <button
-                      type="button"
-                      className="macy-search-dropdown-close"
-                      onClick={() => setIsSearchFocused(false)}
-                    >
-                      Close
-                    </button>
-                  </div>
-
-                  {matchingResults.length === 0 ? (
-                    <div className="macy-search-no-results">
-                      No products found matching “{localQuery}”.
-                    </div>
-                  ) : (
-                    <div className="macy-search-results-list">
-                      {matchingResults.map((product) => (
-                        <Link
-                          key={product.id}
-                          href={getProductUrl(product)}
-                          className="macy-search-result-item"
-                          onClick={() => {
-                            setIsSearchFocused(false)
-                          }}
-                        >
-                          <div className="macy-search-item-thumb">
-                            <Image
-                              src={product.img}
-                              alt={product.name}
-                              width={44}
-                              height={55}
-                              className="macy-search-thumb-img"
-                            />
-                          </div>
-                          <div className="macy-search-item-details">
-                            <h4 className="macy-search-item-title">{product.name}</h4>
-                            <p className="macy-search-item-meta">
-                              {product.fit ? `${product.fit} fit` : product.category} ·{' '}
-                              <span className="macy-search-item-price">{product.price}</span>
-                            </p>
-                          </div>
-                        </Link>
-                      ))}
-
-                      <button
-                        type="button"
-                        className="macy-search-view-all"
-                        onClick={handleSearchSubmit}
-                      >
-                        <span>View all matching results for &ldquo;{localQuery}&rdquo;</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
+            {/* Mobile search icon (visible only on mobile) */}
             <button
               type="button"
               className="macy-mobile-search"
@@ -372,12 +271,15 @@ export default function Header({ initialNavItems }: HeaderProps) {
                   {/* User Controls Dropdown Popover */}
                   {userMenuOpen && (
                     <>
-                    {/* Backdrop: dims + blurs page behind the popover */}
-                    <div
-                      className="apple-user-popover-backdrop"
-                      aria-hidden="true"
-                      onClick={() => setUserMenuOpen(false)}
-                    />
+                    {/* Backdrop: portaled to body so sticky header does not trap fixed coordinates */}
+                    {mounted && typeof document !== 'undefined' && createPortal(
+                      <div
+                        className="apple-user-popover-backdrop"
+                        aria-hidden="true"
+                        onClick={() => setUserMenuOpen(false)}
+                      />,
+                      document.body
+                    )}
                     <div className="apple-user-popover">
                       <Link
                         href="/profile"
@@ -486,7 +388,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
               )}
 
 
-        
+          
 
               {/* Shopping Bag Button with Badge */}
               <button
@@ -761,7 +663,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 {mobileSuggestions.map((product) => (
                   <li key={product.id}>
                     <Link
-                      href={getProductUrl(product)}
+                      href={`/product/${product.id}`}
                       className="mobile-search-suggestion-row product-row"
                       onClick={closeMobileSearch}
                       role="option"
