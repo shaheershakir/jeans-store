@@ -1,22 +1,30 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, isDatabaseConfigured } from '../db/index.js'
-import { shippingSettings, type ShippingRates } from '../db/schema.js'
+import {
+  shippingMethods,
+  shippingZoneRegions,
+  shippingZones
+} from '../db/schema.js'
 
 export const shippingRateSchema = z.object({
   baseWeightGrams: z.number().int().min(1).max(100_000),
-  baseCharge: z.number().int().min(1).max(100_000),
+  baseCharge: z.number().int().min(0).max(100_000),
   additionalWeightGrams: z.number().int().min(1).max(100_000),
-  additionalCharge: z.number().int().min(1).max(100_000),
+  additionalCharge: z.number().int().min(0).max(100_000),
   estimatedDaysMin: z.number().int().min(1).max(100).optional(),
   estimatedDaysMax: z.number().int().min(1).max(100).optional(),
   exactDeliveryDate: z.string().optional()
 })
 
+export type ShippingRate = z.infer<typeof shippingRateSchema>
+
 export const shippingRatesSchema = z.object({
   kerala: shippingRateSchema,
   restOfIndia: shippingRateSchema
 })
+
+export type ShippingRates = z.infer<typeof shippingRatesSchema>
 
 export const DEFAULT_SHIPPING_RATES: ShippingRates = {
   kerala: {
@@ -61,21 +69,134 @@ export function getDeliveryEstimation(state: string, rates: ShippingRates, pinco
 
 let memoryRates: ShippingRates = structuredClone(DEFAULT_SHIPPING_RATES)
 
+function toRate(method: {
+  baseWeightGrams: number
+  baseCharge: number
+  additionalWeightGrams: number
+  additionalCharge: number
+  estimatedDaysMin: number | null
+  estimatedDaysMax: number | null
+  exactDeliveryDate: string | null
+}): ShippingRate {
+  return {
+    baseWeightGrams: method.baseWeightGrams,
+    baseCharge: method.baseCharge,
+    additionalWeightGrams: method.additionalWeightGrams,
+    additionalCharge: method.additionalCharge,
+    estimatedDaysMin: method.estimatedDaysMin ?? undefined,
+    estimatedDaysMax: method.estimatedDaysMax ?? undefined,
+    exactDeliveryDate: method.exactDeliveryDate ?? undefined
+  }
+}
+
 export async function getShippingRates(): Promise<ShippingRates> {
   if (isDatabaseConfigured() && db) {
-    const [row] = await db.select().from(shippingSettings).where(eq(shippingSettings.id, 'delivery'))
-    return row?.rates ?? structuredClone(DEFAULT_SHIPPING_RATES)
+    const [zones, regions, methods] = await Promise.all([
+      db.select().from(shippingZones).where(eq(shippingZones.isActive, true)),
+      db.select().from(shippingZoneRegions),
+      db.select().from(shippingMethods).where(eq(shippingMethods.isActive, true))
+    ])
+
+    if (zones.length === 0 || methods.length === 0) {
+      return structuredClone(DEFAULT_SHIPPING_RATES)
+    }
+
+    const regionsByZone = new Map<number, string[]>()
+    for (const region of regions) {
+      const list = regionsByZone.get(region.zoneId) ?? []
+      list.push(region.region.toLowerCase())
+      regionsByZone.set(region.zoneId, list)
+    }
+
+    const keralaZone =
+      zones.find((zone) => (regionsByZone.get(zone.id) ?? []).includes('kerala')) ??
+      zones.find((zone) => zone.name.toLowerCase().includes('kerala'))
+    const defaultZone =
+      zones.find((zone) => zone.isDefault) ??
+      zones.find((zone) => zone.id !== keralaZone?.id) ??
+      zones[0]
+
+    const standardFor = (zoneId?: number) => {
+      if (!zoneId) return undefined
+      const zoneMethods = methods.filter((method) => method.zoneId === zoneId)
+      return zoneMethods.find((method) => method.name.toLowerCase() === 'standard') ?? zoneMethods[0]
+    }
+
+    const keralaMethod = standardFor(keralaZone?.id)
+    const restMethod = standardFor(defaultZone?.id)
+
+    return {
+      kerala: keralaMethod ? toRate(keralaMethod) : structuredClone(DEFAULT_SHIPPING_RATES.kerala),
+      restOfIndia: restMethod ? toRate(restMethod) : structuredClone(DEFAULT_SHIPPING_RATES.restOfIndia)
+    }
   }
   if (process.env.NODE_ENV === 'production') throw new Error('Shipping database is not configured.')
   return structuredClone(memoryRates)
 }
 
+async function ensureZone(name: string, isDefault: boolean): Promise<number> {
+  const [existing] = await db!.select({ id: shippingZones.id }).from(shippingZones).where(eq(shippingZones.name, name))
+  if (existing) {
+    await db!
+      .update(shippingZones)
+      .set({ isDefault, isActive: true })
+      .where(eq(shippingZones.id, existing.id))
+    return existing.id
+  }
+  const [created] = await db!
+    .insert(shippingZones)
+    .values({ name, isDefault, isActive: true })
+    .returning({ id: shippingZones.id })
+  return created.id
+}
+
+async function upsertStandardMethod(zoneId: number, rate: ShippingRate): Promise<void> {
+  await db!
+    .insert(shippingMethods)
+    .values({
+      zoneId,
+      name: 'Standard',
+      baseWeightGrams: rate.baseWeightGrams,
+      baseCharge: rate.baseCharge,
+      additionalWeightGrams: rate.additionalWeightGrams,
+      additionalCharge: rate.additionalCharge,
+      estimatedDaysMin: rate.estimatedDaysMin ?? null,
+      estimatedDaysMax: rate.estimatedDaysMax ?? null,
+      exactDeliveryDate: rate.exactDeliveryDate ?? null,
+      codAvailable: false,
+      isActive: true,
+      updatedAt: new Date()
+    })
+    .onConflictDoUpdate({
+      target: [shippingMethods.zoneId, shippingMethods.name],
+      set: {
+        baseWeightGrams: rate.baseWeightGrams,
+        baseCharge: rate.baseCharge,
+        additionalWeightGrams: rate.additionalWeightGrams,
+        additionalCharge: rate.additionalCharge,
+        estimatedDaysMin: rate.estimatedDaysMin ?? null,
+        estimatedDaysMax: rate.estimatedDaysMax ?? null,
+        exactDeliveryDate: rate.exactDeliveryDate ?? null,
+        isActive: true,
+        updatedAt: new Date()
+      }
+    })
+}
+
 export async function saveShippingRates(rates: ShippingRates): Promise<void> {
   if (isDatabaseConfigured() && db) {
+    const keralaZoneId = await ensureZone('Kerala', false)
+    const restZoneId = await ensureZone('Rest of India', true)
+
     await db
-      .insert(shippingSettings)
-      .values({ id: 'delivery', rates, updatedAt: new Date() })
-      .onConflictDoUpdate({ target: shippingSettings.id, set: { rates, updatedAt: new Date() } })
+      .insert(shippingZoneRegions)
+      .values({ zoneId: keralaZoneId, region: 'Kerala' })
+      .onConflictDoNothing()
+
+    await Promise.all([
+      upsertStandardMethod(keralaZoneId, rates.kerala),
+      upsertStandardMethod(restZoneId, rates.restOfIndia)
+    ])
     return
   }
   if (process.env.NODE_ENV === 'production') throw new Error('Shipping database is not configured.')

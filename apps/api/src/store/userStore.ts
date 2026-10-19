@@ -45,10 +45,13 @@ class UserStore {
       id: this.memoryUsers.length + 1,
       uid,
       email: cleanEmail,
+      phone: null,
       name: input.name.trim(),
       passwordHash,
       provider,
       googleSub,
+      emailVerifiedAt: null,
+      lastLoginAt: null,
       onboardingCompletedAt,
       createdAt: new Date(),
       updatedAt: new Date()

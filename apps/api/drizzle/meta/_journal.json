@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1791674471342,
-      "tag": "0000_unknown_firebird",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1791945600000,
-      "tag": "0001_admin_shipping",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1792404000000,
-      "tag": "0002_product_images",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1792404100000,
-      "tag": "0003_catalog_normalization",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1792404200000,
-      "tag": "0004_users_orders",
+      "when": 1792414623013,
+      "tag": "0000_baseline",
       "breakpoints": true
     }
   ]

@@ -94,7 +94,7 @@ function toNavigationItem(row: DbNavigationItem): NavigationItem {
     type: (row.type as NavItemType) || 'custom',
     targetValue: row.targetValue ?? undefined,
     badge: row.badge ?? undefined,
-    order: row.order,
+    order: row.sortOrder,
     isActive: Boolean(row.isActive),
     openInNewTab: Boolean(row.openInNewTab)
   }
@@ -116,7 +116,7 @@ class NavigationStore {
 
     if (isDatabaseConfigured() && db && (!this.cachedDbItems || isCacheExpired || forceRefresh)) {
       try {
-        const rows = await db.select().from(navTable).orderBy(asc(navTable.order))
+        const rows = await db.select().from(navTable).orderBy(asc(navTable.sortOrder))
         if (rows.length > 0) {
           this.cachedDbItems = rows.map(toNavigationItem)
           this.lastFetchedAt = now
@@ -162,7 +162,7 @@ class NavigationStore {
             type: item.type,
             targetValue: item.targetValue ?? null,
             badge: item.badge ?? null,
-            order: item.order,
+            sortOrder: item.order,
             isActive: item.isActive,
             openInNewTab: item.openInNewTab
           }))

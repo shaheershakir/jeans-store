@@ -28,6 +28,9 @@ import {
 } from '../services/skuService.js'
 import { assetUrl, keyFromUrl } from '@jeans-store/shared'
 
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80'
+
 export const INITIAL_CATEGORIES = [
   { id: 1, slug: 'stripes', name: 'Stripes', sortOrder: 1, isActive: true },
   { id: 2, slug: 'fullsleeve', name: 'Fullsleeve', sortOrder: 2, isActive: true },
@@ -128,96 +131,144 @@ export function normalizeImageInputs(img: string, img2: string, images?: string[
   return result
 }
 
-function toVariant(row: DbProductVariant): Variant {
+function normalizeStatus(value?: string | null): 'draft' | 'active' | 'archived' {
+  const raw = String(value ?? 'active').toLowerCase()
+  return raw === 'archived' ? 'archived' : raw === 'draft' ? 'draft' : 'active'
+}
+
+function adminStatus(status: 'draft' | 'active' | 'archived'): 'Draft' | 'Active' | 'Archived' {
+  return status === 'archived' ? 'Archived' : status === 'draft' ? 'Draft' : 'Active'
+}
+
+function imageUrls(
+  images: Array<{ storageKey: string | null; externalUrl: string | null; position: number }>
+): string[] {
+  return [...images]
+    .sort((a, b) => a.position - b.position)
+    .map((image) => (image.storageKey ? assetUrl(image.storageKey) : image.externalUrl))
+    .filter((url): url is string => Boolean(url))
+}
+
+function variantFromRow(row: DbProductVariant, product?: DbProduct): Variant {
   return {
     id: row.id,
     productId: row.productId,
     sku: row.sku,
     size: row.size,
     color: row.color,
-    price: row.price,
+    price: row.price ?? product?.price,
     stock: row.stock,
     reserved: row.reserved,
     reorderPoint: row.reorderPoint,
-    weight: row.weight,
+    weight: row.weightGrams ?? product?.weightGrams ?? 350,
     barcode: row.barcode ?? undefined,
     status: (row.status as 'Active' | 'Inactive') || 'Active'
   }
 }
 
+function attributesFromRow(row: DbProduct): Record<string, unknown> {
+  const entries: Record<string, unknown> = {
+    fabric: row.fabric,
+    material: row.material,
+    sleeveLength: row.sleeveLength,
+    neckType: row.neckType,
+    pattern: row.pattern,
+    printStyle: row.printStyle,
+    trimColor: row.trimColor,
+    length: row.garmentLength,
+    closure: row.closure,
+    pockets: row.pockets,
+    legStyle: row.legStyle,
+    rise: row.rise,
+    wash: row.wash,
+    careInstructions: row.careInstructions
+  }
+  return Object.fromEntries(Object.entries(entries).filter(([, value]) => value !== null && value !== undefined))
+}
+
 export function toProduct(
   row: DbProduct,
+  categorySlug: string,
   variants: Variant[] = [],
   images: Array<{ storageKey: string | null; externalUrl: string | null; position: number }> = []
 ): Product {
-  const adminData = (row.adminData as Record<string, unknown>) ?? {}
-  const rawStatus = (row.status || (adminData.status as string) || 'active').toLowerCase()
-  const status = rawStatus === 'archived' ? 'archived' : rawStatus === 'draft' ? 'draft' : 'active'
-  const adminStatus = status === 'archived' ? 'Archived' : status === 'draft' ? 'Draft' : 'Active'
-
-  let displayImg = row.img
-  let displayImg2 = row.img2
-  let displayImages = row.images ?? []
-
-  if (images.length > 0) {
-    const sorted = [...images].sort((a, b) => a.position - b.position)
-    const resolvedUrls = sorted
-      .map((img) => (img.storageKey ? assetUrl(img.storageKey) : img.externalUrl))
-      .filter((u): u is string => Boolean(u))
-
-    if (resolvedUrls.length > 0) {
-      displayImg = resolvedUrls[0]
-      displayImg2 = resolvedUrls[1] || resolvedUrls[0]
-      displayImages = resolvedUrls
+  const urls = imageUrls(images)
+  const attributes = attributesFromRow(row)
+  const firstVariant = variants[0]
+  const adminData: Record<string, unknown> = {
+    status: adminStatus(normalizeStatus(row.status)),
+    weightGrams: row.weightGrams,
+    styleCode: row.styleCode,
+    gender: row.gender,
+    isFeatured: row.isFeatured,
+    compareAtPrice: row.compareAtPrice,
+    costPrice: row.costPrice,
+    taxRate: row.taxRate,
+    hsnCode: row.hsnCode,
+    ratingAverage: row.ratingAverage,
+    reviewCount: row.reviewCount,
+    dimensions: {
+      lengthMm: row.lengthMm,
+      widthMm: row.widthMm,
+      heightMm: row.heightMm
     }
   }
 
-  const attributes = (row.attributes as Record<string, unknown>) ?? {}
-
   return {
     id: row.id,
-    store: (row.store as StoreType) || 'teesgarage',
-    category: row.category as Category,
-    categoryId: row.categoryId ?? undefined,
-    slug: row.slug ?? undefined,
-    status,
-    name: row.name,
-    fit: (row.fit as Fit) || undefined,
-    price: row.price,
-    priceNum: row.priceNum,
-    img: displayImg,
-    img2: displayImg2,
-    images: displayImages,
-    badge: row.badge ?? undefined,
-    desc: row.desc,
-    wash: row.wash ?? undefined,
-    sizes: (row.sizes as string[]) ?? undefined,
-    fabric: (attributes.fabric as string) ?? undefined,
-    material: (attributes.material as string) ?? undefined,
-    sleeveLength: (attributes.sleeveLength as string) ?? undefined,
-    neckType: (attributes.neckType as string) ?? undefined,
-    pattern: (attributes.pattern as string) ?? undefined,
-    printStyle: (attributes.printStyle as string) ?? undefined,
-    trimColor: (attributes.trimColor as string) ?? undefined,
-    buttons: (attributes.buttons as string) ?? undefined,
-    waistSize: (attributes.waistSize as string[]) ?? undefined,
-    length: (attributes.length as string) ?? undefined,
-    closure: (attributes.closure as string) ?? undefined,
-    pockets: (attributes.pockets as string) ?? undefined,
-    use: (attributes.use as string) ?? undefined,
-    legStyle: (attributes.legStyle as string) ?? undefined,
-    rise: (attributes.rise as string) ?? undefined,
-    collection: (attributes.collection as string) ?? undefined,
+    store: 'teesgarage' as StoreType,
+    category: categorySlug as Category,
+    categoryId: row.categoryId,
+    slug: row.slug,
+    status: normalizeStatus(row.status),
     attributes,
-    adminData: {
-      ...adminData,
-      status: adminStatus
-    },
+    name: row.name,
+    sku: firstVariant?.sku,
+    fit: (row.fit as Fit) || undefined,
+    price: `₹${row.price.toLocaleString('en-IN')}`,
+    priceNum: row.price,
+    weightGrams: row.weightGrams,
+    lengthMm: row.lengthMm ?? undefined,
+    widthMm: row.widthMm ?? undefined,
+    heightMm: row.heightMm ?? undefined,
+    gender: row.gender as 'Men' | 'Women' | 'Unisex',
+    brand: row.brand,
+    styleCode: row.styleCode ?? undefined,
+    compareAtPrice: row.compareAtPrice,
+    costPrice: row.costPrice,
+    taxRate: row.taxRate,
+    hsnCode: row.hsnCode ?? undefined,
+    isFeatured: row.isFeatured,
+    inseam: row.inseam ?? undefined,
+    garmentLength: row.garmentLength ?? undefined,
+    careInstructions: row.careInstructions ?? undefined,
+    countryOfOrigin: row.countryOfOrigin,
+    img: urls[0] ?? FALLBACK_IMAGE,
+    img2: urls[1] ?? urls[0] ?? FALLBACK_IMAGE,
+    images: urls.length > 0 ? urls : undefined,
+    badge: row.badge ?? undefined,
+    desc: row.description,
+    wash: row.wash ?? undefined,
+    color: firstVariant?.color,
+    sizes: variants.length > 0 ? [...new Set(variants.map((variant) => String(variant.size)))] : undefined,
+    fabric: row.fabric ?? undefined,
+    material: row.material ?? undefined,
+    sleeveLength: row.sleeveLength ?? undefined,
+    neckType: row.neckType ?? undefined,
+    pattern: row.pattern ?? undefined,
+    printStyle: row.printStyle ?? undefined,
+    trimColor: row.trimColor ?? undefined,
+    closure: row.closure ?? undefined,
+    pockets: row.pockets ?? undefined,
+    legStyle: row.legStyle ?? undefined,
+    rise: row.rise ?? undefined,
+    rating: row.ratingAverage,
+    inStock: variants.some((variant) => variant.stock - variant.reserved > 0),
+    adminData,
     variants: variants.length > 0 ? variants : undefined,
     createdAt: row.createdAt
   }
 }
-
 
 interface RawVariantInput {
   id?: number
@@ -279,11 +330,9 @@ export class ProductStore {
       }
 
       const attributes = extractAttributes(p)
-      const rawStatus = (
-        p.status ||
-        ((p.adminData as any)?.status ? String((p.adminData as any).status).toLowerCase() : 'active')
-      ).toLowerCase()
-      const status = rawStatus === 'archived' ? 'archived' : rawStatus === 'draft' ? 'draft' : 'active'
+      const status = normalizeStatus(
+        p.status || ((p.adminData as any)?.status ? String((p.adminData as any).status) : 'active')
+      )
       p.status = status
       p.attributes = attributes
       p.slug = p.slug || `${slugify(p.name)}-${p.id}`
@@ -334,8 +383,8 @@ export class ProductStore {
                 stock: 20,
                 reserved: 0,
                 reorderPoint: 5,
-                weight: 250,
-                barcode: `890${String(10000000000 + p.id * 100 + variantCounter).slice(0, 10)}`,
+                weight: p.weightGrams ?? 350,
+                barcode: String(8900000000000 + (p.id + 1) * 1000 + variantCounter),
                 status: 'Active' as const
               }
             })
@@ -350,6 +399,54 @@ export class ProductStore {
         this.memoryClaimedSkus.set(v.sku.toUpperCase(), v.productId)
       }
     }
+  }
+
+  private hydrateMemory(product: Product): Product {
+    const variants = this.memoryVariants.filter((variant) => variant.productId === product.id)
+    const urls = imageUrls(this.memoryProductImages.filter((image) => image.productId === product.id))
+    return {
+      ...product,
+      img: urls[0] ?? product.img ?? FALLBACK_IMAGE,
+      img2: urls[1] ?? product.img2 ?? urls[0] ?? product.img ?? FALLBACK_IMAGE,
+      images: urls.length > 0 ? urls : product.images,
+      sizes: variants.length > 0 ? [...new Set(variants.map((variant) => String(variant.size)))] : product.sizes,
+      variants
+    }
+  }
+
+  private async hydrateDbRows(rows: DbProduct[]): Promise<Product[]> {
+    if (rows.length === 0) return []
+    const productIds = rows.map((row) => row.id)
+    const categoryIds = [...new Set(rows.map((row) => row.categoryId))]
+
+    const [categoryRows, variantRows, imageRows] = await Promise.all([
+      db!.select().from(categoriesTable).where(inArray(categoriesTable.id, categoryIds)),
+      db!.select().from(productVariantsTable).where(inArray(productVariantsTable.productId, productIds)),
+      db!.select().from(productImagesTable).where(inArray(productImagesTable.productId, productIds))
+    ])
+
+    const categoryMap = new Map<number, string>(categoryRows.map((category) => [category.id, category.slug]))
+    const variantMap = new Map<number, Variant[]>()
+    for (const row of variantRows) {
+      const list = variantMap.get(row.productId) ?? []
+      list.push(variantFromRow(row, rows.find((product) => product.id === row.productId)))
+      variantMap.set(row.productId, list)
+    }
+    const imageMap = new Map<number, DbProductImage[]>()
+    for (const image of imageRows) {
+      const list = imageMap.get(image.productId) ?? []
+      list.push(image)
+      imageMap.set(image.productId, list)
+    }
+
+    return rows.map((row) =>
+      toProduct(
+        row,
+        categoryMap.get(row.categoryId) ?? 'printed-tees',
+        variantMap.get(row.id) ?? [],
+        imageMap.get(row.id) ?? []
+      )
+    )
   }
 
   async resolveCategory(slug?: string): Promise<{ id: number; slug: string; name: string } | null> {
@@ -398,9 +495,6 @@ export class ProductStore {
     }
   }
 
-  /**
-   * Helper to check if an SKU is claimed by another product.
-   */
   async isSkuClaimedByOtherProduct(sku: string, currentProductId?: number): Promise<boolean> {
     const cleanSku = sku.trim().toUpperCase()
     if (isDatabaseConfigured() && db) {
@@ -422,15 +516,13 @@ export class ProductStore {
     return currentProductId === undefined || ownerProductId !== currentProductId
   }
 
-  /**
-   * Generates a collision-safe SKU for a variant.
-   */
   async generateSku(components: SkuComponents): Promise<string> {
     const baseSku = generateBaseSku(components)
-    const claimed = await this.isSkuClaimedByOtherProduct(baseSku, components.productId ? Number(components.productId) : undefined)
-    if (!claimed) {
-      return baseSku
-    }
+    const claimed = await this.isSkuClaimedByOtherProduct(
+      baseSku,
+      components.productId ? Number(components.productId) : undefined
+    )
+    if (!claimed) return baseSku
     return generateProductScopedSku(components)
   }
 
@@ -444,31 +536,31 @@ export class ProductStore {
     includeAllStatuses?: boolean
   }): Promise<Product[]> {
     let list: Product[]
-    if (isDatabaseConfigured() && db) {
-      const conditions: any[] = []
 
-      if (filters?.store && filters.store !== 'all') {
-        conditions.push(eq(productsTable.store, filters.store))
-      }
+    if (isDatabaseConfigured() && db) {
+      const conditions: ReturnType<typeof eq>[] = []
+
       if (filters?.category && filters.category !== 'all') {
-        conditions.push(ilike(productsTable.category, filters.category.trim()))
+        const category = await this.resolveCategory(filters.category)
+        if (!category) return []
+        conditions.push(eq(productsTable.categoryId, category.id))
       }
       if (filters?.fit && filters.fit !== 'all') {
-        conditions.push(ilike(productsTable.fit, filters.fit.trim()))
+        conditions.push(ilike(productsTable.fit, filters.fit.trim()) as any)
       }
       if (filters?.status) {
-        conditions.push(eq(productsTable.status, filters.status.toLowerCase()))
+        conditions.push(eq(productsTable.status, filters.status.toLowerCase()) as any)
       } else if (!filters?.includeAllStatuses) {
-        conditions.push(eq(productsTable.status, 'active'))
+        conditions.push(eq(productsTable.status, 'active') as any)
       }
       if (filters?.q && filters.q.trim()) {
         const term = `%${filters.q.trim()}%`
         conditions.push(
           or(
             ilike(productsTable.name, term),
-            ilike(productsTable.desc, term),
+            ilike(productsTable.description, term),
             ilike(productsTable.badge, term)
-          )!
+          ) as any
         )
       }
       if (filters?.sku && filters.sku.trim()) {
@@ -478,96 +570,27 @@ export class ProductStore {
           .from(productVariantsTable)
           .where(ilike(productVariantsTable.sku, cleanSku))
         const variantProductIds = matchingVariants.map((v) => v.productId)
-        if (variantProductIds.length > 0) {
-          conditions.push(inArray(productsTable.id, variantProductIds))
-        } else {
-          conditions.push(sql`1=0`)
-        }
+        conditions.push(
+          (variantProductIds.length > 0 ? inArray(productsTable.id, variantProductIds) : sql`1=0`) as any
+        )
       }
 
       const query = db.select().from(productsTable)
-      const productRows = conditions.length > 0 ? await query.where(and(...conditions)!) : await query
-
-      const productIds = productRows.map((p) => p.id)
-      let variantRows: DbProductVariant[] = []
-      let imageRows: DbProductImage[] = []
-
-      if (productIds.length > 0) {
-        variantRows = await db
-          .select()
-          .from(productVariantsTable)
-          .where(inArray(productVariantsTable.productId, productIds))
-        imageRows = await db
-          .select()
-          .from(productImagesTable)
-          .where(inArray(productImagesTable.productId, productIds))
-      }
-
-      const variantMap = new Map<number, Variant[]>()
-      for (const vr of variantRows) {
-        if (!variantMap.has(vr.productId)) variantMap.set(vr.productId, [])
-        variantMap.get(vr.productId)!.push(toVariant(vr))
-      }
-
-      const imageMap = new Map<number, DbProductImage[]>()
-      for (const ir of imageRows) {
-        if (!imageMap.has(ir.productId)) imageMap.set(ir.productId, [])
-        imageMap.get(ir.productId)!.push(ir)
-      }
-
-      list = productRows.map((p) => toProduct(p, variantMap.get(p.id) || [], imageMap.get(p.id) || []))
-    } else if (process.env.NODE_ENV === 'production') {
-      throw new Error('Product database is not configured.')
+      const rows = conditions.length > 0 ? await query.where(and(...conditions)) : await query
+      list = await this.hydrateDbRows(rows)
     } else {
-      const imageMap = new Map<number, DbProductImage[]>()
-      for (const ir of this.memoryProductImages) {
-        if (!imageMap.has(ir.productId)) {
-          imageMap.set(ir.productId, [])
-        }
-        imageMap.get(ir.productId)!.push(ir)
-      }
-
-      list = this.memoryProducts.map((p) => {
-        const variants = this.memoryVariants.filter((v) => v.productId === p.id)
-        const images = imageMap.get(p.id) || []
-        return toProduct(
-          {
-            id: p.id,
-            store: p.store,
-            category: p.category,
-            categoryId: p.categoryId ?? null,
-            slug: p.slug ?? null,
-            status: p.status ?? 'active',
-            attributes: p.attributes ?? {},
-            name: p.name,
-            fit: p.fit ?? null,
-            price: p.price,
-            priceNum: p.priceNum,
-            img: p.img,
-            img2: p.img2,
-            images: p.images ?? [],
-            badge: p.badge ?? null,
-            desc: p.desc,
-            wash: p.wash ?? null,
-            sizes: p.sizes ?? null,
-            adminData: p.adminData ?? {},
-            createdAt: p.createdAt ?? new Date(),
-            updatedAt: p.createdAt ?? new Date()
-          },
-          variants,
-          images
-        )
-      })
+      if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
+      list = this.memoryProducts.map((product) => this.hydrateMemory(product))
     }
 
     if (filters?.store && filters.store !== 'all') {
       list = list.filter((p) => p.store === filters.store)
     }
     if (filters?.category && filters.category !== 'all') {
-      list = list.filter((p) => p.category?.toLowerCase() === filters.category?.toLowerCase())
+      list = list.filter((p) => p.category?.toLowerCase() === filters.category!.toLowerCase())
     }
     if (filters?.fit && filters.fit !== 'all') {
-      list = list.filter((p) => p.fit?.toLowerCase() === filters.fit?.toLowerCase())
+      list = list.filter((p) => p.fit?.toLowerCase() === filters.fit!.toLowerCase())
     }
     if (filters?.status) {
       list = list.filter((p) => (p.status || 'active').toLowerCase() === filters.status!.toLowerCase())
@@ -602,97 +625,25 @@ export class ProductStore {
   async getBySlug(slug: string): Promise<Product | undefined> {
     const cleanSlug = slug.trim().toLowerCase()
     if (isDatabaseConfigured() && db) {
-      const [productRow] = await db.select().from(productsTable).where(eq(productsTable.slug, cleanSlug))
-      if (!productRow) return undefined
-      const variantRows = await db.select().from(productVariantsTable).where(eq(productVariantsTable.productId, productRow.id))
-      const imageRows = await db.select().from(productImagesTable).where(eq(productImagesTable.productId, productRow.id))
-      return toProduct(productRow, variantRows.map(toVariant), imageRows)
+      const [row] = await db.select().from(productsTable).where(eq(productsTable.slug, cleanSlug))
+      if (!row) return undefined
+      return (await this.hydrateDbRows([row]))[0]
     }
 
     if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
-
     const product = this.memoryProducts.find((p) => (p as any).slug === cleanSlug)
-    if (!product) return undefined
-    const variants = this.memoryVariants.filter((v) => v.productId === product.id)
-    const images = this.memoryProductImages.filter((i) => i.productId === product.id)
-    return toProduct(
-      {
-        id: product.id,
-        store: product.store,
-        category: product.category,
-        categoryId: product.categoryId ?? null,
-        slug: product.slug ?? null,
-        status: product.status ?? 'active',
-        attributes: product.attributes ?? {},
-        name: product.name,
-        fit: product.fit ?? null,
-        price: product.price,
-        priceNum: product.priceNum,
-        img: product.img,
-        img2: product.img2,
-        images: product.images ?? [],
-        badge: product.badge ?? null,
-        desc: product.desc,
-        wash: product.wash ?? null,
-        sizes: product.sizes ?? null,
-        adminData: product.adminData ?? {},
-        createdAt: product.createdAt ?? new Date(),
-        updatedAt: product.createdAt ?? new Date()
-      },
-      variants,
-      images
-    )
+    return product ? this.hydrateMemory(product) : undefined
   }
 
   async getById(id: number): Promise<Product | undefined> {
     if (isDatabaseConfigured() && db) {
-      const [pRow] = await db.select().from(productsTable).where(eq(productsTable.id, id))
-      if (!pRow) return undefined
-      const vRows = await db
-        .select()
-        .from(productVariantsTable)
-        .where(eq(productVariantsTable.productId, id))
-      const iRows = await db
-        .select()
-        .from(productImagesTable)
-        .where(eq(productImagesTable.productId, id))
-      return toProduct(pRow, vRows.map(toVariant), iRows)
+      const [row] = await db.select().from(productsTable).where(eq(productsTable.id, id))
+      if (!row) return undefined
+      return (await this.hydrateDbRows([row]))[0]
     }
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Product database is not configured.')
-    }
-
+    if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
     const found = this.memoryProducts.find((p) => p.id === id)
-    if (!found) return undefined
-    const variants = this.memoryVariants.filter((v) => v.productId === id)
-    const images = this.memoryProductImages.filter((img) => img.productId === id)
-    return toProduct(
-      {
-        id: found.id,
-        store: found.store,
-        category: found.category,
-        categoryId: found.categoryId ?? null,
-        slug: found.slug ?? null,
-        status: found.status ?? 'active',
-        attributes: found.attributes ?? {},
-        name: found.name,
-        fit: found.fit ?? null,
-        price: found.price,
-        priceNum: found.priceNum,
-        img: found.img,
-        img2: found.img2,
-        images: found.images ?? [],
-        badge: found.badge ?? null,
-        desc: found.desc,
-        wash: found.wash ?? null,
-        sizes: found.sizes ?? null,
-        adminData: found.adminData ?? {},
-        createdAt: found.createdAt ?? new Date(),
-        updatedAt: found.createdAt ?? new Date()
-      },
-      variants,
-      images
-    )
+    return found ? this.hydrateMemory(found) : undefined
   }
 
   async adjustStock(variantId: number, delta: number): Promise<Variant> {
@@ -700,19 +651,23 @@ export class ProductStore {
       const [row] = await db
         .update(productVariantsTable)
         .set({ stock: sql`${productVariantsTable.stock} + ${delta}`, updatedAt: new Date() })
-        .where(and(
-          eq(productVariantsTable.id, variantId),
-          sql`${productVariantsTable.stock} + ${delta} >= ${productVariantsTable.reserved}`
-        ))
+        .where(
+          and(
+            eq(productVariantsTable.id, variantId),
+            sql`${productVariantsTable.stock} + ${delta} >= ${productVariantsTable.reserved}`
+          )
+        )
         .returning()
       if (!row) throw new Error('Variant not found or adjustment would reduce stock below reserved units.')
-      return toVariant(row)
+      return variantFromRow(row)
     }
 
     if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
     const variant = this.memoryVariants.find((item) => item.id === variantId)
     if (!variant) throw new Error('Variant not found.')
-    if (variant.stock + delta < variant.reserved) throw new Error('Adjustment would reduce stock below reserved units.')
+    if (variant.stock + delta < variant.reserved) {
+      throw new Error('Adjustment would reduce stock below reserved units.')
+    }
     variant.stock += delta
     return { ...variant }
   }
@@ -720,23 +675,22 @@ export class ProductStore {
   async getBySku(sku: string): Promise<{ product: Product; variant: Variant } | undefined> {
     const cleanSku = sku.trim().toUpperCase()
     if (isDatabaseConfigured() && db) {
-      const [vRow] = await db
+      const [row] = await db
         .select()
         .from(productVariantsTable)
         .where(eq(productVariantsTable.sku, cleanSku))
-      if (!vRow) return undefined
-      const product = await this.getById(vRow.productId)
+      if (!row) return undefined
+      const product = await this.getById(row.productId)
       if (!product) return undefined
-      return { product, variant: toVariant(vRow) }
+      return { product, variant: product.variants?.find((variant) => variant.id === row.id) ?? variantFromRow(row) }
     }
 
     if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
-
     const variant = this.memoryVariants.find((v) => Boolean(v.sku && v.sku.toUpperCase() === cleanSku))
     if (!variant) return undefined
     const product = this.memoryProducts.find((p) => p.id === variant.productId)
     if (!product) return undefined
-    return { product, variant }
+    return { product: this.hydrateMemory(product), variant }
   }
 
   async create(input: CreateProduct): Promise<Product> {
@@ -753,6 +707,50 @@ export class ProductStore {
     }
   }
 
+  private productWeightFor(input: CreateProduct, categorySlug: string): number {
+    const adminData = (input.adminData ?? {}) as Record<string, unknown>
+    const candidate = input.weightGrams ?? Number(adminData.weightGrams ?? NaN)
+    if (Number.isFinite(candidate) && candidate > 0) return Math.round(candidate)
+    return categorySlug === 'trackpants' || categorySlug === 'sweatpants' || categorySlug === 'jeans' ? 650 : 350
+  }
+
+  private productColumns(input: CreateProduct, attributes: Record<string, unknown>, weightGrams: number) {
+    const adminData = (input.adminData ?? {}) as Record<string, any>
+    const dimensions = (adminData.dimensions ?? {}) as Record<string, unknown>
+    return {
+      brand: input.brand ?? adminData.brand ?? 'TEESGARAGE',
+      gender: input.gender ?? adminData.gender ?? 'Unisex',
+      styleCode: input.styleCode ?? adminData.styleCode ?? null,
+      price: input.priceNum,
+      compareAtPrice: input.compareAtPrice ?? adminData.compareAtPrice ?? null,
+      costPrice: input.costPrice ?? adminData.costPrice ?? null,
+      taxRate: input.taxRate ?? adminData.taxRate ?? 0,
+      hsnCode: input.hsnCode ?? adminData.hsnCode ?? null,
+      badge: input.badge ?? null,
+      isFeatured: input.isFeatured ?? Boolean(adminData.featured) ?? false,
+      weightGrams,
+      lengthMm: input.lengthMm ?? (typeof dimensions.lengthMm === 'number' ? dimensions.lengthMm : null),
+      widthMm: input.widthMm ?? (typeof dimensions.widthMm === 'number' ? dimensions.widthMm : null),
+      heightMm: input.heightMm ?? (typeof dimensions.heightMm === 'number' ? dimensions.heightMm : null),
+      fabric: (attributes.fabric as string) ?? input.fabric ?? null,
+      material: (attributes.material as string) ?? input.material ?? null,
+      sleeveLength: (attributes.sleeveLength as string) ?? input.sleeveLength ?? null,
+      neckType: (attributes.neckType as string) ?? input.neckType ?? null,
+      pattern: (attributes.pattern as string) ?? input.pattern ?? null,
+      printStyle: (attributes.printStyle as string) ?? input.printStyle ?? null,
+      trimColor: (attributes.trimColor as string) ?? input.trimColor ?? null,
+      garmentLength: input.garmentLength ?? (attributes.length as string) ?? (adminData.length as string) ?? null,
+      closure: (attributes.closure as string) ?? input.closure ?? (attributes.buttons as string) ?? null,
+      pockets: (attributes.pockets as string) ?? input.pockets ?? null,
+      legStyle: (attributes.legStyle as string) ?? input.legStyle ?? null,
+      rise: (attributes.rise as string) ?? input.rise ?? null,
+      inseam: input.inseam ?? (typeof adminData.inseam === 'number' ? adminData.inseam : null),
+      wash: (attributes.wash as string) ?? input.wash ?? null,
+      careInstructions: input.careInstructions ?? (adminData.careInstructions as string) ?? null,
+      countryOfOrigin: input.countryOfOrigin ?? (adminData.countryOfOrigin as string) ?? 'India'
+    }
+  }
+
   private async _doCreate(input: CreateProduct): Promise<Product> {
     const normalizedImages = normalizeImageInputs(input.img, input.img2, input.images)
 
@@ -765,57 +763,78 @@ export class ProductStore {
     const categoryId = resolvedCat.id
 
     const attributes = extractAttributes(input as any)
-    const rawStatus = (
-      input.status ||
-      ((input.adminData as any)?.status ? String((input.adminData as any).status).toLowerCase() : 'active')
-    ).toLowerCase()
-    const status = rawStatus === 'archived' ? 'archived' : rawStatus === 'draft' ? 'draft' : 'active'
-    const adminStatus = status === 'archived' ? 'Archived' : status === 'draft' ? 'Draft' : 'Active'
-    const adminData = {
-      ...(input.adminData ?? {}),
-      status: adminStatus
-    }
+    const status = normalizeStatus(input.status ?? (input.adminData as any)?.status)
     const slug = await this.generateUniqueSlug(input.name, input.slug)
+    const weightGrams = this.productWeightFor(input, rawCategory)
 
-    // Determine product ID
-    let newProductId: number
-    if (isDatabaseConfigured() && db) {
-      const [row] = await db
-        .insert(productsTable)
-        .values({
-          store: input.store || 'teesgarage',
-          category: rawCategory,
-          categoryId,
-          slug,
-          status,
-          attributes,
-          name: input.name,
-          fit: input.fit ?? null,
-          price: input.price,
-          priceNum: input.priceNum,
-          img: input.img,
-          img2: input.img2,
-          images: input.images ?? [],
-          badge: input.badge ?? null,
-          desc: input.desc,
-          wash: input.wash ?? null,
-          sizes: input.sizes ?? null,
-          adminData
-        })
-        .returning()
-      newProductId = row.id
+    const rawVariants: RawVariantInput[] =
+      input.variants && input.variants.length > 0
+        ? (input.variants as RawVariantInput[])
+        : (input.sizes || ['S', 'M', 'L', 'XL']).map((sz) => ({
+            size: sz,
+            color:
+              input.color || (input.wash?.includes('/') ? input.wash.split('/')[1].trim() : input.wash) || 'Black',
+            price: input.priceNum,
+            stock: 20,
+            reserved: 0,
+            reorderPoint: 5,
+            weight: weightGrams,
+            status: 'Active' as const
+          }))
 
-      for (const norm of normalizedImages) {
-        await db.insert(productImagesTable).values({
-          productId: newProductId,
-          storageKey: norm.storageKey,
-          externalUrl: norm.externalUrl,
-          position: norm.position
-        })
+    const newProductId = isDatabaseConfigured() && db
+      ? (
+          await db
+            .insert(productsTable)
+            .values({
+              categoryId,
+              slug,
+              name: input.name,
+              description: input.desc,
+              fit: input.fit ?? null,
+              status,
+              ...this.productColumns(input, attributes, weightGrams)
+            })
+            .returning({ id: productsTable.id })
+        )[0].id
+      : ++this.nextMemoryProductId
+
+    try {
+      const variantsToInsert = await this.prepareVariants(rawVariants, input, newProductId, weightGrams)
+
+      if (isDatabaseConfigured() && db) {
+        for (const norm of normalizedImages) {
+          await db.insert(productImagesTable).values({
+            productId: newProductId,
+            storageKey: norm.storageKey,
+            externalUrl: norm.externalUrl,
+            position: norm.position
+          })
+        }
+
+        for (const variant of variantsToInsert) {
+          const [row] = await db
+            .insert(productVariantsTable)
+            .values({
+              productId: newProductId,
+              sku: variant.sku,
+              size: variant.size,
+              color: variant.color,
+              price: variant.price !== input.priceNum ? variant.price : null,
+              stock: variant.stock,
+              reserved: variant.reserved,
+              reorderPoint: variant.reorderPoint,
+              weightGrams: variant.weight !== weightGrams ? variant.weight : null,
+              barcode: variant.barcode || null,
+              status: variant.status
+            })
+            .returning()
+          if (row && row.sku) this.memoryClaimedSkus.set(row.sku.toUpperCase(), newProductId)
+        }
+
+        return (await this.getById(newProductId))!
       }
-    } else {
-      if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
-      newProductId = ++this.nextMemoryProductId
+
       for (const norm of normalizedImages) {
         this.memoryProductImages.push({
           id: this.memoryProductImages.length + 1,
@@ -832,122 +851,93 @@ export class ProductStore {
           createdAt: new Date()
         })
       }
+
+      const createdProduct: Product = {
+        ...input,
+        id: newProductId,
+        category: rawCategory as Category,
+        categoryId,
+        slug,
+        status,
+        attributes,
+        weightGrams,
+        adminData: { ...(input.adminData ?? {}), status: adminStatus(status) },
+        createdAt: new Date(),
+        variants: variantsToInsert.map((variant) => ({ ...variant }))
+      }
+      this.memoryProducts.push(createdProduct)
+      this.memoryVariants.push(...createdProduct.variants!)
+      return this.hydrateMemory(createdProduct)
+    } catch (error) {
+      if (isDatabaseConfigured() && db) {
+        await db.delete(productsTable).where(eq(productsTable.id, newProductId)).catch(() => {})
+      }
+      throw error
     }
+  }
 
-    // Process and validate variants
-    const rawVariants: RawVariantInput[] =
-      input.variants && input.variants.length > 0
-        ? input.variants
-        : (input.sizes || ['S', 'M', 'L', 'XL']).map((sz) => ({
-            size: sz,
-            color: input.color || (input.wash?.includes('/') ? input.wash.split('/')[1].trim() : input.wash) || 'Black',
-            price: input.priceNum,
-            stock: 20,
-            reserved: 0,
-            reorderPoint: 5,
-            weight: 250,
-            status: 'Active' as const
-          }))
-
-    // Validate duplicate color + size variants on this product
+  private async prepareVariants(
+    rawVariants: RawVariantInput[],
+    input: CreateProduct,
+    productId: number,
+    productWeight: number
+  ): Promise<ReadyVariant[]> {
     const seenCombos = new Set<string>()
     const variantsToInsert: ReadyVariant[] = []
 
-    for (const v of rawVariants) {
-      const color = String(v.color || 'Black').trim()
-      const size = String(v.size || 'M').trim()
+    for (const variant of rawVariants) {
+      const color = String(variant.color || 'Black').trim()
+      const size = String(variant.size || 'M').trim()
       const comboKey = `${color.toLowerCase()}__${size.toUpperCase()}`
       if (seenCombos.has(comboKey)) {
-        throw new Error(`Duplicate variant: a variant with color "${color}" and size "${size}" already exists for this product.`)
+        throw new Error(
+          `Duplicate variant: a variant with color "${color}" and size "${size}" already exists for this product.`
+        )
       }
       seenCombos.add(comboKey)
 
-      // Generate or resolve SKU
-      let sku = v.sku?.trim().toUpperCase()
+      let sku = variant.sku?.trim().toUpperCase()
       if (!sku) {
         sku = await this.generateSku({
           category: input.category || 'printed-tees',
           productType: input.fit || 'Regular',
           color,
           size,
-          productId: newProductId
+          productId
         })
-      } else {
-        // If provided SKU collides with another product, resolve it
-        const claimed = await this.isSkuClaimedByOtherProduct(sku, newProductId)
-        if (claimed) {
-          sku = await this.generateSku({
-            category: input.category || 'printed-tees',
-            productType: input.fit || 'Regular',
-            color,
-            size,
-            productId: newProductId
-          })
-        }
+      } else if (await this.isSkuClaimedByOtherProduct(sku, productId)) {
+        sku = await this.generateSku({
+          category: input.category || 'printed-tees',
+          productType: input.fit || 'Regular',
+          color,
+          size,
+          productId
+        })
       }
 
       if (!isDatabaseConfigured() || !db) {
-        this.memoryClaimedSkus.set(sku, newProductId)
+        this.memoryClaimedSkus.set(sku, productId)
       }
 
       variantsToInsert.push({
-        id: v.id,
-        productId: newProductId,
+        id: variant.id,
+        productId,
         sku,
         size,
         color,
-        price: v.price ?? input.priceNum,
-        stock: v.stock ?? 20,
-        reserved: v.reserved ?? 0,
-        reorderPoint: v.reorderPoint ?? 5,
-        weight: v.weight ?? 250,
-        barcode: v.barcode || `890${String(10000000000 + newProductId * 1000 + variantsToInsert.length).slice(0, 10)}`,
-        status: v.status || 'Active'
+        price: variant.price ?? input.priceNum,
+        stock: variant.stock ?? 20,
+        reserved: variant.reserved ?? 0,
+        reorderPoint: variant.reorderPoint ?? 5,
+        weight: variant.weight ?? productWeight,
+        barcode:
+          variant.barcode ||
+          String(8900000000000 + productId * 1000 + variantsToInsert.length),
+        status: variant.status || 'Active'
       })
     }
 
-    if (isDatabaseConfigured() && db) {
-      const insertedVariants: Variant[] = []
-      for (const vi of variantsToInsert) {
-        const [vRow] = await db
-          .insert(productVariantsTable)
-          .values({
-            productId: newProductId,
-            sku: vi.sku,
-            size: vi.size,
-            color: vi.color,
-            price: vi.price,
-            stock: vi.stock,
-            reserved: vi.reserved,
-            reorderPoint: vi.reorderPoint,
-            weight: vi.weight,
-            barcode: vi.barcode || null,
-            status: vi.status
-          })
-          .returning()
-        insertedVariants.push(toVariant(vRow))
-      }
-
-      const p = await this.getById(newProductId)
-      return p!
-    }
-
-    const createdProduct: Product = {
-      id: newProductId,
-      ...input,
-      category: rawCategory as Category,
-      categoryId,
-      slug,
-      status,
-      attributes,
-      adminData,
-      createdAt: new Date(),
-      variants: variantsToInsert.map((v, i) => ({ ...v, id: this.memoryVariants.length + i + 1 }))
-    }
-    this.memoryProducts.push(createdProduct)
-    this.memoryVariants.push(...createdProduct.variants!)
-    const p = await this.getById(newProductId)
-    return p!
+    return variantsToInsert
   }
 
   async update(id: number, patch: UpdateProduct): Promise<Product | undefined> {
@@ -965,27 +955,21 @@ export class ProductStore {
     }
 
     const hasAttributeUpdate =
-      patch.attributes !== undefined || ATTRIBUTE_SPEC_KEYS.some((k) => (patch as any)[k] !== undefined)
+      patch.attributes !== undefined || ATTRIBUTE_SPEC_KEYS.some((key) => (patch as any)[key] !== undefined)
     let attributes = (existing.attributes as Record<string, unknown>) || {}
     if (hasAttributeUpdate) {
-      attributes = {
-        ...attributes,
-        ...extractAttributes(patch as any)
-      }
+      attributes = { ...attributes, ...extractAttributes(patch as any) }
     }
 
-    let status = existing.status || 'active'
+    let status = normalizeStatus(existing.status)
     if (patch.status !== undefined) {
-      const s = patch.status.toLowerCase()
-      status = s === 'archived' ? 'archived' : s === 'draft' ? 'draft' : 'active'
+      status = normalizeStatus(patch.status)
     } else if (patch.adminData?.status !== undefined) {
-      const s = String(patch.adminData.status).toLowerCase()
-      status = s === 'archived' ? 'archived' : s === 'draft' ? 'draft' : 'active'
+      status = normalizeStatus(String(patch.adminData.status))
     }
-    const adminStatus = status === 'archived' ? 'Archived' : status === 'draft' ? 'Draft' : 'Active'
 
     let slug = existing.slug
-    if (patch.slug !== undefined || (patch.name !== undefined && patch.name !== existing.name && !existing.slug)) {
+    if (patch.slug !== undefined) {
       slug = await this.generateUniqueSlug(patch.name || existing.name, patch.slug, id)
     }
 
@@ -998,39 +982,54 @@ export class ProductStore {
         )
       : []
 
+    if (patch.variants !== undefined) {
+      const seenCombos = new Set<string>()
+      for (const variant of patch.variants) {
+        const comboKey = `${String(variant.color).toLowerCase()}__${String(variant.size).toUpperCase()}`
+        if (seenCombos.has(comboKey)) {
+          throw new Error(
+            `Duplicate variant: color "${variant.color}" and size "${variant.size}" already exists for this product.`
+          )
+        }
+        seenCombos.add(comboKey)
+      }
+    }
+
     if (isDatabaseConfigured() && db) {
+      const [raw] = await db.select().from(productsTable).where(eq(productsTable.id, id))
+      if (!raw) return undefined
+      const weightGrams = patch.weightGrams ?? raw.weightGrams
+      const columns = this.productColumns({ ...existing, ...patch } as CreateProduct, attributes, weightGrams)
       const updateData: Record<string, unknown> = {
+        ...columns,
+        categoryId,
+        slug,
+        status,
+        weightGrams,
         updatedAt: new Date()
       }
-      if (patch.store !== undefined) updateData.store = patch.store
-      if (patch.category !== undefined) {
-        updateData.category = patch.category
-        updateData.categoryId = categoryId
-      }
-      if (slug !== undefined) updateData.slug = slug
-      updateData.status = status
-      updateData.attributes = attributes
       if (patch.name !== undefined) updateData.name = patch.name
       if (patch.fit !== undefined) updateData.fit = patch.fit
-      if (patch.price !== undefined) updateData.price = patch.price
-      if (patch.priceNum !== undefined) updateData.priceNum = patch.priceNum
-      if (patch.img !== undefined) updateData.img = patch.img
-      if (patch.img2 !== undefined) updateData.img2 = patch.img2
-      if (patch.images !== undefined) updateData.images = patch.images
-      if (patch.badge !== undefined) updateData.badge = patch.badge
-      if (patch.desc !== undefined) updateData.desc = patch.desc
+      if (patch.desc !== undefined) updateData.description = patch.desc
       if (patch.wash !== undefined) updateData.wash = patch.wash
-      if (patch.sizes !== undefined) updateData.sizes = patch.sizes
-      updateData.adminData = {
-        ...(existing.adminData ?? {}),
-        ...(patch.adminData ?? {}),
-        status: adminStatus
-      }
+      if (patch.badge !== undefined) updateData.badge = patch.badge
+      if (patch.lengthMm !== undefined) updateData.lengthMm = patch.lengthMm
+      if (patch.widthMm !== undefined) updateData.widthMm = patch.widthMm
+      if (patch.heightMm !== undefined) updateData.heightMm = patch.heightMm
+      if (patch.gender !== undefined) updateData.gender = patch.gender
+      if (patch.brand !== undefined) updateData.brand = patch.brand
+      if (patch.styleCode !== undefined) updateData.styleCode = patch.styleCode
+      if (patch.compareAtPrice !== undefined) updateData.compareAtPrice = patch.compareAtPrice
+      if (patch.costPrice !== undefined) updateData.costPrice = patch.costPrice
+      if (patch.taxRate !== undefined) updateData.taxRate = patch.taxRate
+      if (patch.hsnCode !== undefined) updateData.hsnCode = patch.hsnCode
+      if (patch.isFeatured !== undefined) updateData.isFeatured = patch.isFeatured
+      if (patch.inseam !== undefined) updateData.inseam = patch.inseam
+      if (patch.garmentLength !== undefined) updateData.garmentLength = patch.garmentLength
+      if (patch.careInstructions !== undefined) updateData.careInstructions = patch.careInstructions
+      if (patch.countryOfOrigin !== undefined) updateData.countryOfOrigin = patch.countryOfOrigin
 
-      await db
-        .update(productsTable)
-        .set(updateData)
-        .where(eq(productsTable.id, id))
+      await db.update(productsTable).set(updateData).where(eq(productsTable.id, id))
 
       if (hasImagePatch) {
         await db.delete(productImagesTable).where(eq(productImagesTable.productId, id))
@@ -1045,100 +1044,12 @@ export class ProductStore {
       }
 
       if (patch.variants !== undefined) {
-        // Enforce duplicate check
-        const seenCombos = new Set<string>()
-        for (const v of patch.variants) {
-          const comboKey = `${String(v.color).toLowerCase()}__${String(v.size).toUpperCase()}`
-          if (seenCombos.has(comboKey)) {
-            throw new Error(`Duplicate variant: color "${v.color}" and size "${v.size}" already exists for this product.`)
-          }
-          seenCombos.add(comboKey)
-        }
-
-        const existingDbVariants = await db
-          .select()
-          .from(productVariantsTable)
-          .where(eq(productVariantsTable.productId, id))
-
-        const existingById = new Map<number, DbProductVariant>()
-        for (const ev of existingDbVariants) {
-          existingById.set(ev.id, ev)
-        }
-
-        const updatedIds = new Set<number>()
-
-        for (const v of patch.variants) {
-          const color = String(v.color).trim()
-          const size = String(v.size).trim()
-
-          if (v.id && existingById.has(v.id)) {
-            // Existing variant: PRESERVE existing SKU!
-            const ev = existingById.get(v.id)!
-            const preserveSku = v.sku?.trim().toUpperCase() || ev.sku
-            updatedIds.add(v.id)
-
-            await db
-              .update(productVariantsTable)
-              .set({
-                sku: preserveSku,
-                size,
-                color,
-                price: v.price ?? patch.priceNum ?? ev.price,
-                stock: v.stock ?? ev.stock,
-                reorderPoint: v.reorderPoint ?? ev.reorderPoint,
-                weight: v.weight ?? ev.weight,
-                barcode: v.barcode ?? ev.barcode,
-                status: v.status ?? ev.status,
-                updatedAt: new Date()
-              })
-              .where(eq(productVariantsTable.id, v.id))
-          } else {
-            // Newly created variant: generate SKU automatically!
-            const cat = patch.category || existing.category || 'printed-tees'
-            const pType = patch.fit || existing.fit || 'Regular'
-            let sku = v.sku?.trim().toUpperCase()
-            if (!sku) {
-              sku = await this.generateSku({
-                category: cat,
-                productType: pType,
-                color,
-                size,
-                productId: id
-              })
-            }
-
-            const [newV] = await db
-              .insert(productVariantsTable)
-              .values({
-                productId: id,
-                sku,
-                size,
-                color,
-                price: v.price ?? patch.priceNum ?? existing.priceNum,
-                stock: v.stock ?? 20,
-                reserved: 0,
-                reorderPoint: v.reorderPoint ?? 5,
-                weight: v.weight ?? 250,
-                barcode: v.barcode || null,
-                status: v.status || 'Active'
-              })
-              .returning()
-            updatedIds.add(newV.id)
-          }
-        }
-
-        // Remove variants that were excluded in the updated list
-        for (const ev of existingDbVariants) {
-          if (!updatedIds.has(ev.id)) {
-            await db.delete(productVariantsTable).where(eq(productVariantsTable.id, ev.id))
-          }
-        }
+        await this.syncDbVariants(id, patch, existing, weightGrams)
       }
 
       return this.getById(id)
     }
 
-    // In-memory update
     const updated: Product = {
       ...existing,
       ...patch,
@@ -1148,89 +1059,81 @@ export class ProductStore {
       slug,
       status,
       attributes,
-      adminData: {
-        ...(existing.adminData ?? {}),
-        ...(patch.adminData ?? {}),
-        status: adminStatus
-      }
+      weightGrams: patch.weightGrams ?? existing.weightGrams,
+      adminData: { ...(existing.adminData ?? {}), ...(patch.adminData ?? {}), status: adminStatus(status) }
     }
+
     if (patch.variants !== undefined) {
       const seenCombos = new Set<string>()
-      for (const v of patch.variants) {
-        const comboKey = `${String(v.color).toLowerCase()}__${String(v.size).toUpperCase()}`
+      for (const variant of patch.variants) {
+        const comboKey = `${String(variant.color).toLowerCase()}__${String(variant.size).toUpperCase()}`
         if (seenCombos.has(comboKey)) {
-          throw new Error(`Duplicate variant: color "${v.color}" and size "${v.size}" already exists for this product.`)
+          throw new Error(
+            `Duplicate variant: color "${variant.color}" and size "${variant.size}" already exists for this product.`
+          )
         }
         seenCombos.add(comboKey)
       }
 
-      const existingForProduct = this.memoryVariants.filter((v) => v.productId === id)
+      const existingForProduct = this.memoryVariants.filter((variant) => variant.productId === id)
       const existingById = new Map<number, Variant>()
-      for (const ev of existingForProduct) {
-        if (ev.id) existingById.set(ev.id, ev)
+      for (const variant of existingForProduct) {
+        if (variant.id) existingById.set(variant.id, variant)
       }
 
       const newVariants: Variant[] = []
-      for (const v of patch.variants) {
-        const color = String(v.color).trim()
-        const size = String(v.size).trim()
-
-        if (v.id && existingById.has(v.id)) {
-          // Preserve existing SKU
-          const ev = existingById.get(v.id)!
+      for (const variant of patch.variants) {
+        const color = String(variant.color).trim()
+        const size = String(variant.size).trim()
+        if (variant.id && existingById.has(variant.id)) {
+          const current = existingById.get(variant.id)!
           newVariants.push({
-            ...ev,
-            ...v,
-            sku: v.sku?.trim().toUpperCase() || ev.sku,
+            ...current,
+            ...variant,
+            sku: variant.sku?.trim().toUpperCase() || current.sku,
             size,
             color
           })
         } else {
-          // Newly created variant: generate SKU
-          const cat = patch.category || existing.category || 'printed-tees'
-          const pType = patch.fit || existing.fit || 'Regular'
-          const sku = v.sku?.trim().toUpperCase() || (await this.generateSku({
-            category: cat,
-            productType: pType,
-            color,
-            size,
-            productId: id
-          }))
-
+          const sku =
+            variant.sku?.trim().toUpperCase() ||
+            (await this.generateSku({
+              category: patch.category || existing.category || 'printed-tees',
+              productType: patch.fit || existing.fit || 'Regular',
+              color,
+              size,
+              productId: id
+            }))
           newVariants.push({
             id: this.memoryVariants.length + newVariants.length + 1,
             productId: id,
             sku,
             size,
             color,
-            price: v.price ?? patch.priceNum ?? existing.priceNum,
-            stock: v.stock ?? 20,
+            price: variant.price ?? patch.priceNum ?? existing.priceNum,
+            stock: variant.stock ?? 20,
             reserved: 0,
-            reorderPoint: v.reorderPoint ?? 5,
-            weight: v.weight ?? 250,
-            barcode: v.barcode,
-            status: v.status || 'Active'
+            reorderPoint: variant.reorderPoint ?? 5,
+            weight: variant.weight ?? existing.weightGrams ?? 350,
+            barcode: variant.barcode,
+            status: variant.status || 'Active'
           })
         }
       }
 
-      // Replace variants for this product in memory
-      for (const [sku, pId] of this.memoryClaimedSkus.entries()) {
-        if (pId === id) this.memoryClaimedSkus.delete(sku)
+      for (const [sku, productId] of this.memoryClaimedSkus.entries()) {
+        if (productId === id) this.memoryClaimedSkus.delete(sku)
       }
-      for (const nv of newVariants) {
-        if (nv.sku) this.memoryClaimedSkus.set(nv.sku.toUpperCase(), id)
+      for (const variant of newVariants) {
+        if (variant.sku) this.memoryClaimedSkus.set(variant.sku.toUpperCase(), id)
       }
 
-      this.memoryVariants = [
-        ...this.memoryVariants.filter((v) => v.productId !== id),
-        ...newVariants
-      ]
+      this.memoryVariants = [...this.memoryVariants.filter((variant) => variant.productId !== id), ...newVariants]
       updated.variants = newVariants
     }
 
     if (hasImagePatch) {
-      this.memoryProductImages = this.memoryProductImages.filter((img) => img.productId !== id)
+      this.memoryProductImages = this.memoryProductImages.filter((image) => image.productId !== id)
       for (const norm of normalizedImages) {
         this.memoryProductImages.push({
           id: this.memoryProductImages.length + 1,
@@ -1249,13 +1152,98 @@ export class ProductStore {
       }
     }
 
-    this.memoryProducts = this.memoryProducts.map((p) => (p.id === id ? updated : p))
-    return (await this.getById(id)) || updated
+    this.memoryProducts = this.memoryProducts.map((product) => (product.id === id ? updated : product))
+    return this.hydrateMemory(updated)
+  }
+
+  private async syncDbVariants(
+    id: number,
+    patch: UpdateProduct,
+    existing: Product,
+    productWeight: number
+  ): Promise<void> {
+    const seenCombos = new Set<string>()
+    for (const variant of patch.variants!) {
+      const comboKey = `${String(variant.color).toLowerCase()}__${String(variant.size).toUpperCase()}`
+      if (seenCombos.has(comboKey)) {
+        throw new Error(
+          `Duplicate variant: color "${variant.color}" and size "${variant.size}" already exists for this product.`
+        )
+      }
+      seenCombos.add(comboKey)
+    }
+
+    const existingDbVariants = await db!
+      .select()
+      .from(productVariantsTable)
+      .where(eq(productVariantsTable.productId, id))
+    const existingById = new Map(existingDbVariants.map((variant) => [variant.id, variant]))
+    const updatedIds = new Set<number>()
+    const newProductPrice = patch.priceNum ?? existing.priceNum
+
+    for (const variant of patch.variants!) {
+      const color = String(variant.color).trim()
+      const size = String(variant.size).trim()
+      const price = variant.price ?? newProductPrice
+      const weight = variant.weight ?? productWeight
+
+      if (variant.id && existingById.has(variant.id)) {
+        const current = existingById.get(variant.id)!
+        updatedIds.add(variant.id)
+        await db!
+          .update(productVariantsTable)
+          .set({
+            sku: variant.sku?.trim().toUpperCase() || current.sku,
+            size,
+            color,
+            price: price !== newProductPrice ? price : null,
+            stock: variant.stock ?? current.stock,
+            reorderPoint: variant.reorderPoint ?? current.reorderPoint,
+            weightGrams: weight !== productWeight ? weight : null,
+            barcode: variant.barcode ?? current.barcode,
+            status: variant.status ?? current.status,
+            updatedAt: new Date()
+          })
+          .where(eq(productVariantsTable.id, variant.id))
+      } else {
+        const sku =
+          variant.sku?.trim().toUpperCase() ||
+          (await this.generateSku({
+            category: patch.category || existing.category || 'printed-tees',
+            productType: patch.fit || existing.fit || 'Regular',
+            color,
+            size,
+            productId: id
+          }))
+        const [created] = await db!
+          .insert(productVariantsTable)
+          .values({
+            productId: id,
+            sku,
+            size,
+            color,
+            price: price !== newProductPrice ? price : null,
+            stock: variant.stock ?? 20,
+            reserved: 0,
+            reorderPoint: variant.reorderPoint ?? 5,
+            weightGrams: weight !== productWeight ? weight : null,
+            barcode: variant.barcode || null,
+            status: variant.status || 'Active'
+          })
+          .returning({ id: productVariantsTable.id })
+        updatedIds.add(created.id)
+      }
+    }
+
+    for (const variant of existingDbVariants) {
+      if (!updatedIds.has(variant.id)) {
+        await db!.delete(productVariantsTable).where(eq(productVariantsTable.id, variant.id))
+      }
+    }
   }
 
   async remove(id: number): Promise<boolean> {
     if (isDatabaseConfigured() && db) {
-      // Cascade delete variants, images and product
       await db.delete(productImagesTable).where(eq(productImagesTable.productId, id))
       await db.delete(productVariantsTable).where(eq(productVariantsTable.productId, id))
       const [row] = await db
@@ -1268,11 +1256,11 @@ export class ProductStore {
     if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
 
     const before = this.memoryProducts.length
-    this.memoryProducts = this.memoryProducts.filter((p) => p.id !== id)
-    this.memoryVariants = this.memoryVariants.filter((v) => v.productId !== id)
-    this.memoryProductImages = this.memoryProductImages.filter((img) => img.productId !== id)
-    for (const [sku, pId] of this.memoryClaimedSkus.entries()) {
-      if (pId === id) this.memoryClaimedSkus.delete(sku)
+    this.memoryProducts = this.memoryProducts.filter((product) => product.id !== id)
+    this.memoryVariants = this.memoryVariants.filter((variant) => variant.productId !== id)
+    this.memoryProductImages = this.memoryProductImages.filter((image) => image.productId !== id)
+    for (const [sku, productId] of this.memoryClaimedSkus.entries()) {
+      if (productId === id) this.memoryClaimedSkus.delete(sku)
     }
     return this.memoryProducts.length < before
   }

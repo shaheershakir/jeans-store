@@ -1,119 +1,106 @@
-﻿import { buildApp } from '../src/app.js'
+﻿import 'dotenv/config'
+import http from 'node:http'
+import { buildApp } from '../src/app.js'
 
-async function run() {
-  const app = buildApp({ logger: false })
-  await app.ready()
+async function main() {
+  const app = buildApp({ enableLogging: false })
+  const server = http.createServer(app)
 
-  console.log('--- Running Authentication Integration Tests ---')
-
-  // 1. Register a new user
-  const email = `test_${Date.now()}@teesgaragejeans.com`
-  const regRes = await app.inject({
-    method: 'POST',
-    url: '/api/auth/register',
-    payload: {
-      name: 'Taylor Swift',
-      email,
-      password: 'StrongPassword123!'
-    }
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => resolve())
   })
 
-  console.log(`Register status: ${regRes.statusCode}`)
-  if (regRes.statusCode !== 201) {
-    console.error('Register failed:', regRes.body)
+  const address = server.address()
+  const port = typeof address === 'object' && address ? address.port : 0
+  const base = `http://127.0.0.1:${port}`
+
+  async function request(path: string, init?: RequestInit) {
+    const res = await fetch(`${base}${path}`, init)
+    let body: any = null
+    try {
+      body = await res.json()
+    } catch {
+      body = null
+    }
+    return { status: res.status, body }
+  }
+
+  const fail = (message: string): never => {
+    console.error(`❌ ${message}`)
     process.exit(1)
   }
 
-  const regData = JSON.parse(regRes.body)
-  console.log('Registered user:', regData.user)
-  console.log('Cloud IAM token issued length:', regData.token.length)
+  try {
+    console.log('--- Running Authentication Integration Tests ---')
 
-  // 2. Duplicate registration check
-  const dupRes = await app.inject({
-    method: 'POST',
-    url: '/api/auth/register',
-    payload: {
-      name: 'Taylor Swift Duplicate',
-      email,
-      password: 'StrongPassword123!'
-    }
-  })
-  console.log(`Duplicate register status: ${dupRes.statusCode} (expected 409)`)
-  if (dupRes.statusCode !== 409) {
-    console.error('Duplicate check failed')
-    process.exit(1)
+    const email = `test_${Date.now()}@teesgaragejeans.com`
+
+    const reg = await request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Taylor Swift', email, password: 'StrongPassword123!' })
+    })
+    console.log(`Register status: ${reg.status}`)
+    if (reg.status !== 201) fail(`Register failed: ${JSON.stringify(reg.body)}`)
+    console.log('Registered user:', reg.body.user)
+    console.log('Token length:', reg.body.token.length)
+
+    const dup = await request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Taylor Swift Duplicate', email, password: 'StrongPassword123!' })
+    })
+    console.log(`Duplicate register status: ${dup.status} (expected 409)`)
+    if (dup.status !== 409) fail('Duplicate registration was not rejected.')
+
+    const login = await request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password: 'StrongPassword123!' })
+    })
+    console.log(`Login status: ${login.status}`)
+    if (login.status !== 200) fail(`Login failed: ${JSON.stringify(login.body)}`)
+    const token = login.body.token as string
+
+    const badLogin = await request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password: 'WrongPassword' })
+    })
+    console.log(`Bad login status: ${badLogin.status} (expected 401)`)
+    if (badLogin.status !== 401) fail('Bad login was not rejected.')
+
+    const me = await request('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    console.log(`Profile fetch status: ${me.status}`)
+    if (me.status !== 200) fail(`Profile fetch failed: ${JSON.stringify(me.body)}`)
+    console.log('Profile data:', me.body.user)
+
+    const verify = await request('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token })
+    })
+    console.log('Verify valid token:', verify.body.valid)
+    if (verify.body.valid !== true) fail('Valid token was not verified.')
+
+    const verifyBad = await request('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'bogus.jwt.token' })
+    })
+    console.log('Verify bogus token:', verifyBad.body.valid)
+    if (verifyBad.body.valid !== false) fail('Bogus token was accepted.')
+
+    console.log('\n✓ All Authentication Integration Tests Passed!')
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()))
   }
-
-  // 3. Login with correct credentials
-  const loginRes = await app.inject({
-    method: 'POST',
-    url: '/api/auth/login',
-    payload: {
-      email,
-      password: 'StrongPassword123!'
-    }
-  })
-  console.log(`Login status: ${loginRes.statusCode}`)
-  if (loginRes.statusCode !== 200) {
-    console.error('Login failed:', loginRes.body)
-    process.exit(1)
-  }
-  const loginData = JSON.parse(loginRes.body)
-
-  // 4. Login with incorrect password
-  const badLoginRes = await app.inject({
-    method: 'POST',
-    url: '/api/auth/login',
-    payload: {
-      email,
-      password: 'WrongPassword'
-    }
-  })
-  console.log(`Bad login status: ${badLoginRes.statusCode} (expected 401)`)
-  if (badLoginRes.statusCode !== 401) {
-    console.error('Bad login check failed')
-    process.exit(1)
-  }
-
-  // 5. Profile retrieval with Bearer token
-  const meRes = await app.inject({
-    method: 'GET',
-    url: '/api/auth/me',
-    headers: {
-      Authorization: `Bearer ${loginData.token}`
-    }
-  })
-  console.log(`Profile fetch status: ${meRes.statusCode}`)
-  if (meRes.statusCode !== 200) {
-    console.error('Profile fetch failed:', meRes.body)
-    process.exit(1)
-  }
-  const meData = JSON.parse(meRes.body)
-  console.log('Profile data:', meData.user)
-  console.log('Cloud IAM claims:', meData.claims)
-
-  // 6. Token verification utility
-  const verifyRes = await app.inject({
-    method: 'POST',
-    url: '/api/auth/verify',
-    payload: { token: loginData.token }
-  })
-  const verifyData = JSON.parse(verifyRes.body)
-  console.log('Verify valid token:', verifyData.valid)
-
-  const verifyBadRes = await app.inject({
-    method: 'POST',
-    url: '/api/auth/verify',
-    payload: { token: 'bogus.jwt.token' }
-  })
-  const verifyBadData = JSON.parse(verifyBadRes.body)
-  console.log('Verify bogus token:', verifyBadData.valid)
-
-  console.log('\n✓ All Authentication Integration Tests Passed!')
-  await app.close()
 }
 
-run().catch((err) => {
+main().catch((err) => {
   console.error(err)
   process.exit(1)
 })

@@ -2,12 +2,15 @@ import { z } from 'zod'
 
 export const orderItemSchema = z.object({
   id: z.number(),
+  variantId: z.number().int().positive().optional(),
   name: z.string(),
   fit: z.string().optional(),
   size: z.string(),
   price: z.string(),
   priceNum: z.number(),
+  sku: z.string().optional(),
   quantity: z.number().int().positive(),
+  weightGrams: z.number().int().nonnegative().optional(),
   img: z.string().optional()
 })
 
@@ -25,8 +28,12 @@ export const createOrderSchema = z.object({
   notes: z.string().optional(),
   items: z.array(orderItemSchema).min(1),
   subtotal: z.number().nonnegative(),
+  discountTotal: z.number().nonnegative().optional(),
   shipping: z.number().nonnegative(),
+  taxTotal: z.number().nonnegative().optional(),
   total: z.number().positive(),
+  weightGrams: z.number().int().nonnegative().optional(),
+  couponCode: z.string().optional(),
   handoffType: z.enum(['whatsapp', 'email', 'razorpay', 'cod']).default('whatsapp'),
   status: z.string().optional(),
   paymentMethod: z.string().optional(),

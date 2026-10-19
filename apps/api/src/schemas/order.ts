@@ -10,6 +10,7 @@ export const orderItemSchema = z.object({
   priceNum: z.number().nonnegative().optional(),
   sku: z.string().optional(),
   quantity: z.number().int().positive().max(50),
+  weightGrams: z.number().int().nonnegative().optional(),
   img: z.string().optional()
 })
 
@@ -28,8 +29,12 @@ export const createOrderSchema = z.object({
   notes: z.string().optional(),
   items: z.array(orderItemSchema).min(1),
   subtotal: z.number().nonnegative().optional(),
+  discountTotal: z.number().nonnegative().optional(),
   shipping: z.number().nonnegative().optional(),
+  taxTotal: z.number().nonnegative().optional(),
   total: z.number().positive().optional(),
+  weightGrams: z.number().nonnegative().optional(),
+  couponCode: z.string().optional(),
   handoffType: z.enum(['whatsapp', 'email', 'razorpay', 'cod']).default('whatsapp'),
   status: z.string().optional(),
   paymentMethod: z.string().optional(),
@@ -47,6 +52,7 @@ export type CalculatedOrder = Omit<CreateOrder, 'items' | 'subtotal' | 'shipping
   subtotal: number
   shipping: number
   total: number
+  weightGrams?: number
 }
 
 export interface Order extends CreateOrder {

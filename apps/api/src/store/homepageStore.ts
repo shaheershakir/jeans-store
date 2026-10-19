@@ -1,11 +1,7 @@
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { asc } from 'drizzle-orm'
+import { db, isDatabaseConfigured } from '../db/index.js'
+import { homepageSections } from '../db/schema.js'
 import type { HomepageConfig } from '../schemas/homepage.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const DATA_FILE_PATH = path.resolve(__dirname, '../data/homepage-config.json')
 
 export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   sectionsOrder: [
@@ -230,52 +226,62 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
 }
 
 class HomepageStore {
-  private currentConfig: HomepageConfig = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG))
+  private currentConfig: HomepageConfig = structuredClone(DEFAULT_HOMEPAGE_CONFIG)
 
-  constructor() {
-    this.loadFromDisk()
-  }
-
-  private loadFromDisk(): void {
-    try {
-      if (fs.existsSync(DATA_FILE_PATH)) {
-        const raw = fs.readFileSync(DATA_FILE_PATH, 'utf-8')
-        const parsed = JSON.parse(raw)
-        if (parsed && parsed.sectionsOrder) {
-          this.currentConfig = { ...DEFAULT_HOMEPAGE_CONFIG, ...parsed }
-        }
-      }
-    } catch {
-      // Fallback to default in-memory config
-    }
-  }
-
-  private saveToDisk(): void {
-    try {
-      const dir = path.dirname(DATA_FILE_PATH)
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true })
-      }
-      fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.currentConfig, null, 2), 'utf-8')
-    } catch {
-      // Non-critical if filesystem is read-only
-    }
-  }
+  private readonly sectionKeys = Object.keys(DEFAULT_HOMEPAGE_CONFIG).filter(
+    (key) => key !== 'sectionsOrder' && key !== 'sectionsEnabled'
+  )
 
   async get(): Promise<HomepageConfig> {
-    return JSON.parse(JSON.stringify(this.currentConfig))
+    if (isDatabaseConfigured() && db) {
+      const rows = await db.select().from(homepageSections).orderBy(asc(homepageSections.sortOrder))
+      if (rows.length === 0) {
+        this.currentConfig = structuredClone(DEFAULT_HOMEPAGE_CONFIG)
+      } else {
+        const config = structuredClone(DEFAULT_HOMEPAGE_CONFIG) as unknown as Record<string, any>
+        for (const row of rows) {
+          if (this.sectionKeys.includes(row.type)) {
+            config[row.type] = { ...(config[row.type] ?? {}), ...(row.config as Record<string, unknown>) }
+          }
+        }
+        config.sectionsOrder = rows
+          .map((row) => row.type)
+          .filter((type) => this.sectionKeys.includes(type))
+        config.sectionsEnabled = Object.fromEntries(rows.map((row) => [row.type, row.isEnabled]))
+        this.currentConfig = config as HomepageConfig
+      }
+    }
+    return structuredClone(this.currentConfig)
   }
 
   async save(newConfig: HomepageConfig): Promise<HomepageConfig> {
-    this.currentConfig = JSON.parse(JSON.stringify(newConfig))
-    this.saveToDisk()
+    this.currentConfig = structuredClone(newConfig)
+
+    if (isDatabaseConfigured() && db) {
+      const order =
+        newConfig.sectionsOrder.length > 0
+          ? newConfig.sectionsOrder
+          : (this.sectionKeys as HomepageConfig['sectionsOrder'])
+      await db.delete(homepageSections)
+      const values = order
+        .filter((type) => this.sectionKeys.includes(type))
+        .map((type, index) => ({
+          type,
+          isEnabled:
+            newConfig.sectionsEnabled[type] ?? (newConfig as unknown as Record<string, any>)[type]?.enabled ?? true,
+          sortOrder: index,
+          config: ((newConfig as unknown as Record<string, any>)[type] ?? {}) as Record<string, unknown>
+        }))
+      if (values.length > 0) {
+        await db.insert(homepageSections).values(values)
+      }
+    }
+
     return this.get()
   }
 
   async resetToDefaults(): Promise<HomepageConfig> {
-    this.currentConfig = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG))
-    this.saveToDisk()
-    return this.get()
+    return this.save(structuredClone(DEFAULT_HOMEPAGE_CONFIG))
   }
 }
 

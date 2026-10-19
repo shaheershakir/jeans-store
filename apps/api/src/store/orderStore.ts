@@ -1,72 +1,77 @@
 import { and, desc, eq, inArray, or, sql } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../db/index.js'
 import {
-  orders as ordersTable,
-  productVariants,
-  orderItems as orderItemsTable,
+  customers as customersTable,
+  customerAddresses as customerAddressesTable,
   orderEvents as orderEventsTable,
+  orderItems as orderItemsTable,
+  orders as ordersTable,
+  payments as paymentsTable,
+  productVariants,
+  shipments as shipmentsTable,
+  type DbCustomer,
   type DbOrder,
+  type DbOrderEvent,
   type DbOrderItem,
-  type DbOrderEvent
+  type DbPayment,
+  type DbShipment
 } from '../db/schema.js'
 import type { CalculatedOrder, Order } from '../schemas/order.js'
 import { assetUrl, keyFromUrl } from '@jeans-store/shared'
 
 export type OrderAdminPatch = Partial<Pick<Order, 'status' | 'paymentStatus' | 'carrier' | 'trackingNumber'>>
 
-function toOrder(row: DbOrder, itemsRows?: DbOrderItem[], eventRows?: DbOrderEvent[]): Order {
-  let items: Order['items'] = (row.items as Order['items']) || []
-  if (itemsRows && itemsRows.length > 0) {
-    items = itemsRows.map((it) => ({
-      id: it.productId ?? 0,
-      variantId: it.variantId ?? undefined,
-      name: it.name,
-      fit: it.fit ?? undefined,
-      size: it.size,
-      price: `₹${it.unitPrice.toLocaleString('en-IN')}`,
-      priceNum: it.unitPrice,
-      sku: it.sku ?? undefined,
-      quantity: it.quantity,
-      img: it.imageKey ? assetUrl(it.imageKey) : (it.imageUrl ?? undefined)
+function formatPrice(value: number): string {
+  return `₹${value.toLocaleString('en-IN')}`
+}
+
+function toOrder(
+  row: DbOrder,
+  itemsRows: DbOrderItem[] = [],
+  eventRows: DbOrderEvent[] = [],
+  shipment?: DbShipment,
+  payment?: DbPayment,
+  customer?: DbCustomer
+): Order {
+  const items: Order['items'] = itemsRows.map((item) => ({
+    id: item.productId ?? 0,
+    variantId: item.variantId ?? undefined,
+    name: item.name,
+    fit: item.fit ?? undefined,
+    size: item.size,
+    price: formatPrice(item.unitPrice),
+    priceNum: item.unitPrice,
+    sku: item.sku ?? undefined,
+    quantity: item.quantity,
+    weightGrams: item.weightGrams,
+    img: item.imageKey ? assetUrl(item.imageKey) : (item.imageUrl ?? undefined)
+  }))
+
+  const events = eventRows
+    .filter((event) => event.kind === 'status')
+    .map((event) => ({
+      id: String(event.id),
+      status: event.status || '',
+      note: event.note || '',
+      at: event.createdAt.toISOString(),
+      by: event.actorName || 'System'
     }))
-  }
 
-  let events = row.events || []
-  let adminNotes = row.adminNotes || []
-
-  if (eventRows && eventRows.length > 0) {
-    const statusEvents = eventRows
-      .filter((e) => e.kind === 'status')
-      .map((e) => ({
-        id: String(e.id),
-        status: e.status || '',
-        note: e.note || '',
-        at: e.createdAt.toISOString(),
-        by: e.actor || 'System'
-      }))
-    if (statusEvents.length > 0) {
-      events = statusEvents
-    }
-
-    const noteEvents = eventRows
-      .filter((e) => e.kind === 'note')
-      .map((e) => ({
-        id: String(e.id),
-        text: e.note || '',
-        at: e.createdAt.toISOString(),
-        by: e.actor || 'Admin',
-        internal: e.isInternal
-      }))
-    if (noteEvents.length > 0) {
-      adminNotes = noteEvents
-    }
-  }
+  const adminNotes = eventRows
+    .filter((event) => event.kind === 'note')
+    .map((event) => ({
+      id: String(event.id),
+      text: event.note || '',
+      at: event.createdAt.toISOString(),
+      by: event.actorName || 'Admin',
+      internal: event.isInternal
+    }))
 
   return {
     id: row.id,
-    userId: row.userId ?? undefined,
+    userId: customer?.userId ?? undefined,
     orderNumber: row.orderNumber,
-    store: row.store,
+    store: 'teesgarage',
     customerName: row.customerName,
     customerPhone: row.customerPhone,
     customerEmail: row.customerEmail,
@@ -78,17 +83,23 @@ function toOrder(row: DbOrder, itemsRows?: DbOrderItem[], eventRows?: DbOrderEve
     notes: row.notes ?? undefined,
     items,
     subtotal: row.subtotal,
+    discountTotal: row.discountTotal,
     shipping: row.shipping,
+    taxTotal: row.taxTotal,
     total: row.total,
+    weightGrams: row.weightGrams,
+    couponCode: row.couponCode ?? undefined,
     status: row.status,
     paymentStatus: row.paymentStatus as Order['paymentStatus'],
     handoffType: row.handoffType as Order['handoffType'],
-    razorpayOrderId: row.razorpayOrderId ?? undefined,
-    razorpayPaymentId: row.razorpayPaymentId ?? undefined,
-    carrier: row.carrier,
-    trackingNumber: row.trackingNumber,
-    shippedAt: row.shippedAt,
-    deliveredAt: row.deliveredAt,
+    paymentMethod: payment?.method,
+    paymentId: payment?.gatewayPaymentId ?? undefined,
+    razorpayOrderId: payment?.gatewayOrderId ?? undefined,
+    razorpayPaymentId: payment?.gatewayPaymentId ?? undefined,
+    carrier: shipment?.carrier ?? null,
+    trackingNumber: shipment?.trackingNumber ?? null,
+    shippedAt: shipment?.shippedAt ?? null,
+    deliveredAt: shipment?.deliveredAt ?? null,
     adminNotes,
     events,
     createdAt: row.createdAt,
@@ -98,42 +109,68 @@ function toOrder(row: DbOrder, itemsRows?: DbOrderItem[], eventRows?: DbOrderEve
 
 class OrderStore {
   private memoryOrders: Order[] = []
-  private memoryOrderItems: Map<number, DbOrderItem[]> = new Map()
-  private memoryOrderEvents: Map<number, DbOrderEvent[]> = new Map()
 
   private async hydrateOrders(orderRows: DbOrder[]): Promise<Order[]> {
     if (orderRows.length === 0) return []
-    if (!isDatabaseConfigured() || !db) {
-      return orderRows.map((r) =>
-        toOrder(r, this.memoryOrderItems.get(r.id), this.memoryOrderEvents.get(r.id))
-      )
-    }
+    const orderIds = orderRows.map((row) => row.id)
+    const customerIds = [...new Set(orderRows.map((row) => row.customerId))]
 
-    const orderIds = orderRows.map((r) => r.id)
-    const [allItems, allEvents] = await Promise.all([
-      db.select().from(orderItemsTable).where(inArray(orderItemsTable.orderId, orderIds)),
-      db
+    const [allItems, allEvents, allShipments, allPayments, allCustomers] = await Promise.all([
+      db!
+        .select()
+        .from(orderItemsTable)
+        .where(inArray(orderItemsTable.orderId, orderIds))
+        .orderBy(orderItemsTable.id),
+      db!
         .select()
         .from(orderEventsTable)
         .where(inArray(orderEventsTable.orderId, orderIds))
-        .orderBy(orderEventsTable.createdAt)
+        .orderBy(orderEventsTable.createdAt),
+      db!
+        .select()
+        .from(shipmentsTable)
+        .where(inArray(shipmentsTable.orderId, orderIds))
+        .orderBy(desc(shipmentsTable.createdAt)),
+      db!
+        .select()
+        .from(paymentsTable)
+        .where(inArray(paymentsTable.orderId, orderIds))
+        .orderBy(desc(paymentsTable.createdAt)),
+      db!.select().from(customersTable).where(inArray(customersTable.id, customerIds))
     ])
 
     const itemsByOrder = new Map<number, DbOrderItem[]>()
     for (const item of allItems) {
-      const list = itemsByOrder.get(item.orderId) || []
+      const list = itemsByOrder.get(item.orderId) ?? []
       list.push(item)
       itemsByOrder.set(item.orderId, list)
     }
-
     const eventsByOrder = new Map<number, DbOrderEvent[]>()
     for (const event of allEvents) {
-      const list = eventsByOrder.get(event.orderId) || []
+      const list = eventsByOrder.get(event.orderId) ?? []
       list.push(event)
       eventsByOrder.set(event.orderId, list)
     }
+    const shipmentByOrder = new Map<number, DbShipment>()
+    for (const shipment of allShipments) {
+      if (!shipmentByOrder.has(shipment.orderId)) shipmentByOrder.set(shipment.orderId, shipment)
+    }
+    const paymentByOrder = new Map<number, DbPayment>()
+    for (const payment of allPayments) {
+      if (!paymentByOrder.has(payment.orderId)) paymentByOrder.set(payment.orderId, payment)
+    }
+    const customerById = new Map<number, DbCustomer>(allCustomers.map((customer) => [customer.id, customer]))
 
-    return orderRows.map((r) => toOrder(r, itemsByOrder.get(r.id), eventsByOrder.get(r.id)))
+    return orderRows.map((row) =>
+      toOrder(
+        row,
+        itemsByOrder.get(row.id),
+        eventsByOrder.get(row.id),
+        shipmentByOrder.get(row.id),
+        paymentByOrder.get(row.id),
+        customerById.get(row.customerId)
+      )
+    )
   }
 
   async list(): Promise<Order[]> {
@@ -164,9 +201,21 @@ class OrderStore {
   async listByUserId(userId: number, fallbackEmail?: string): Promise<Order[]> {
     const normalizedEmail = fallbackEmail?.trim().toLowerCase()
     if (isDatabaseConfigured() && db) {
-      const condition = normalizedEmail
-        ? or(eq(ordersTable.userId, userId), sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail}`)
-        : eq(ordersTable.userId, userId)
+      const customerRows = await db
+        .select({ id: customersTable.id })
+        .from(customersTable)
+        .where(
+          normalizedEmail
+            ? or(eq(customersTable.userId, userId), sql`lower(${customersTable.email}) = ${normalizedEmail}`)
+            : eq(customersTable.userId, userId)
+        )
+      const customerIds = customerRows.map((row) => row.id)
+      const condition = customerIds.length > 0
+        ? or(
+            inArray(ordersTable.customerId, customerIds),
+            normalizedEmail ? sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail}` : sql`1=0`
+          )
+        : sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail ?? ''}`
       const rows = await db
         .select()
         .from(ordersTable)
@@ -176,7 +225,11 @@ class OrderStore {
     }
     if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
     return this.memoryOrders
-      .filter((order) => order.userId === userId || (normalizedEmail && order.customerEmail.trim().toLowerCase() === normalizedEmail))
+      .filter(
+        (order) =>
+          order.userId === userId ||
+          (normalizedEmail && order.customerEmail.trim().toLowerCase() === normalizedEmail)
+      )
       .reverse()
   }
 
@@ -184,11 +237,7 @@ class OrderStore {
     if (isDatabaseConfigured() && db) {
       const [row] = await db.select().from(ordersTable).where(eq(ordersTable.id, id))
       if (!row) return undefined
-      const [items, events] = await Promise.all([
-        db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, id)),
-        db.select().from(orderEventsTable).where(eq(orderEventsTable.orderId, id)).orderBy(orderEventsTable.createdAt)
-      ])
-      return toOrder(row, items, events)
+      return (await this.hydrateOrders([row]))[0]
     }
     if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
     return this.memoryOrders.find((order) => order.id === id)
@@ -198,21 +247,88 @@ class OrderStore {
     if (isDatabaseConfigured() && db) {
       const [row] = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, orderNumber))
       if (!row) return undefined
-      const [items, events] = await Promise.all([
-        db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, row.id)),
-        db.select().from(orderEventsTable).where(eq(orderEventsTable.orderId, row.id)).orderBy(orderEventsTable.createdAt)
-      ])
-      return toOrder(row, items, events)
+      return (await this.hydrateOrders([row]))[0]
     }
     if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
     return this.memoryOrders.find((order) => order.orderNumber === orderNumber)
+  }
+
+  private async upsertCustomer(input: CalculatedOrder & { userId?: number }): Promise<number> {
+    const email = input.customerEmail.trim().toLowerCase()
+    let existing: typeof customersTable.$inferSelect | undefined
+
+    if (input.userId) {
+      ;[existing] = await db!
+        .select()
+        .from(customersTable)
+        .where(eq(customersTable.userId, input.userId))
+    }
+
+    if (!existing) {
+      const [byEmail] = await db!
+        .select()
+        .from(customersTable)
+        .where(sql`lower(${customersTable.email}) = ${email}`)
+      if (byEmail) {
+        if (input.userId && byEmail.userId && byEmail.userId !== input.userId) {
+          throw new Error('This email is already linked to another customer account.')
+        }
+        existing = byEmail
+      }
+    }
+
+    let customerId: number
+    if (existing) {
+      customerId = existing.id
+      await db!
+        .update(customersTable)
+        .set({
+          name: input.customerName,
+          phone: input.customerPhone,
+          userId: input.userId ?? existing.userId,
+          updatedAt: new Date()
+        })
+        .where(eq(customersTable.id, existing.id))
+    } else {
+      const [created] = await db!
+        .insert(customersTable)
+        .values({
+          userId: input.userId ?? null,
+          name: input.customerName,
+          email,
+          phone: input.customerPhone
+        })
+        .returning({ id: customersTable.id })
+      customerId = created.id
+    }
+
+    const [existingAddress] = await db!
+      .select({ id: customerAddressesTable.id })
+      .from(customerAddressesTable)
+      .where(eq(customerAddressesTable.customerId, customerId))
+
+    if (!existingAddress) {
+      await db!.insert(customerAddressesTable).values({
+        customerId,
+        label: 'Home',
+        line1: input.address,
+        line2: input.apartment ?? null,
+        city: input.city,
+        state: input.state,
+        pincode: input.pincode,
+        phone: input.customerPhone,
+        isDefault: true
+      })
+    }
+
+    return customerId
   }
 
   async create(input: CalculatedOrder & { userId?: number }): Promise<Order> {
     const createdAt = new Date()
     const status = input.handoffType === 'razorpay' ? 'Confirmed' : 'Pending'
     const paymentStatus = input.handoffType === 'razorpay' ? 'Paid' : 'Pending'
-    const events = [{ id: `evt-${createdAt.getTime()}`, status, note: 'Customer order placed', at: createdAt.toISOString(), by: 'System' }]
+    const orderWeight = Number((input as { weightGrams?: number }).weightGrams ?? 0)
 
     if (isDatabaseConfigured() && db) {
       const decremented: Array<{ variantId: number; quantity: number }> = []
@@ -224,92 +340,99 @@ class OrderStore {
           const [variant] = await db
             .update(productVariants)
             .set({ stock: sql`${productVariants.stock} - ${item.quantity}`, updatedAt: createdAt })
-            .where(and(
-              eq(productVariants.id, item.variantId),
-              sql`${productVariants.stock} - ${productVariants.reserved} >= ${item.quantity}`
-            ))
+            .where(
+              and(
+                eq(productVariants.id, item.variantId),
+                sql`${productVariants.stock} - ${productVariants.reserved} >= ${item.quantity}`
+              )
+            )
             .returning({ id: productVariants.id })
           if (!variant) throw new Error(`Insufficient stock for ${item.name} (${item.size}).`)
           decremented.push({ variantId: item.variantId, quantity: item.quantity })
         }
 
+        const customerId = await this.upsertCustomer(input)
+
         const [row] = await db
           .insert(ordersTable)
           .values({
-            userId: input.userId ?? null,
             orderNumber: input.orderNumber,
-            store: input.store || 'teesgarage',
+            customerId,
             customerName: input.customerName,
             customerPhone: input.customerPhone,
-            customerEmail: input.customerEmail,
+            customerEmail: input.customerEmail.trim().toLowerCase(),
             address: input.address,
             apartment: input.apartment ?? null,
             city: input.city,
             state: input.state,
             pincode: input.pincode,
             notes: input.notes ?? null,
-            items: input.items,
             subtotal: input.subtotal,
+            discountTotal: (input as { discountTotal?: number }).discountTotal ?? 0,
             shipping: input.shipping,
+            taxTotal: (input as { taxTotal?: number }).taxTotal ?? 0,
             total: input.total,
+            weightGrams: orderWeight,
+            couponCode: (input as { couponCode?: string }).couponCode ?? null,
             status,
             paymentStatus,
-            handoffType: input.handoffType,
-            razorpayOrderId: input.razorpayOrderId ?? null,
-            razorpayPaymentId: input.razorpayPaymentId ?? null,
-            adminNotes: [],
-            events
+            handoffType: input.handoffType
           })
           .returning()
 
         createdOrderId = row.id
 
-        // Dual-write to order_items
-        const createdItems: DbOrderItem[] = []
         for (const item of input.items) {
           const imageKey = item.img ? keyFromUrl(item.img) : null
-          const imageUrl = (!imageKey && item.img && item.img.startsWith('http')) ? item.img : null
-          const [createdItem] = await db
-            .insert(orderItemsTable)
-            .values({
-              orderId: row.id,
-              productId: item.id || null,
-              variantId: item.variantId || null,
-              sku: item.sku ?? null,
-              name: item.name,
-              fit: item.fit ?? null,
-              size: item.size,
-              color: (item as any).color ?? null,
-              unitPrice: item.priceNum,
-              quantity: item.quantity,
-              imageKey,
-              imageUrl
-            })
-            .returning()
-          if (createdItem) createdItems.push(createdItem)
+          const imageUrl = !imageKey && item.img && item.img.startsWith('http') ? item.img : null
+          await db.insert(orderItemsTable).values({
+            orderId: row.id,
+            productId: item.id || null,
+            variantId: item.variantId || null,
+            sku: item.sku ?? null,
+            name: item.name,
+            fit: item.fit ?? null,
+            size: item.size,
+            unitPrice: item.priceNum,
+            quantity: item.quantity,
+            lineTotal: item.priceNum * item.quantity,
+            weightGrams: item.weightGrams ?? 0,
+            imageKey,
+            imageUrl
+          })
         }
 
-        // Dual-write to order_events
-        const [createdEvent] = await db
-          .insert(orderEventsTable)
-          .values({
-            orderId: row.id,
-            kind: 'status',
-            status,
-            note: 'Customer order placed',
-            isInternal: false,
-            actor: 'System',
-            createdAt
-          })
-          .returning()
+        await db.insert(orderEventsTable).values({
+          orderId: row.id,
+          kind: 'status',
+          status,
+          note: 'Customer order placed',
+          isInternal: false,
+          actorName: 'System',
+          createdAt
+        })
 
-        return toOrder(row, createdItems, createdEvent ? [createdEvent] : [])
+        const method = input.paymentMethod ?? (input.handoffType === 'cod' ? 'COD' : input.handoffType === 'razorpay' ? 'Razorpay' : 'Manual')
+        await db.insert(paymentsTable).values({
+          orderId: row.id,
+          method,
+          amount: input.total,
+          status: paymentStatus,
+          gateway: input.handoffType === 'razorpay' ? 'razorpay' : 'manual',
+          gatewayOrderId: input.razorpayOrderId ?? null,
+          gatewayPaymentId: input.razorpayPaymentId ?? input.paymentId ?? null,
+          settled: paymentStatus === 'Paid',
+          settledAt: paymentStatus === 'Paid' ? createdAt : null
+        })
+
+        return (await this.getById(row.id))!
       } catch (error) {
         if (createdOrderId) {
           await db.delete(ordersTable).where(eq(ordersTable.id, createdOrderId)).catch(() => {})
         }
         for (const reserved of decremented.reverse()) {
-          await db.update(productVariants)
+          await db
+            .update(productVariants)
             .set({ stock: sql`${productVariants.stock} + ${reserved.quantity}`, updatedAt: new Date() })
             .where(eq(productVariants.id, reserved.variantId))
         }
@@ -331,45 +454,18 @@ class OrderStore {
       shippedAt: null,
       deliveredAt: null,
       adminNotes: [],
-      events,
+      events: [
+        {
+          id: `evt-${createdAt.getTime()}`,
+          status,
+          note: 'Customer order placed',
+          at: createdAt.toISOString(),
+          by: 'System'
+        }
+      ],
       createdAt,
       updatedAt: createdAt
     }
-
-    const memoryItems: DbOrderItem[] = input.items.map((it, idx) => {
-      const imageKey = it.img ? keyFromUrl(it.img) : null
-      const imageUrl = (!imageKey && it.img && it.img.startsWith('http')) ? it.img : null
-      return {
-        id: idx + 1,
-        orderId,
-        productId: it.id || null,
-        variantId: it.variantId || null,
-        sku: it.sku ?? null,
-        name: it.name,
-        fit: it.fit ?? null,
-        size: it.size,
-        color: (it as any).color ?? null,
-        unitPrice: it.priceNum,
-        quantity: it.quantity,
-        imageKey,
-        imageUrl
-      }
-    })
-    this.memoryOrderItems.set(orderId, memoryItems)
-
-    const memoryEvents: DbOrderEvent[] = [
-      {
-        id: 1,
-        orderId,
-        kind: 'status',
-        status,
-        note: 'Customer order placed',
-        isInternal: false,
-        actor: 'System',
-        createdAt
-      }
-    ]
-    this.memoryOrderEvents.set(orderId, memoryEvents)
 
     this.memoryOrders.push(order)
     return order
@@ -380,12 +476,6 @@ class OrderStore {
     if (!current) return undefined
     const now = new Date()
     const statusChanged = patch.status !== undefined && patch.status !== current.status
-    const events = statusChanged
-      ? [...current.events, { id: `evt-${now.getTime()}`, status: patch.status!, note: `Status changed from ${current.status} to ${patch.status}`, at: now.toISOString(), by: author }]
-      : current.events
-    const values: Record<string, unknown> = { ...patch, events, updatedAt: now }
-    if (patch.status === 'Shipped') values.shippedAt = now
-    if (patch.status === 'Delivered') values.deliveredAt = now
 
     if (isDatabaseConfigured() && db) {
       if (statusChanged) {
@@ -395,44 +485,112 @@ class OrderStore {
           status: patch.status!,
           note: `Status changed from ${current.status} to ${patch.status}`,
           isInternal: false,
-          actor: author,
+          actorName: author,
           createdAt: now
         })
       }
 
-      const [row] = await db.update(ordersTable).set(values).where(eq(ordersTable.id, id)).returning()
-      if (!row) return undefined
+      const values: Record<string, unknown> = { updatedAt: now }
+      if (patch.status !== undefined) values.status = patch.status
+      if (patch.paymentStatus !== undefined) values.paymentStatus = patch.paymentStatus
+      await db.update(ordersTable).set(values).where(eq(ordersTable.id, id))
 
-      const [items, eventRows] = await Promise.all([
-        db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, id)),
-        db.select().from(orderEventsTable).where(eq(orderEventsTable.orderId, id)).orderBy(orderEventsTable.createdAt)
-      ])
-      return toOrder(row, items, eventRows)
+      if (patch.paymentStatus !== undefined) {
+        const [latestPayment] = await db
+          .select()
+          .from(paymentsTable)
+          .where(eq(paymentsTable.orderId, id))
+          .orderBy(desc(paymentsTable.createdAt))
+        if (latestPayment) {
+          await db
+            .update(paymentsTable)
+            .set({
+              status: patch.paymentStatus,
+              settled: patch.paymentStatus === 'Paid',
+              settledAt: patch.paymentStatus === 'Paid' ? latestPayment.settledAt ?? now : null
+            })
+            .where(eq(paymentsTable.id, latestPayment.id))
+        } else {
+          await db.insert(paymentsTable).values({
+            orderId: id,
+            method: 'Manual',
+            amount: current.total ?? 0,
+            status: patch.paymentStatus,
+            gateway: 'manual',
+            settled: patch.paymentStatus === 'Paid',
+            settledAt: patch.paymentStatus === 'Paid' ? now : null
+          })
+        }
+      }
+
+      const shipmentTouched =
+        patch.carrier !== undefined ||
+        patch.trackingNumber !== undefined ||
+        patch.status === 'Shipped' ||
+        patch.status === 'Delivered'
+
+      if (shipmentTouched) {
+        const [existingShipment] = await db
+          .select()
+          .from(shipmentsTable)
+          .where(eq(shipmentsTable.orderId, id))
+          .orderBy(desc(shipmentsTable.createdAt))
+        const carrier = patch.carrier ?? existingShipment?.carrier ?? 'Manual'
+        const trackingNumber = patch.trackingNumber ?? existingShipment?.trackingNumber ?? `TG-${id}-${now.getTime()}`
+        const shipmentStatus =
+          patch.status === 'Delivered'
+            ? 'Delivered'
+            : patch.status === 'Shipped'
+              ? 'In Transit'
+              : existingShipment?.status ?? 'Booked'
+        const shippedAt =
+          existingShipment?.shippedAt ??
+          (patch.status === 'Shipped' || patch.status === 'Delivered' ? now : null)
+        const deliveredAt = patch.status === 'Delivered' ? now : existingShipment?.deliveredAt ?? null
+
+        if (existingShipment) {
+          await db
+            .update(shipmentsTable)
+            .set({ carrier, trackingNumber, status: shipmentStatus, shippedAt, deliveredAt, updatedAt: now })
+            .where(eq(shipmentsTable.id, existingShipment.id))
+        } else {
+          await db.insert(shipmentsTable).values({
+            orderId: id,
+            carrier,
+            trackingNumber,
+            status: shipmentStatus,
+            shippedAt,
+            deliveredAt
+          })
+        }
+      }
+
+      return this.getById(id)
     }
 
     if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
-    if (statusChanged) {
-      const existingEvents = this.memoryOrderEvents.get(id) || []
-      existingEvents.push({
-        id: existingEvents.length + 1,
-        orderId: id,
-        kind: 'status',
-        status: patch.status!,
-        note: `Status changed from ${current.status} to ${patch.status}`,
-        isInternal: false,
-        actor: author,
-        createdAt: now
-      })
-      this.memoryOrderEvents.set(id, existingEvents)
-    }
+    const events = statusChanged
+      ? [
+          ...current.events,
+          {
+            id: `evt-${now.getTime()}`,
+            status: patch.status!,
+            note: `Status changed from ${current.status} to ${patch.status}`,
+            at: now.toISOString(),
+            by: author
+          }
+        ]
+      : current.events
 
     const updated: Order = {
       ...current,
       ...patch,
       events,
       updatedAt: now,
-      shippedAt: patch.status === 'Shipped' ? now : current.shippedAt,
-      deliveredAt: patch.status === 'Delivered' ? now : current.deliveredAt
+      shippedAt: patch.status === 'Shipped' || patch.status === 'Delivered' ? now : current.shippedAt,
+      deliveredAt: patch.status === 'Delivered' ? now : current.deliveredAt,
+      carrier: patch.carrier ?? current.carrier,
+      trackingNumber: patch.trackingNumber ?? current.trackingNumber
     }
     this.memoryOrders = this.memoryOrders.map((order) => (order.id === id ? updated : order))
     return updated
@@ -442,8 +600,6 @@ class OrderStore {
     const current = await this.getById(id)
     if (!current) return undefined
     const now = new Date()
-    const note = { id: `note-${now.getTime()}`, text, at: now.toISOString(), by: author, internal: true }
-    const adminNotes = [...current.adminNotes, note]
 
     if (isDatabaseConfigured() && db) {
       await db.insert(orderEventsTable).values({
@@ -451,34 +607,17 @@ class OrderStore {
         kind: 'note',
         note: text,
         isInternal: true,
-        actor: author,
+        actorName: author,
         createdAt: now
       })
-
-      const [row] = await db.update(ordersTable).set({ adminNotes, updatedAt: now }).where(eq(ordersTable.id, id)).returning()
-      if (!row) return undefined
-
-      const [items, eventRows] = await Promise.all([
-        db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, id)),
-        db.select().from(orderEventsTable).where(eq(orderEventsTable.orderId, id)).orderBy(orderEventsTable.createdAt)
-      ])
-      return toOrder(row, items, eventRows)
+      return this.getById(id)
     }
 
     if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
-    const existingEvents = this.memoryOrderEvents.get(id) || []
-    existingEvents.push({
-      id: existingEvents.length + 1,
-      orderId: id,
-      kind: 'note',
-      status: null,
-      note: text,
-      isInternal: true,
-      actor: author,
-      createdAt: now
-    })
-    this.memoryOrderEvents.set(id, existingEvents)
-
+    const adminNotes = [
+      ...current.adminNotes,
+      { id: `note-${now.getTime()}`, text, at: now.toISOString(), by: author, internal: true }
+    ]
     const updated = { ...current, adminNotes, updatedAt: now }
     this.memoryOrders = this.memoryOrders.map((order) => (order.id === id ? updated : order))
     return updated

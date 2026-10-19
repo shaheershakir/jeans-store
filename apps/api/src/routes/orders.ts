@@ -81,6 +81,7 @@ async function calculateCheckout(
       priceNum: unitPrice,
       sku: variant.sku,
       quantity: requested.quantity,
+      weightGrams: variant.weight,
       img: product.img
     })
   }

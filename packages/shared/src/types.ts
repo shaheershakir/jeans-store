@@ -54,6 +54,22 @@ export interface Product {
   fit?: Fit
   price: string
   priceNum: number
+  weightGrams?: number
+  lengthMm?: number
+  widthMm?: number
+  heightMm?: number
+  gender?: 'Men' | 'Women' | 'Unisex'
+  brand?: string
+  styleCode?: string
+  compareAtPrice?: number | null
+  costPrice?: number | null
+  taxRate?: number
+  hsnCode?: string
+  isFeatured?: boolean
+  inseam?: number
+  garmentLength?: string
+  careInstructions?: string
+  countryOfOrigin?: string
   img: string
   img2: string
   images?: string[]
@@ -90,12 +106,15 @@ export interface Product {
 
 export interface OrderItem {
   id: number
+  variantId?: number
   name: string
   fit?: string
   size: string
   price: string
   priceNum: number
+  sku?: string
   quantity: number
+  weightGrams?: number
   img?: string
 }
 
@@ -115,15 +134,27 @@ export interface Order {
   notes?: string
   items: OrderItem[]
   subtotal: number
+  discountTotal?: number
   shipping: number
+  taxTotal?: number
   total: number
+  weightGrams?: number
+  couponCode?: string
   status: string
+  paymentStatus?: 'Pending' | 'Paid' | 'Failed' | 'Refunded'
   handoffType: 'whatsapp' | 'email' | 'razorpay' | 'cod'
   paymentMethod?: string
   paymentId?: string
   razorpayOrderId?: string
   razorpayPaymentId?: string
+  carrier?: string | null
+  trackingNumber?: string | null
+  shippedAt?: Date | string | null
+  deliveredAt?: Date | string | null
+  adminNotes?: Array<{ id: string; text: string; at: string; by: string; internal?: boolean }>
+  events?: Array<{ id: string; status: string; note: string; at: string; by: string }>
   createdAt: Date | string
+  updatedAt?: Date | string
 }
 
 export interface CreateOrderInput {
@@ -141,8 +172,12 @@ export interface CreateOrderInput {
   notes?: string
   items: OrderItem[]
   subtotal: number
+  discountTotal?: number
   shipping: number
+  taxTotal?: number
   total: number
+  weightGrams?: number
+  couponCode?: string
   handoffType?: 'whatsapp' | 'email' | 'razorpay' | 'cod'
   status?: string
   paymentMethod?: string
@@ -156,6 +191,7 @@ export interface UserProfile {
   id: number
   uid: string
   email: string
+  phone?: string | null
   name: string
   provider: string
   googleSub?: string | null
@@ -343,3 +379,62 @@ export interface DeliveryEstimation {
   zone: 'kerala' | 'restOfIndia'
 }
 
+export interface Customer {
+  id: number
+  userId?: number | null
+  name: string
+  email: string
+  phone?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export interface CustomerAddress {
+  id: number
+  customerId: number
+  label: 'Home' | 'Work' | 'Other'
+  line1: string
+  line2?: string | null
+  city: string
+  state: string
+  pincode: string
+  phone?: string | null
+  isDefault: boolean
+}
+
+export interface ProductReview {
+  id: number
+  productId: number
+  customerId?: number | null
+  reviewerName: string
+  rating: number
+  title?: string | null
+  content: string
+  isVerifiedPurchase: boolean
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Hidden'
+  merchantResponse?: string | null
+  createdAt: Date | string
+}
+
+export interface Shipment {
+  id: number
+  orderId: number
+  carrier: string
+  trackingNumber: string
+  status: 'Pending' | 'Booked' | 'In Transit' | 'Delivered' | 'Failed' | 'RTO'
+  shippedAt?: Date | string | null
+  eta?: Date | string | null
+  deliveredAt?: Date | string | null
+}
+
+export interface Payment {
+  id: number
+  orderId: number
+  method: string
+  amount: number
+  status: 'Pending' | 'Paid' | 'Failed' | 'Refunded'
+  gateway: string
+  gatewayOrderId?: string | null
+  gatewayPaymentId?: string | null
+  settled: boolean
+}

@@ -1,5 +1,9 @@
 # Database Schema V2 & Storage Architecture
 
+> **Historical document.** The incremental `0000`–`0005` plan below has been
+> replaced by a single `0000_baseline` migration and a full reset runbook. See
+> [`DB_RESET.md`](./DB_RESET.md) for the current schema, seed and reset steps.
+
 This document defines the Schema V2 architecture, storage refactor, migration reconciliation, operational runbook, and baseline discovery for TEESGARAGE.
 
 ---

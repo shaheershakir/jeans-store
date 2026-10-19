@@ -21,7 +21,8 @@
     "typecheck": "turbo typecheck",
     "db:generate": "turbo db:generate --filter=@jeans-store/db",
     "db:push": "turbo db:push --filter=@jeans-store/db",
-    "db:seed": "turbo db:seed --filter=@jeans-store/db",
+    "db:seed": "npm run db:seed --workspace=@jeans-store/api",
+    "db:reset": "npm run db:reset --workspace=@jeans-store/api",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
     "verify:oauth": "node scripts/verify-google-oauth.mjs"
