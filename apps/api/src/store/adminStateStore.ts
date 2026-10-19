@@ -32,6 +32,10 @@ import {
 const SETTINGS_ID = 'default'
 let memoryState: Record<string, unknown> = {}
 
+export function _resetMemoryStateForTesting(): void {
+  memoryState = {}
+}
+
 function iso(value: Date | string | null | undefined): string {
   if (!value) return ''
   const date = value instanceof Date ? value : new Date(value)
@@ -309,7 +313,7 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
   }
 }
 
-async function resetSequences(): Promise<void> {
+async function resetSequences(client: any = db): Promise<void> {
   const tables = [
     'collections',
     'coupons',
@@ -326,18 +330,63 @@ async function resetSequences(): Promise<void> {
     'refunds'
   ]
   for (const table of tables) {
-    await db!.execute(
-      sql.raw(
-        `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM "${table}"), 1), true)`
+    try {
+      await client.execute(
+        sql.raw(
+          `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM "${table}"), 1), true)`
+        )
       )
-    )
+    } catch {
+      // In SQLite or non-Postgres test environments setval is not available
+    }
   }
 }
 
 export async function saveAdminState(data: Record<string, unknown>): Promise<void> {
   if (!isDatabaseConfigured() || !db) {
     if (process.env.NODE_ENV === 'production') throw new Error('Admin state database is not configured.')
-    memoryState = structuredClone(data)
+    const previous = (memoryState ?? {}) as Record<string, any>
+    const next = structuredClone(data) as Record<string, any>
+
+    // Append-only lists: merge without duplicating by id
+    const mergeAppendOnly = (key: string) => {
+      const prevList = Array.isArray(previous[key]) ? previous[key] : []
+      const nextList = Array.isArray(next[key]) ? next[key] : []
+      const seenIds = new Set(nextList.map((item: any) => item.id).filter(Boolean))
+      const preserved = prevList.filter((item: any) => !seenIds.has(item.id))
+      next[key] = [...preserved, ...nextList]
+    }
+
+    // Operational entities: upsert by id / key
+    const mergeOperational = (key: string, idField = 'id') => {
+      const prevList = Array.isArray(previous[key]) ? previous[key] : []
+      const nextList = Array.isArray(next[key]) ? next[key] : []
+      const nextMap = new Map(nextList.map((item: any) => [item[idField], item]))
+      const merged = prevList.map((item: any) => nextMap.get(item[idField]) ?? item)
+      for (const item of nextList) {
+        if (!prevList.some((p: any) => p[idField] === item[idField])) {
+          merged.push(item)
+        }
+      }
+      next[key] = merged
+    }
+
+    mergeAppendOnly('auditLog')
+    mergeAppendOnly('inventoryMovements')
+    mergeAppendOnly('notifications')
+
+    mergeOperational('collections')
+    mergeOperational('coupons')
+    mergeOperational('promotions')
+    mergeOperational('banners')
+    mergeOperational('reviews')
+    mergeOperational('shipments')
+    mergeOperational('returns')
+    mergeOperational('refunds')
+    mergeOperational('roles')
+    mergeOperational('sizeCharts', 'categoryId')
+
+    memoryState = next
     return
   }
 
@@ -345,270 +394,477 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
     Array.isArray(data[key]) ? (data[key] as Array<Record<string, any>>) : []
   const settings = (data.settings ?? {}) as Record<string, any>
 
-  const [
-    orderRows,
-    customerRows,
-    productRows,
-    categoryRows,
-    variantRows,
-    adminUserRows
-  ] = await Promise.all([
-    db.select({ id: orders.id, customerId: orders.customerId }).from(orders),
-    db.select({ id: customers.id }).from(customers),
-    db.select({ id: products.id }).from(products),
-    db.select({ id: categories.id }).from(categories),
-    db.select({ id: productVariants.id, productId: productVariants.productId }).from(productVariants),
-    db.select({ id: adminUsers.id }).from(adminUsers)
-  ])
-  const orderById = new Map(orderRows.map((row) => [row.id, row]))
-  const customerIds = new Set(customerRows.map((row) => row.id))
-  const productIds = new Set(productRows.map((row) => row.id))
-  const categoryIds = new Set(categoryRows.map((row) => row.id))
-  const variantProductById = new Map(variantRows.map((row) => [row.id, row.productId]))
-  const variantIds = new Set(variantRows.map((row) => row.id))
-  const adminUserIds = new Set(adminUserRows.map((row) => row.id))
+  await db.transaction(async (tx) => {
+    const [
+      orderRows,
+      customerRows,
+      productRows,
+      categoryRows,
+      variantRows,
+      adminUserRows
+    ] = await Promise.all([
+      tx.select({ id: orders.id, customerId: orders.customerId }).from(orders),
+      tx.select({ id: customers.id }).from(customers),
+      tx.select({ id: products.id }).from(products),
+      tx.select({ id: categories.id }).from(categories),
+      tx.select({ id: productVariants.id, productId: productVariants.productId }).from(productVariants),
+      tx.select({ id: adminUsers.id }).from(adminUsers)
+    ])
+    const orderById = new Map(orderRows.map((row) => [row.id, row]))
+    const customerIds = new Set(customerRows.map((row) => row.id))
+    const productIds = new Set(productRows.map((row) => row.id))
+    const categoryIds = new Set(categoryRows.map((row) => row.id))
+    const variantProductById = new Map(variantRows.map((row) => [row.id, row.productId]))
+    const variantIds = new Set(variantRows.map((row) => row.id))
+    const adminUserIds = new Set(adminUserRows.map((row) => row.id))
 
-  await db.delete(refunds)
-  await db.delete(returnItems)
-  await db.delete(returnRequests)
-  await db.delete(couponProducts)
-  await db.delete(couponCategories)
-  await db.delete(couponRedemptions)
-  await db.delete(coupons)
-  await db.delete(promotions)
-  await db.delete(banners)
-  await db.delete(reviewImages)
-  await db.delete(productReviews)
-  await db.delete(sizeChartMeasurements)
-  await db.delete(sizeCharts)
-  await db.delete(shipments)
-  await db.delete(inventoryMovements)
-  await db.delete(auditLog)
-  await db.delete(notifications)
+    // Operational entities: upsert by id / unique key
+    const roleValues = arrays('roles').map((role) => ({
+      id: numberOrZero(role.id),
+      name: stringOrEmpty(role.name),
+      description: stringOrEmpty(role.description) || null,
+      permissions: Array.isArray(role.permissions) ? role.permissions.map(String) : []
+    }))
+    for (const role of roleValues) {
+      if (!role.name) continue
+      if (role.id > 0) {
+        await tx
+          .insert(roles)
+          .values(role)
+          .onConflictDoUpdate({
+            target: roles.id,
+            set: { name: role.name, description: role.description, permissions: role.permissions, updatedAt: new Date() }
+          })
+      } else {
+        const { id: _ignored, ...roleWithoutId } = role
+        await tx
+          .insert(roles)
+          .values(roleWithoutId)
+          .onConflictDoUpdate({
+            target: roles.name,
+            set: { description: role.description, permissions: role.permissions, updatedAt: new Date() }
+          })
+      }
+    }
 
-  const roleValues = arrays('roles').map((role) => ({
-    id: numberOrZero(role.id),
-    name: stringOrEmpty(role.name),
-    description: stringOrEmpty(role.description) || null,
-    permissions: Array.isArray(role.permissions) ? role.permissions.map(String) : []
-  }))
-  for (const role of roleValues) {
-    if (!role.id || !role.name) continue
-    await db
-      .insert(roles)
-      .values(role)
-      .onConflictDoUpdate({
-        target: roles.id,
-        set: { name: role.name, description: role.description, permissions: role.permissions }
-      })
-  }
+    const collectionValues = arrays('collections').map((collection, index) => ({
+      id: numberOrZero(collection.id),
+      name: stringOrEmpty(collection.name),
+      slug: stringOrEmpty(collection.slug),
+      description: stringOrEmpty(collection.description) || null,
+      status: collection.status === 'Inactive' ? ('Inactive' as const) : ('Active' as const),
+      sortOrder: index
+    }))
+    for (const collection of collectionValues) {
+      if (!collection.name || !collection.slug) continue
+      if (collection.id > 0) {
+        await tx
+          .insert(collections)
+          .values(collection)
+          .onConflictDoUpdate({
+            target: collections.id,
+            set: {
+              name: collection.name,
+              slug: collection.slug,
+              description: collection.description,
+              status: collection.status,
+              sortOrder: collection.sortOrder,
+              updatedAt: new Date()
+            }
+          })
+      } else {
+        const { id: _ignored, ...colWithoutId } = collection
+        await tx
+          .insert(collections)
+          .values(colWithoutId)
+          .onConflictDoUpdate({
+            target: collections.slug,
+            set: {
+              name: collection.name,
+              description: collection.description,
+              status: collection.status,
+              sortOrder: collection.sortOrder,
+              updatedAt: new Date()
+            }
+          })
+      }
+    }
 
-  const collectionValues = arrays('collections').map((collection, index) => ({
-    id: numberOrZero(collection.id),
-    name: stringOrEmpty(collection.name),
-    slug: stringOrEmpty(collection.slug),
-    description: stringOrEmpty(collection.description) || null,
-    status: collection.status === 'Inactive' ? 'Inactive' : 'Active',
-    sortOrder: index
-  }))
-  if (collectionValues.length > 0) await db.insert(collections).values(collectionValues)
-
-  const couponValues = arrays('coupons').map((coupon) => ({
-    id: numberOrZero(coupon.id),
-    code: stringOrEmpty(coupon.code),
-    type: coupon.type === 'fixed' ? 'fixed' : 'percentage',
-    value: numberOrZero(coupon.value),
-    minOrderValue: numberOrZero(coupon.minOrderValue),
-    maxDiscount: coupon.maxDiscount === null || coupon.maxDiscount === undefined ? null : numberOrZero(coupon.maxDiscount),
-    startsAt: dateOrNull(coupon.startsAt),
-    endsAt: dateOrNull(coupon.endsAt),
-    usageLimit: coupon.usageLimit === null || coupon.usageLimit === undefined ? null : numberOrZero(coupon.usageLimit),
-    perCustomerLimit: numberOrZero(coupon.perCustomerLimit) || 1,
-    isActive: coupon.isActive !== false
-  }))
-  if (couponValues.length > 0) {
-    await db.insert(coupons).values(couponValues)
-    const productLinks: Array<{ couponId: number; productId: number }> = []
-    const categoryLinks: Array<{ couponId: number; categoryId: number }> = []
     for (const coupon of arrays('coupons')) {
       const couponId = numberOrZero(coupon.id)
-      for (const productId of Array.isArray(coupon.productIds) ? coupon.productIds : []) {
-        if (productIds.has(Number(productId))) productLinks.push({ couponId, productId: Number(productId) })
+      const code = stringOrEmpty(coupon.code)
+      if (!code) continue
+
+      const couponData = {
+        code,
+        type: coupon.type === 'fixed' ? ('fixed' as const) : ('percentage' as const),
+        value: numberOrZero(coupon.value),
+        minOrderValue: numberOrZero(coupon.minOrderValue),
+        maxDiscount: coupon.maxDiscount === null || coupon.maxDiscount === undefined ? null : numberOrZero(coupon.maxDiscount),
+        startsAt: dateOrNull(coupon.startsAt),
+        endsAt: dateOrNull(coupon.endsAt),
+        usageLimit: coupon.usageLimit === null || coupon.usageLimit === undefined ? null : numberOrZero(coupon.usageLimit),
+        perCustomerLimit: numberOrZero(coupon.perCustomerLimit) || 1,
+        isActive: coupon.isActive !== false
       }
-      for (const categoryId of Array.isArray(coupon.categoryIds) ? coupon.categoryIds : []) {
-        if (categoryIds.has(Number(categoryId))) categoryLinks.push({ couponId, categoryId: Number(categoryId) })
+      if (couponData.value <= 0) continue
+
+      let effectiveCouponId = couponId
+      if (couponId > 0) {
+        const [upserted] = await tx
+          .insert(coupons)
+          .values({ id: couponId, ...couponData })
+          .onConflictDoUpdate({
+            target: coupons.id,
+            set: {
+              code: couponData.code,
+              type: couponData.type,
+              value: couponData.value,
+              minOrderValue: couponData.minOrderValue,
+              maxDiscount: couponData.maxDiscount,
+              startsAt: couponData.startsAt,
+              endsAt: couponData.endsAt,
+              usageLimit: couponData.usageLimit,
+              perCustomerLimit: couponData.perCustomerLimit,
+              isActive: couponData.isActive,
+              updatedAt: new Date()
+            }
+          })
+          .returning({ id: coupons.id })
+        if (upserted?.id) effectiveCouponId = upserted.id
+      } else {
+        const [upserted] = await tx
+          .insert(coupons)
+          .values(couponData)
+          .onConflictDoUpdate({
+            target: coupons.code,
+            set: {
+              type: couponData.type,
+              value: couponData.value,
+              minOrderValue: couponData.minOrderValue,
+              maxDiscount: couponData.maxDiscount,
+              startsAt: couponData.startsAt,
+              endsAt: couponData.endsAt,
+              usageLimit: couponData.usageLimit,
+              perCustomerLimit: couponData.perCustomerLimit,
+              isActive: couponData.isActive,
+              updatedAt: new Date()
+            }
+          })
+          .returning({ id: coupons.id })
+        if (upserted?.id) effectiveCouponId = upserted.id
+      }
+
+      if (effectiveCouponId > 0) {
+        await tx.delete(couponProducts).where(eq(couponProducts.couponId, effectiveCouponId))
+        await tx.delete(couponCategories).where(eq(couponCategories.couponId, effectiveCouponId))
+
+        const productLinks: Array<{ couponId: number; productId: number }> = []
+        for (const productId of Array.isArray(coupon.productIds) ? coupon.productIds : []) {
+          if (productIds.has(Number(productId))) productLinks.push({ couponId: effectiveCouponId, productId: Number(productId) })
+        }
+        if (productLinks.length > 0) await tx.insert(couponProducts).values(productLinks)
+
+        const categoryLinks: Array<{ couponId: number; categoryId: number }> = []
+        for (const categoryId of Array.isArray(coupon.categoryIds) ? coupon.categoryIds : []) {
+          if (categoryIds.has(Number(categoryId))) categoryLinks.push({ couponId: effectiveCouponId, categoryId: Number(categoryId) })
+        }
+        if (categoryLinks.length > 0) await tx.insert(couponCategories).values(categoryLinks)
       }
     }
-    if (productLinks.length > 0) await db.insert(couponProducts).values(productLinks)
-    if (categoryLinks.length > 0) await db.insert(couponCategories).values(categoryLinks)
-  }
 
-  const promotionValues = arrays('promotions').map((promotion) => ({
-    id: numberOrZero(promotion.id),
-    title: stringOrEmpty(promotion.title),
-    target: stringOrEmpty(promotion.target) || 'Product',
-    targetId: promotion.targetId === null || promotion.targetId === undefined ? null : String(promotion.targetId),
-    discountType: promotion.discountType === 'fixed' ? 'fixed' : 'percentage',
-    discountValue: numberOrZero(promotion.discountValue),
-    startsAt: dateOrNull(promotion.startsAt),
-    endsAt: dateOrNull(promotion.endsAt),
-    status: stringOrEmpty(promotion.status) || 'Scheduled'
-  }))
-  if (promotionValues.length > 0) await db.insert(promotions).values(promotionValues)
-
-  const bannerValues = arrays('banners').map((banner) => ({
-    id: numberOrZero(banner.id),
-    title: stringOrEmpty(banner.title),
-    subtitle: stringOrEmpty(banner.subtitle) || null,
-    ctaLabel: stringOrEmpty(banner.ctaLabel) || null,
-    link: stringOrEmpty(banner.link) || null,
-    imageUrl: stringOrEmpty(banner.image) || null,
-    startsAt: dateOrNull(banner.startsAt),
-    endsAt: dateOrNull(banner.endsAt),
-    status: stringOrEmpty(banner.status) || 'Scheduled',
-    sortOrder: numberOrZero(banner.order)
-  }))
-  if (bannerValues.length > 0) await db.insert(banners).values(bannerValues)
-
-  const reviewValues = arrays('reviews')
-    .filter((review) => productIds.has(Number(review.productId)))
-    .map((review) => ({
-      id: numberOrZero(review.id),
-      productId: Number(review.productId),
-      customerId: customerIds.has(Number(review.customerId)) ? Number(review.customerId) : null,
-      reviewerName: 'Customer',
-      reviewerEmail: null,
-      rating: Math.min(5, Math.max(1, numberOrZero(review.rating) || 5)),
-      title: stringOrEmpty(review.title) || null,
-      content: stringOrEmpty(review.content),
-      isVerifiedPurchase: Boolean(review.verified),
-      status: stringOrEmpty(review.status) || 'Pending',
-      merchantResponse: review.response ? String(review.response) : null,
-      respondedAt: dateOrNull(review.respondedAt),
-      createdAt: dateOrNull(review.createdAt) ?? new Date()
-    }))
-  if (reviewValues.length > 0) await db.insert(productReviews).values(reviewValues)
-
-  await db.execute(sql`
-    UPDATE products p
-    SET
-      rating_average = COALESCE((
-        SELECT AVG(r.rating)::real
-        FROM product_reviews r
-        WHERE r.product_id = p.id AND r.status = 'Approved'
-      ), 0),
-      review_count = (
-        SELECT COUNT(*)::int
-        FROM product_reviews r
-        WHERE r.product_id = p.id AND r.status = 'Approved'
-      )
-  `)
-
-  const sizeChartValues = arrays('sizeCharts').map((chart) => ({
-    categoryId: numberOrZero(chart.categoryId),
-    description: stringOrEmpty(chart.description) || null
-  }))
-  for (let index = 0; index < sizeChartValues.length; index++) {
-    const chart = sizeChartValues[index]
-    if (!chart.categoryId) continue
-    const [created] = await db
-      .insert(sizeCharts)
-      .values(chart)
-      .onConflictDoUpdate({ target: sizeCharts.categoryId, set: { description: chart.description } })
-      .returning({ id: sizeCharts.id })
-    const measurements = Array.isArray(arrays('sizeCharts')[index].measurements)
-      ? arrays('sizeCharts')[index].measurements
-      : []
-    if (measurements.length > 0) {
-      await db.insert(sizeChartMeasurements).values(
-        measurements.map((measurement: Record<string, any>) => ({
-          sizeChartId: created.id,
-          size: String(measurement.size ?? ''),
-          chest: measurement.chest === undefined ? null : numberOrZero(measurement.chest),
-          waist: numberOrZero(measurement.waist),
-          hip: numberOrZero(measurement.hip),
-          inseam: numberOrZero(measurement.inseam),
-          thigh: numberOrZero(measurement.thigh),
-          length: measurement.length === undefined ? null : numberOrZero(measurement.length),
-          shoulder: measurement.shoulder === undefined ? null : numberOrZero(measurement.shoulder)
-        }))
-      )
+    for (const promotion of arrays('promotions')) {
+      const promoId = numberOrZero(promotion.id)
+      const title = stringOrEmpty(promotion.title)
+      if (!title) continue
+      const promoData = {
+        title,
+        target: stringOrEmpty(promotion.target) || 'Product',
+        targetId: promotion.targetId === null || promotion.targetId === undefined ? null : String(promotion.targetId),
+        discountType: promotion.discountType === 'fixed' ? ('fixed' as const) : ('percentage' as const),
+        discountValue: numberOrZero(promotion.discountValue),
+        startsAt: dateOrNull(promotion.startsAt),
+        endsAt: dateOrNull(promotion.endsAt),
+        status: stringOrEmpty(promotion.status) || 'Scheduled'
+      }
+      if (promoId > 0) {
+        await tx
+          .insert(promotions)
+          .values({ id: promoId, ...promoData })
+          .onConflictDoUpdate({
+            target: promotions.id,
+            set: {
+              ...promoData,
+              updatedAt: new Date()
+            }
+          })
+      } else {
+        await tx.insert(promotions).values(promoData)
+      }
     }
-  }
 
-  const movementValues = arrays('inventoryMovements').map((movement) => {
-    const requestedVariantId = Number(movement.variantId)
-    const variantId = variantIds.has(requestedVariantId) ? requestedVariantId : null
-    const requestedProductId = Number(movement.productId)
-    const productIdFromVariant = variantId ? variantProductById.get(variantId) ?? null : null
-    const productId =
-      productIdFromVariant ?? (productIds.has(requestedProductId) ? requestedProductId : null)
-    return {
-      id: numberOrZero(movement.id),
-      productId,
-      variantId,
-      sku: stringOrEmpty(movement.sku) || null,
-      type: ['PURCHASE', 'SALE', 'ADJUSTMENT', 'RETURN', 'RESERVATION', 'RELEASE'].includes(movement.type)
-        ? movement.type
-        : 'ADJUSTMENT',
-      delta: numberOrZero(movement.delta),
-      before: numberOrZero(movement.before),
-      after: numberOrZero(movement.after),
-      reason: stringOrEmpty(movement.reason) || null,
-      reference: stringOrEmpty(movement.reference) || null,
-      actorAdminId: adminUserIds.has(Number(movement.userId)) ? Number(movement.userId) : null,
-      actorName: stringOrEmpty(movement.userName) || null,
-      createdAt: dateOrNull(movement.createdAt) ?? new Date()
+    for (const banner of arrays('banners')) {
+      const bannerId = numberOrZero(banner.id)
+      const title = stringOrEmpty(banner.title)
+      if (!title) continue
+      const bannerData = {
+        title,
+        subtitle: stringOrEmpty(banner.subtitle) || null,
+        ctaLabel: stringOrEmpty(banner.ctaLabel) || null,
+        link: stringOrEmpty(banner.link) || null,
+        imageUrl: stringOrEmpty(banner.image) || null,
+        startsAt: dateOrNull(banner.startsAt),
+        endsAt: dateOrNull(banner.endsAt),
+        status: stringOrEmpty(banner.status) || 'Scheduled',
+        sortOrder: numberOrZero(banner.order)
+      }
+      if (bannerId > 0) {
+        await tx
+          .insert(banners)
+          .values({ id: bannerId, ...bannerData })
+          .onConflictDoUpdate({
+            target: banners.id,
+            set: {
+              ...bannerData,
+              updatedAt: new Date()
+            }
+          })
+      } else {
+        await tx.insert(banners).values(bannerData)
+      }
     }
-  })
-  if (movementValues.length > 0) await db.insert(inventoryMovements).values(movementValues)
 
-  const auditValues = arrays('auditLog').map((entry) => ({
-    id: numberOrZero(entry.id),
-    adminUserId: adminUserIds.has(Number(entry.userId)) ? Number(entry.userId) : null,
-    actorName: stringOrEmpty(entry.userName) || null,
-    action: stringOrEmpty(entry.action) || 'action',
-    entity: stringOrEmpty(entry.entity) || null,
-    entityId: stringOrEmpty(entry.entityId) || null,
-    detail: stringOrEmpty(entry.detail) || null,
-    createdAt: dateOrNull(entry.at) ?? new Date()
-  }))
-  if (auditValues.length > 0) await db.insert(auditLog).values(auditValues)
+    for (const review of arrays('reviews')) {
+      const productId = Number(review.productId)
+      if (!productIds.has(productId)) continue
+      const reviewId = numberOrZero(review.id)
+      const reviewData = {
+        productId,
+        customerId: customerIds.has(Number(review.customerId)) ? Number(review.customerId) : null,
+        reviewerName: stringOrEmpty(review.reviewerName) || 'Customer',
+        reviewerEmail: stringOrEmpty(review.reviewerEmail) || null,
+        rating: Math.min(5, Math.max(1, numberOrZero(review.rating) || 5)),
+        title: stringOrEmpty(review.title) || null,
+        content: stringOrEmpty(review.content),
+        isVerifiedPurchase: Boolean(review.verified),
+        status: stringOrEmpty(review.status) || 'Pending',
+        merchantResponse: review.response ? String(review.response) : null,
+        respondedAt: dateOrNull(review.respondedAt)
+      }
+      if (reviewId > 0) {
+        await tx
+          .insert(productReviews)
+          .values({
+            id: reviewId,
+            ...reviewData,
+            createdAt: dateOrNull(review.createdAt) ?? new Date()
+          })
+          .onConflictDoUpdate({
+            target: productReviews.id,
+            set: {
+              ...reviewData,
+              updatedAt: new Date()
+            }
+          })
+      } else {
+        await tx.insert(productReviews).values({
+          ...reviewData,
+          createdAt: dateOrNull(review.createdAt) ?? new Date()
+        })
+      }
+    }
 
-  const notificationValues = arrays('notifications').map((notification) => ({
-    id: numberOrZero(notification.id),
-    adminUserId: null,
-    type: ['low-stock', 'order', 'payment', 'review', 'system'].includes(notification.type)
-      ? notification.type
-      : 'system',
-    title: stringOrEmpty(notification.title),
-    body: stringOrEmpty(notification.body) || null,
-    isRead: Boolean(notification.read),
-    createdAt: dateOrNull(notification.at) ?? new Date()
-  }))
-  if (notificationValues.length > 0) await db.insert(notifications).values(notificationValues)
+    await tx.execute(sql`
+      UPDATE products p
+      SET
+        rating_average = COALESCE((
+          SELECT AVG(r.rating)::real
+          FROM product_reviews r
+          WHERE r.product_id = p.id AND r.status = 'Approved'
+        ), 0),
+        review_count = (
+          SELECT COUNT(*)::int
+          FROM product_reviews r
+          WHERE r.product_id = p.id AND r.status = 'Approved'
+        )
+    `)
 
-  const shipmentValues = arrays('shipments')
-    .filter((shipment) => orderById.has(Number(shipment.orderId)))
-    .map((shipment) => ({
-      id: numberOrZero(shipment.id),
-      orderId: Number(shipment.orderId),
-      carrier: stringOrEmpty(shipment.carrier) || 'Manual',
-      trackingNumber: stringOrEmpty(shipment.trackingNumber) || `TG-${shipment.orderId}-${shipment.id}`,
-      status: stringOrEmpty(shipment.status) || 'Pending',
-      shippedAt: dateOrNull(shipment.shippedAt),
-      eta: dateOrNull(shipment.eta),
-      deliveredAt: shipment.status === 'Delivered' ? (dateOrNull(shipment.shippedAt) ?? new Date()) : null
-    }))
-  if (shipmentValues.length > 0) await db.insert(shipments).values(shipmentValues)
+    for (const chart of arrays('sizeCharts')) {
+      const categoryId = numberOrZero(chart.categoryId)
+      if (!categoryId || !categoryIds.has(categoryId)) continue
+      const [chartRow] = await tx
+        .insert(sizeCharts)
+        .values({
+          categoryId,
+          description: stringOrEmpty(chart.description) || null
+        })
+        .onConflictDoUpdate({
+          target: sizeCharts.categoryId,
+          set: {
+            description: stringOrEmpty(chart.description) || null,
+            updatedAt: new Date()
+          }
+        })
+        .returning({ id: sizeCharts.id })
 
-  const returnValues = arrays('returns')
-    .filter((request) => orderById.has(Number(request.orderId)))
-    .map((request) => {
-      const order = orderById.get(Number(request.orderId))!
-      return {
-        id: numberOrZero(request.id),
-        number: stringOrEmpty(request.number) || `RET-${request.id}`,
+      if (chartRow?.id) {
+        await tx.delete(sizeChartMeasurements).where(eq(sizeChartMeasurements.sizeChartId, chartRow.id))
+        const measurements = Array.isArray(chart.measurements) ? chart.measurements : []
+        if (measurements.length > 0) {
+          await tx.insert(sizeChartMeasurements).values(
+            measurements.map((measurement: Record<string, any>) => ({
+              sizeChartId: chartRow.id,
+              size: String(measurement.size ?? ''),
+              chest: measurement.chest === undefined ? null : numberOrZero(measurement.chest),
+              waist: numberOrZero(measurement.waist),
+              hip: numberOrZero(measurement.hip),
+              inseam: numberOrZero(measurement.inseam),
+              thigh: numberOrZero(measurement.thigh),
+              length: measurement.length === undefined ? null : numberOrZero(measurement.length),
+              shoulder: measurement.shoulder === undefined ? null : numberOrZero(measurement.shoulder)
+            }))
+          )
+        }
+      }
+    }
+
+    // Append-only: inventory movements
+    for (const movement of arrays('inventoryMovements')) {
+      const movementId = numberOrZero(movement.id)
+      const requestedVariantId = Number(movement.variantId)
+      const variantId = variantIds.has(requestedVariantId) ? requestedVariantId : null
+      const requestedProductId = Number(movement.productId)
+      const productIdFromVariant = variantId ? variantProductById.get(variantId) ?? null : null
+      const productId =
+        productIdFromVariant ?? (productIds.has(requestedProductId) ? requestedProductId : null)
+
+      const movData = {
+        productId,
+        variantId,
+        sku: stringOrEmpty(movement.sku) || null,
+        type: ['PURCHASE', 'SALE', 'ADJUSTMENT', 'RETURN', 'RESERVATION', 'RELEASE'].includes(movement.type)
+          ? movement.type
+          : 'ADJUSTMENT',
+        delta: numberOrZero(movement.delta),
+        before: numberOrZero(movement.before),
+        after: numberOrZero(movement.after),
+        reason: stringOrEmpty(movement.reason) || null,
+        reference: stringOrEmpty(movement.reference) || null,
+        actorAdminId: adminUserIds.has(Number(movement.userId)) ? Number(movement.userId) : null,
+        actorName: stringOrEmpty(movement.userName) || null,
+        createdAt: dateOrNull(movement.createdAt) ?? new Date()
+      }
+
+      if (movementId > 0) {
+        await tx
+          .insert(inventoryMovements)
+          .values({ id: movementId, ...movData })
+          .onConflictDoNothing({ target: inventoryMovements.id })
+      } else {
+        await tx.insert(inventoryMovements).values(movData)
+      }
+    }
+
+    // Append-only: audit log
+    for (const entry of arrays('auditLog')) {
+      const auditId = numberOrZero(entry.id)
+      const auditData = {
+        adminUserId: adminUserIds.has(Number(entry.userId)) ? Number(entry.userId) : null,
+        actorName: stringOrEmpty(entry.userName) || null,
+        action: stringOrEmpty(entry.action) || 'action',
+        entity: stringOrEmpty(entry.entity) || null,
+        entityId: stringOrEmpty(entry.entityId) || null,
+        detail: stringOrEmpty(entry.detail) || null,
+        createdAt: dateOrNull(entry.at) ?? new Date()
+      }
+
+      if (auditId > 0) {
+        await tx
+          .insert(auditLog)
+          .values({ id: auditId, ...auditData })
+          .onConflictDoNothing({ target: auditLog.id })
+      } else {
+        await tx.insert(auditLog).values(auditData)
+      }
+    }
+
+    // Notifications: upsert
+    for (const notification of arrays('notifications')) {
+      const notifId = numberOrZero(notification.id)
+      const notifData = {
+        adminUserId: null,
+        type: ['low-stock', 'order', 'payment', 'review', 'system'].includes(notification.type)
+          ? notification.type
+          : 'system',
+        title: stringOrEmpty(notification.title),
+        body: stringOrEmpty(notification.body) || null,
+        isRead: Boolean(notification.read),
+        createdAt: dateOrNull(notification.at) ?? new Date()
+      }
+
+      if (notifId > 0) {
+        await tx
+          .insert(notifications)
+          .values({ id: notifId, ...notifData })
+          .onConflictDoUpdate({
+            target: notifications.id,
+            set: {
+              isRead: notifData.isRead,
+              title: notifData.title,
+              body: notifData.body
+            }
+          })
+      } else {
+        await tx.insert(notifications).values(notifData)
+      }
+    }
+
+    // Shipments: upsert
+    for (const shipment of arrays('shipments')) {
+      const orderId = Number(shipment.orderId)
+      if (!orderById.has(orderId)) continue
+      const shipmentId = numberOrZero(shipment.id)
+      const shipData = {
+        orderId,
+        carrier: stringOrEmpty(shipment.carrier) || 'Manual',
+        trackingNumber: stringOrEmpty(shipment.trackingNumber) || `TG-${orderId}-${shipment.id || Date.now()}`,
+        status: stringOrEmpty(shipment.status) || 'Pending',
+        shippedAt: dateOrNull(shipment.shippedAt),
+        eta: dateOrNull(shipment.eta),
+        deliveredAt: shipment.status === 'Delivered' ? (dateOrNull(shipment.shippedAt) ?? new Date()) : null
+      }
+
+      if (shipmentId > 0) {
+        await tx
+          .insert(shipments)
+          .values({ id: shipmentId, ...shipData })
+          .onConflictDoUpdate({
+            target: shipments.id,
+            set: {
+              orderId: shipData.orderId,
+              carrier: shipData.carrier,
+              trackingNumber: shipData.trackingNumber,
+              status: shipData.status,
+              shippedAt: shipData.shippedAt,
+              eta: shipData.eta,
+              deliveredAt: shipData.deliveredAt,
+              updatedAt: new Date()
+            }
+          })
+      } else {
+        await tx.insert(shipments).values(shipData)
+      }
+    }
+
+    // Return requests & return items: upsert return request, replace scoped items
+    const returnIds = new Set<number>()
+    for (const request of arrays('returns')) {
+      const orderId = Number(request.orderId)
+      if (!orderById.has(orderId)) continue
+      const returnId = numberOrZero(request.id)
+      const order = orderById.get(orderId)!
+      const reqData = {
+        number: stringOrEmpty(request.number) || `RET-${request.id || Date.now()}`,
         orderId: order.id,
         customerId: customerIds.has(Number(request.customerId)) ? Number(request.customerId) : order.customerId,
         reason: stringOrEmpty(request.reason) || 'Return requested',
@@ -618,46 +874,72 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         requestedAt: dateOrNull(request.requestedAt) ?? new Date(),
         updatedAt: dateOrNull(request.updatedAt) ?? new Date()
       }
-    })
-  if (returnValues.length > 0) {
-    await db.insert(returnRequests).values(returnValues)
-    const itemValues: Array<Record<string, unknown>> = []
-    for (const request of arrays('returns')) {
-      if (!orderById.has(Number(request.orderId))) continue
-      for (const item of Array.isArray(request.items) ? request.items : []) {
-        const requestedVariantId = Number(item.variantId)
-        const variantId = variantIds.has(requestedVariantId) ? requestedVariantId : null
-        const requestedProductId = Number(item.productId)
-        const productId =
-          (variantId ? variantProductById.get(variantId) ?? null : null) ??
-          (productIds.has(requestedProductId) ? requestedProductId : null)
-        itemValues.push({
-          returnId: numberOrZero(request.id),
-          productId,
-          variantId,
-          sku: stringOrEmpty(item.sku) || null,
-          productName: stringOrEmpty(item.productName) || 'Item',
-          variantLabel: stringOrEmpty(item.variantLabel) || null,
-          unitPrice: numberOrZero(item.price),
-          quantity: numberOrZero(item.quantity) || 1,
-          lineTotal: numberOrZero(item.total),
-          reason: stringOrEmpty(request.reason) || null
-        })
+
+      let effectiveReturnId = returnId
+      if (returnId > 0) {
+        const [upserted] = await tx
+          .insert(returnRequests)
+          .values({ id: returnId, ...reqData })
+          .onConflictDoUpdate({
+            target: returnRequests.id,
+            set: {
+              reason: reqData.reason,
+              details: reqData.details,
+              status: reqData.status,
+              amount: reqData.amount,
+              updatedAt: new Date()
+            }
+          })
+          .returning({ id: returnRequests.id })
+        if (upserted?.id) effectiveReturnId = upserted.id
+      } else {
+        const [created] = await tx
+          .insert(returnRequests)
+          .values(reqData)
+          .returning({ id: returnRequests.id })
+        if (created?.id) effectiveReturnId = created.id
+      }
+
+      if (effectiveReturnId > 0) {
+        returnIds.add(effectiveReturnId)
+        await tx.delete(returnItems).where(eq(returnItems.returnId, effectiveReturnId))
+
+        const itemValues: Array<typeof returnItems.$inferInsert> = []
+        for (const item of Array.isArray(request.items) ? request.items : []) {
+          const requestedVariantId = Number(item.variantId)
+          const variantId = variantIds.has(requestedVariantId) ? requestedVariantId : null
+          const requestedProductId = Number(item.productId)
+          const productId =
+            (variantId ? variantProductById.get(variantId) ?? null : null) ??
+            (productIds.has(requestedProductId) ? requestedProductId : null)
+          itemValues.push({
+            returnId: effectiveReturnId,
+            productId,
+            variantId,
+            sku: stringOrEmpty(item.sku) || null,
+            productName: stringOrEmpty(item.productName) || 'Item',
+            variantLabel: stringOrEmpty(item.variantLabel) || null,
+            unitPrice: numberOrZero(item.price),
+            quantity: numberOrZero(item.quantity) || 1,
+            lineTotal: numberOrZero(item.total),
+            reason: stringOrEmpty(request.reason) || null
+          })
+        }
+        if (itemValues.length > 0) await tx.insert(returnItems).values(itemValues)
       }
     }
-    if (itemValues.length > 0) await db.insert(returnItems).values(itemValues as any)
-  }
 
-  const returnIds = new Set(returnValues.map((request) => request.id))
-  const refundValues = arrays('refunds')
-    .filter((refund) => orderById.has(Number(refund.orderId)))
-    .map((refund) => {
-      const order = orderById.get(Number(refund.orderId))!
-      return {
-        id: numberOrZero(refund.id),
-        number: stringOrEmpty(refund.number) || `REF-${refund.id}`,
+    // Refunds: upsert
+    for (const refund of arrays('refunds')) {
+      const orderId = Number(refund.orderId)
+      if (!orderById.has(orderId)) continue
+      const refundId = numberOrZero(refund.id)
+      const order = orderById.get(orderId)!
+      const returnId = Number(refund.returnId)
+      const refData = {
+        number: stringOrEmpty(refund.number) || `REF-${refund.id || Date.now()}`,
         orderId: order.id,
-        returnId: returnIds.has(Number(refund.returnId)) ? Number(refund.returnId) : null,
+        returnId: returnId && returnIds.has(returnId) ? returnId : null,
         customerId: customerIds.has(Number(refund.customerId)) ? Number(refund.customerId) : order.customerId,
         amount: numberOrZero(refund.amount),
         reason: stringOrEmpty(refund.reason) || null,
@@ -666,32 +948,33 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         createdAt: dateOrNull(refund.createdAt) ?? new Date(),
         processedAt: dateOrNull(refund.processedAt)
       }
-    })
-  if (refundValues.length > 0) await db.insert(refunds).values(refundValues)
 
-  await db
-    .insert(storeSettings)
-    .values({
-      id: SETTINGS_ID,
-      storeName: stringOrEmpty(settings.storeName) || 'TEESGARAGE',
-      supportEmail: stringOrEmpty(settings.supportEmail) || null,
-      supportPhone: stringOrEmpty(settings.supportPhone) || null,
-      address: stringOrEmpty(settings.address) || null,
-      currency: stringOrEmpty(settings.currency) || 'INR',
-      taxRate: numberOrZero(settings.taxRate),
-      orderPrefix: stringOrEmpty(settings.orderPrefix) || 'TG',
-      returnWindowDays: numberOrZero(settings.returnWindowDays) || 7,
-      cancellationAllowedAfter: stringOrEmpty(settings.cancellationAllowedAfter) || 'Processing',
-      defaultShippingMethod: stringOrEmpty(settings.defaultShippingMethod) || 'Standard',
-      notifyEmail: settings.notify?.email !== false,
-      notifyOrderUpdates: settings.notify?.orderUpdates !== false,
-      notifyInventoryAlerts: settings.notify?.inventoryAlerts !== false,
-      notifyReviewAlerts: settings.notify?.reviewAlerts !== false,
-      updatedAt: new Date()
-    })
-    .onConflictDoUpdate({
-      target: storeSettings.id,
-      set: {
+      if (refundId > 0) {
+        await tx
+          .insert(refunds)
+          .values({ id: refundId, ...refData })
+          .onConflictDoUpdate({
+            target: refunds.id,
+            set: {
+              orderId: refData.orderId,
+              returnId: refData.returnId,
+              customerId: refData.customerId,
+              amount: refData.amount,
+              reason: refData.reason,
+              method: refData.method,
+              status: refData.status,
+              processedAt: refData.processedAt
+            }
+          })
+      } else {
+        await tx.insert(refunds).values(refData)
+      }
+    }
+
+    await tx
+      .insert(storeSettings)
+      .values({
+        id: SETTINGS_ID,
         storeName: stringOrEmpty(settings.storeName) || 'TEESGARAGE',
         supportEmail: stringOrEmpty(settings.supportEmail) || null,
         supportPhone: stringOrEmpty(settings.supportPhone) || null,
@@ -707,8 +990,28 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         notifyInventoryAlerts: settings.notify?.inventoryAlerts !== false,
         notifyReviewAlerts: settings.notify?.reviewAlerts !== false,
         updatedAt: new Date()
-      }
-    })
+      })
+      .onConflictDoUpdate({
+        target: storeSettings.id,
+        set: {
+          storeName: stringOrEmpty(settings.storeName) || 'TEESGARAGE',
+          supportEmail: stringOrEmpty(settings.supportEmail) || null,
+          supportPhone: stringOrEmpty(settings.supportPhone) || null,
+          address: stringOrEmpty(settings.address) || null,
+          currency: stringOrEmpty(settings.currency) || 'INR',
+          taxRate: numberOrZero(settings.taxRate),
+          orderPrefix: stringOrEmpty(settings.orderPrefix) || 'TG',
+          returnWindowDays: numberOrZero(settings.returnWindowDays) || 7,
+          cancellationAllowedAfter: stringOrEmpty(settings.cancellationAllowedAfter) || 'Processing',
+          defaultShippingMethod: stringOrEmpty(settings.defaultShippingMethod) || 'Standard',
+          notifyEmail: settings.notify?.email !== false,
+          notifyOrderUpdates: settings.notify?.orderUpdates !== false,
+          notifyInventoryAlerts: settings.notify?.inventoryAlerts !== false,
+          notifyReviewAlerts: settings.notify?.reviewAlerts !== false,
+          updatedAt: new Date()
+        }
+      })
 
-  await resetSequences()
+    await resetSequences(tx)
+  })
 }
