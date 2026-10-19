@@ -22,6 +22,7 @@
     "db:generate": "turbo db:generate --filter=@jeans-store/db",
     "db:push": "turbo db:push --filter=@jeans-store/db",
     "db:seed": "npm run db:seed --workspace=@jeans-store/api",
+    "db:setup": "npm run db:push && npm run db:seed",
     "db:reset": "npm run db:reset --workspace=@jeans-store/api",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",

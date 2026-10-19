@@ -259,7 +259,7 @@ interface ReadyVariant {
 }
 
 /**
- * Product store backed by Neon PostgreSQL via Drizzle ORM,
+ * Product store backed by PostgreSQL via Drizzle ORM,
  * with an in-memory fallback when DATABASE_URL is not provided (e.g. CI / offline dev).
  */
 export class ProductStore {
@@ -300,11 +300,6 @@ export class ProductStore {
               color: null,
               storageKey: img.storageKey,
               externalUrl: img.externalUrl,
-              alt: null,
-              mimeType: null,
-              width: null,
-              height: null,
-              sizeBytes: null,
               position: img.position,
               createdAt: new Date()
             })
@@ -760,11 +755,6 @@ export class ProductStore {
           color: null,
           storageKey: norm.storageKey,
           externalUrl: norm.externalUrl,
-          alt: null,
-          mimeType: null,
-          width: null,
-          height: null,
-          sizeBytes: null,
           position: norm.position,
           createdAt: new Date()
         })
@@ -1048,11 +1038,6 @@ export class ProductStore {
           color: null,
           storageKey: norm.storageKey,
           externalUrl: norm.externalUrl,
-          alt: null,
-          mimeType: null,
-          width: null,
-          height: null,
-          sizeBytes: null,
           position: norm.position,
           createdAt: new Date()
         })

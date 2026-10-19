@@ -25,13 +25,14 @@
     "db:seed": "tsx src/seed.ts"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0",
     "dotenv": "^18.0.0",
-    "drizzle-orm": "^0.45.2"
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "@jeans-store/config": "*",
     "@types/node": "^24.13.3",
+    "@types/pg": "^8.23.1",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"

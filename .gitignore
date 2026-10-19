@@ -49,4 +49,6 @@ graphify-out/
 
 # local uploads
 .local-uploads/
-apps/api/.local-uploads/
+apps/api/.local-uploads/
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

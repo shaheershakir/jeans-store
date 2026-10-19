@@ -16,4 +16,4 @@ Delivery rates are persisted in the `shipping_settings` table and edited in the 
 
 ## Database and local data
 
-Drizzle schemas live in `apps/api/src/db/schema.ts` and `packages/db/src/schema.ts`. Apply database schema changes with `npm run db:push` before deploying the API. Local admin preview data is for development only and is never used as production catalog or order data.
+The canonical Drizzle schema lives in `packages/db/src/schema.ts`. Apply database schema changes with `npm run db:push` before deploying the API. Local admin preview data is for development only and is never used as production catalog or order data.

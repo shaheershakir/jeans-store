@@ -1,17 +1,17 @@
-import { sql } from '../src/db/index.js'
+import { pool, isDatabaseConfigured } from '../src/db/index.js'
 
 async function main() {
-  if (!sql) {
-    console.log('No sql client available')
+  if (!pool || !isDatabaseConfigured()) {
+    console.log('Database is not configured. Set DATABASE_URL in apps/api/.env.')
     return
   }
-  const variants = await sql`
+
+  const { rows: variants } = await pool.query(`
     SELECT
       pv.id,
       pv.product_id,
       p.name,
       c.slug AS category,
-      p.fit,
       pv.sku,
       pv.color,
       pv.size,
@@ -22,12 +22,17 @@ async function main() {
     JOIN categories c ON c.id = p.category_id
     ORDER BY pv.id ASC
     LIMIT 10
-  `
-  console.log('Sample Variants from DB:')
+  `)
+  console.log('Sample variants in database:')
   console.table(variants)
 
-  const count = await sql`SELECT count(*) FROM product_variants`
-  console.log('Total Variants in DB:', count)
+  const { rows: count } = await pool.query('SELECT count(*) FROM product_variants')
+  console.log('Total variants in database:', count[0]?.count ?? 0)
+  await pool.end()
 }
 
-main().catch(console.error)
+main().catch(async (error: unknown) => {
+  console.error(error)
+  await pool?.end()
+  process.exitCode = 1
+})

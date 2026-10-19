@@ -3,10 +3,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { neon } from '@neondatabase/serverless'
-import { drizzle } from 'drizzle-orm/neon-http'
-import { migrate } from 'drizzle-orm/neon-http/migrator'
-import { ensureSslMode, getDatabaseUrl, maskDatabaseUrl } from '../src/db/index.js'
+import { migrate } from 'drizzle-orm/node-postgres/migrator'
+import { db, getDatabaseUrl, maskDatabaseUrl, pool } from '../src/db/index.js'
 import { seedIfEmpty } from '../src/db/seed.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -33,10 +31,10 @@ function takeBackup(databaseUrl: string): string {
   if (result.error || result.status !== 0) {
     if ((result.error as NodeJS.ErrnoException | undefined)?.code === 'ENOENT') {
       fail(
-        'pg_dump was not found. Install the PostgreSQL client tools, or create a Neon branch/branch snapshot first and re-run with SKIP_DB_BACKUP=yes.'
+        'pg_dump was not found. Install the PostgreSQL client tools or re-run with SKIP_DB_BACKUP=yes after backing up the database.'
       )
     }
-    fail('pg_dump failed. The database was NOT reset. Fix the backup step or take a Neon branch snapshot first.')
+    fail('pg_dump failed. The database was NOT reset. Fix the backup step or back up the database first.')
   }
 
   return file
@@ -47,15 +45,15 @@ async function resetDatabase(): Promise<void> {
     console.log(`
 TEESGARAGE database reset
 
-This permanently drops the public and drizzle schemas, applies the single
-0000_baseline migration, and seeds the source catalog.
+This permanently drops the public and drizzle schemas, applies all database
+migrations, and seeds the source catalog.
 
 Nothing has been changed. To continue:
 
   CONFIRM_DB_RESET=yes npm run db:reset --workspace=@jeans-store/api
 
 Optional environment variables:
-  SKIP_DB_BACKUP=yes   Skip pg_dump (only after taking a Neon branch/snapshot)
+  SKIP_DB_BACKUP=yes   Skip pg_dump (only after taking a separate backup)
   SKIP_SEED=yes        Apply the schema without seeding the catalog
 
 Target database: ${maskDatabaseUrl(getDatabaseUrl())}
@@ -66,26 +64,24 @@ Target database: ${maskDatabaseUrl(getDatabaseUrl())}
   const rawUrl = getDatabaseUrl()
   if (!rawUrl) fail('DATABASE_URL is not configured. Set it in apps/api/.env or the shell environment.')
 
-  const databaseUrl = ensureSslMode(rawUrl)
-  console.log(`\n⚠️  Resetting database: ${maskDatabaseUrl(databaseUrl)}`)
+  console.log(`\n⚠️  Resetting database: ${maskDatabaseUrl(rawUrl)}`)
 
   if (process.env.SKIP_DB_BACKUP !== 'yes') {
-    takeBackup(databaseUrl)
+    takeBackup(rawUrl)
   } else {
-    console.log('⚠️  SKIP_DB_BACKUP=yes — skipping pg_dump. A Neon branch/snapshot must already exist.')
+    console.log('⚠️  SKIP_DB_BACKUP=yes — skipping pg_dump.')
   }
 
-  const sqlClient = neon(databaseUrl)
-  const db = drizzle(sqlClient)
+  if (!db || !pool) fail('Database client is not configured.')
 
   console.log('🧨 Dropping public and drizzle schemas...')
-  await sqlClient`DROP SCHEMA IF EXISTS public CASCADE`
-  await sqlClient`CREATE SCHEMA public`
-  await sqlClient`GRANT ALL ON SCHEMA public TO public`
-  await sqlClient`DROP SCHEMA IF EXISTS drizzle CASCADE`
+  await pool.query('DROP SCHEMA IF EXISTS public CASCADE')
+  await pool.query('CREATE SCHEMA public')
+  await pool.query('GRANT ALL ON SCHEMA public TO public')
+  await pool.query('DROP SCHEMA IF EXISTS drizzle CASCADE')
 
-  console.log('🚀 Applying 0000_baseline...')
-  const migrationsFolder = path.resolve(__dirname, '../drizzle')
+  console.log('🚀 Applying database migrations...')
+  const migrationsFolder = path.resolve(__dirname, '../../../packages/db/drizzle')
   await migrate(db, { migrationsFolder })
 
   if (process.env.SKIP_SEED !== 'yes') {
@@ -98,16 +94,17 @@ Target database: ${maskDatabaseUrl(getDatabaseUrl())}
     console.log('⚠️  SKIP_SEED=yes — schema reset without seeding.')
   }
 
-  const tables = await sqlClient`
+  const { rows: tables } = await pool.query(`
     SELECT table_name
     FROM information_schema.tables
     WHERE table_schema = 'public'
     ORDER BY table_name
-  `
+  `)
   console.log(`\n✅ Reset complete. Public tables (${tables.length}):`)
   for (const table of tables) {
     console.log(`   - ${(table as { table_name: string }).table_name}`)
   }
+  await pool.end()
 }
 
 resetDatabase().catch((error: unknown) => {
