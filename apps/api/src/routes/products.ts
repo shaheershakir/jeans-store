@@ -94,7 +94,7 @@ productRouter.get('/api/admin/products', verifyAdminAuth, async (req: Request, r
   }
   try {
     const { store, category, fit, sku, q } = parsed.data
-    const products = await productStore.list({ store, category, fit, sku, q })
+    const products = await productStore.list({ store, category, fit, sku, q, includeAllStatuses: true })
     res.json({ count: products.length, products })
   } catch (err) {
     logger.error({ err }, 'Failed to fetch admin product catalog')
@@ -197,6 +197,16 @@ productRouter.get('/api/variants/:sku', async (req: Request, res: Response) => {
   res.json(result)
 })
 
+productRouter.get('/api/categories', async (_req: Request, res: Response) => {
+  try {
+    const categories = await productStore.getValidCategorySlugs()
+    res.json({ categories })
+  } catch (err) {
+    logger.error({ err }, 'Failed to fetch categories')
+    res.status(500).json({ error: 'Failed to fetch categories' })
+  }
+})
+
 // ─── PRODUCT CATALOG ROUTES ─────────────────────────────────────────────────
 productRouter.get('/api/products', async (req: Request, res: Response) => {
   const parsed = listQuerySchema.safeParse(req.query)
@@ -209,11 +219,7 @@ productRouter.get('/api/products', async (req: Request, res: Response) => {
   }
 
   const { store, category, fit, sku, minPrice, maxPrice, q, sort = 'featured' } = parsed.data
-  let list = await productStore.list({ store, category, fit, sku, q })
-  list = list.filter((product) => {
-    const status = (product.adminData as Record<string, unknown> | undefined)?.status
-    return status !== 'Draft' && status !== 'Archived'
-  })
+  let list = await productStore.list({ store, category, fit, sku, q, status: 'active' })
 
   if (minPrice !== undefined) {
     list = list.filter((p) => p.priceNum >= minPrice)
@@ -246,7 +252,7 @@ productRouter.get('/api/products/:id', async (req: Request, res: Response) => {
     return
   }
   const status = (product.adminData as Record<string, unknown> | undefined)?.status
-  if (status === 'Draft' || status === 'Archived') {
+  if (product.status === 'draft' || product.status === 'archived' || status === 'Draft' || status === 'Archived') {
     res.status(404).json({ error: `Product ${numericId} not found` })
     return
   }

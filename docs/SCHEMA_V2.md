@@ -316,7 +316,69 @@ Located in `@jeans-store/shared`:
 
 ---
 
-## 6. Future Normalization Roadmap
+## 6. Phase 2: Catalog Normalization Architecture & Ops
+
+### 6.1 Categories Table & Seeding
+- **Table**: `categories` with `id`, `slug`, `name`, `parent_id` (self-referential FK on delete set null), `sort_order`, `is_active`, `created_at` (timestamptz).
+- **Seeded Categories (13)**: `stripes`, `fullsleeve`, `drsleeve`, `printed-tees`, `ringer-tees`, `henley`, `trackpants`, `sweatpants`, `t-shirts`, `shirts`, `hoodies`, `accessories`, and `jeans`.
+- **Validation**: `POST /api/products` and `PUT /api/products/:id` validate `category` against the `categories` table (or in-memory catalog). Unknown categories are rejected with HTTP 400 and a descriptive error message listing valid category slugs.
+- **Endpoint**: `GET /api/categories` returns active category slugs.
+
+### 6.2 Products Additive Columns & Attributes
+- **Columns**:
+  - `category_id`: Foreign key referencing `categories.id` (ON DELETE RESTRICT).
+  - `slug`: Unique, kebab-case identifier (max 160 chars) automatically generated from product name and de-duplicated with numeric suffixes (e.g. `classic-stripes-tee`, `classic-stripes-tee-2`).
+  - `status`: Indexed varchar(20) constrained to `draft`, `active`, `archived`. Default `active`.
+  - `attributes`: JSONB column storing descriptive spec attributes (`fabric`, `material`, `sleeveLength`, `neckType`, `pattern`, `printStyle`, `trimColor`, `buttons`, `waistSize`, `length`, `closure`, `pockets`, `use`, `legStyle`, `rise`, `collection`).
+  - `created_at` / `updated_at`: Converted to `timestamp with time zone` (`timestamptz`) using UTC. Neon PostgreSQL defaults to UTC session timezone.
+- **Backward Compatibility**:
+  - `toProduct()` preserves all legacy fields: `img`, `img2`, `images`, `price`, `priceNum`, `category` (slug string), and `adminData.status`.
+  - `adminData.status` is synchronized directly from the `status` column (`'Active'`, `'Draft'`, `'Archived'`).
+  - Descriptive attributes stored in `attributes` JSONB are automatically unpacked as top-level properties on the returned product.
+
+### 6.3 Product Variants Constraints
+- Constraints added:
+  - `stock >= 0`
+  - `reserved >= 0`
+  - `price >= 0`
+  - `status IN ('Active', 'Inactive')`
+
+### 6.4 SQL Push-Down Filtering in `ProductStore.list()`
+- Replaced the previous full-table in-memory filter with SQL `WHERE` push-down queries:
+  - `store`: `eq(products.store, store)`
+  - `category`: `ilike(products.category, category)`
+  - `fit`: `ilike(products.fit, fit)`
+  - `status`: Storefront queries automatically filter `status = 'active'`, excluding `draft` and `archived` products. Admin requests pass `includeAllStatuses: true`.
+  - `q`: Search across `name`, `desc`, and `badge` using `ilike`.
+  - `sku`: Variant join looking up product IDs matching variant SKUs before filtering products.
+- Related variants and images are queried in single batch queries using `inArray(productId, productIds)`, eliminating N+1 queries.
+
+### 6.5 Operations Runbook for Phase 2 Migrations (Neon)
+When ready to apply Phase 2 migrations to Neon:
+1. Verify database timezone is UTC:
+   ```sql
+   SHOW timezone; -- Expected: 'UTC'
+   ```
+2. Apply migration `0002_product_images.sql`:
+   ```bash
+   # Can be applied via Drizzle migrator or psql:
+   psql "$DATABASE_URL" -f apps/api/drizzle/0002_product_images.sql
+   ```
+3. Apply migration `0003_catalog_normalization.sql`:
+   ```bash
+   psql "$DATABASE_URL" -f apps/api/drizzle/0003_catalog_normalization.sql
+   ```
+4. Verify backfilled columns and categories:
+   ```sql
+   SELECT count(*) FROM categories; -- Expected: 13
+   SELECT count(*) FROM products WHERE category_id IS NULL; -- Expected: 0 (or only legacy unmapped categories)
+   SELECT count(*) FROM products WHERE slug IS NULL; -- Expected: 0
+   SELECT status, count(*) FROM products GROUP BY status;
+   ```
+
+---
+
+## 7. Future Normalization Roadmap
 
 1. **`admin_state` Normalization**:
    Extract coupons, inventory movements, and audit log entries out of the `admin_state` JSON blob into dedicated tables (`coupons`, `coupon_redemptions`, `inventory_movements`, `audit_logs`).
@@ -324,3 +386,4 @@ Located in `@jeans-store/shared`:
    Add a `user_addresses` table linked to `users.id` with default shipping/billing flags.
 3. **Reviews & Ratings**:
    Normalize customer product reviews into a `product_reviews` table with moderation states.
+

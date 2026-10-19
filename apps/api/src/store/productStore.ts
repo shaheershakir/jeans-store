@@ -1,11 +1,22 @@
-import { and, eq, sql } from 'drizzle-orm'
-import { CATEGORIES, type Category, type CreateProduct, type Fit, type Product, type StoreType, type UpdateProduct, type Variant } from '../schemas/product.js'
+import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm'
+import {
+  CATEGORIES,
+  type Category,
+  type CreateProduct,
+  type Fit,
+  type Product,
+  type StoreType,
+  type UpdateProduct,
+  type Variant
+} from '../schemas/product.js'
 import { PRODUCTS } from '../data/products.js'
 import { db, isDatabaseConfigured } from '../db/index.js'
 import {
+  categories as categoriesTable,
   products as productsTable,
   productVariants as productVariantsTable,
   productImages as productImagesTable,
+  type DbCategory,
   type DbProduct,
   type DbProductVariant,
   type DbProductImage
@@ -16,6 +27,68 @@ import {
   type SkuComponents
 } from '../services/skuService.js'
 import { assetUrl, keyFromUrl } from '@jeans-store/shared'
+
+export const INITIAL_CATEGORIES = [
+  { id: 1, slug: 'stripes', name: 'Stripes', sortOrder: 1, isActive: true },
+  { id: 2, slug: 'fullsleeve', name: 'Fullsleeve', sortOrder: 2, isActive: true },
+  { id: 3, slug: 'drsleeve', name: 'Drsleeve', sortOrder: 3, isActive: true },
+  { id: 4, slug: 'printed-tees', name: 'Printed Tees', sortOrder: 4, isActive: true },
+  { id: 5, slug: 'ringer-tees', name: 'Ringer Tees', sortOrder: 5, isActive: true },
+  { id: 6, slug: 'henley', name: 'Henley', sortOrder: 6, isActive: true },
+  { id: 7, slug: 'trackpants', name: 'Trackpants', sortOrder: 7, isActive: true },
+  { id: 8, slug: 'sweatpants', name: 'Sweatpants', sortOrder: 8, isActive: true },
+  { id: 9, slug: 't-shirts', name: 'T-Shirts', sortOrder: 9, isActive: true },
+  { id: 10, slug: 'shirts', name: 'Shirts', sortOrder: 10, isActive: true },
+  { id: 11, slug: 'hoodies', name: 'Hoodies', sortOrder: 11, isActive: true },
+  { id: 12, slug: 'accessories', name: 'Accessories', sortOrder: 12, isActive: true },
+  { id: 13, slug: 'jeans', name: 'Jeans', sortOrder: 13, isActive: true }
+]
+
+export const ATTRIBUTE_SPEC_KEYS = [
+  'fabric',
+  'material',
+  'sleeveLength',
+  'neckType',
+  'pattern',
+  'printStyle',
+  'trimColor',
+  'buttons',
+  'waistSize',
+  'length',
+  'closure',
+  'pockets',
+  'use',
+  'legStyle',
+  'rise',
+  'collection'
+] as const
+
+export function extractAttributes(input: Record<string, any>): Record<string, unknown> {
+  const result: Record<string, unknown> = {
+    ...(typeof input.attributes === 'object' && input.attributes !== null ? input.attributes : {})
+  }
+  for (const key of ATTRIBUTE_SPEC_KEYS) {
+    if (input[key] !== undefined && input[key] !== null) {
+      result[key] = input[key]
+    } else if (
+      input.adminData &&
+      typeof input.adminData === 'object' &&
+      input.adminData[key] !== undefined &&
+      input.adminData[key] !== null
+    ) {
+      result[key] = input.adminData[key]
+    }
+  }
+  return result
+}
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
 
 export interface NormalizedImage {
   storageKey: string | null
@@ -72,13 +145,15 @@ function toVariant(row: DbProductVariant): Variant {
   }
 }
 
-function toProduct(
+export function toProduct(
   row: DbProduct,
   variants: Variant[] = [],
   images: Array<{ storageKey: string | null; externalUrl: string | null; position: number }> = []
 ): Product {
-  const validCategory = CATEGORIES.includes(row.category as Category)
-  const adminData = row.adminData ?? {}
+  const adminData = (row.adminData as Record<string, unknown>) ?? {}
+  const rawStatus = (row.status || (adminData.status as string) || 'active').toLowerCase()
+  const status = rawStatus === 'archived' ? 'archived' : rawStatus === 'draft' ? 'draft' : 'active'
+  const adminStatus = status === 'archived' ? 'Archived' : status === 'draft' ? 'Draft' : 'Active'
 
   let displayImg = row.img
   let displayImg2 = row.img2
@@ -97,10 +172,15 @@ function toProduct(
     }
   }
 
+  const attributes = (row.attributes as Record<string, unknown>) ?? {}
+
   return {
     id: row.id,
     store: (row.store as StoreType) || 'teesgarage',
-    category: validCategory ? (row.category as Category) : 'printed-tees',
+    category: row.category as Category,
+    categoryId: row.categoryId ?? undefined,
+    slug: row.slug ?? undefined,
+    status,
     name: row.name,
     fit: (row.fit as Fit) || undefined,
     price: row.price,
@@ -112,7 +192,27 @@ function toProduct(
     desc: row.desc,
     wash: row.wash ?? undefined,
     sizes: (row.sizes as string[]) ?? undefined,
-    adminData: validCategory ? adminData : { ...adminData, status: 'Archived', legacyCategory: row.category },
+    fabric: (attributes.fabric as string) ?? undefined,
+    material: (attributes.material as string) ?? undefined,
+    sleeveLength: (attributes.sleeveLength as string) ?? undefined,
+    neckType: (attributes.neckType as string) ?? undefined,
+    pattern: (attributes.pattern as string) ?? undefined,
+    printStyle: (attributes.printStyle as string) ?? undefined,
+    trimColor: (attributes.trimColor as string) ?? undefined,
+    buttons: (attributes.buttons as string) ?? undefined,
+    waistSize: (attributes.waistSize as string[]) ?? undefined,
+    length: (attributes.length as string) ?? undefined,
+    closure: (attributes.closure as string) ?? undefined,
+    pockets: (attributes.pockets as string) ?? undefined,
+    use: (attributes.use as string) ?? undefined,
+    legStyle: (attributes.legStyle as string) ?? undefined,
+    rise: (attributes.rise as string) ?? undefined,
+    collection: (attributes.collection as string) ?? undefined,
+    attributes,
+    adminData: {
+      ...adminData,
+      status: adminStatus
+    },
     variants: variants.length > 0 ? variants : undefined,
     createdAt: row.createdAt
   }
@@ -178,6 +278,18 @@ export class ProductStore {
         }
       }
 
+      const attributes = extractAttributes(p)
+      const rawStatus = (
+        p.status ||
+        ((p.adminData as any)?.status ? String((p.adminData as any).status).toLowerCase() : 'active')
+      ).toLowerCase()
+      const status = rawStatus === 'archived' ? 'archived' : rawStatus === 'draft' ? 'draft' : 'active'
+      p.status = status
+      p.attributes = attributes
+      p.slug = p.slug || `${slugify(p.name)}-${p.id}`
+      const cat = INITIAL_CATEGORIES.find((c) => c.slug === p.category?.toLowerCase())
+      p.categoryId = cat?.id ?? 1
+
       if (p.img) {
         try {
           const norm = normalizeImageInputs(p.img, p.img2 || p.img, p.images)
@@ -240,6 +352,52 @@ export class ProductStore {
     }
   }
 
+  async resolveCategory(slug?: string): Promise<{ id: number; slug: string; name: string } | null> {
+    if (!slug) return null
+    const cleanSlug = slug.trim().toLowerCase()
+    if (isDatabaseConfigured() && db) {
+      const [row] = await db.select().from(categoriesTable).where(eq(categoriesTable.slug, cleanSlug))
+      if (row) return { id: row.id, slug: row.slug, name: row.name }
+      return null
+    }
+    const found = INITIAL_CATEGORIES.find((c) => c.slug === cleanSlug)
+    if (found) return { id: found.id, slug: found.slug, name: found.name }
+    return null
+  }
+
+  async getValidCategorySlugs(): Promise<string[]> {
+    if (isDatabaseConfigured() && db) {
+      const rows = await db.select({ slug: categoriesTable.slug }).from(categoriesTable)
+      if (rows.length > 0) return rows.map((r) => r.slug)
+    }
+    return INITIAL_CATEGORIES.map((c) => c.slug)
+  }
+
+  async generateUniqueSlug(name: string, requestedSlug?: string, currentProductId?: number): Promise<string> {
+    const base = slugify(requestedSlug || name) || 'product'
+    let candidate = base
+    let counter = 1
+
+    while (true) {
+      let exists = false
+      if (isDatabaseConfigured() && db) {
+        const rows = await db
+          .select({ id: productsTable.id })
+          .from(productsTable)
+          .where(eq(productsTable.slug, candidate))
+        exists = rows.some((r) => currentProductId === undefined || r.id !== currentProductId)
+      } else {
+        exists = this.memoryProducts.some(
+          (p) => (p as any).slug === candidate && (currentProductId === undefined || p.id !== currentProductId)
+        )
+      }
+
+      if (!exists) return candidate
+      counter++
+      candidate = `${base}-${counter}`
+    }
+  }
+
   /**
    * Helper to check if an SKU is claimed by another product.
    */
@@ -276,26 +434,86 @@ export class ProductStore {
     return generateProductScopedSku(components)
   }
 
-  async list(filters?: { store?: string; category?: string; fit?: string; sku?: string; q?: string }): Promise<Product[]> {
+  async list(filters?: {
+    store?: string
+    category?: string
+    fit?: string
+    sku?: string
+    q?: string
+    status?: string
+    includeAllStatuses?: boolean
+  }): Promise<Product[]> {
     let list: Product[]
     if (isDatabaseConfigured() && db) {
-      const productRows = await db.select().from(productsTable)
-      const variantRows = await db.select().from(productVariantsTable)
-      const imageRows = await db.select().from(productImagesTable)
+      const conditions: any[] = []
+
+      if (filters?.store && filters.store !== 'all') {
+        conditions.push(eq(productsTable.store, filters.store))
+      }
+      if (filters?.category && filters.category !== 'all') {
+        conditions.push(ilike(productsTable.category, filters.category.trim()))
+      }
+      if (filters?.fit && filters.fit !== 'all') {
+        conditions.push(ilike(productsTable.fit, filters.fit.trim()))
+      }
+      if (filters?.status) {
+        conditions.push(eq(productsTable.status, filters.status.toLowerCase()))
+      } else if (!filters?.includeAllStatuses) {
+        conditions.push(eq(productsTable.status, 'active'))
+      }
+      if (filters?.q && filters.q.trim()) {
+        const term = `%${filters.q.trim()}%`
+        conditions.push(
+          or(
+            ilike(productsTable.name, term),
+            ilike(productsTable.desc, term),
+            ilike(productsTable.badge, term)
+          )!
+        )
+      }
+      if (filters?.sku && filters.sku.trim()) {
+        const cleanSku = filters.sku.trim()
+        const matchingVariants = await db
+          .select({ productId: productVariantsTable.productId })
+          .from(productVariantsTable)
+          .where(ilike(productVariantsTable.sku, cleanSku))
+        const variantProductIds = matchingVariants.map((v) => v.productId)
+        if (variantProductIds.length > 0) {
+          conditions.push(
+            or(ilike(productsTable.sku, cleanSku), inArray(productsTable.id, variantProductIds))!
+          )
+        } else {
+          conditions.push(ilike(productsTable.sku, cleanSku))
+        }
+      }
+
+      const query = db.select().from(productsTable)
+      const productRows = conditions.length > 0 ? await query.where(and(...conditions)!) : await query
+
+      const productIds = productRows.map((p) => p.id)
+      let variantRows: DbProductVariant[] = []
+      let imageRows: DbProductImage[] = []
+
+      if (productIds.length > 0) {
+        variantRows = await db
+          .select()
+          .from(productVariantsTable)
+          .where(inArray(productVariantsTable.productId, productIds))
+        imageRows = await db
+          .select()
+          .from(productImagesTable)
+          .where(inArray(productImagesTable.productId, productIds))
+      }
 
       const variantMap = new Map<number, Variant[]>()
       for (const vr of variantRows) {
-        if (!variantMap.has(vr.productId)) {
-          variantMap.set(vr.productId, [])
-        }
+        if (!variantMap.has(vr.productId)) variantMap.set(vr.productId, [])
         variantMap.get(vr.productId)!.push(toVariant(vr))
       }
 
       const imageMap = new Map<number, DbProductImage[]>()
       for (const ir of imageRows) {
-        if (!imageMap.has(ir.productId)) {
-          imageMap.set(ir.productId, [])
-        }
+        if (!imageMap.has(ir.productId)) imageMap.set(ir.productId, [])
         imageMap.get(ir.productId)!.push(ir)
       }
 
@@ -319,6 +537,10 @@ export class ProductStore {
             id: p.id,
             store: p.store,
             category: p.category,
+            categoryId: p.categoryId ?? null,
+            slug: p.slug ?? null,
+            status: p.status ?? 'active',
+            attributes: p.attributes ?? {},
             name: p.name,
             fit: p.fit ?? null,
             price: p.price,
@@ -349,6 +571,11 @@ export class ProductStore {
     if (filters?.fit && filters.fit !== 'all') {
       list = list.filter((p) => p.fit?.toLowerCase() === filters.fit?.toLowerCase())
     }
+    if (filters?.status) {
+      list = list.filter((p) => (p.status || 'active').toLowerCase() === filters.status!.toLowerCase())
+    } else if (!filters?.includeAllStatuses) {
+      list = list.filter((p) => (p.status || 'active').toLowerCase() === 'active')
+    }
     if (filters?.sku) {
       const cleanSku = filters.sku.trim().toLowerCase()
       list = list.filter(
@@ -372,6 +599,51 @@ export class ProductStore {
     }
 
     return list
+  }
+
+  async getBySlug(slug: string): Promise<Product | undefined> {
+    const cleanSlug = slug.trim().toLowerCase()
+    if (isDatabaseConfigured() && db) {
+      const [productRow] = await db.select().from(productsTable).where(eq(productsTable.slug, cleanSlug))
+      if (!productRow) return undefined
+      const variantRows = await db.select().from(productVariantsTable).where(eq(productVariantsTable.productId, productRow.id))
+      const imageRows = await db.select().from(productImagesTable).where(eq(productImagesTable.productId, productRow.id))
+      return toProduct(productRow, variantRows.map(toVariant), imageRows)
+    }
+
+    if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
+
+    const product = this.memoryProducts.find((p) => (p as any).slug === cleanSlug)
+    if (!product) return undefined
+    const variants = this.memoryVariants.filter((v) => v.productId === product.id)
+    const images = this.memoryProductImages.filter((i) => i.productId === product.id)
+    return toProduct(
+      {
+        id: product.id,
+        store: product.store,
+        category: product.category,
+        categoryId: product.categoryId ?? null,
+        slug: product.slug ?? null,
+        status: product.status ?? 'active',
+        attributes: product.attributes ?? {},
+        name: product.name,
+        fit: product.fit ?? null,
+        price: product.price,
+        priceNum: product.priceNum,
+        img: product.img,
+        img2: product.img2,
+        images: product.images ?? [],
+        badge: product.badge ?? null,
+        desc: product.desc,
+        wash: product.wash ?? null,
+        sizes: product.sizes ?? null,
+        adminData: product.adminData ?? {},
+        createdAt: product.createdAt ?? new Date(),
+        updatedAt: product.createdAt ?? new Date()
+      },
+      variants,
+      images
+    )
   }
 
   async getById(id: number): Promise<Product | undefined> {
@@ -401,6 +673,10 @@ export class ProductStore {
         id: found.id,
         store: found.store,
         category: found.category,
+        categoryId: found.categoryId ?? null,
+        slug: found.slug ?? null,
+        status: found.status ?? 'active',
+        attributes: found.attributes ?? {},
         name: found.name,
         fit: found.fit ?? null,
         price: found.price,
@@ -482,6 +758,27 @@ export class ProductStore {
   private async _doCreate(input: CreateProduct): Promise<Product> {
     const normalizedImages = normalizeImageInputs(input.img, input.img2, input.images)
 
+    const rawCategory = input.category || 'printed-tees'
+    const resolvedCat = await this.resolveCategory(rawCategory)
+    if (!resolvedCat) {
+      const valid = await this.getValidCategorySlugs()
+      throw new Error(`Unknown category "${rawCategory}". Valid categories are: ${valid.join(', ')}`)
+    }
+    const categoryId = resolvedCat.id
+
+    const attributes = extractAttributes(input as any)
+    const rawStatus = (
+      input.status ||
+      ((input.adminData as any)?.status ? String((input.adminData as any).status).toLowerCase() : 'active')
+    ).toLowerCase()
+    const status = rawStatus === 'archived' ? 'archived' : rawStatus === 'draft' ? 'draft' : 'active'
+    const adminStatus = status === 'archived' ? 'Archived' : status === 'draft' ? 'Draft' : 'Active'
+    const adminData = {
+      ...(input.adminData ?? {}),
+      status: adminStatus
+    }
+    const slug = await this.generateUniqueSlug(input.name, input.slug)
+
     // Determine product ID
     let newProductId: number
     if (isDatabaseConfigured() && db) {
@@ -489,7 +786,11 @@ export class ProductStore {
         .insert(productsTable)
         .values({
           store: input.store || 'teesgarage',
-          category: input.category || 'printed-tees',
+          category: rawCategory,
+          categoryId,
+          slug,
+          status,
+          attributes,
           name: input.name,
           fit: input.fit ?? null,
           price: input.price,
@@ -501,7 +802,7 @@ export class ProductStore {
           desc: input.desc,
           wash: input.wash ?? null,
           sizes: input.sizes ?? null,
-          adminData: input.adminData ?? {}
+          adminData
         })
         .returning()
       newProductId = row.id
@@ -636,17 +937,59 @@ export class ProductStore {
     const createdProduct: Product = {
       id: newProductId,
       ...input,
+      category: rawCategory as Category,
+      categoryId,
+      slug,
+      status,
+      attributes,
+      adminData,
       createdAt: new Date(),
       variants: variantsToInsert.map((v, i) => ({ ...v, id: this.memoryVariants.length + i + 1 }))
     }
     this.memoryProducts.push(createdProduct)
     this.memoryVariants.push(...createdProduct.variants!)
-    return createdProduct
+    const p = await this.getById(newProductId)
+    return p!
   }
 
   async update(id: number, patch: UpdateProduct): Promise<Product | undefined> {
     const existing = await this.getById(id)
     if (!existing) return undefined
+
+    let categoryId = existing.categoryId
+    if (patch.category !== undefined) {
+      const resolvedCat = await this.resolveCategory(patch.category)
+      if (!resolvedCat) {
+        const valid = await this.getValidCategorySlugs()
+        throw new Error(`Unknown category "${patch.category}". Valid categories are: ${valid.join(', ')}`)
+      }
+      categoryId = resolvedCat.id
+    }
+
+    const hasAttributeUpdate =
+      patch.attributes !== undefined || ATTRIBUTE_SPEC_KEYS.some((k) => (patch as any)[k] !== undefined)
+    let attributes = (existing.attributes as Record<string, unknown>) || {}
+    if (hasAttributeUpdate) {
+      attributes = {
+        ...attributes,
+        ...extractAttributes(patch as any)
+      }
+    }
+
+    let status = existing.status || 'active'
+    if (patch.status !== undefined) {
+      const s = patch.status.toLowerCase()
+      status = s === 'archived' ? 'archived' : s === 'draft' ? 'draft' : 'active'
+    } else if (patch.adminData?.status !== undefined) {
+      const s = String(patch.adminData.status).toLowerCase()
+      status = s === 'archived' ? 'archived' : s === 'draft' ? 'draft' : 'active'
+    }
+    const adminStatus = status === 'archived' ? 'Archived' : status === 'draft' ? 'Draft' : 'Active'
+
+    let slug = existing.slug
+    if (patch.slug !== undefined || (patch.name !== undefined && patch.name !== existing.name && !existing.slug)) {
+      slug = await this.generateUniqueSlug(patch.name || existing.name, patch.slug, id)
+    }
 
     const hasImagePatch = patch.img !== undefined || patch.img2 !== undefined || patch.images !== undefined
     const normalizedImages = hasImagePatch
@@ -662,7 +1005,13 @@ export class ProductStore {
         updatedAt: new Date()
       }
       if (patch.store !== undefined) updateData.store = patch.store
-      if (patch.category !== undefined) updateData.category = patch.category
+      if (patch.category !== undefined) {
+        updateData.category = patch.category
+        updateData.categoryId = categoryId
+      }
+      if (slug !== undefined) updateData.slug = slug
+      updateData.status = status
+      updateData.attributes = attributes
       if (patch.name !== undefined) updateData.name = patch.name
       if (patch.fit !== undefined) updateData.fit = patch.fit
       if (patch.price !== undefined) updateData.price = patch.price
@@ -674,7 +1023,11 @@ export class ProductStore {
       if (patch.desc !== undefined) updateData.desc = patch.desc
       if (patch.wash !== undefined) updateData.wash = patch.wash
       if (patch.sizes !== undefined) updateData.sizes = patch.sizes
-      if (patch.adminData !== undefined) updateData.adminData = patch.adminData
+      updateData.adminData = {
+        ...(existing.adminData ?? {}),
+        ...(patch.adminData ?? {}),
+        status: adminStatus
+      }
 
       await db
         .update(productsTable)
@@ -788,7 +1141,21 @@ export class ProductStore {
     }
 
     // In-memory update
-    const updated: Product = { ...existing, ...patch, id }
+    const updated: Product = {
+      ...existing,
+      ...patch,
+      id,
+      category: (patch.category as Category) || existing.category,
+      categoryId,
+      slug,
+      status,
+      attributes,
+      adminData: {
+        ...(existing.adminData ?? {}),
+        ...(patch.adminData ?? {}),
+        status: adminStatus
+      }
+    }
     if (patch.variants !== undefined) {
       const seenCombos = new Set<string>()
       for (const v of patch.variants) {
@@ -885,7 +1252,7 @@ export class ProductStore {
     }
 
     this.memoryProducts = this.memoryProducts.map((p) => (p.id === id ? updated : p))
-    return updated
+    return (await this.getById(id)) || updated
   }
 
   async remove(id: number): Promise<boolean> {

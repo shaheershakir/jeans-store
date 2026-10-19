@@ -81,6 +81,11 @@ export interface Product {
   rating?: number
   inStock?: boolean
   collection?: string
+  categoryId?: number
+  slug?: string
+  status?: string
+  attributes?: Record<string, unknown>
+  adminData?: Record<string, unknown>
 }
 
 export interface OrderItem {

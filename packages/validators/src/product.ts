@@ -51,7 +51,12 @@ export const productSchema = z.object({
   rise: z.string().optional(),
   rating: z.number().optional(),
   inStock: z.boolean().optional(),
-  collection: z.string().optional()
+  collection: z.string().optional(),
+  categoryId: z.number().int().optional(),
+  slug: z.string().optional(),
+  status: z.string().optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
+  adminData: z.record(z.string(), z.unknown()).optional()
 })
 
 export const createProductSchema = productSchema.omit({ id: true })

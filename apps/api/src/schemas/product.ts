@@ -43,7 +43,11 @@ export type Variant = z.infer<typeof variantSchema>
 export const productSchema = z.object({
   id: z.number().int().nonnegative(),
   store: z.string().default('teesgarage'),
-  category: z.enum(CATEGORIES).default('printed-tees'),
+  category: z.string().min(1).default('printed-tees'),
+  categoryId: z.number().int().optional(),
+  slug: z.string().optional(),
+  status: z.enum(['draft', 'active', 'archived']).default('active').optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
   name: z.string().min(1),
   sku: z.string().optional(),
   fit: z.enum(FITS).optional(),

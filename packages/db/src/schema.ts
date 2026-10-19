@@ -1,25 +1,60 @@
 import { sql } from 'drizzle-orm'
-import { pgTable, serial, text, integer, timestamp, jsonb, varchar, boolean, uniqueIndex, index, check } from 'drizzle-orm/pg-core'
+import {
+  pgTable,
+  serial,
+  text,
+  integer,
+  timestamp,
+  jsonb,
+  varchar,
+  boolean,
+  uniqueIndex,
+  index,
+  check,
+  type AnyPgColumn
+} from 'drizzle-orm/pg-core'
 
-export const products = pgTable('products', {
+export const categories = pgTable('categories', {
   id: serial('id').primaryKey(),
-  store: varchar('store', { length: 50 }).default('teesgarage').notNull(),
-  category: varchar('category', { length: 50 }).default('printed-tees').notNull(),
-  name: varchar('name', { length: 255 }).notNull(),
-  fit: varchar('fit', { length: 50 }),
-  price: varchar('price', { length: 50 }).notNull(),
-  priceNum: integer('price_num').notNull(),
-  img: text('img').notNull(),
-  img2: text('img2').notNull(),
-  images: jsonb('images').$type<string[]>().notNull().default([]),
-  badge: varchar('badge', { length: 50 }),
-  desc: text('desc').notNull(),
-  wash: varchar('wash', { length: 100 }),
-  sizes: jsonb('sizes'),
-  adminData: jsonb('admin_data').$type<Record<string, unknown>>().notNull().default({}),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull()
+  slug: varchar('slug', { length: 50 }).notNull().unique(),
+  name: varchar('name', { length: 100 }).notNull(),
+  parentId: integer('parent_id').references((): AnyPgColumn => categories.id, { onDelete: 'set null' }),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 })
+
+export const products = pgTable(
+  'products',
+  {
+    id: serial('id').primaryKey(),
+    store: varchar('store', { length: 50 }).default('teesgarage').notNull(),
+    category: varchar('category', { length: 50 }).default('printed-tees').notNull(),
+    categoryId: integer('category_id').references(() => categories.id, { onDelete: 'restrict' }),
+    slug: varchar('slug', { length: 160 }).unique(),
+    status: varchar('status', { length: 20 }).default('active').notNull(),
+    attributes: jsonb('attributes').$type<Record<string, unknown>>().notNull().default({}),
+    name: varchar('name', { length: 255 }).notNull(),
+    fit: varchar('fit', { length: 50 }),
+    price: varchar('price', { length: 50 }).notNull(),
+    priceNum: integer('price_num').notNull(),
+    img: text('img').notNull(),
+    img2: text('img2').notNull(),
+    images: jsonb('images').$type<string[]>().notNull().default([]),
+    badge: varchar('badge', { length: 50 }),
+    desc: text('desc').notNull(),
+    wash: varchar('wash', { length: 100 }),
+    sizes: jsonb('sizes'),
+    adminData: jsonb('admin_data').$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
+  },
+  (t) => [
+    index('products_store_status_category_idx').on(t.store, t.status, t.categoryId),
+    uniqueIndex('products_slug_idx').on(t.slug),
+    check('products_status_check', sql.raw("status IN ('draft', 'active', 'archived')"))
+  ]
+)
 
 export const productImages = pgTable(
   'product_images',
@@ -127,7 +162,11 @@ export const productVariants = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull()
   },
   (table) => [
-    uniqueIndex('product_variants_product_color_size_idx').on(table.productId, table.color, table.size)
+    uniqueIndex('product_variants_product_color_size_idx').on(table.productId, table.color, table.size),
+    check('product_variants_stock_check', sql.raw('stock >= 0')),
+    check('product_variants_reserved_check', sql.raw('reserved >= 0')),
+    check('product_variants_price_check', sql.raw('price >= 0')),
+    check('product_variants_status_check', sql.raw("status IN ('Active', 'Inactive')"))
   ]
 )
 
@@ -158,6 +197,8 @@ export const adminState = pgTable('admin_state', {
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
 
+export type DbCategory = typeof categories.$inferSelect
+export type DbNewCategory = typeof categories.$inferInsert
 export type DbProduct = typeof products.$inferSelect
 export type DbNewProduct = typeof products.$inferInsert
 export type DbProductImage = typeof productImages.$inferSelect
