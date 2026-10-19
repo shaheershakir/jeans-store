@@ -21,7 +21,6 @@ import {
   refunds,
   returnItems,
   returnRequests,
-  reviewHelpfulVotes,
   reviewImages,
   roles,
   shipments,
@@ -379,7 +378,6 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
   await db.delete(promotions)
   await db.delete(banners)
   await db.delete(reviewImages)
-  await db.delete(reviewHelpfulVotes)
   await db.delete(productReviews)
   await db.delete(sizeChartMeasurements)
   await db.delete(sizeCharts)

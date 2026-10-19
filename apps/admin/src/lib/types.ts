@@ -371,7 +371,7 @@ export interface PaymentRecord {
   amount: number
   status: PaymentStatus
   gateway: string
-  gatewayFee: number | null
+  gatewayFee?: number | null
   settled: boolean
   createdAt: string
   settledAt: string | null

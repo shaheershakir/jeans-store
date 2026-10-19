@@ -185,7 +185,6 @@ export const productVariants = pgTable(
     sku: varchar('sku', { length: 100 }).notNull().unique(),
     size: varchar('size', { length: 50 }).notNull(),
     color: varchar('color', { length: 50 }).notNull(),
-    colorHex: varchar('color_hex', { length: 7 }),
     price: integer('price'),
     stock: integer('stock').default(0).notNull(),
     reserved: integer('reserved').default(0).notNull(),
@@ -497,9 +496,7 @@ export const payments = pgTable(
     gateway: varchar('gateway', { length: 40 }).default('razorpay').notNull(),
     gatewayOrderId: varchar('gateway_order_id', { length: 100 }),
     gatewayPaymentId: varchar('gateway_payment_id', { length: 100 }).unique(),
-    gatewayFee: integer('gateway_fee'),
     settled: boolean('settled').default(false).notNull(),
-    failureReason: text('failure_reason'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     settledAt: timestamp('settled_at', { withTimezone: true })
   },
@@ -648,15 +645,12 @@ export const productReviews = pgTable(
     orderItemId: integer('order_item_id').references(() => orderItems.id, { onDelete: 'set null' }).unique(),
     reviewerName: varchar('reviewer_name', { length: 120 }).notNull(),
     reviewerEmail: varchar('reviewer_email', { length: 255 }),
-    reviewerLocation: varchar('reviewer_location', { length: 120 }),
     rating: smallint('rating').notNull(),
     title: varchar('title', { length: 160 }),
     content: text('content').notNull(),
-    sizePurchased: varchar('size_purchased', { length: 50 }),
     fitVerdict: varchar('fit_verdict', { length: 30 }),
     isVerifiedPurchase: boolean('is_verified_purchase').default(false).notNull(),
     status: varchar('status', { length: 20 }).default('Pending').notNull(),
-    helpfulCount: integer('helpful_count').default(0).notNull(),
     merchantResponse: text('merchant_response'),
     respondedAt: timestamp('responded_at', { withTimezone: true }),
     ...timestamps
@@ -696,35 +690,6 @@ export const reviewImages = pgTable(
   ]
 )
 
-export const reviewHelpfulVotes = pgTable(
-  'review_helpful_votes',
-  {
-    id: serial('id').primaryKey(),
-    reviewId: integer('review_id')
-      .notNull()
-      .references(() => productReviews.id, { onDelete: 'cascade' }),
-    customerId: integer('customer_id')
-      .notNull()
-      .references(() => customers.id, { onDelete: 'cascade' }),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
-  },
-  (t) => [uniqueIndex('review_helpful_votes_review_customer_idx').on(t.reviewId, t.customerId)]
-)
-
-export const wishlistItems = pgTable(
-  'wishlist_items',
-  {
-    id: serial('id').primaryKey(),
-    customerId: integer('customer_id')
-      .notNull()
-      .references(() => customers.id, { onDelete: 'cascade' }),
-    productId: integer('product_id')
-      .notNull()
-      .references(() => products.id, { onDelete: 'cascade' }),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
-  },
-  (t) => [uniqueIndex('wishlist_items_customer_product_idx').on(t.customerId, t.productId)]
-)
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Operations & configuration
