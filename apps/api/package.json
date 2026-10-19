@@ -16,6 +16,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
     "@google-cloud/storage": "^8.4.0",
     "@jeans-store/db": "*",
     "@jeans-store/shared": "*",

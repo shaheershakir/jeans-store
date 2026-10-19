@@ -1,4 +1,5 @@
-import { pgTable, serial, text, integer, timestamp, jsonb, varchar, boolean, uniqueIndex } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { pgTable, serial, text, integer, timestamp, jsonb, varchar, boolean, uniqueIndex, index, check } from 'drizzle-orm/pg-core'
 
 export const products = pgTable('products', {
   id: serial('id').primaryKey(),
@@ -19,6 +20,36 @@ export const products = pgTable('products', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
+
+export const productImages = pgTable(
+  'product_images',
+  {
+    id: serial('id').primaryKey(),
+    productId: integer('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    color: varchar('color', { length: 50 }),
+    storageKey: text('storage_key'),
+    externalUrl: text('external_url'),
+    alt: varchar('alt', { length: 255 }),
+    mimeType: varchar('mime_type', { length: 50 }),
+    width: integer('width'),
+    height: integer('height'),
+    sizeBytes: integer('size_bytes'),
+    position: integer('position').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+  },
+  (t) => [
+    index('product_images_product_pos_idx').on(t.productId, t.position),
+    uniqueIndex('product_images_storage_key_idx').on(t.storageKey),
+    check(
+      'product_images_source_check',
+      sql.raw('(storage_key IS NOT NULL AND external_url IS NULL) OR (storage_key IS NULL AND external_url IS NOT NULL)')
+    ),
+    check('product_images_position_check', sql.raw('position >= 0'))
+  ]
+)
+
 
 export const orders = pgTable('orders', {
   id: serial('id').primaryKey(),
@@ -129,6 +160,8 @@ export const adminState = pgTable('admin_state', {
 
 export type DbProduct = typeof products.$inferSelect
 export type DbNewProduct = typeof products.$inferInsert
+export type DbProductImage = typeof productImages.$inferSelect
+export type DbNewProductImage = typeof productImages.$inferInsert
 export type DbProductVariant = typeof productVariants.$inferSelect
 export type DbNewProductVariant = typeof productVariants.$inferInsert
 export type DbOrder = typeof orders.$inferSelect

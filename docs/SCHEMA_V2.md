@@ -274,7 +274,49 @@ erDiagram
 
 ---
 
-## 5. Future Normalization Roadmap
+## 5. Phase 1: Key-Based Image Storage Architecture
+
+### 5.1 Storage Service & Drivers
+Located at `apps/api/src/services/storage.ts`:
+- **`ObjectStorage` interface**: Defines `put(key, bytes, contentType)`, `delete(key)`, `list(prefix)`, `getUrl(key)`.
+- **`LocalStorageDriver`**: Used in local development and offline environments when no cloud bucket is configured. Writes files to `apps/api/.local-uploads/` (gitignored) and serves them via Express static middleware at `/assets`. Replaces the insecure base64 `data:` URI fallback.
+- **`GcsStorageDriver`**: Production Google Cloud Storage driver utilizing `@google-cloud/storage`. Uses bucket `GCS_PRODUCT_IMAGES_BUCKET` with `Cache-Control: public, max-age=31536000, immutable`.
+- **`S3StorageDriver`**: S3-compatible driver supporting AWS S3, Cloudflare R2, MinIO, or Google Cloud Storage interoperability endpoint (HMAC keys) via `@aws-sdk/client-s3`.
+
+### 5.2 Bucket Configuration Requirements
+1. **Public Read Permissions**:
+   - The bucket path prefix `products/*` must be readable publicly via HTTP GET.
+   - Alternatively, a CDN (e.g. Cloudflare, Cloud CDN) or custom domain must sit in front of the bucket and map to `ASSET_BASE_URL`.
+2. **CORS Configuration**:
+   - Because upload requests currently flow through the API server (`POST /api/uploads/products`), browser CORS on the storage bucket is **not** currently required.
+   - If direct-to-bucket pre-signed browser uploads are added in the future, set CORS on the bucket:
+     ```json
+     [
+       {
+         "origin": ["https://teesgarage.in", "https://admin.teesgarage.in"],
+         "method": ["PUT", "POST"],
+         "responseHeader": ["Content-Type", "ETag"],
+         "maxAgeSeconds": 3600
+       }
+     ]
+     ```
+
+### 5.3 URL Resolution & Helpers
+Located in `@jeans-store/shared`:
+- **`assetUrl(key)`**: Constructs the full public URL from `ASSET_BASE_URL` (or fallback GCS bucket URL).
+- **`keyFromUrl(url)`**: Extracts the relative storage key (e.g., `products/<uuid>.webp`) if the URL starts with `ASSET_BASE_URL` or legacy GCS prefixes (`https://storage.googleapis.com/<bucket>/`), returning `null` for third-party or Unsplash URLs.
+
+### 5.4 Dual-Write and Single-Query Reads
+- **Write Path**: In `ProductStore.create()` and `update()`, images are normalized. Storage keys or external URLs are dual-written to `product_images` (sorted by `position`) and legacy columns `img`, `img2`, `images`. Base64 `data:` URIs and insecure non-HTTPS links are rejected.
+- **Read Path**: Single SQL query loads all active images for listed products (`SELECT * FROM product_images`). `toProduct()` maps `position 0` -> `img`, `position 1` -> `img2` (with fallback to `img` if single image), and full gallery -> `images`. If no rows exist in `product_images` yet, it safely falls back to legacy columns.
+
+### 5.5 Maintenance & Operations Scripts
+- **Backfill**: `npx tsx scripts/backfill-product-images.ts` (Dry-run by default; pass `--apply` to write rows). Skips products already possessing `product_images` rows.
+- **Orphan Prune**: `npx tsx scripts/prune-orphan-images.ts` (Dry-run by default; pass `--apply` to delete). Never deletes inline during product edits or deletions (safeguarding order history snapshots). Deletes only storage objects under `products/` that are older than 24 hours and referenced by neither `product_images.storage_key` nor `order_items.image_key`.
+
+---
+
+## 6. Future Normalization Roadmap
 
 1. **`admin_state` Normalization**:
    Extract coupons, inventory movements, and audit log entries out of the `admin_state` JSON blob into dedicated tables (`coupons`, `coupon_redemptions`, `inventory_movements`, `audit_logs`).

@@ -46,3 +46,7 @@ next-env.d.ts
 
 # graphify
 graphify-out/
+
+# local uploads
+.local-uploads/
+apps/api/.local-uploads/

@@ -5,14 +5,55 @@ import { db, isDatabaseConfigured } from '../db/index.js'
 import {
   products as productsTable,
   productVariants as productVariantsTable,
+  productImages as productImagesTable,
   type DbProduct,
-  type DbProductVariant
+  type DbProductVariant,
+  type DbProductImage
 } from '../db/schema.js'
 import {
   generateBaseSku,
   generateProductScopedSku,
   type SkuComponents
 } from '../services/skuService.js'
+import { assetUrl, keyFromUrl } from '@jeans-store/shared'
+
+export interface NormalizedImage {
+  storageKey: string | null
+  externalUrl: string | null
+  position: number
+}
+
+export function normalizeImageInputs(img: string, img2: string, images?: string[]): NormalizedImage[] {
+  const allUrls: string[] = []
+  if (img) allUrls.push(img)
+  if (img2 && img2 !== img) allUrls.push(img2)
+  if (Array.isArray(images)) {
+    for (const u of images) {
+      if (u && !allUrls.includes(u)) {
+        allUrls.push(u)
+      }
+    }
+  }
+
+  const result: NormalizedImage[] = []
+  for (let i = 0; i < allUrls.length; i++) {
+    const rawUrl = allUrls[i].trim()
+    if (!rawUrl) continue
+    if (rawUrl.startsWith('data:')) {
+      throw new Error('Base64 data: URLs are not allowed for product images. Please upload images.')
+    }
+    const key = keyFromUrl(rawUrl)
+    if (key) {
+      result.push({ storageKey: key, externalUrl: null, position: i })
+    } else {
+      if (!/^https:\/\//i.test(rawUrl)) {
+        throw new Error(`Product image URL must be a valid HTTPS URL: ${rawUrl}`)
+      }
+      result.push({ storageKey: null, externalUrl: rawUrl, position: i })
+    }
+  }
+  return result
+}
 
 function toVariant(row: DbProductVariant): Variant {
   return {
@@ -31,9 +72,31 @@ function toVariant(row: DbProductVariant): Variant {
   }
 }
 
-function toProduct(row: DbProduct, variants: Variant[] = []): Product {
+function toProduct(
+  row: DbProduct,
+  variants: Variant[] = [],
+  images: Array<{ storageKey: string | null; externalUrl: string | null; position: number }> = []
+): Product {
   const validCategory = CATEGORIES.includes(row.category as Category)
   const adminData = row.adminData ?? {}
+
+  let displayImg = row.img
+  let displayImg2 = row.img2
+  let displayImages = row.images ?? []
+
+  if (images.length > 0) {
+    const sorted = [...images].sort((a, b) => a.position - b.position)
+    const resolvedUrls = sorted
+      .map((img) => (img.storageKey ? assetUrl(img.storageKey) : img.externalUrl))
+      .filter((u): u is string => Boolean(u))
+
+    if (resolvedUrls.length > 0) {
+      displayImg = resolvedUrls[0]
+      displayImg2 = resolvedUrls[1] || resolvedUrls[0]
+      displayImages = resolvedUrls
+    }
+  }
+
   return {
     id: row.id,
     store: (row.store as StoreType) || 'teesgarage',
@@ -42,9 +105,9 @@ function toProduct(row: DbProduct, variants: Variant[] = []): Product {
     fit: (row.fit as Fit) || undefined,
     price: row.price,
     priceNum: row.priceNum,
-    img: row.img,
-    img2: row.img2,
-    images: row.images ?? [],
+    img: displayImg,
+    img2: displayImg2,
+    images: displayImages,
     badge: row.badge ?? undefined,
     desc: row.desc,
     wash: row.wash ?? undefined,
@@ -54,6 +117,7 @@ function toProduct(row: DbProduct, variants: Variant[] = []): Product {
     createdAt: row.createdAt
   }
 }
+
 
 interface RawVariantInput {
   id?: number
@@ -92,9 +156,14 @@ interface ReadyVariant {
 export class ProductStore {
   private memoryProducts: Product[]
   private memoryVariants: Variant[]
+  private memoryProductImages: DbProductImage[]
+  private nextMemoryProductId: number
+  private memoryClaimedSkus = new Map<string, number>()
+  private createLock: Promise<void> = Promise.resolve()
 
   constructor(seed: Product[]) {
     this.memoryVariants = []
+    this.memoryProductImages = []
     let variantCounter = 1
 
     this.memoryProducts = seed.map((product) => {
@@ -106,6 +175,30 @@ export class ProductStore {
           color = p.wash.split('/')[1].trim()
         } else {
           color = p.wash
+        }
+      }
+
+      if (p.img) {
+        try {
+          const norm = normalizeImageInputs(p.img, p.img2 || p.img, p.images)
+          for (const img of norm) {
+            this.memoryProductImages.push({
+              id: this.memoryProductImages.length + 1,
+              productId: p.id,
+              color: null,
+              storageKey: img.storageKey,
+              externalUrl: img.externalUrl,
+              alt: null,
+              mimeType: null,
+              width: null,
+              height: null,
+              sizeBytes: null,
+              position: img.position,
+              createdAt: new Date()
+            })
+          }
+        } catch {
+          // Ignore invalid seed images in tests/mock
         }
       }
 
@@ -138,6 +231,13 @@ export class ProductStore {
       this.memoryVariants.push(...variants)
       return { ...p, variants }
     })
+
+    this.nextMemoryProductId = Math.max(...this.memoryProducts.map((p) => p.id), 0)
+    for (const v of this.memoryVariants) {
+      if (v.sku && v.productId !== undefined) {
+        this.memoryClaimedSkus.set(v.sku.toUpperCase(), v.productId)
+      }
+    }
   }
 
   /**
@@ -155,9 +255,13 @@ export class ProductStore {
       return rows.some((r) => currentProductId === undefined || r.productId !== currentProductId)
     }
 
-    const found = this.memoryVariants.find((v) => Boolean(v.sku && v.sku.toUpperCase() === cleanSku))
-    if (!found) return false
-    return currentProductId === undefined || found.productId !== currentProductId
+    const ownerProductId = this.memoryClaimedSkus.get(cleanSku)
+    if (ownerProductId === undefined) {
+      const found = this.memoryVariants.find((v) => Boolean(v.sku && v.sku.toUpperCase() === cleanSku))
+      if (!found) return false
+      return currentProductId === undefined || found.productId !== currentProductId
+    }
+    return currentProductId === undefined || ownerProductId !== currentProductId
   }
 
   /**
@@ -177,6 +281,7 @@ export class ProductStore {
     if (isDatabaseConfigured() && db) {
       const productRows = await db.select().from(productsTable)
       const variantRows = await db.select().from(productVariantsTable)
+      const imageRows = await db.select().from(productImagesTable)
 
       const variantMap = new Map<number, Variant[]>()
       for (const vr of variantRows) {
@@ -185,15 +290,54 @@ export class ProductStore {
         }
         variantMap.get(vr.productId)!.push(toVariant(vr))
       }
-      list = productRows.map((p) => toProduct(p, variantMap.get(p.id) || []))
+
+      const imageMap = new Map<number, DbProductImage[]>()
+      for (const ir of imageRows) {
+        if (!imageMap.has(ir.productId)) {
+          imageMap.set(ir.productId, [])
+        }
+        imageMap.get(ir.productId)!.push(ir)
+      }
+
+      list = productRows.map((p) => toProduct(p, variantMap.get(p.id) || [], imageMap.get(p.id) || []))
     } else if (process.env.NODE_ENV === 'production') {
       throw new Error('Product database is not configured.')
     } else {
-      if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
-      list = this.memoryProducts.map((p) => ({
-        ...p,
-        variants: this.memoryVariants.filter((v) => v.productId === p.id)
-      }))
+      const imageMap = new Map<number, DbProductImage[]>()
+      for (const ir of this.memoryProductImages) {
+        if (!imageMap.has(ir.productId)) {
+          imageMap.set(ir.productId, [])
+        }
+        imageMap.get(ir.productId)!.push(ir)
+      }
+
+      list = this.memoryProducts.map((p) => {
+        const variants = this.memoryVariants.filter((v) => v.productId === p.id)
+        const images = imageMap.get(p.id) || []
+        return toProduct(
+          {
+            id: p.id,
+            store: p.store,
+            category: p.category,
+            name: p.name,
+            fit: p.fit ?? null,
+            price: p.price,
+            priceNum: p.priceNum,
+            img: p.img,
+            img2: p.img2,
+            images: p.images ?? [],
+            badge: p.badge ?? null,
+            desc: p.desc,
+            wash: p.wash ?? null,
+            sizes: p.sizes ?? null,
+            adminData: p.adminData ?? {},
+            createdAt: p.createdAt ?? new Date(),
+            updatedAt: p.createdAt ?? new Date()
+          },
+          variants,
+          images
+        )
+      })
     }
 
     if (filters?.store && filters.store !== 'all') {
@@ -238,7 +382,11 @@ export class ProductStore {
         .select()
         .from(productVariantsTable)
         .where(eq(productVariantsTable.productId, id))
-      return toProduct(pRow, vRows.map(toVariant))
+      const iRows = await db
+        .select()
+        .from(productImagesTable)
+        .where(eq(productImagesTable.productId, id))
+      return toProduct(pRow, vRows.map(toVariant), iRows)
     }
     if (process.env.NODE_ENV === 'production') {
       throw new Error('Product database is not configured.')
@@ -246,10 +394,31 @@ export class ProductStore {
 
     const found = this.memoryProducts.find((p) => p.id === id)
     if (!found) return undefined
-    return {
-      ...found,
-      variants: this.memoryVariants.filter((v) => v.productId === id)
-    }
+    const variants = this.memoryVariants.filter((v) => v.productId === id)
+    const images = this.memoryProductImages.filter((img) => img.productId === id)
+    return toProduct(
+      {
+        id: found.id,
+        store: found.store,
+        category: found.category,
+        name: found.name,
+        fit: found.fit ?? null,
+        price: found.price,
+        priceNum: found.priceNum,
+        img: found.img,
+        img2: found.img2,
+        images: found.images ?? [],
+        badge: found.badge ?? null,
+        desc: found.desc,
+        wash: found.wash ?? null,
+        sizes: found.sizes ?? null,
+        adminData: found.adminData ?? {},
+        createdAt: found.createdAt ?? new Date(),
+        updatedAt: found.createdAt ?? new Date()
+      },
+      variants,
+      images
+    )
   }
 
   async adjustStock(variantId: number, delta: number): Promise<Variant> {
@@ -297,6 +466,22 @@ export class ProductStore {
   }
 
   async create(input: CreateProduct): Promise<Product> {
+    const currentLock = this.createLock
+    let releaseLock: () => void
+    this.createLock = new Promise<void>((resolve) => {
+      releaseLock = resolve
+    })
+    try {
+      await currentLock
+      return await this._doCreate(input)
+    } finally {
+      releaseLock!()
+    }
+  }
+
+  private async _doCreate(input: CreateProduct): Promise<Product> {
+    const normalizedImages = normalizeImageInputs(input.img, input.img2, input.images)
+
     // Determine product ID
     let newProductId: number
     if (isDatabaseConfigured() && db) {
@@ -320,9 +505,34 @@ export class ProductStore {
         })
         .returning()
       newProductId = row.id
+
+      for (const norm of normalizedImages) {
+        await db.insert(productImagesTable).values({
+          productId: newProductId,
+          storageKey: norm.storageKey,
+          externalUrl: norm.externalUrl,
+          position: norm.position
+        })
+      }
     } else {
       if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
-      newProductId = this.memoryProducts.length > 0 ? Math.max(...this.memoryProducts.map((p) => p.id)) + 1 : 0
+      newProductId = ++this.nextMemoryProductId
+      for (const norm of normalizedImages) {
+        this.memoryProductImages.push({
+          id: this.memoryProductImages.length + 1,
+          productId: newProductId,
+          color: null,
+          storageKey: norm.storageKey,
+          externalUrl: norm.externalUrl,
+          alt: null,
+          mimeType: null,
+          width: null,
+          height: null,
+          sizeBytes: null,
+          position: norm.position,
+          createdAt: new Date()
+        })
+      }
     }
 
     // Process and validate variants
@@ -375,6 +585,10 @@ export class ProductStore {
             productId: newProductId
           })
         }
+      }
+
+      if (!isDatabaseConfigured() || !db) {
+        this.memoryClaimedSkus.set(sku, newProductId)
       }
 
       variantsToInsert.push({
@@ -434,6 +648,15 @@ export class ProductStore {
     const existing = await this.getById(id)
     if (!existing) return undefined
 
+    const hasImagePatch = patch.img !== undefined || patch.img2 !== undefined || patch.images !== undefined
+    const normalizedImages = hasImagePatch
+      ? normalizeImageInputs(
+          patch.img !== undefined ? patch.img : existing.img,
+          patch.img2 !== undefined ? patch.img2 : existing.img2,
+          patch.images !== undefined ? patch.images : existing.images
+        )
+      : []
+
     if (isDatabaseConfigured() && db) {
       const updateData: Record<string, unknown> = {
         updatedAt: new Date()
@@ -457,6 +680,18 @@ export class ProductStore {
         .update(productsTable)
         .set(updateData)
         .where(eq(productsTable.id, id))
+
+      if (hasImagePatch) {
+        await db.delete(productImagesTable).where(eq(productImagesTable.productId, id))
+        for (const norm of normalizedImages) {
+          await db.insert(productImagesTable).values({
+            productId: id,
+            storageKey: norm.storageKey,
+            externalUrl: norm.externalUrl,
+            position: norm.position
+          })
+        }
+      }
 
       if (patch.variants !== undefined) {
         // Enforce duplicate check
@@ -615,11 +850,38 @@ export class ProductStore {
       }
 
       // Replace variants for this product in memory
+      for (const [sku, pId] of this.memoryClaimedSkus.entries()) {
+        if (pId === id) this.memoryClaimedSkus.delete(sku)
+      }
+      for (const nv of newVariants) {
+        if (nv.sku) this.memoryClaimedSkus.set(nv.sku.toUpperCase(), id)
+      }
+
       this.memoryVariants = [
         ...this.memoryVariants.filter((v) => v.productId !== id),
         ...newVariants
       ]
       updated.variants = newVariants
+    }
+
+    if (hasImagePatch) {
+      this.memoryProductImages = this.memoryProductImages.filter((img) => img.productId !== id)
+      for (const norm of normalizedImages) {
+        this.memoryProductImages.push({
+          id: this.memoryProductImages.length + 1,
+          productId: id,
+          color: null,
+          storageKey: norm.storageKey,
+          externalUrl: norm.externalUrl,
+          alt: null,
+          mimeType: null,
+          width: null,
+          height: null,
+          sizeBytes: null,
+          position: norm.position,
+          createdAt: new Date()
+        })
+      }
     }
 
     this.memoryProducts = this.memoryProducts.map((p) => (p.id === id ? updated : p))
@@ -628,7 +890,8 @@ export class ProductStore {
 
   async remove(id: number): Promise<boolean> {
     if (isDatabaseConfigured() && db) {
-      // Cascade delete variants and product
+      // Cascade delete variants, images and product
+      await db.delete(productImagesTable).where(eq(productImagesTable.productId, id))
       await db.delete(productVariantsTable).where(eq(productVariantsTable.productId, id))
       const [row] = await db
         .delete(productsTable)
@@ -642,6 +905,10 @@ export class ProductStore {
     const before = this.memoryProducts.length
     this.memoryProducts = this.memoryProducts.filter((p) => p.id !== id)
     this.memoryVariants = this.memoryVariants.filter((v) => v.productId !== id)
+    this.memoryProductImages = this.memoryProductImages.filter((img) => img.productId !== id)
+    for (const [sku, pId] of this.memoryClaimedSkus.entries()) {
+      if (pId === id) this.memoryClaimedSkus.delete(sku)
+    }
     return this.memoryProducts.length < before
   }
 }

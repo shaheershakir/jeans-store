@@ -1,8 +1,8 @@
 import crypto from 'node:crypto'
-import { Storage } from '@google-cloud/storage'
 import { Router, type Request, type Response } from 'express'
 import express from 'express'
 import { verifyAdminAuth } from '../middleware/auth.js'
+import { getStorage } from '../services/storage.js'
 
 export const uploadRouter = Router()
 
@@ -11,8 +11,6 @@ const IMAGE_TYPES = {
   'image/png': { extension: 'png', signature: (data: Buffer) => data.length >= 8 && data.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) },
   'image/webp': { extension: 'webp', signature: (data: Buffer) => data.length >= 12 && data.toString('ascii', 0, 4) === 'RIFF' && data.toString('ascii', 8, 12) === 'WEBP' }
 } as const
-
-const storage = new Storage({ projectId: process.env.GCP_PROJECT_ID || process.env.GOOGLE_PROJECT_ID })
 
 uploadRouter.post(
   '/api/uploads/products',
@@ -27,45 +25,20 @@ uploadRouter.post(
       return
     }
 
-    const bucketName = process.env.GCS_PRODUCT_IMAGES_BUCKET?.trim()
-    if (!bucketName) {
-      if (process.env.NODE_ENV !== 'production') {
-        const base64 = bytes.toString('base64')
-        res.status(201).json({
-          url: `data:${contentType};base64,${base64}`,
-          object: `local-dev/${crypto.randomUUID()}.${imageType.extension}`
-        })
-        return
-      }
-      res.status(503).json({ error: 'Product image storage is not configured.' })
-      return
-    }
-
     try {
-      const objectName = `products/${crypto.randomUUID()}.${imageType.extension}`
-      const file = storage.bucket(bucketName).file(objectName)
-      await file.save(bytes, {
-        resumable: false,
-        metadata: {
-          contentType,
-          cacheControl: 'public, max-age=31536000, immutable'
-        }
-      })
+      const storage = getStorage()
+      const key = `products/${crypto.randomUUID()}.${imageType.extension}`
+      await storage.put(key, bytes, contentType as string)
+      const url = storage.getUrl(key)
+
       res.status(201).json({
-        url: `https://storage.googleapis.com/${encodeURIComponent(bucketName)}/${objectName.split('/').map(encodeURIComponent).join('/')}`,
-        object: objectName
+        key,
+        url,
+        object: key
       })
     } catch (err) {
-      if (process.env.NODE_ENV !== 'production') {
-        const base64 = bytes.toString('base64')
-        res.status(201).json({
-          url: `data:${contentType};base64,${base64}`,
-          object: `local-fallback/${crypto.randomUUID()}.${imageType.extension}`
-        })
-        return
-      }
       req.log?.error({ err }, 'Product image upload failed')
-      res.status(502).json({ error: 'Could not upload the image to Google Cloud Storage.' })
+      res.status(502).json({ error: 'Could not upload the image to storage.' })
     }
   }
 )

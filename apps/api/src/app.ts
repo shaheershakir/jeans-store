@@ -1,4 +1,6 @@
+import path from 'node:path'
 import express, { type Application, type Request, type Response, type NextFunction } from 'express'
+
 import cors from 'cors'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
@@ -112,6 +114,10 @@ export function buildApp(options: BuildAppOptions = {}): Application {
       timestamp: new Date().toISOString()
     })
   })
+
+  // Local Assets Static Serving
+  const localUploadsDir = path.resolve(process.cwd(), '.local-uploads')
+  app.use('/assets', express.static(localUploadsDir))
 
   // API Routes
   app.use(productRouter)

@@ -180,7 +180,7 @@ jobs:
               --platform=managed \
               --allow-unauthenticated \
               --port=4000 \
-              --set-env-vars="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID_VAL};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID_VAL};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${CORS_VAL}" \
+              --set-env-vars="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};STORAGE_PROVIDER=${{ vars.STORAGE_PROVIDER || 'gcs' }};ASSET_BASE_URL=${{ vars.ASSET_BASE_URL || format('https://storage.googleapis.com/{0}', BUCKET_VAL) }};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID_VAL};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID_VAL};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${CORS_VAL}" \
               --set-secrets="$SECRET_BINDINGS"
           else
             echo "::notice::Deploying backend with direct GitHub Secrets environment variables (no Secret Manager dependency)..."
@@ -203,7 +203,7 @@ jobs:
               JWT_SEC=$(openssl rand -hex 32)
             fi
 
-            ENV_VARS="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};DATABASE_URL=${DB_URL};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};ADMIN_PASSWORD=${ADMIN_PWD};ADMIN_SESSION_SECRET=${ADMIN_SESSION_SEC};JWT_SECRET=${JWT_SEC};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${CORS_VAL}"
+            ENV_VARS="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};DATABASE_URL=${DB_URL};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};ADMIN_PASSWORD=${ADMIN_PWD};ADMIN_SESSION_SECRET=${ADMIN_SESSION_SEC};JWT_SECRET=${JWT_SEC};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};STORAGE_PROVIDER=${{ vars.STORAGE_PROVIDER || 'gcs' }};ASSET_BASE_URL=${{ vars.ASSET_BASE_URL || format('https://storage.googleapis.com/{0}', BUCKET_VAL) }};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${CORS_VAL}"
 
             if [ -n "$GOOGLE_CLIENT_ID_VAL" ]; then
               ENV_VARS="${ENV_VARS};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID_VAL}"
@@ -298,6 +298,7 @@ jobs:
             --build-arg NEXT_PUBLIC_WHATSAPP_NUMBER="${{ vars.WHATSAPP_NUMBER || secrets.WHATSAPP_NUMBER }}" \
             --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }}" \
             --build-arg NEXT_PUBLIC_SITE_URL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}" \
+            --build-arg NEXT_PUBLIC_ASSET_BASE_URL="${{ vars.NEXT_PUBLIC_ASSET_BASE_URL || secrets.NEXT_PUBLIC_ASSET_BASE_URL || '' }}" \
             -t "$IMAGE" -t "$LATEST" \
             -f apps/storefront/Dockerfile .
           docker push "$IMAGE"
@@ -317,7 +318,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=3000 \
-            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }};NEXT_PUBLIC_SITE_URL=${FRONTEND_URL_VAL}"
+            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_ASSET_BASE_URL=${{ vars.NEXT_PUBLIC_ASSET_BASE_URL || secrets.NEXT_PUBLIC_ASSET_BASE_URL || '' }};NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }};NEXT_PUBLIC_SITE_URL=${FRONTEND_URL_VAL}"
 
   # -------------------------------------------------------------
   # 3. Admin Dashboard Service (Next.js 15)
@@ -379,6 +380,7 @@ jobs:
           IMAGE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:${{ github.sha }}"
           LATEST="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/admin:latest"
           docker build \
+            --build-arg NEXT_PUBLIC_ASSET_BASE_URL="${{ vars.NEXT_PUBLIC_ASSET_BASE_URL || secrets.NEXT_PUBLIC_ASSET_BASE_URL || '' }}" \
             -t "$IMAGE" -t "$LATEST" \
             -f apps/admin/Dockerfile .
           docker push "$IMAGE"
@@ -398,4 +400,4 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=3001 \
-            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_STOREFRONT_URL=${FRONTEND_URL_VAL}"
+            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_ASSET_BASE_URL=${{ vars.NEXT_PUBLIC_ASSET_BASE_URL || secrets.NEXT_PUBLIC_ASSET_BASE_URL || '' }};NEXT_PUBLIC_STOREFRONT_URL=${FRONTEND_URL_VAL}"
