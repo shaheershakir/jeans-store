@@ -478,7 +478,52 @@ When ready to apply Phase 3 migrations to Neon:
 
 ---
 
-## 8. Future Normalization Roadmap
+## 8. Phase 4: Contract & Deprecated Column Drops (Destructive Preview)
+
+> [!WARNING]
+> Phase 4 contains **destructive schema changes** (dropping columns and enforcing NOT NULL constraints). Do **NOT** apply this phase until all safety preconditions below are verified.
+
+### 8.1 Safety Preconditions Checklist
+Before executing Phase 4 against Neon production:
+1. **Database Snapshot / Branch**:
+   Create a dedicated backup branch in Neon Console or execute a full `pg_dump` snapshot.
+2. **Backfill Execution**:
+   - `npm --workspace=apps/api run db:backfill-images -- --apply` completed with 0 errors.
+   - `npm --workspace=apps/api run db:backfill-orders -- --apply` completed with 0 errors.
+3. **Idempotency Verification**:
+   Re-running both backfills must report `0` new rows migrated or linked.
+4. **Codebase Inspection**:
+   Confirm all read/write paths across `apps/api`, `apps/storefront`, and `apps/admin` utilize `product_images`, `order_items`, and `order_events`, with zero direct queries reading `products.img`, `img2`, `images`, `price`, `sizes`, `category`, or `orders.items`, `events`, `admin_notes`.
+
+### 8.2 Prepared Migration: `0005_contract_destructive_preview.sql`
+Located at `packages/db/drizzle/0005_contract_destructive_preview.sql` and `apps/api/drizzle/0005_contract_destructive_preview.sql`:
+```sql
+-- 1. Enforce NOT NULL constraints on normalized products columns
+ALTER TABLE "products" ALTER COLUMN "category_id" SET NOT NULL;
+ALTER TABLE "products" ALTER COLUMN "slug" SET NOT NULL;
+
+-- 2. Drop deprecated columns from products table
+ALTER TABLE "products" DROP COLUMN IF EXISTS "img";
+ALTER TABLE "products" DROP COLUMN IF EXISTS "img2";
+ALTER TABLE "products" DROP COLUMN IF EXISTS "images";
+ALTER TABLE "products" DROP COLUMN IF EXISTS "price";
+ALTER TABLE "products" DROP COLUMN IF EXISTS "sizes";
+ALTER TABLE "products" DROP COLUMN IF EXISTS "category";
+
+-- 3. Drop deprecated JSONB columns from orders table
+ALTER TABLE "orders" DROP COLUMN IF EXISTS "items";
+ALTER TABLE "orders" DROP COLUMN IF EXISTS "events";
+ALTER TABLE "orders" DROP COLUMN IF EXISTS "admin_notes";
+```
+
+### 8.3 Rollback Strategy
+Once dropped, PostgreSQL discards column storage. To roll back:
+- Primary recovery: Restore the pre-migration Neon branch or point-in-time recovery backup.
+- Secondary recovery: Re-add the dropped columns as nullable, and run reverse-hydration scripts from `product_images`, `order_items`, and `order_events`.
+
+---
+
+## 9. Future Normalization Roadmap
 
 1. **`admin_state` Normalization**:
    Extract coupons, inventory movements, and audit log entries out of the `admin_state` JSON blob into dedicated tables (`coupons`, `coupon_redemptions`, `inventory_movements`, `audit_logs`).
@@ -486,5 +531,6 @@ When ready to apply Phase 3 migrations to Neon:
    Add a `user_addresses` table linked to `users.id` with default shipping/billing flags.
 3. **Reviews & Ratings**:
    Normalize customer product reviews into a `product_reviews` table with moderation states.
+
 
 
