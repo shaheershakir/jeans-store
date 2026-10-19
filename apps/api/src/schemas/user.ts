@@ -33,6 +33,8 @@ export interface UserProfile {
   email: string
   name: string
   provider: string
+  googleSub?: string | null
+  onboardingCompleted: boolean
   createdAt: Date
 }
 

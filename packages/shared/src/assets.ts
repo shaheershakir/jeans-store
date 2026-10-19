@@ -4,7 +4,7 @@
  * In Node/Edge: checks ASSET_BASE_URL, NEXT_PUBLIC_ASSET_BASE_URL, or GCS bucket fallback.
  */
 export function getAssetBaseUrl(): string {
-  const env = typeof process !== 'undefined' && process.env ? process.env : {}
+  const env: Record<string, string | undefined> = typeof process !== 'undefined' && process.env ? process.env : {}
   const explicit = env.ASSET_BASE_URL || env.NEXT_PUBLIC_ASSET_BASE_URL
   if (explicit && explicit.trim()) {
     return explicit.trim().replace(/\/+$/, '')
@@ -59,7 +59,7 @@ export function keyFromUrl(url: string | null | undefined, customBaseUrl?: strin
     bases.push(defaultBase)
   }
 
-  const env = typeof process !== 'undefined' && process.env ? process.env : {}
+  const env: Record<string, string | undefined> = typeof process !== 'undefined' && process.env ? process.env : {}
   const bucket = env.GCS_PRODUCT_IMAGES_BUCKET || env.STORAGE_BUCKET
   if (bucket) {
     const gcsPrefix = `https://storage.googleapis.com/${bucket.trim()}`

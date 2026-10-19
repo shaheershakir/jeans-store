@@ -14,6 +14,7 @@ export const orderItemSchema = z.object({
 })
 
 export const createOrderSchema = z.object({
+  userId: z.number().int().positive().nullable().optional(),
   orderNumber: z.string().min(1),
   store: z.string().default('teesgarage'),
   customerName: z.string().min(1),
@@ -41,6 +42,7 @@ export const createOrderSchema = z.object({
 export type CreateOrder = z.infer<typeof createOrderSchema>
 
 export type CalculatedOrder = Omit<CreateOrder, 'items' | 'subtotal' | 'shipping' | 'total'> & {
+  userId?: number | null
   items: Array<z.infer<typeof orderItemSchema> & { variantId: number; name: string; price: string; priceNum: number; img?: string }>
   subtotal: number
   shipping: number
@@ -49,6 +51,7 @@ export type CalculatedOrder = Omit<CreateOrder, 'items' | 'subtotal' | 'shipping
 
 export interface Order extends CreateOrder {
   id: number
+  userId?: number | null
   status: string
   paymentStatus: 'Pending' | 'Paid' | 'Failed' | 'Refunded'
   carrier: string | null

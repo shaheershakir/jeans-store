@@ -85,47 +85,77 @@ export const productImages = pgTable(
   ]
 )
 
+export const users = pgTable(
+  'users',
+  {
+    id: serial('id').primaryKey(),
+    uid: varchar('uid', { length: 128 }).notNull().unique(),
+    email: varchar('email', { length: 255 }).notNull().unique(),
+    name: varchar('name', { length: 255 }).notNull(),
+    passwordHash: text('password_hash'),
+    provider: varchar('provider', { length: 50 }).default('cloud-iam').notNull(),
+    googleSub: varchar('google_sub', { length: 255 }).unique(),
+    onboardingCompletedAt: timestamp('onboarding_completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
+  },
+  (t) => [
+    uniqueIndex('users_lower_email_idx').on(sql`lower(${t.email})`)
+  ]
+)
 
-export const orders = pgTable('orders', {
-  id: serial('id').primaryKey(),
-  orderNumber: varchar('order_number', { length: 50 }).notNull().unique(),
-  store: varchar('store', { length: 50 }).default('teesgarage').notNull(),
-  customerName: varchar('customer_name', { length: 255 }).notNull(),
-  customerPhone: varchar('customer_phone', { length: 50 }).notNull(),
-  customerEmail: varchar('customer_email', { length: 255 }).notNull(),
-  address: text('address').notNull(),
-  apartment: varchar('apartment', { length: 255 }),
-  city: varchar('city', { length: 100 }).notNull(),
-  state: varchar('state', { length: 100 }).notNull(),
-  pincode: varchar('pincode', { length: 20 }).notNull(),
-  notes: text('notes'),
-  items: jsonb('items').notNull(),
-  subtotal: integer('subtotal').notNull(),
-  shipping: integer('shipping').notNull(),
-  total: integer('total').notNull(),
-  status: varchar('status', { length: 50 }).default('Pending').notNull(),
-  paymentStatus: varchar('payment_status', { length: 50 }).default('Pending').notNull(),
-  handoffType: varchar('handoff_type', { length: 50 }).default('whatsapp').notNull(),
-  carrier: varchar('carrier', { length: 100 }),
-  trackingNumber: varchar('tracking_number', { length: 100 }),
-  shippedAt: timestamp('shipped_at'),
-  deliveredAt: timestamp('delivered_at'),
-  adminNotes: jsonb('admin_notes').$type<Array<{ id: string; text: string; at: string; by: string; internal: boolean }>>().notNull().default([]),
-  events: jsonb('events').$type<Array<{ id: string; status: string; note: string; at: string; by: string }>>().notNull().default([]),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull()
-})
-
-export const users = pgTable('users', {
-  id: serial('id').primaryKey(),
-  uid: varchar('uid', { length: 128 }).notNull().unique(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  name: varchar('name', { length: 255 }).notNull(),
-  passwordHash: text('password_hash'),
-  provider: varchar('provider', { length: 50 }).default('cloud-iam').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull()
-})
+export const orders = pgTable(
+  'orders',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id').references((): AnyPgColumn => users.id, { onDelete: 'set null' }),
+    orderNumber: varchar('order_number', { length: 50 }).notNull().unique(),
+    store: varchar('store', { length: 50 }).default('teesgarage').notNull(),
+    customerName: varchar('customer_name', { length: 255 }).notNull(),
+    customerPhone: varchar('customer_phone', { length: 50 }).notNull(),
+    customerEmail: varchar('customer_email', { length: 255 }).notNull(),
+    address: text('address').notNull(),
+    apartment: varchar('apartment', { length: 255 }),
+    city: varchar('city', { length: 100 }).notNull(),
+    state: varchar('state', { length: 100 }).notNull(),
+    pincode: varchar('pincode', { length: 20 }).notNull(),
+    notes: text('notes'),
+    items: jsonb('items').notNull(),
+    subtotal: integer('subtotal').notNull(),
+    shipping: integer('shipping').notNull(),
+    total: integer('total').notNull(),
+    status: varchar('status', { length: 50 }).default('Pending').notNull(),
+    paymentStatus: varchar('payment_status', { length: 50 }).default('Pending').notNull(),
+    handoffType: varchar('handoff_type', { length: 50 }).default('whatsapp').notNull(),
+    razorpayOrderId: varchar('razorpay_order_id', { length: 100 }),
+    razorpayPaymentId: varchar('razorpay_payment_id', { length: 100 }),
+    carrier: varchar('carrier', { length: 100 }),
+    trackingNumber: varchar('tracking_number', { length: 100 }),
+    shippedAt: timestamp('shipped_at', { withTimezone: true }),
+    deliveredAt: timestamp('delivered_at', { withTimezone: true }),
+    adminNotes: jsonb('admin_notes').$type<Array<{ id: string; text: string; at: string; by: string; internal: boolean }>>().notNull().default([]),
+    events: jsonb('events').$type<Array<{ id: string; status: string; note: string; at: string; by: string }>>().notNull().default([]),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
+  },
+  (t) => [
+    index('orders_user_created_idx').on(t.userId, t.createdAt),
+    index('orders_lower_email_idx').on(sql`lower(${t.customerEmail})`),
+    index('orders_status_created_idx').on(t.status, t.createdAt),
+    check(
+      'orders_status_check',
+      sql.raw("status IN ('Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled')")
+    ),
+    check(
+      'orders_payment_status_check',
+      sql.raw("payment_status IN ('Pending', 'Paid', 'Failed', 'Refunded')")
+    ),
+    check(
+      'orders_handoff_type_check',
+      sql.raw("handoff_type IN ('whatsapp', 'email', 'razorpay', 'cod')")
+    )
+  ]
+)
 
 export const navigationItems = pgTable('navigation_items', {
   id: varchar('id', { length: 64 }).primaryKey(),
@@ -170,6 +200,52 @@ export const productVariants = pgTable(
   ]
 )
 
+export const orderItems = pgTable(
+  'order_items',
+  {
+    id: serial('id').primaryKey(),
+    orderId: integer('order_id')
+      .notNull()
+      .references(() => orders.id, { onDelete: 'cascade' }),
+    productId: integer('product_id').references(() => products.id, { onDelete: 'set null' }),
+    variantId: integer('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
+    sku: varchar('sku', { length: 100 }),
+    name: varchar('name', { length: 255 }).notNull(),
+    fit: varchar('fit', { length: 50 }),
+    size: varchar('size', { length: 50 }).notNull(),
+    color: varchar('color', { length: 50 }),
+    unitPrice: integer('unit_price').notNull(),
+    quantity: integer('quantity').notNull(),
+    imageKey: text('image_key'),
+    imageUrl: text('image_url')
+  },
+  (t) => [
+    index('order_items_order_idx').on(t.orderId),
+    index('order_items_variant_idx').on(t.variantId),
+    check('order_items_quantity_check', sql.raw('quantity > 0'))
+  ]
+)
+
+export const orderEvents = pgTable(
+  'order_events',
+  {
+    id: serial('id').primaryKey(),
+    orderId: integer('order_id')
+      .notNull()
+      .references(() => orders.id, { onDelete: 'cascade' }),
+    kind: varchar('kind', { length: 20 }).notNull(),
+    status: varchar('status', { length: 50 }),
+    note: text('note'),
+    isInternal: boolean('is_internal').notNull().default(false),
+    actor: varchar('actor', { length: 255 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+  },
+  (t) => [
+    index('order_events_order_idx').on(t.orderId, t.createdAt),
+    check('order_events_kind_check', sql.raw("kind IN ('status', 'note')"))
+  ]
+)
+
 export interface ShippingRate {
   baseWeightGrams: number
   baseCharge: number
@@ -207,8 +283,11 @@ export type DbProductVariant = typeof productVariants.$inferSelect
 export type DbNewProductVariant = typeof productVariants.$inferInsert
 export type DbOrder = typeof orders.$inferSelect
 export type DbNewOrder = typeof orders.$inferInsert
+export type DbOrderItem = typeof orderItems.$inferSelect
+export type DbNewOrderItem = typeof orderItems.$inferInsert
+export type DbOrderEvent = typeof orderEvents.$inferSelect
+export type DbNewOrderEvent = typeof orderEvents.$inferInsert
 export type DbUser = typeof users.$inferSelect
 export type DbNewUser = typeof users.$inferInsert
 export type DbNavigationItem = typeof navigationItems.$inferSelect
 export type DbNewNavigationItem = typeof navigationItems.$inferInsert
-

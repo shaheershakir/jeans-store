@@ -30,6 +30,8 @@ function formatProfile(user: DbUser): UserProfile {
     email: user.email,
     name: user.name,
     provider: user.provider,
+    googleSub: user.googleSub ?? undefined,
+    onboardingCompleted: Boolean(user.onboardingCompletedAt),
     createdAt: user.createdAt,
   };
 }
@@ -251,7 +253,13 @@ authRouter.post("/api/auth/google", async (req: Request, res: Response) => {
       return;
     }
 
-    let user = await userStore.findByEmail(googleUser.email);
+    let user = await userStore.findByGoogleSub(googleUser.sub);
+    if (!user) {
+      user = await userStore.findByEmail(googleUser.email);
+      if (user && !user.googleSub) {
+        user = await userStore.updateGoogleSub(user.id, googleUser.sub);
+      }
+    }
     let isNewUser = false;
 
     if (!user) {
@@ -260,6 +268,7 @@ authRouter.post("/api/auth/google", async (req: Request, res: Response) => {
         email: googleUser.email,
         name: googleUser.name || googleUser.email.split("@")[0],
         provider: "google",
+        googleSub: googleUser.sub,
       });
       isNewUser = true;
       logger.info(
@@ -292,3 +301,37 @@ authRouter.post("/api/auth/google", async (req: Request, res: Response) => {
     });
   }
 });
+
+// 7. Complete Onboarding (/api/auth/onboarding/complete)
+authRouter.post("/api/auth/onboarding/complete", async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Missing or malformed Authorization header" });
+    return;
+  }
+
+  const token = authHeader.slice(7).trim();
+  const claims = await verifyCloudIamToken(token);
+  if (!claims) {
+    res.status(401).json({ error: "Invalid or expired Cloud IAM token" });
+    return;
+  }
+
+  let user = await userStore.findByUid(claims.uid);
+  if (!user) {
+    user = await userStore.findByEmail(claims.email);
+  }
+
+  if (!user) {
+    res.status(404).json({ error: "User account not found" });
+    return;
+  }
+
+  const updatedUser = await userStore.completeOnboarding(user.id);
+  res.json({
+    success: true,
+    onboardingCompleted: true,
+    user: formatProfile(updatedUser || user)
+  });
+});
+

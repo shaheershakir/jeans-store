@@ -9,6 +9,7 @@ import { productStore } from '../store/productStore.js'
 import { calculateShipping, getShippingRates, getDeliveryEstimation } from '../services/shipping.js'
 import { verifyCloudIamToken } from '../services/cloudIam.js'
 import { trackServerEvent } from '../services/posthog.js'
+import { userStore } from '../store/userStore.js'
 import type { CalculatedOrder, CreateOrder } from '../schemas/order.js'
 
 export const orderRouter = Router()
@@ -230,9 +231,15 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
       res.status(400).json({ error: 'Payment amount or status could not be verified.' })
       return
     }
+    let userId: number | undefined
+    if (customer) {
+      const user = await userStore.findByEmail(customer.email)
+      if (user) userId = user.id
+    }
     const paymentNote = `Razorpay Payment ID: ${razorpay_payment_id} | Order ID: ${razorpay_order_id}`
     const finalOrder = await orderStore.create({
       ...calculatedOrder,
+      userId,
       status: 'paid',
       handoffType: 'razorpay',
       paymentMethod: 'razorpay',
@@ -300,9 +307,18 @@ orderRouter.post('/api/orders', async (req: Request, res: Response) => {
     return
   }
 
+  let userId: number | undefined
+  if (customer) {
+    const user = await userStore.findByEmail(customer.email)
+    if (user) userId = user.id
+  }
+
   try {
     const calculatedOrder = await calculateOrder(parsed.data)
-    const order = await orderStore.create(calculatedOrder)
+    const order = await orderStore.create({
+      ...calculatedOrder,
+      userId
+    })
 
     trackServerEvent(order.customerEmail || order.orderNumber, 'order_completed', {
       order_id: order.id || order.orderNumber,
@@ -339,7 +355,10 @@ orderRouter.get('/api/orders/mine', async (req: Request, res: Response) => {
   }
 
   try {
-    const orders = await orderStore.listByCustomerEmail(customer.email)
+    const user = await userStore.findByEmail(customer.email)
+    const orders = user
+      ? await orderStore.listByUserId(user.id, customer.email)
+      : await orderStore.listByCustomerEmail(customer.email)
     res.json({
       count: orders.length,
       orders: orders.map((order) => ({

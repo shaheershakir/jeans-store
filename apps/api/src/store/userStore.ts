@@ -1,5 +1,5 @@
 import crypto from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../db/index.js'
 import { users as usersTable, type DbUser } from '../db/schema.js'
 import { hashPassword } from '../services/cloudIam.js'
@@ -10,6 +10,8 @@ export interface CreateUserInput {
   password?: string
   uid?: string
   provider?: string
+  googleSub?: string
+  onboardingCompletedAt?: Date
 }
 
 class UserStore {
@@ -20,6 +22,8 @@ class UserStore {
     const uid = input.uid || `iam-user-${crypto.randomUUID()}`
     const passwordHash = input.password ? hashPassword(input.password) : null
     const provider = input.provider || 'cloud-iam'
+    const googleSub = input.googleSub ?? null
+    const onboardingCompletedAt = input.onboardingCompletedAt ?? null
 
     if (isDatabaseConfigured() && db) {
       const [row] = await db
@@ -29,7 +33,9 @@ class UserStore {
           email: cleanEmail,
           name: input.name.trim(),
           passwordHash,
-          provider
+          provider,
+          googleSub,
+          onboardingCompletedAt
         })
         .returning()
       return row
@@ -42,6 +48,8 @@ class UserStore {
       name: input.name.trim(),
       passwordHash,
       provider,
+      googleSub,
+      onboardingCompletedAt,
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -53,10 +61,13 @@ class UserStore {
   async findByEmail(email: string): Promise<DbUser | undefined> {
     const clean = email.trim().toLowerCase()
     if (isDatabaseConfigured() && db) {
-      const [row] = await db.select().from(usersTable).where(eq(usersTable.email, clean))
+      const [row] = await db
+        .select()
+        .from(usersTable)
+        .where(sql`lower(${usersTable.email}) = ${clean}`)
       return row
     }
-    return this.memoryUsers.find((u) => u.email === clean)
+    return this.memoryUsers.find((u) => u.email.toLowerCase() === clean)
   }
 
   async findByUid(uid: string): Promise<DbUser | undefined> {
@@ -73,6 +84,50 @@ class UserStore {
       return row
     }
     return this.memoryUsers.find((u) => u.id === id)
+  }
+
+  async findByGoogleSub(googleSub: string): Promise<DbUser | undefined> {
+    if (isDatabaseConfigured() && db) {
+      const [row] = await db.select().from(usersTable).where(eq(usersTable.googleSub, googleSub))
+      return row
+    }
+    return this.memoryUsers.find((u) => u.googleSub === googleSub)
+  }
+
+  async updateGoogleSub(id: number, googleSub: string): Promise<DbUser | undefined> {
+    const now = new Date()
+    if (isDatabaseConfigured() && db) {
+      const [row] = await db
+        .update(usersTable)
+        .set({ googleSub, updatedAt: now })
+        .where(eq(usersTable.id, id))
+        .returning()
+      return row
+    }
+    const user = this.memoryUsers.find((u) => u.id === id)
+    if (user) {
+      user.googleSub = googleSub
+      user.updatedAt = now
+    }
+    return user
+  }
+
+  async completeOnboarding(id: number): Promise<DbUser | undefined> {
+    const now = new Date()
+    if (isDatabaseConfigured() && db) {
+      const [row] = await db
+        .update(usersTable)
+        .set({ onboardingCompletedAt: now, updatedAt: now })
+        .where(eq(usersTable.id, id))
+        .returning()
+      return row
+    }
+    const user = this.memoryUsers.find((u) => u.id === id)
+    if (user) {
+      user.onboardingCompletedAt = now
+      user.updatedAt = now
+    }
+    return user
   }
 }
 

@@ -378,7 +378,107 @@ When ready to apply Phase 2 migrations to Neon:
 
 ---
 
-## 7. Future Normalization Roadmap
+## 7. Phase 3: Users & Orders Normalization Architecture & Ops
+
+### 7.1 Users Table Updates
+- **Columns Added**:
+  - `google_sub`: varchar(255) unique nullable column storing Google OAuth subject ID.
+  - `onboarding_completed_at`: `timestamp with time zone` nullable timestamp. Null indicates onboarding has not yet been completed.
+  - `created_at` / `updated_at`: Converted to `timestamp with time zone` (`timestamptz`).
+- **Indexes Added**:
+  - `users_lower_email_idx`: Unique index on `lower(email)` for case-insensitive email matching.
+  - `users_google_sub_unique`: Unique constraint on `google_sub`.
+- **API & Auth Wire-up**:
+  - `POST /api/auth/google`: Verifies Google credentials, matches existing users via `google_sub` or case-insensitive email, and records `google_sub`.
+  - `POST /api/auth/onboarding/complete`: Authenticated route marking onboarding complete (`onboarding_completed_at = NOW()`), returning `{ success: true, onboardingCompleted: true, user }`.
+  - `formatProfile(user)`: Exposes `onboardingCompleted: boolean` and `googleSub?: string` across all auth responses.
+
+### 7.2 Orders Table Additive Columns & Constraints
+- **Columns Added**:
+  - `user_id`: Integer foreign key referencing `users.id` (`ON DELETE SET NULL`), linking orders to customer accounts.
+  - `razorpay_order_id` & `razorpay_payment_id`: Dedicated varchar(100) columns replacing the previous text-formatting in `notes`.
+  - `shipped_at`, `delivered_at`, `created_at`, `updated_at`: Converted to `timestamptz`.
+- **Indexes Added**:
+  - `orders_user_created_idx`: Composite index on `(user_id, created_at DESC)`.
+  - `orders_lower_email_idx`: Index on `lower(customer_email)`.
+  - `orders_status_created_idx`: Composite index on `(status, created_at DESC)`.
+- **Check Constraints Added**:
+  - `orders_status_check`: `status IN ('Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled')`.
+  - `orders_payment_status_check`: `payment_status IN ('Pending', 'Paid', 'Failed', 'Refunded')`.
+  - `orders_handoff_type_check`: `handoff_type IN ('whatsapp', 'email', 'razorpay', 'cod')`.
+
+### 7.3 New Table: `order_items`
+- **Table Structure**:
+  - `id`: serial PRIMARY KEY
+  - `order_id`: integer NOT NULL, references `orders.id` (`ON DELETE CASCADE`)
+  - `product_id`: integer, references `products.id` (`ON DELETE SET NULL`)
+  - `variant_id`: integer, references `product_variants.id` (`ON DELETE SET NULL`)
+  - `sku`: varchar(100)
+  - `name`: varchar(255) NOT NULL
+  - `fit`: varchar(50)
+  - `size`: varchar(50) NOT NULL
+  - `color`: varchar(50)
+  - `unit_price`: integer NOT NULL (same unit as `price_num`, INR)
+  - `quantity`: integer NOT NULL, CHECK `quantity > 0`
+  - `image_key`: text snapshot storage key
+  - `image_url`: text external image URL snapshot fallback
+- **Indexes**: `order_items_order_idx` on `(order_id)`, `order_items_variant_idx` on `(variant_id)`.
+
+### 7.4 New Table: `order_events`
+- **Table Structure**:
+  - `id`: serial PRIMARY KEY
+  - `order_id`: integer NOT NULL, references `orders.id` (`ON DELETE CASCADE`)
+  - `kind`: varchar(20) NOT NULL, CHECK `kind IN ('status', 'note')`
+  - `status`: varchar(50) (populated for `kind = 'status'`)
+  - `note`: text (note or status description)
+  - `is_internal`: boolean NOT NULL DEFAULT false
+  - `actor`: varchar(255) (e.g. 'System', 'Admin')
+  - `created_at`: timestamptz NOT NULL DEFAULT now()
+- **Indexes**: `order_events_order_idx` on `(order_id, created_at)`.
+- **Benefit**: Appending order events or admin notes becomes an atomic single SQL `INSERT`, eliminating read-modify-write race conditions on JSONB columns.
+
+### 7.5 Dual-Write and Single-Query Hydration
+- **Dual-Write**:
+  - At order placement, `OrderStore.create()` writes to `ordersTable` (including JSONB `items`, `adminNotes`, `events`, and `userId`), `orderItemsTable`, and `orderEventsTable`.
+  - On admin status updates (`updateAdmin`) and note attachments (`addAdminNote`), updates write to both legacy JSONB arrays and `orderEventsTable`.
+- **Read Path**:
+  - Orders query their items and events from `orderItemsTable` and `orderEventsTable`.
+  - If a row is unbackfilled (empty items/events tables), it falls back seamlessly to `row.items`, `row.events`, and `row.adminNotes`.
+  - When fetching order lists (`list()`, `listByCustomerEmail()`, `listByUserId()`), related items and events are retrieved via single batch queries using `inArray(orderId, orderIds)` to eliminate N+1 overhead.
+- **Account Linking**:
+  - Signed-in customer checkouts automatically attach `userId`.
+  - `GET /api/orders/mine` queries orders by `user_id` with email matching fallback for guest orders.
+
+### 7.6 Operations Runbook for Phase 3 Migrations & Backfill (Neon)
+When ready to apply Phase 3 migrations to Neon:
+1. Apply migration `0004_users_orders.sql`:
+   ```bash
+   psql "$DATABASE_URL" -f apps/api/drizzle/0004_users_orders.sql
+   ```
+2. Run order normalization backfill in **DRY-RUN** mode to inspect planned changes:
+   ```bash
+   npm --workspace=apps/api run db:backfill-orders
+   ```
+3. Run order normalization backfill with **`--apply`** to execute:
+   ```bash
+   npm --workspace=apps/api run db:backfill-orders -- --apply
+   ```
+4. Verify backfill idempotency by re-running:
+   ```bash
+   npm --workspace=apps/api run db:backfill-orders -- --apply
+   # Expected: 0 items inserted, 0 events inserted, 0 user IDs linked (all skipped)
+   ```
+5. Verification queries:
+   ```sql
+   SELECT count(*) FROM order_items;
+   SELECT count(*) FROM order_events;
+   SELECT count(*) FROM orders WHERE user_id IS NOT NULL;
+   SELECT status, count(*) FROM order_events WHERE kind = 'status' GROUP BY status;
+   ```
+
+---
+
+## 8. Future Normalization Roadmap
 
 1. **`admin_state` Normalization**:
    Extract coupons, inventory movements, and audit log entries out of the `admin_state` JSON blob into dedicated tables (`coupons`, `coupon_redemptions`, `inventory_movements`, `audit_logs`).
@@ -386,4 +486,5 @@ When ready to apply Phase 2 migrations to Neon:
    Add a `user_addresses` table linked to `users.id` with default shipping/billing flags.
 3. **Reviews & Ratings**:
    Normalize customer product reviews into a `product_reviews` table with moderation states.
+
 

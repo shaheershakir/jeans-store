@@ -29,6 +29,13 @@
       "when": 1792404100000,
       "tag": "0003_catalog_normalization",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792404200000,
+      "tag": "0004_users_orders",
+      "breakpoints": true
     }
   ]
 }

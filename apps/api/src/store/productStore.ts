@@ -479,11 +479,9 @@ export class ProductStore {
           .where(ilike(productVariantsTable.sku, cleanSku))
         const variantProductIds = matchingVariants.map((v) => v.productId)
         if (variantProductIds.length > 0) {
-          conditions.push(
-            or(ilike(productsTable.sku, cleanSku), inArray(productsTable.id, variantProductIds))!
-          )
+          conditions.push(inArray(productsTable.id, variantProductIds))
         } else {
-          conditions.push(ilike(productsTable.sku, cleanSku))
+          conditions.push(sql`1=0`)
         }
       }
 

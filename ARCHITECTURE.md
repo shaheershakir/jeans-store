@@ -1,4 +1,4 @@
-﻿# Monorepo Architecture
+# Monorepo Architecture
 
 This document describes the workspace architecture of TEESGARAGE / TEESGARAGE, its applications, shared packages, and build orchestration.
 
@@ -57,13 +57,18 @@ jeans-store/
 ## Shared Packages (`packages/`)
 
 ### 1. Database (`@jeans-store/db`)
-- Manages PostgreSQL tables via Drizzle ORM:
-  - `products`: Apparel products, fits, prices, product metadata, and media.
-  - `orders`: Customer checkout orders and shipping records.
-  - `users`: Customer accounts.
+- Manages PostgreSQL tables via Drizzle ORM (Schema V2):
+  - `categories`: Normalized categories with hierarchical parent-child relationships and display ordering.
+  - `products`: Apparel products, categories, slugs, statuses, descriptive spec attributes JSON, and legacy media columns.
+  - `product_images`: Key-based image storage (S3/GCS compatible) with position ordering and external URL fallbacks.
+  - `product_variants`: Size × color SKU matrix with inventory tracking and non-negative stock constraints.
+  - `users`: Customer accounts with Google OAuth subject ID (`google_sub`) and onboarding completion tracking.
+  - `orders`: Customer checkout orders linked to `users.id`, with Razorpay transaction IDs and check constraints.
+  - `order_items`: Normalized line items with image snapshot keys.
+  - `order_events`: Atomic append-only order events and admin notes timeline.
   - `shipping_settings`: Paid delivery rates by Kerala/rest of India and parcel weight.
-  - `product_variants`: Size × color SKU matrix with inventory tracking.
   - `navigation_items`: Dynamic store navigation items.
+  - `admin_state`: Operational state storage for coupons and audit tracking.
 - Exports typed client `db`, connection helpers, and migrations in `drizzle/`.
 
 ### 2. Shared Types & Constants (`@jeans-store/shared`)

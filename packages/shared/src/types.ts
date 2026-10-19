@@ -101,6 +101,7 @@ export interface OrderItem {
 
 export interface Order {
   id: number
+  userId?: number | null
   orderNumber: string
   store: string
   customerName: string
@@ -126,6 +127,7 @@ export interface Order {
 }
 
 export interface CreateOrderInput {
+  userId?: number | null
   orderNumber: string
   store?: string
   customerName: string
@@ -156,6 +158,8 @@ export interface UserProfile {
   email: string
   name: string
   provider: string
+  googleSub?: string | null
+  onboardingCompleted?: boolean
   createdAt: Date | string
 }
 
