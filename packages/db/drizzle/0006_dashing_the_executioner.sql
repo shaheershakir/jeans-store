@@ -1,0 +1,1 @@
+ALTER TABLE "product_reviews" DROP CONSTRAINT IF EXISTS "product_reviews_helpful_check";

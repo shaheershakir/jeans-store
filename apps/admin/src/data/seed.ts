@@ -1246,4 +1246,4 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     title: 'All Products',
     showFilters: true
   }
-}
+}

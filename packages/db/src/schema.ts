@@ -650,8 +650,7 @@ export const productReviews = pgTable(
     check(
       'product_reviews_fit_verdict_check',
       sql.raw("fit_verdict IS NULL OR fit_verdict IN ('True to Size', 'Slightly Snug', 'Runs Relaxed')")
-    ),
-    check('product_reviews_helpful_check', sql.raw('helpful_count >= 0'))
+    )
   ]
 )
 

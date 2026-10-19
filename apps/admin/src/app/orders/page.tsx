@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { Eye, Search, Plus, ShoppingCart, Filter } from 'lucide-react'
+import { Eye, Search, Printer, CheckSquare } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
 import { PageContent, PageHeader } from '@/components/ui/page-header'
 import { Button, Card, Input, Select } from '@/components/ui/primitives'
@@ -25,10 +25,14 @@ const STATUS_TABS: { label: string; value: string }[] = [
 export default function OrdersPage() {
   const orders = useAdminStore((s) => s.data.orders)
   const customers = useAdminStore((s) => s.data.customers)
+  const settings = useAdminStore((s) => s.data.settings)
 
   const [activeTab, setActiveTab] = React.useState('all')
   const [query, setQuery] = React.useState('')
   const [paymentFilter, setPaymentFilter] = React.useState('all')
+  const [regionFilter, setRegionFilter] = React.useState('all')
+  const [selectedOrderIds, setSelectedOrderIds] = React.useState<number[]>([])
+  const [printOrders, setPrintOrders] = React.useState<typeof orders>([])
   const [loading, setLoading] = React.useState(true)
   const [loadError, setLoadError] = React.useState<string | null>(null)
 
@@ -54,10 +58,37 @@ export default function OrdersPage() {
 
       const matchesTab = activeTab === 'all' || order.fulfillmentStatus === activeTab
       const matchesPayment = paymentFilter === 'all' || order.paymentStatus === paymentFilter
+      const isKerala = order.shippingAddress?.state?.trim().toLowerCase() === 'kerala'
+      const matchesRegion = regionFilter === 'all' || (regionFilter === 'kerala' ? isKerala : !isKerala)
 
-      return matchesQuery && matchesTab && matchesPayment
+      return matchesQuery && matchesTab && matchesPayment && matchesRegion
     })
-  }, [orders, customers, query, activeTab, paymentFilter])
+  }, [orders, customers, query, activeTab, paymentFilter, regionFilter])
+
+  React.useEffect(() => {
+    if (!printOrders.length) return
+    const timer = window.setTimeout(() => window.print(), 100)
+    const reset = () => setPrintOrders([])
+    window.addEventListener('afterprint', reset)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('afterprint', reset)
+    }
+  }, [printOrders])
+
+  const toggleSelected = (orderId: number) => {
+    setSelectedOrderIds((current) => current.includes(orderId)
+      ? current.filter((id) => id !== orderId)
+      : [...current, orderId])
+  }
+
+  const visibleSelected = filteredOrders.filter((order) => selectedOrderIds.includes(order.id))
+  const allVisibleSelected = filteredOrders.length > 0 && visibleSelected.length === filteredOrders.length
+  const toggleVisible = () => {
+    setSelectedOrderIds((current) => allVisibleSelected
+      ? current.filter((id) => !filteredOrders.some((order) => order.id === id))
+      : [...new Set([...current, ...filteredOrders.map((order) => order.id)])])
+  }
 
   return (
     <div>
@@ -67,6 +98,35 @@ export default function OrdersPage() {
       />
 
       <PageContent>
+        {printOrders.length > 0 && (
+          <div className="print-sheet" aria-hidden="true">
+            {printOrders.map((order) => {
+              const recipient = customers.find((customer) => customer.id === order.customerId)
+              const address = order.shippingAddress
+              return (
+                <article className="address-slip" key={order.id}>
+                  <div className="slip-order">Order: {order.number}</div>
+                  <div className="slip-columns">
+                    <section>
+                      <h2>From</h2>
+                      <strong>{settings.storeName || 'TEESGARAGE'}</strong>
+                      {settings.address && <p>{settings.address}</p>}
+                      {settings.supportPhone && <p>Phone: {settings.supportPhone}</p>}
+                    </section>
+                    <section>
+                      <h2>To</h2>
+                      <strong>{recipient?.name || 'Customer'}</strong>
+                      {[address?.line1, address?.line2, address?.city, address?.state, address?.pincode]
+                        .filter(Boolean).map((line, index) => <p key={`${line}-${index}`}>{line}</p>)}
+                      {address?.phone && <p>Phone: {address.phone}</p>}
+                    </section>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        )}
+
         {/* Filter Tabs */}
         <div className="flex border-b border-line overflow-x-auto scrollbar-thin">
           {STATUS_TABS.map((tab) => {
@@ -122,6 +182,21 @@ export default function OrdersPage() {
                 <option value="Refunded">Refunded</option>
               </Select>
             </div>
+            <div className="w-48">
+              <Select aria-label="Filter by delivery region" value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)}>
+                <option value="all">All delivery regions</option>
+                <option value="kerala">Inside Kerala</option>
+                <option value="outside">Outside Kerala</option>
+              </Select>
+            </div>
+            <div className="flex gap-2 sm:ml-auto">
+              <Button variant="secondary" size="sm" disabled={filteredOrders.length === 0 || loading} onClick={() => setPrintOrders(filteredOrders)}>
+                <Printer className="h-3.5 w-3.5" /> Print visible ({filteredOrders.length})
+              </Button>
+              <Button variant="primary" size="sm" disabled={visibleSelected.length === 0 || loading} onClick={() => setPrintOrders(visibleSelected)}>
+                <CheckSquare className="h-3.5 w-3.5" /> Print selected ({visibleSelected.length})
+              </Button>
+            </div>
           </div>
         </Card>
 
@@ -131,6 +206,7 @@ export default function OrdersPage() {
             <table className="w-full text-left text-xs">
               <thead className="border-b border-divider bg-surface-subtle text-ink-3">
                 <tr>
+                  <th className="px-4 py-3"><input aria-label="Select all visible orders" type="checkbox" checked={allVisibleSelected} onChange={toggleVisible} /></th>
                   <th className="px-4 py-3 font-semibold">Order Number</th>
                   <th className="px-4 py-3 font-semibold">Customer</th>
                   <th className="px-4 py-3 font-semibold">Date</th>
@@ -142,12 +218,12 @@ export default function OrdersPage() {
               </thead>
               <tbody className="divide-y divide-divider">
                 {loadError ? (
-                  <tr><td colSpan={7} className="py-8 text-center text-destructive">{loadError}</td></tr>
+                  <tr><td colSpan={8} className="py-8 text-center text-destructive">{loadError}</td></tr>
                 ) : loading ? (
-                  <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Loading orders…</td></tr>
+                  <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">Loading orders…</td></tr>
                 ) : filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-ink-3">
+                    <td colSpan={8} className="py-8 text-center text-ink-3">
                       {orders.length === 0 ? 'No customer orders yet.' : 'No orders match these filters.'}
                     </td>
                   </tr>
@@ -157,6 +233,7 @@ export default function OrdersPage() {
 
                     return (
                       <tr key={order.id} className="hover:bg-surface-subtle transition-colors">
+                        <td className="px-4 py-3"><input aria-label={`Select ${order.number}`} type="checkbox" checked={selectedOrderIds.includes(order.id)} onChange={() => toggleSelected(order.id)} /></td>
                         <td className="px-4 py-3 font-semibold text-ink">
                           <Link href={`/orders/${order.id}`} className="hover:text-primary hover:underline">
                             {order.number}
@@ -194,11 +271,14 @@ export default function OrdersPage() {
                           {formatINR(order.total)}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <Link href={`/orders/${order.id}`}>
-                            <Button variant="secondary" size="sm">
-                              <Eye className="h-3.5 w-3.5" /> View Order
+                          <div className="flex justify-end gap-2">
+                            <Button variant="secondary" size="sm" onClick={() => setPrintOrders([order])}>
+                              <Printer className="h-3.5 w-3.5" /> Print
                             </Button>
-                          </Link>
+                            <Link href={`/orders/${order.id}`}>
+                              <Button variant="secondary" size="sm"><Eye className="h-3.5 w-3.5" /> View Order</Button>
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     )
@@ -209,6 +289,37 @@ export default function OrdersPage() {
           </div>
         </Card>
       </PageContent>
+      <style jsx global>{`
+        .print-sheet { display: none; }
+        @media print {
+          @page { size: A4; margin: 12mm; }
+          body * { visibility: hidden !important; }
+          .print-sheet, .print-sheet * { visibility: visible !important; }
+          .print-sheet {
+            display: block !important;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            color: #111;
+            font-family: Arial, sans-serif;
+          }
+          .address-slip {
+            box-sizing: border-box;
+            height: 128mm;
+            padding: 10mm;
+            border: 1px solid #222;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: 8mm;
+          }
+          .slip-order { font-size: 11pt; margin-bottom: 12mm; }
+          .slip-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12mm; }
+          .slip-columns h2 { font-size: 18pt; margin: 0 0 7mm; text-transform: uppercase; }
+          .slip-columns strong { font-size: 12pt; }
+          .slip-columns p { font-size: 11pt; line-height: 1.45; margin: 2mm 0 0; overflow-wrap: anywhere; }
+          .address-slip:nth-child(2n) { break-after: page; page-break-after: always; }
+        }
+      `}</style>
     </div>
   )
 }
