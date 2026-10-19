@@ -85,19 +85,20 @@ describe('Phase 1: Key-Based Image Storage & Product Images Roundtrip', () => {
 
   test('ProductStore create -> update -> read roundtrip with image dual-write and mapper fallback', async () => {
     const store = new ProductStore([])
+    const runId = Date.now()
 
     const created = await store.create({
       store: 'teesgarage',
       category: 'printed-tees',
-      name: 'Key Image Graphic Tee',
+      name: `Key Image Graphic Tee ${runId}`,
       fit: 'Regular',
       price: '₹999',
       priceNum: 999,
-      img: 'https://storage.googleapis.com/test-bucket/products/primary.webp',
-      img2: 'https://storage.googleapis.com/test-bucket/products/hover.webp',
+      img: `https://storage.googleapis.com/test-bucket/products/primary-${runId}.webp`,
+      img2: `https://storage.googleapis.com/test-bucket/products/hover-${runId}.webp`,
       images: [
-        'https://storage.googleapis.com/test-bucket/products/primary.webp',
-        'https://storage.googleapis.com/test-bucket/products/hover.webp',
+        `https://storage.googleapis.com/test-bucket/products/primary-${runId}.webp`,
+        `https://storage.googleapis.com/test-bucket/products/hover-${runId}.webp`,
         'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800'
       ],
       desc: 'Tested with storage keys',
@@ -105,22 +106,22 @@ describe('Phase 1: Key-Based Image Storage & Product Images Roundtrip', () => {
     })
 
     assert.ok(created.id !== undefined)
-    assert.equal(created.name, 'Key Image Graphic Tee')
-    assert.equal(created.img, 'https://storage.googleapis.com/test-bucket/products/primary.webp')
-    assert.equal(created.img2, 'https://storage.googleapis.com/test-bucket/products/hover.webp')
+    assert.equal(created.name, `Key Image Graphic Tee ${runId}`)
+    assert.equal(created.img, `https://storage.googleapis.com/test-bucket/products/primary-${runId}.webp`)
+    assert.equal(created.img2, `https://storage.googleapis.com/test-bucket/products/hover-${runId}.webp`)
     assert.equal(created.images.length, 3)
 
     // Update images
     const updated = await store.update(created.id, {
-      img: 'https://storage.googleapis.com/test-bucket/products/new-single.webp',
-      img2: 'https://storage.googleapis.com/test-bucket/products/new-single.webp',
-      images: ['https://storage.googleapis.com/test-bucket/products/new-single.webp']
+      img: `https://storage.googleapis.com/test-bucket/products/new-single-${runId}.webp`,
+      img2: `https://storage.googleapis.com/test-bucket/products/new-single-${runId}.webp`,
+      images: [`https://storage.googleapis.com/test-bucket/products/new-single-${runId}.webp`]
     })
 
     assert.ok(updated)
-    assert.equal(updated.img, 'https://storage.googleapis.com/test-bucket/products/new-single.webp')
+    assert.equal(updated.img, `https://storage.googleapis.com/test-bucket/products/new-single-${runId}.webp`)
     // img2 falls back to img when only one unique image exists
-    assert.equal(updated.img2, 'https://storage.googleapis.com/test-bucket/products/new-single.webp')
+    assert.equal(updated.img2, `https://storage.googleapis.com/test-bucket/products/new-single-${runId}.webp`)
     assert.equal(updated.images.length, 1)
 
     // Verify reading by ID preserves the resolved images

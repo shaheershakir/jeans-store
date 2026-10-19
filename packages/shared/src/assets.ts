@@ -9,7 +9,11 @@ export function getAssetBaseUrl(): string {
   if (explicit && explicit.trim()) {
     return explicit.trim().replace(/\/+$/, '')
   }
-  const bucket = env.GCS_PRODUCT_IMAGES_BUCKET || env.STORAGE_BUCKET
+  const bucket =
+    env.GCS_PRODUCT_IMAGES_BUCKET ||
+    env.STORAGE_BUCKET ||
+    env.NEXT_PUBLIC_GCS_PRODUCT_IMAGES_BUCKET ||
+    env.NEXT_PUBLIC_GCS_BUCKET
   if (bucket && bucket.trim()) {
     return `https://storage.googleapis.com/${bucket.trim()}`
   }
@@ -60,7 +64,11 @@ export function keyFromUrl(url: string | null | undefined, customBaseUrl?: strin
   }
 
   const env: Record<string, string | undefined> = typeof process !== 'undefined' && process.env ? process.env : {}
-  const bucket = env.GCS_PRODUCT_IMAGES_BUCKET || env.STORAGE_BUCKET
+  const bucket =
+    env.GCS_PRODUCT_IMAGES_BUCKET ||
+    env.STORAGE_BUCKET ||
+    env.NEXT_PUBLIC_GCS_PRODUCT_IMAGES_BUCKET ||
+    env.NEXT_PUBLIC_GCS_BUCKET
   if (bucket) {
     const gcsPrefix = `https://storage.googleapis.com/${bucket.trim()}`
     if (!bases.includes(gcsPrefix)) bases.push(gcsPrefix)

@@ -22,9 +22,16 @@ export class GcsStorageDriver implements ObjectStorage {
   private storage: GcsStorage
   private bucketName: string
 
-  constructor(bucketName: string, projectId?: string) {
+  constructor(
+    bucketName: string,
+    projectId?: string,
+    options?: { keyFilename?: string; credentials?: Record<string, unknown> }
+  ) {
     this.bucketName = bucketName
-    this.storage = new GcsStorage({ projectId })
+    this.storage = new GcsStorage({
+      ...(projectId ? { projectId } : {}),
+      ...options
+    })
   }
 
   async put(key: string, bytes: Buffer, contentType: string): Promise<void> {
@@ -225,10 +232,35 @@ export function getStorage(): ObjectStorage {
   const provider = getStorageProvider()
   switch (provider) {
     case 'gcs': {
-      const bucket = process.env.GCS_PRODUCT_IMAGES_BUCKET?.trim() || process.env.STORAGE_BUCKET?.trim()
-      if (!bucket) throw new Error('GCS bucket name is missing (GCS_PRODUCT_IMAGES_BUCKET).')
-      activeStorage = new GcsStorageDriver(bucket, process.env.GCP_PROJECT_ID || process.env.GOOGLE_PROJECT_ID)
-      logger.info({ provider: 'gcs', bucket }, 'Initialized GCS storage driver')
+      const bucket =
+        process.env.GCS_PRODUCT_IMAGES_BUCKET?.trim() ||
+        process.env.STORAGE_BUCKET?.trim() ||
+        'clothing-store-bucket'
+      const projectId =
+        process.env.GCP_PROJECT_ID?.trim() ||
+        process.env.GOOGLE_PROJECT_ID?.trim() ||
+        'clothing-store-511300'
+
+      let credentials: Record<string, unknown> | undefined = undefined
+      const saKey =
+        process.env.GCP_SERVICE_ACCOUNT_KEY ||
+        process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON ||
+        process.env.GCS_CREDENTIALS
+      if (saKey) {
+        try {
+          const trimmed = saKey.trim()
+          const jsonStr = trimmed.startsWith('{') ? trimmed : Buffer.from(trimmed, 'base64').toString('utf-8')
+          credentials = JSON.parse(jsonStr) as Record<string, unknown>
+        } catch (e) {
+          logger.warn({ err: e }, 'Failed to parse GCP service account credentials from environment')
+        }
+      }
+
+      activeStorage = new GcsStorageDriver(bucket, projectId, {
+        ...(process.env.GOOGLE_APPLICATION_CREDENTIALS ? { keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS } : {}),
+        ...(credentials ? { credentials } : {})
+      })
+      logger.info({ provider: 'gcs', bucket, projectId }, 'Initialized GCS storage driver')
       break
     }
     case 's3': {
