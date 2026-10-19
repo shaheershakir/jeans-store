@@ -43,7 +43,7 @@ function toOrder(
     sku: item.sku ?? undefined,
     quantity: item.quantity,
     weightGrams: item.weightGrams,
-    img: item.imageKey ? assetUrl(item.imageKey) : (item.imageUrl ?? undefined)
+    img: item.imageKey ? assetUrl(item.imageKey) : ((item as any).imageUrl ?? undefined)
   }))
 
   const events = eventRows
@@ -87,7 +87,7 @@ function toOrder(
     taxTotal: row.taxTotal,
     total: row.total,
     weightGrams: row.weightGrams,
-    couponCode: row.couponCode ?? undefined,
+    couponCode: (row as any).couponCode ?? undefined,
     status: row.status,
     paymentStatus: row.paymentStatus as Order['paymentStatus'],
     handoffType: row.handoffType as Order['handoffType'],
@@ -372,7 +372,6 @@ class OrderStore {
             taxTotal: (input as { taxTotal?: number }).taxTotal ?? 0,
             total: input.total,
             weightGrams: orderWeight,
-            couponCode: (input as { couponCode?: string }).couponCode ?? null,
             status,
             paymentStatus,
             handoffType: input.handoffType
@@ -383,7 +382,6 @@ class OrderStore {
 
         for (const item of input.items) {
           const imageKey = item.img ? keyFromUrl(item.img) : null
-          const imageUrl = !imageKey && item.img && item.img.startsWith('http') ? item.img : null
           await db.insert(orderItemsTable).values({
             orderId: row.id,
             productId: item.id || null,
@@ -395,8 +393,7 @@ class OrderStore {
             quantity: item.quantity,
             lineTotal: item.priceNum * item.quantity,
             weightGrams: item.weightGrams ?? 0,
-            imageKey,
-            imageUrl
+            imageKey
           })
         }
 
@@ -419,7 +416,6 @@ class OrderStore {
           gateway: input.handoffType === 'razorpay' ? 'razorpay' : 'manual',
           gatewayOrderId: input.razorpayOrderId ?? null,
           gatewayPaymentId: input.razorpayPaymentId ?? input.paymentId ?? null,
-          settled: paymentStatus === 'Paid',
           settledAt: paymentStatus === 'Paid' ? createdAt : null
         })
 
@@ -504,7 +500,6 @@ class OrderStore {
             .update(paymentsTable)
             .set({
               status: patch.paymentStatus,
-              settled: patch.paymentStatus === 'Paid',
               settledAt: patch.paymentStatus === 'Paid' ? latestPayment.settledAt ?? now : null
             })
             .where(eq(paymentsTable.id, latestPayment.id))
@@ -515,7 +510,6 @@ class OrderStore {
             amount: current.total ?? 0,
             status: patch.paymentStatus,
             gateway: 'manual',
-            settled: patch.paymentStatus === 'Paid',
             settledAt: patch.paymentStatus === 'Paid' ? now : null
           })
         }

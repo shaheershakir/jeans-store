@@ -300,14 +300,12 @@ export const coupons = pgTable(
     usageLimit: integer('usage_limit'),
     perCustomerLimit: integer('per_customer_limit').default(1).notNull(),
     isActive: boolean('is_active').default(true).notNull(),
-    timesUsed: integer('times_used').default(0).notNull(),
     ...timestamps
   },
   (t) => [
     uniqueIndex('coupons_code_lower_idx').on(sql`lower(${t.code})`),
     check('coupons_type_check', sql.raw("type IN ('percentage', 'fixed')")),
-    check('coupons_value_check', sql.raw('value > 0')),
-    check('coupons_usage_check', sql.raw('times_used >= 0'))
+    check('coupons_value_check', sql.raw('value > 0'))
   ]
 )
 
@@ -408,7 +406,6 @@ export const orders = pgTable(
     currency: varchar('currency', { length: 3 }).default('INR').notNull(),
     weightGrams: integer('weight_grams').default(0).notNull(),
     couponId: integer('coupon_id').references(() => coupons.id, { onDelete: 'set null' }),
-    couponCode: varchar('coupon_code', { length: 60 }),
     ...timestamps
   },
   (t) => [
@@ -449,7 +446,6 @@ export const orderItems = pgTable(
     lineTotal: integer('line_total').notNull(),
     weightGrams: integer('weight_grams').default(0).notNull(),
     imageKey: text('image_key'),
-    imageUrl: text('image_url'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
   },
   (t) => [
@@ -496,7 +492,6 @@ export const payments = pgTable(
     gateway: varchar('gateway', { length: 40 }).default('razorpay').notNull(),
     gatewayOrderId: varchar('gateway_order_id', { length: 100 }),
     gatewayPaymentId: varchar('gateway_payment_id', { length: 100 }).unique(),
-    settled: boolean('settled').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     settledAt: timestamp('settled_at', { withTimezone: true })
   },

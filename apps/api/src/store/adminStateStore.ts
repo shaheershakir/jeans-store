@@ -206,7 +206,7 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
       productIds: productIdsByCoupon.get(row.id) ?? [],
       categoryIds: categoryIdsByCoupon.get(row.id) ?? [],
       isActive: row.isActive,
-      timesUsed: row.timesUsed
+      timesUsed: (row as any).timesUsed ?? 0
     })),
     promotions: promotionRows.map((row) => ({
       id: row.id,
@@ -424,8 +424,7 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
     endsAt: dateOrNull(coupon.endsAt),
     usageLimit: coupon.usageLimit === null || coupon.usageLimit === undefined ? null : numberOrZero(coupon.usageLimit),
     perCustomerLimit: numberOrZero(coupon.perCustomerLimit) || 1,
-    isActive: coupon.isActive !== false,
-    timesUsed: numberOrZero(coupon.timesUsed)
+    isActive: coupon.isActive !== false
   }))
   if (couponValues.length > 0) {
     await db.insert(coupons).values(couponValues)
