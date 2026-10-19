@@ -6,7 +6,7 @@ import {
   productVariants,
   roles,
   storeSettings
-} from './schema.js'
+} from '@jeans-store/db'
 import { PRODUCTS } from '../data/products.js'
 import { ProductStore } from '../store/productStore.js'
 import { DEFAULT_NAV_ITEMS, navigationStore } from '../store/navStore.js'

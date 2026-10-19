@@ -1,6 +1,6 @@
 import { asc, eq } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../db/index.js'
-import { navigationItems as navTable, type DbNavigationItem } from '../db/schema.js'
+import { navigationItems as navTable, type DbNavigationItem } from '@jeans-store/db'
 import type { NavigationItem, NavItemType } from '../schemas/navigation.js'
 
 export const DEFAULT_NAV_ITEMS: NavigationItem[] = [

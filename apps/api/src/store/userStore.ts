@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import { eq, sql } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../db/index.js'
-import { users as usersTable, type DbUser } from '../db/schema.js'
+import { users as usersTable, type DbUser } from '@jeans-store/db'
 import { hashPassword } from '../services/cloudIam.js'
 
 export interface CreateUserInput {

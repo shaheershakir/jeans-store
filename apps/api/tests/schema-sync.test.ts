@@ -3,45 +3,80 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  products,
+  productVariants,
+  categories,
+  collections,
+  orders,
+  orderItems,
+  orderEvents,
+  coupons,
+  customers,
+  storeSettings,
+  roles,
+  productReviews,
+  inventoryMovements,
+  auditLog,
+  notifications,
+  shipments,
+  returnRequests,
+  refunds
+} from '@jeans-store/db'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '../../..')
 
-test('Schema and migration parity between packages/db and apps/api', async (t) => {
-  await t.test('packages/db/src/schema.ts and apps/api/src/db/schema.ts must be identical', () => {
+test('Single source of truth in @jeans-store/db (Phase 5)', async (t) => {
+  await t.test('packages/db is the sole canonical source of schema and migrations', () => {
     const pkgSchemaPath = path.join(rootDir, 'packages/db/src/schema.ts')
     const apiSchemaPath = path.join(rootDir, 'apps/api/src/db/schema.ts')
+    const apiDrizzlePath = path.join(rootDir, 'apps/api/drizzle')
 
-    assert.ok(fs.existsSync(pkgSchemaPath), 'packages/db/src/schema.ts exists')
-    assert.ok(fs.existsSync(apiSchemaPath), 'apps/api/src/db/schema.ts exists')
-
-    const pkgSchema = fs.readFileSync(pkgSchemaPath, 'utf8').replace(/\r\n/g, '\n').trim()
-    const apiSchema = fs.readFileSync(apiSchemaPath, 'utf8').replace(/\r\n/g, '\n').trim()
-
-    assert.equal(apiSchema, pkgSchema, 'apps/api/src/db/schema.ts must match packages/db/src/schema.ts')
+    assert.ok(fs.existsSync(pkgSchemaPath), 'packages/db/src/schema.ts must exist as canonical schema')
+    assert.ok(!fs.existsSync(apiSchemaPath), 'apps/api/src/db/schema.ts must be removed to avoid drift')
+    assert.ok(!fs.existsSync(apiDrizzlePath), 'apps/api/drizzle must be removed to consolidate migrations')
   })
 
-  await t.test('drizzle migrations folders must have parity', () => {
+  await t.test('packages/db/drizzle contains complete canonical migrations', () => {
     const pkgDrizzle = path.join(rootDir, 'packages/db/drizzle')
-    const apiDrizzle = path.join(rootDir, 'apps/api/drizzle')
-
     assert.ok(fs.existsSync(pkgDrizzle), 'packages/db/drizzle exists')
-    assert.ok(fs.existsSync(apiDrizzle), 'apps/api/drizzle exists')
 
-    const pkgSqlFiles = fs.readdirSync(pkgDrizzle).filter((f) => f.endsWith('.sql')).sort()
-    const apiSqlFiles = fs.readdirSync(apiDrizzle).filter((f) => f.endsWith('.sql')).sort()
+    const expectedMigrations = [
+      '0000_baseline.sql',
+      '0001_slim_products.sql',
+      '0002_drop_unused.sql',
+      '0003_drop_redundant.sql'
+    ]
 
-    assert.deepEqual(apiSqlFiles, pkgSqlFiles, 'apps/api/drizzle must have the same SQL migration files as packages/db/drizzle')
-
-    for (const sqlFile of pkgSqlFiles) {
-      const pkgContent = fs.readFileSync(path.join(pkgDrizzle, sqlFile), 'utf8').replace(/\r\n/g, '\n').trim()
-      const apiContent = fs.readFileSync(path.join(apiDrizzle, sqlFile), 'utf8').replace(/\r\n/g, '\n').trim()
-      assert.equal(apiContent, pkgContent, `Migration ${sqlFile} content must be identical`)
+    const sqlFiles = fs.readdirSync(pkgDrizzle).filter((f) => f.endsWith('.sql'))
+    for (const expected of expectedMigrations) {
+      assert.ok(sqlFiles.includes(expected), `Migration ${expected} must exist in packages/db/drizzle`)
     }
 
-    const pkgJournal = fs.readFileSync(path.join(pkgDrizzle, 'meta/_journal.json'), 'utf8').replace(/\r\n/g, '\n').trim()
-    const apiJournal = fs.readFileSync(path.join(apiDrizzle, 'meta/_journal.json'), 'utf8').replace(/\r\n/g, '\n').trim()
-    assert.equal(apiJournal, pkgJournal, 'Migration journals must be identical')
+    const journalPath = path.join(pkgDrizzle, 'meta/_journal.json')
+    assert.ok(fs.existsSync(journalPath), 'meta/_journal.json must exist in packages/db/drizzle')
+  })
+
+  await t.test('@jeans-store/db exports all operational and catalog entities to apps/api', () => {
+    assert.ok(products, 'products table exported')
+    assert.ok(productVariants, 'productVariants table exported')
+    assert.ok(categories, 'categories table exported')
+    assert.ok(collections, 'collections table exported')
+    assert.ok(orders, 'orders table exported')
+    assert.ok(orderItems, 'orderItems table exported')
+    assert.ok(orderEvents, 'orderEvents table exported')
+    assert.ok(coupons, 'coupons table exported')
+    assert.ok(customers, 'customers table exported')
+    assert.ok(storeSettings, 'storeSettings table exported')
+    assert.ok(roles, 'roles table exported')
+    assert.ok(productReviews, 'productReviews table exported')
+    assert.ok(inventoryMovements, 'inventoryMovements table exported')
+    assert.ok(auditLog, 'auditLog table exported')
+    assert.ok(notifications, 'notifications table exported')
+    assert.ok(shipments, 'shipments table exported')
+    assert.ok(returnRequests, 'returnRequests table exported')
+    assert.ok(refunds, 'refunds table exported')
   })
 })

@@ -27,7 +27,7 @@ import {
   sizeChartMeasurements,
   sizeCharts,
   storeSettings
-} from '../db/schema.js'
+} from '@jeans-store/db'
 
 const SETTINGS_ID = 'default'
 let memoryState: Record<string, unknown> = {}

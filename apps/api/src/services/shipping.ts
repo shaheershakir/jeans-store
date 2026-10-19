@@ -5,7 +5,7 @@ import {
   shippingMethods,
   shippingZoneRegions,
   shippingZones
-} from '../db/schema.js'
+} from '@jeans-store/db'
 
 export const shippingRateSchema = z.object({
   baseWeightGrams: z.number().int().min(1).max(100_000),

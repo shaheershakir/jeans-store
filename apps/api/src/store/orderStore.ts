@@ -15,7 +15,7 @@ import {
   type DbOrderItem,
   type DbPayment,
   type DbShipment
-} from '../db/schema.js'
+} from '@jeans-store/db'
 import type { CalculatedOrder, Order } from '../schemas/order.js'
 import { assetUrl, keyFromUrl } from '@jeans-store/shared'
 

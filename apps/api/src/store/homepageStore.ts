@@ -1,6 +1,6 @@
 import { asc } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../db/index.js'
-import { homepageSections } from '../db/schema.js'
+import { homepageSections } from '@jeans-store/db'
 import type { HomepageConfig } from '../schemas/homepage.js'
 
 export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {

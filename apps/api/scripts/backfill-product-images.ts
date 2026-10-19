@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { eq, isNull } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../src/db/index.js'
-import { productImages, products } from '../src/db/schema.js'
+import { productImages, products } from '@jeans-store/db'
 
 /**
  * The legacy `products.img/img2/images` columns were removed by the baseline.

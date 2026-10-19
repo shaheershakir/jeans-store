@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { count, eq, isNull, sql } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../src/db/index.js'
-import { products, productVariants } from '../src/db/schema.js'
+import { products, productVariants } from '@jeans-store/db'
 
 /**
  * Post-baseline SKU/variant integrity check.

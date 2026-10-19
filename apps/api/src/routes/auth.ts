@@ -20,7 +20,7 @@ import {
   exchangeGoogleAuthCode,
   type GoogleUserPayload,
 } from "../services/googleAuth.js";
-import type { DbUser } from "../db/schema.js";
+import type { DbUser } from "@jeans-store/db";
 import { logger } from "../lib/logger.js";
 
 function formatProfile(user: DbUser): UserProfile {

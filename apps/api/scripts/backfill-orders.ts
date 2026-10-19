@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { count, eq, isNull } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../src/db/index.js'
-import { orderEvents, orderItems, orders, payments } from '../src/db/schema.js'
+import { orderEvents, orderItems, orders, payments } from '@jeans-store/db'
 
 /**
  * Post-baseline order integrity check.

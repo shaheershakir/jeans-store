@@ -20,7 +20,7 @@ import {
   type DbProduct,
   type DbProductVariant,
   type DbProductImage
-} from '../db/schema.js'
+} from '@jeans-store/db'
 import {
   generateBaseSku,
   generateProductScopedSku,

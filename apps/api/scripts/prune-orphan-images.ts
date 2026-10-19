@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { db, isDatabaseConfigured } from '../src/db/index.js'
-import { productImages as productImagesTable } from '../src/db/schema.js'
+import { productImages as productImagesTable } from '@jeans-store/db'
 import { getStorage } from '../src/services/storage.js'
 import { sql } from 'drizzle-orm'
 
