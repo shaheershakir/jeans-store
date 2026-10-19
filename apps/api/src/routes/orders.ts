@@ -75,7 +75,6 @@ async function calculateCheckout(
       id: product.id,
       variantId: variant.id!,
       name: product.name,
-      fit: product.fit,
       size: String(variant.size),
       price: `₹${unitPrice.toLocaleString('en-IN')}`,
       priceNum: unitPrice,

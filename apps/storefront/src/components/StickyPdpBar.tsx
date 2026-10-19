@@ -1,50 +1,39 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import Image from 'next/image'
-import { ShoppingBag, Check } from 'lucide-react'
 import type { Product } from '@/lib/constants'
-import { getAvailableProductSizes, getProductSizeOptions } from '@/lib/products'
 
 interface StickyPdpBarProps {
   product: Product
-  selectedColor?: string
   selectedSize: string
-  sizeOptions?: string[]
   availableSizes?: string[]
-  productImage?: string
-  onSizeChange: (size: string) => void
+  isNumeric?: boolean
+  added?: boolean
   onAddToCart: () => void
-  isAdded: boolean
+  onBuyNow?: () => void
+  // Optional backwards-compatibility props
+  selectedColor?: string
+  sizeOptions?: string[]
+  productImage?: string
+  onSizeChange?: (size: string) => void
+  isAdded?: boolean
 }
 
 export default function StickyPdpBar({
   product,
-  selectedColor,
   selectedSize,
-  sizeOptions,
-  availableSizes: propAvailableSizes,
-  productImage,
-  onSizeChange,
+  availableSizes = [],
+  isNumeric = false,
+  added = false,
   onAddToCart,
+  onBuyNow,
   isAdded,
 }: StickyPdpBarProps) {
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
 
-  const rawSizes = useMemo(
-    () => (sizeOptions && sizeOptions.length > 0 ? sizeOptions : getProductSizeOptions(product)),
-    [sizeOptions, product]
-  )
-  const availableSizes = useMemo(
-    () =>
-      propAvailableSizes && propAvailableSizes.length > 0
-        ? propAvailableSizes
-        : getAvailableProductSizes(product),
-    [propAvailableSizes, product]
-  )
-  const isNumeric = rawSizes.length > 0 && rawSizes.every((size) => /^\d+$/.test(size))
+  const isCartAdded = added || Boolean(isAdded)
 
   // Ensure portal only mounts on the client
   useEffect(() => {
@@ -110,88 +99,41 @@ export default function StickyPdpBar({
 
   if (!mounted) return null
 
-  const imageSrc = productImage || product.img || product.images?.[0] || '/icon.svg'
-  const variantText = selectedColor || product.color || product.wash || product.fit || 'Regular'
+  const isAvailable = availableSizes.length === 0 || availableSizes.includes(selectedSize)
 
   return createPortal(
     <aside
-      className={`apple-sticky-bar ${visible ? 'visible' : ''}`}
+      className={`pdp-sticky-bar ${visible ? 'visible' : ''}`}
       aria-hidden={!visible}
-      aria-label="Quick order bar"
+      aria-label="Sticky actions bar"
     >
-      <div className="apple-sticky-inner">
-        {/* Left: Product Thumbnail & Meta */}
-        <div className="apple-sticky-product">
-          <div className="apple-sticky-thumb">
-            <Image
-              src={imageSrc}
-              alt={product.name}
-              width={44}
-              height={44}
-              className="apple-sticky-img"
-              priority={false}
-            />
-          </div>
-          <div className="apple-sticky-info">
-            <h4 className="apple-sticky-title" title={product.name}>
-              {product.name}
-            </h4>
-            <p className="apple-sticky-meta">
-              <span className="apple-sticky-price">{product.price}</span>
-              <span className="apple-sticky-dot">·</span>
-              <span className="apple-sticky-variant">{variantText}</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Right: Size Switcher & Quick Add Pill */}
-        <div className="apple-sticky-actions">
-          {rawSizes.length > 0 && (
-            <div className="apple-sticky-size-pill-group">
-              <span className="apple-sticky-size-label">Size:</span>
-              <div className="apple-sticky-sizes" role="group" aria-label="Select size">
-                {rawSizes.map((size) => {
-                  const isAvailable = availableSizes.includes(size)
-                  const isSelected = selectedSize === size
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      className={`apple-sticky-size-btn ${isSelected ? 'active' : ''}`}
-                      onClick={() => onSizeChange(size)}
-                      disabled={!isAvailable}
-                      aria-label={isAvailable ? `Select size ${size}` : `Size ${size} is out of stock`}
-                      aria-pressed={isSelected}
-                    >
-                      {size}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
+      <div className="pdp-sticky-bar-inner">
+        <div id="pdp-sticky-actions" className="pdp-actions-group pdp-sticky-actions-group">
           <button
             id="pdp-sticky-add-to-cart-btn"
             type="button"
-            className={`apple-sticky-buy-btn ${isAdded ? 'added' : ''}`}
+            className={`pdp-add-to-cart-btn ${isCartAdded ? 'added' : ''}`}
             onClick={onAddToCart}
-            disabled={!availableSizes.includes(selectedSize)}
-            aria-label={`Add ${product.name} size ${selectedSize} to bag`}
+            disabled={!isAvailable}
           >
-            {isAdded ? (
-              <>
-                <Check className="w-4 h-4 stroke-[2.5]" />
-                <span>Added to Bag</span>
-              </>
+            {isCartAdded ? (
+              <span>✓ Added to Shopping Bag</span>
             ) : (
               <>
-                <ShoppingBag className="w-4 h-4 stroke-[2]" />
-                <span>
-                  Add to Bag — {selectedSize ? (isNumeric ? `${selectedSize}"` : selectedSize) : 'Select Size'}
-                </span>
+                <span>Add to Bag — {isNumeric ? `${selectedSize}"` : selectedSize}</span>
+                <span className="pdp-btn-price-tag">{product.price}</span>
               </>
             )}
+          </button>
+
+          <button
+            id="pdp-sticky-buy-now-btn"
+            type="button"
+            className="pdp-buy-now-btn"
+            onClick={onBuyNow}
+            disabled={!isAvailable}
+          >
+            Buy Now
           </button>
         </div>
       </div>

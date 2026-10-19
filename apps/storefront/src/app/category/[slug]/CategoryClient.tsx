@@ -70,7 +70,7 @@ export default function CategoryClient({ products, category: initialCategory, ti
   const filtered = filterAndSortProducts(fit, prices, sort, products, category, searchQuery)
   const activeFilterCount =
     (fit !== 'all' ? 1 : 0) + prices.length + (searchQuery.trim() ? 1 : 0)
-  const showFitFilter = true
+  const showFitFilter = false
 
   return (
     <div className="cat-page">

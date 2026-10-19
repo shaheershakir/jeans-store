@@ -54,13 +54,13 @@ export class DataBackedAiProvider implements AiProvider {
     const top = topProducts(db, 5)
     const rows = top.map((p) => ({
       product: p.product.name,
-      fit: p.product.fit,
+      fit: p.product.fit ?? 'Regular',
       units: p.unitsSold,
       revenue: formatINR(p.revenue),
     }))
     const first = top[0]
     const text = first
-      ? `**${first.product.name}** (${first.product.fit} fit) leads with ${formatNumber(first.unitsSold)} units sold and ${formatINR(first.revenue)}.`
+      ? `**${first.product.name}**${first.product.fit ? ` (${first.product.fit} fit)` : ''} leads with ${formatNumber(first.unitsSold)} units sold and ${formatINR(first.revenue)}.`
       : 'No sales data yet.'
     return {
       text,

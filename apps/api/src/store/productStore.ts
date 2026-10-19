@@ -168,19 +168,6 @@ function variantFromRow(row: DbProductVariant, product?: DbProduct): Variant {
 
 function attributesFromRow(row: DbProduct): Record<string, unknown> {
   const entries: Record<string, unknown> = {
-    fabric: row.fabric,
-    material: row.material,
-    sleeveLength: row.sleeveLength,
-    neckType: row.neckType,
-    pattern: row.pattern,
-    printStyle: row.printStyle,
-    trimColor: row.trimColor,
-    length: row.garmentLength,
-    closure: row.closure,
-    pockets: row.pockets,
-    legStyle: row.legStyle,
-    rise: row.rise,
-    wash: row.wash,
     careInstructions: row.careInstructions
   }
   return Object.fromEntries(Object.entries(entries).filter(([, value]) => value !== null && value !== undefined))
@@ -198,20 +185,13 @@ export function toProduct(
   const adminData: Record<string, unknown> = {
     status: adminStatus(normalizeStatus(row.status)),
     weightGrams: row.weightGrams,
-    styleCode: row.styleCode,
-    gender: row.gender,
     isFeatured: row.isFeatured,
     compareAtPrice: row.compareAtPrice,
     costPrice: row.costPrice,
     taxRate: row.taxRate,
     hsnCode: row.hsnCode,
     ratingAverage: row.ratingAverage,
-    reviewCount: row.reviewCount,
-    dimensions: {
-      lengthMm: row.lengthMm,
-      widthMm: row.widthMm,
-      heightMm: row.heightMm
-    }
+    reviewCount: row.reviewCount
   }
 
   return {
@@ -224,44 +204,22 @@ export function toProduct(
     attributes,
     name: row.name,
     sku: firstVariant?.sku,
-    fit: (row.fit as Fit) || undefined,
     price: `₹${row.price.toLocaleString('en-IN')}`,
     priceNum: row.price,
     weightGrams: row.weightGrams,
-    lengthMm: row.lengthMm ?? undefined,
-    widthMm: row.widthMm ?? undefined,
-    heightMm: row.heightMm ?? undefined,
-    gender: row.gender as 'Men' | 'Women' | 'Unisex',
-    brand: row.brand,
-    styleCode: row.styleCode ?? undefined,
     compareAtPrice: row.compareAtPrice,
     costPrice: row.costPrice,
     taxRate: row.taxRate,
     hsnCode: row.hsnCode ?? undefined,
     isFeatured: row.isFeatured,
-    inseam: row.inseam ?? undefined,
-    garmentLength: row.garmentLength ?? undefined,
     careInstructions: row.careInstructions ?? undefined,
-    countryOfOrigin: row.countryOfOrigin,
     img: urls[0] ?? FALLBACK_IMAGE,
     img2: urls[1] ?? urls[0] ?? FALLBACK_IMAGE,
     images: urls.length > 0 ? urls : undefined,
     badge: row.badge ?? undefined,
     desc: row.description,
-    wash: row.wash ?? undefined,
     color: firstVariant?.color,
     sizes: variants.length > 0 ? [...new Set(variants.map((variant) => String(variant.size)))] : undefined,
-    fabric: row.fabric ?? undefined,
-    material: row.material ?? undefined,
-    sleeveLength: row.sleeveLength ?? undefined,
-    neckType: row.neckType ?? undefined,
-    pattern: row.pattern ?? undefined,
-    printStyle: row.printStyle ?? undefined,
-    trimColor: row.trimColor ?? undefined,
-    closure: row.closure ?? undefined,
-    pockets: row.pockets ?? undefined,
-    legStyle: row.legStyle ?? undefined,
-    rise: row.rise ?? undefined,
     rating: row.ratingAverage,
     inStock: variants.some((variant) => variant.stock - variant.reserved > 0),
     adminData,
@@ -320,14 +278,7 @@ export class ProductStore {
     this.memoryProducts = seed.map((product) => {
       const p = { ...product }
       const rawSizes = Array.isArray(p.sizes) && p.sizes.length > 0 ? p.sizes : ['S', 'M', 'L', 'XL']
-      let color = p.color || 'Black'
-      if (!p.color && p.wash) {
-        if (p.wash.includes('/')) {
-          color = p.wash.split('/')[1].trim()
-        } else {
-          color = p.wash
-        }
-      }
+      const color = p.color || 'Black'
 
       const attributes = extractAttributes(p)
       const status = normalizeStatus(
@@ -369,7 +320,7 @@ export class ProductStore {
           : rawSizes.map((sz) => {
               const sku = generateBaseSku({
                 category: p.category || 'printed-tees',
-                productType: p.fit || 'Regular',
+                productType: 'Regular',
                 color,
                 size: sz
               })
@@ -529,7 +480,6 @@ export class ProductStore {
   async list(filters?: {
     store?: string
     category?: string
-    fit?: string
     sku?: string
     q?: string
     status?: string
@@ -544,9 +494,6 @@ export class ProductStore {
         const category = await this.resolveCategory(filters.category)
         if (!category) return []
         conditions.push(eq(productsTable.categoryId, category.id))
-      }
-      if (filters?.fit && filters.fit !== 'all') {
-        conditions.push(ilike(productsTable.fit, filters.fit.trim()) as any)
       }
       if (filters?.status) {
         conditions.push(eq(productsTable.status, filters.status.toLowerCase()) as any)
@@ -589,9 +536,6 @@ export class ProductStore {
     if (filters?.category && filters.category !== 'all') {
       list = list.filter((p) => p.category?.toLowerCase() === filters.category!.toLowerCase())
     }
-    if (filters?.fit && filters.fit !== 'all') {
-      list = list.filter((p) => p.fit?.toLowerCase() === filters.fit!.toLowerCase())
-    }
     if (filters?.status) {
       list = list.filter((p) => (p.status || 'active').toLowerCase() === filters.status!.toLowerCase())
     } else if (!filters?.includeAllStatuses) {
@@ -610,8 +554,6 @@ export class ProductStore {
       list = list.filter(
         (p) =>
           p.name.toLowerCase().includes(clean) ||
-          (p.fit && p.fit.toLowerCase().includes(clean)) ||
-          (p.wash && p.wash.toLowerCase().includes(clean)) ||
           (p.category && p.category.toLowerCase().includes(clean)) ||
           p.desc.toLowerCase().includes(clean) ||
           (p.sku && p.sku.toLowerCase().includes(clean)) ||
@@ -714,13 +656,9 @@ export class ProductStore {
     return categorySlug === 'trackpants' || categorySlug === 'sweatpants' || categorySlug === 'jeans' ? 650 : 350
   }
 
-  private productColumns(input: CreateProduct, attributes: Record<string, unknown>, weightGrams: number) {
+  private productColumns(input: CreateProduct, _attributes: Record<string, unknown>, weightGrams: number) {
     const adminData = (input.adminData ?? {}) as Record<string, any>
-    const dimensions = (adminData.dimensions ?? {}) as Record<string, unknown>
     return {
-      brand: input.brand ?? adminData.brand ?? 'TEESGARAGE',
-      gender: input.gender ?? adminData.gender ?? 'Unisex',
-      styleCode: input.styleCode ?? adminData.styleCode ?? null,
       price: input.priceNum,
       compareAtPrice: input.compareAtPrice ?? adminData.compareAtPrice ?? null,
       costPrice: input.costPrice ?? adminData.costPrice ?? null,
@@ -729,25 +667,7 @@ export class ProductStore {
       badge: input.badge ?? null,
       isFeatured: input.isFeatured ?? Boolean(adminData.featured) ?? false,
       weightGrams,
-      lengthMm: input.lengthMm ?? (typeof dimensions.lengthMm === 'number' ? dimensions.lengthMm : null),
-      widthMm: input.widthMm ?? (typeof dimensions.widthMm === 'number' ? dimensions.widthMm : null),
-      heightMm: input.heightMm ?? (typeof dimensions.heightMm === 'number' ? dimensions.heightMm : null),
-      fabric: (attributes.fabric as string) ?? input.fabric ?? null,
-      material: (attributes.material as string) ?? input.material ?? null,
-      sleeveLength: (attributes.sleeveLength as string) ?? input.sleeveLength ?? null,
-      neckType: (attributes.neckType as string) ?? input.neckType ?? null,
-      pattern: (attributes.pattern as string) ?? input.pattern ?? null,
-      printStyle: (attributes.printStyle as string) ?? input.printStyle ?? null,
-      trimColor: (attributes.trimColor as string) ?? input.trimColor ?? null,
-      garmentLength: input.garmentLength ?? (attributes.length as string) ?? (adminData.length as string) ?? null,
-      closure: (attributes.closure as string) ?? input.closure ?? (attributes.buttons as string) ?? null,
-      pockets: (attributes.pockets as string) ?? input.pockets ?? null,
-      legStyle: (attributes.legStyle as string) ?? input.legStyle ?? null,
-      rise: (attributes.rise as string) ?? input.rise ?? null,
-      inseam: input.inseam ?? (typeof adminData.inseam === 'number' ? adminData.inseam : null),
-      wash: (attributes.wash as string) ?? input.wash ?? null,
-      careInstructions: input.careInstructions ?? (adminData.careInstructions as string) ?? null,
-      countryOfOrigin: input.countryOfOrigin ?? (adminData.countryOfOrigin as string) ?? 'India'
+      careInstructions: input.careInstructions ?? (adminData.careInstructions as string) ?? null
     }
   }
 
@@ -772,8 +692,7 @@ export class ProductStore {
         ? (input.variants as RawVariantInput[])
         : (input.sizes || ['S', 'M', 'L', 'XL']).map((sz) => ({
             size: sz,
-            color:
-              input.color || (input.wash?.includes('/') ? input.wash.split('/')[1].trim() : input.wash) || 'Black',
+            color: input.color || 'Black',
             price: input.priceNum,
             stock: 20,
             reserved: 0,
@@ -791,7 +710,6 @@ export class ProductStore {
               slug,
               name: input.name,
               description: input.desc,
-              fit: input.fit ?? null,
               status,
               ...this.productColumns(input, attributes, weightGrams)
             })
@@ -900,7 +818,7 @@ export class ProductStore {
       if (!sku) {
         sku = await this.generateSku({
           category: input.category || 'printed-tees',
-          productType: input.fit || 'Regular',
+          productType: (input as any).fit || (input as any).productType || 'Regular',
           color,
           size,
           productId
@@ -908,7 +826,7 @@ export class ProductStore {
       } else if (await this.isSkuClaimedByOtherProduct(sku, productId)) {
         sku = await this.generateSku({
           category: input.category || 'printed-tees',
-          productType: input.fit || 'Regular',
+          productType: (input as any).fit || (input as any).productType || 'Regular',
           color,
           size,
           productId
@@ -1009,25 +927,14 @@ export class ProductStore {
         updatedAt: new Date()
       }
       if (patch.name !== undefined) updateData.name = patch.name
-      if (patch.fit !== undefined) updateData.fit = patch.fit
       if (patch.desc !== undefined) updateData.description = patch.desc
-      if (patch.wash !== undefined) updateData.wash = patch.wash
       if (patch.badge !== undefined) updateData.badge = patch.badge
-      if (patch.lengthMm !== undefined) updateData.lengthMm = patch.lengthMm
-      if (patch.widthMm !== undefined) updateData.widthMm = patch.widthMm
-      if (patch.heightMm !== undefined) updateData.heightMm = patch.heightMm
-      if (patch.gender !== undefined) updateData.gender = patch.gender
-      if (patch.brand !== undefined) updateData.brand = patch.brand
-      if (patch.styleCode !== undefined) updateData.styleCode = patch.styleCode
       if (patch.compareAtPrice !== undefined) updateData.compareAtPrice = patch.compareAtPrice
       if (patch.costPrice !== undefined) updateData.costPrice = patch.costPrice
       if (patch.taxRate !== undefined) updateData.taxRate = patch.taxRate
       if (patch.hsnCode !== undefined) updateData.hsnCode = patch.hsnCode
       if (patch.isFeatured !== undefined) updateData.isFeatured = patch.isFeatured
-      if (patch.inseam !== undefined) updateData.inseam = patch.inseam
-      if (patch.garmentLength !== undefined) updateData.garmentLength = patch.garmentLength
       if (patch.careInstructions !== undefined) updateData.careInstructions = patch.careInstructions
-      if (patch.countryOfOrigin !== undefined) updateData.countryOfOrigin = patch.countryOfOrigin
 
       await db.update(productsTable).set(updateData).where(eq(productsTable.id, id))
 
@@ -1099,7 +1006,7 @@ export class ProductStore {
             variant.sku?.trim().toUpperCase() ||
             (await this.generateSku({
               category: patch.category || existing.category || 'printed-tees',
-              productType: patch.fit || existing.fit || 'Regular',
+              productType: (patch as any).fit || (patch as any).productType || 'Regular',
               color,
               size,
               productId: id
@@ -1210,7 +1117,7 @@ export class ProductStore {
           variant.sku?.trim().toUpperCase() ||
           (await this.generateSku({
             category: patch.category || existing.category || 'printed-tees',
-            productType: patch.fit || existing.fit || 'Regular',
+            productType: (patch as any).fit || (patch as any).productType || 'Regular',
             color,
             size,
             productId: id

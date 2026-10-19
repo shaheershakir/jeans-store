@@ -247,7 +247,8 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
       respondedAt: row.respondedAt ? iso(row.respondedAt) : null
     })),
     sizeCharts: sizeChartRows.map((row) => ({
-      fit: row.fit,
+      id: row.id,
+      categoryId: row.categoryId,
       description: row.description ?? '',
       measurements: (measurementsByChart.get(row.id) ?? []).map((measurement) => ({
         size: Number(measurement.size),
@@ -507,16 +508,16 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
   `)
 
   const sizeChartValues = arrays('sizeCharts').map((chart) => ({
-    fit: stringOrEmpty(chart.fit),
+    categoryId: numberOrZero(chart.categoryId),
     description: stringOrEmpty(chart.description) || null
   }))
   for (let index = 0; index < sizeChartValues.length; index++) {
     const chart = sizeChartValues[index]
-    if (!chart.fit) continue
+    if (!chart.categoryId) continue
     const [created] = await db
       .insert(sizeCharts)
       .values(chart)
-      .onConflictDoUpdate({ target: sizeCharts.fit, set: { description: chart.description } })
+      .onConflictDoUpdate({ target: sizeCharts.categoryId, set: { description: chart.description } })
       .returning({ id: sizeCharts.id })
     const measurements = Array.isArray(arrays('sizeCharts')[index].measurements)
       ? arrays('sizeCharts')[index].measurements

@@ -51,49 +51,23 @@ export interface Product {
   category?: string
   name: string
   sku?: string
-  fit?: Fit
   price: string
   priceNum: number
   weightGrams?: number
-  lengthMm?: number
-  widthMm?: number
-  heightMm?: number
-  gender?: 'Men' | 'Women' | 'Unisex'
-  brand?: string
-  styleCode?: string
   compareAtPrice?: number | null
   costPrice?: number | null
   taxRate?: number
   hsnCode?: string
   isFeatured?: boolean
-  inseam?: number
-  garmentLength?: string
   careInstructions?: string
-  countryOfOrigin?: string
   img: string
   img2: string
   images?: string[]
   badge?: string
   desc: string
-  wash?: string
   color?: string
   sizes?: string[]
   variants?: Variant[]
-  fabric?: string
-  material?: string
-  sleeveLength?: string
-  neckType?: string
-  pattern?: string
-  printStyle?: string
-  trimColor?: string
-  buttons?: string
-  waistSize?: string[]
-  length?: string
-  closure?: string
-  pockets?: string
-  use?: string
-  legStyle?: string
-  rise?: string
   rating?: number
   inStock?: boolean
   collection?: string
@@ -102,13 +76,13 @@ export interface Product {
   status?: string
   attributes?: Record<string, unknown>
   adminData?: Record<string, unknown>
+  createdAt?: Date | string
 }
 
 export interface OrderItem {
   id: number
   variantId?: number
   name: string
-  fit?: string
   size: string
   price: string
   priceNum: number
@@ -205,7 +179,7 @@ export interface AuthResponse {
   expiresIn: number
 }
 
-export type NavItemType = 'fit' | 'category' | 'custom'
+export type NavItemType = 'category' | 'collection' | 'custom'
 
 export interface NavigationItem {
   id: string

@@ -18,7 +18,6 @@ const SORT_MODES = ['featured', 'price-asc', 'price-desc'] as const
 const listQuerySchema = z.object({
   store: z.string().optional(),
   category: z.string().optional(),
-  fit: z.string().optional(),
   sku: z.string().optional(),
   minPrice: z.coerce.number().nonnegative().optional(),
   maxPrice: z.coerce.number().nonnegative().optional(),
@@ -93,8 +92,8 @@ productRouter.get('/api/admin/products', verifyAdminAuth, async (req: Request, r
     return
   }
   try {
-    const { store, category, fit, sku, q } = parsed.data
-    const products = await productStore.list({ store, category, fit, sku, q, includeAllStatuses: true })
+    const { store, category, sku, q } = parsed.data
+    const products = await productStore.list({ store, category, sku, q, includeAllStatuses: true })
     res.json({ count: products.length, products })
   } catch (err) {
     logger.error({ err }, 'Failed to fetch admin product catalog')
@@ -218,8 +217,8 @@ productRouter.get('/api/products', async (req: Request, res: Response) => {
     return
   }
 
-  const { store, category, fit, sku, minPrice, maxPrice, q, sort = 'featured' } = parsed.data
-  let list = await productStore.list({ store, category, fit, sku, q, status: 'active' })
+  const { store, category, sku, minPrice, maxPrice, q, sort = 'featured' } = parsed.data
+  let list = await productStore.list({ store, category, sku, q, status: 'active' })
 
   if (minPrice !== undefined) {
     list = list.filter((p) => p.priceNum >= minPrice)

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { create } from 'zustand'
 import { persist, type PersistOptions } from 'zustand/middleware'
@@ -70,16 +70,16 @@ export interface ProductInput {
   slug: string
   sku: string
   description: string
-  brand: string
+  brand?: string
   categoryId: number
   collectionId: number
-  fit: Fit
-  gender: Gender
-  rise: Rise
-  material: Material
+  fit?: Fit
+  gender?: Gender
+  rise?: Rise
+  material?: Material
   pattern?: string
-  wash: Wash
-  inseam: number
+  wash?: Wash
+  inseam?: number
   price: number
   compareAtPrice: number | null
   costPrice: number
@@ -88,7 +88,7 @@ export interface ProductInput {
   featured: boolean
   weightGrams?: number
   image: string
-  images: { url: string; alt: string }[]
+  images: Array<{ url: string; alt: string; id?: number; order?: number }>
   variants: VariantInput[]
 }
 
@@ -633,9 +633,9 @@ export const useAdminStore = create<AdminState>()(
         },
 
         saveSizeChart: (chart) => {
-          const others = get().data.sizeCharts.filter((c) => c.fit !== chart.fit)
+          const others = get().data.sizeCharts.filter((c) => c.categoryId !== chart.categoryId)
           set({ data: { ...get().data, sizeCharts: [...others, chart] } })
-          get().log('Updated size chart', 'Size & Fit', chart.fit, `Saved the ${chart.fit} size chart`)
+          get().log('Updated size chart', 'Size & Fit', `Category ${chart.categoryId}`, `Saved size chart for category ${chart.categoryId}`)
         },
 
         adjustStock: (variantId, delta, reason, reference) => {

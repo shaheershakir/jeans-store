@@ -19,7 +19,6 @@ describe('Phase 2: Catalog Normalization & Schema V2', () => {
       img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
       img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
       desc: '100% cotton yarn-dyed stripes',
-      fit: 'Regular',
       status: 'active',
       adminData: { status: 'Active' }
     },
@@ -33,7 +32,6 @@ describe('Phase 2: Catalog Normalization & Schema V2', () => {
       img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
       img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
       desc: 'Unreleased graphic tee in draft mode',
-      fit: 'Oversized',
       status: 'draft',
       adminData: { status: 'Draft' }
     },
@@ -47,7 +45,6 @@ describe('Phase 2: Catalog Normalization & Schema V2', () => {
       img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
       img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
       desc: 'Discontinued winter collection',
-      fit: 'Boxy',
       status: 'archived',
       adminData: { status: 'Archived' }
     }
@@ -154,11 +151,10 @@ describe('Phase 2: Catalog Normalization & Schema V2', () => {
       buttons: '3-button placket'
     } as any)
 
-    assert.equal(created.fabric, '100% Combed Cotton')
-    assert.equal(created.material, 'Waffle Knit')
-    assert.equal(created.neckType, 'Henley Collar')
-    assert.equal(created.sleeveLength, 'Full Sleeve')
     assert.equal(created.attributes?.fabric, '100% Combed Cotton')
+    assert.equal(created.attributes?.material, 'Waffle Knit')
+    assert.equal(created.attributes?.neckType, 'Henley Collar')
+    assert.equal(created.attributes?.sleeveLength, 'Full Sleeve')
     assert.equal(created.attributes?.buttons, '3-button placket')
 
     // Update attributes
@@ -168,9 +164,9 @@ describe('Phase 2: Catalog Normalization & Schema V2', () => {
     } as any)
 
     assert.ok(updated)
-    assert.equal(updated?.fabric, '100% Organic Pima Cotton')
-    assert.equal(updated?.trimColor, 'Navy Contrast')
-    assert.equal(updated?.material, 'Waffle Knit', 'Preserves unmodified attributes')
+    assert.equal(updated?.attributes?.fabric, '100% Organic Pima Cotton')
+    assert.equal(updated?.attributes?.trimColor, 'Navy Contrast')
+    assert.equal(updated?.attributes?.material, 'Waffle Knit', 'Preserves unmodified attributes')
   })
 
   test('Status synchronization between status column and adminData.status', async () => {

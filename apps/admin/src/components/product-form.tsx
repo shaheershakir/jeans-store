@@ -9,7 +9,7 @@ import { useAdminStore } from '@/store/admin-store'
 import { createProduct, deleteProduct, updateProduct, uploadProductImage } from '@/services/catalog'
 import { Button, Card, CardHeader, Field, Input, Select, Textarea, Checkbox } from '@/components/ui/primitives'
 import { toastError, toastSuccess } from '@/components/ui/toast'
-import type { Fit, Gender, Material, Product, ProductStatus } from '@/lib/types'
+import type { Product, ProductStatus } from '@/lib/types'
 import { generateBaseSku, fetchBackendSkuPreview } from '@/lib/sku'
 
 interface VariantRow {
@@ -39,8 +39,6 @@ const APPAREL_CATEGORIES = [
 const COLORS = ['Black', 'White', 'Navy', 'Grey', 'Blue', 'Green', 'Olive', 'Red', 'Beige']
 const TOP_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
 const BOTTOM_SIZES = ['28', '30', '32', '34', '36', '38', '40', '42']
-const FITS: Fit[] = ['Regular', 'Oversized', 'Boxy', 'Relaxed', 'Straight', 'Slim', 'Baggy', 'Wide', 'Tapered']
-const MATERIALS: Material[] = ['Cotton', 'Cotton Stretch']
 const BARCODE = () => `890${Math.floor(10000000000 + Math.random() * 89999999999)}`
 
 function isBottomwear(categorySlug: string) {
@@ -51,11 +49,11 @@ function defaultWeight(categorySlug: string) {
   return isBottomwear(categorySlug) ? 650 : 350
 }
 
-function makeVariant(size: string, categorySlug: string, fit: Fit, price: number, weight: number): VariantRow {
+function makeVariant(size: string, categorySlug: string, price: number, weight: number): VariantRow {
   return {
     size,
     color: 'Black',
-    sku: generateBaseSku({ category: categorySlug, productType: fit, color: 'Black', size }),
+    sku: generateBaseSku({ category: categorySlug, productType: 'Regular', color: 'Black', size }),
     price,
     stock: 0,
     reorderPoint: 5,
@@ -77,14 +75,8 @@ export function ProductForm({ product }: { product?: Product }) {
   const [slug, setSlug] = React.useState(product?.slug ?? '')
   const [sku, setSku] = React.useState(product?.sku ?? '')
   const [description, setDescription] = React.useState(product?.description ?? '')
-  const [brand, setBrand] = React.useState(product?.brand ?? 'TEESGARAGE')
   const [categoryId, setCategoryId] = React.useState(product?.categoryId ?? categories.find((category) => category.slug === 'printed-tees')?.id ?? categories[0]?.id ?? 1)
   const [collectionId, setCollectionId] = React.useState(product?.collectionId ?? collections[0]?.id ?? 1)
-  const [fit, setFit] = React.useState<Fit>(product?.fit ?? 'Regular')
-  const [gender, setGender] = React.useState<Gender>(product?.gender ?? 'Unisex')
-  const [material, setMaterial] = React.useState<Material>(product?.material ?? 'Cotton')
-  const [pattern, setPattern] = React.useState(product?.pattern ?? '')
-  const [inseam, setInseam] = React.useState(product?.inseam ?? 32)
   const [weightGrams, setWeightGrams] = React.useState(initialWeight)
   const [price, setPrice] = React.useState(product?.price ?? 1199)
   const [compareAtPrice, setCompareAtPrice] = React.useState<number | ''>(product?.compareAtPrice ?? 1499)
@@ -116,7 +108,7 @@ export function ProductForm({ product }: { product?: Product }) {
       }))
     }
     const defaults = isBottomwear(initialCategorySlug) ? ['30', '32', '34', '36', '38'] : ['S', 'M', 'L', 'XL', 'XXL']
-    return defaults.map((size) => makeVariant(size, initialCategorySlug, 'Regular', 1199, initialWeight))
+    return defaults.map((size) => makeVariant(size, initialCategorySlug, 1199, initialWeight))
   })
 
   const updateVariant = (index: number, patch: Partial<VariantRow>) => {
@@ -126,7 +118,7 @@ export function ProductForm({ product }: { product?: Product }) {
       if ((patch.size !== undefined || patch.color !== undefined) && !variant.isCustomSku && variant.id === undefined) {
         next.sku = generateBaseSku({
           category: categorySlug,
-          productType: fit,
+          productType: 'Regular',
           color: next.color,
           size: next.size,
         })
@@ -148,7 +140,7 @@ export function ProductForm({ product }: { product?: Product }) {
         ...variant,
         size,
         weight: nextWeight,
-        sku: variant.isCustomSku ? variant.sku : generateBaseSku({ category: nextCategory, productType: fit, color: variant.color, size }),
+        sku: variant.isCustomSku ? variant.sku : generateBaseSku({ category: nextCategory, productType: 'Regular', color: variant.color, size }),
       }
     }))
   }
@@ -178,14 +170,14 @@ export function ProductForm({ product }: { product?: Product }) {
   const addVariant = () => {
     const existing = new Set(variants.map((variant) => variant.size))
     const nextSize = sizeOptions.find((size) => !existing.has(size)) ?? ''
-    setVariants((current) => [...current, makeVariant(nextSize, categorySlug, fit, price, weightGrams)])
+    setVariants((current) => [...current, makeVariant(nextSize, categorySlug, price, weightGrams)])
   }
 
   const regenerateSku = async (index: number) => {
     const variant = variants[index]
     if (!variant) return
     try {
-      const nextSku = await fetchBackendSkuPreview({ category: categorySlug, productType: fit, color: variant.color, size: variant.size, productId: product?.id })
+      const nextSku = await fetchBackendSkuPreview({ category: categorySlug, productType: 'Regular', color: variant.color, size: variant.size, productId: product?.id })
       updateVariant(index, { sku: nextSku, isCustomSku: false })
       toastSuccess(`SKU updated: ${nextSku}`)
     } catch (error) {
@@ -210,12 +202,11 @@ export function ProductForm({ product }: { product?: Product }) {
     try {
       setSubmitting(true)
       const cleanSlug = slug.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-      const masterSku = sku.trim() || generateBaseSku({ category: categorySlug, productType: fit, color: 'BASE', size: 'BASE' }).replace('-BASE-BASE', '')
+      const masterSku = sku.trim() || generateBaseSku({ category: categorySlug, productType: 'Regular', color: 'BASE', size: 'BASE' }).replace('-BASE-BASE', '')
       const input = {
         id: product?.id,
-        name: name.trim(), slug: cleanSlug, sku: masterSku, description: description.trim(), brand: brand.trim() || 'TEESGARAGE',
-        categoryId: Number(categoryId), collectionId: Number(collectionId), fit, gender, rise: 'Mid' as const,
-        material, pattern: pattern.trim(), wash: 'Raw' as const, inseam: isBottomwear(categorySlug) ? Number(inseam) : 0,
+        name: name.trim(), slug: cleanSlug, sku: masterSku, description: description.trim(),
+        categoryId: Number(categoryId), collectionId: Number(collectionId),
         price: Number(price), compareAtPrice: compareAtPrice === '' ? null : Number(compareAtPrice),
         costPrice: Number(costPrice), taxRate: Number(taxRate), status, featured, weightGrams: Number(weightGrams),
         image, images: [{ url: image, alt: `${name} product photo` }, ...(image2 ? [{ url: image2, alt: `${name} alternate view` }] : [])],
@@ -266,18 +257,14 @@ export function ProductForm({ product }: { product?: Product }) {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-5">
           <Card className="space-y-5 p-5">
-            <CardHeader title="Product details" subtitle="Set the garment category, fit, and customer-facing description." />
+            <CardHeader title="Product details" subtitle="Set the apparel category and customer-facing description." />
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Product name" required><Input required value={name} onChange={(event) => { setName(event.target.value); if (!isEdit && !slug) setSlug(event.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')) }} placeholder="e.g. Contrast Ringer Tee" /></Field>
               <Field label="Category" required><Select value={categoryId} onChange={(event) => handleCategoryChange(Number(event.target.value))}>{APPAREL_CATEGORIES.map((option) => { const match = categories.find((item) => item.slug === option.slug); return match ? <option key={match.id} value={match.id}>{option.name}</option> : null })}</Select></Field>
-              <Field label="Fit"><Select value={fit} onChange={(event) => setFit(event.target.value as Fit)}>{FITS.map((option) => <option key={option}>{option}</option>)}</Select></Field>
-              <Field label="Audience"><Select value={gender} onChange={(event) => setGender(event.target.value as Gender)}><option>Unisex</option><option>Men</option><option>Women</option></Select></Field>
-              <Field label="Fabric"><Select value={material} onChange={(event) => setMaterial(event.target.value as Material)}>{MATERIALS.map((option) => <option key={option}>{option}</option>)}</Select></Field>
-              <Field label="Pattern or style" hint="Optional product detail, such as graphic print or contrast trim."><Input value={pattern} onChange={(event) => setPattern(event.target.value)} placeholder="e.g. Graphic print" /></Field>
               <Field label="Product slug"><Input value={slug} onChange={(event) => setSlug(event.target.value)} placeholder="auto-generated-from-name" /></Field>
               <Field label="Product SKU prefix"><Input value={sku} onChange={(event) => setSku(event.target.value.toUpperCase())} placeholder="Auto-generated if blank" /></Field>
             </div>
-            <Field label="Description"><Textarea rows={4} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the fabric, construction, fit, and care." /></Field>
+            <Field label="Description"><Textarea rows={4} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the garment construction, fabric, and care." /></Field>
           </Card>
 
           <Card className="space-y-5 p-5">
@@ -288,7 +275,6 @@ export function ProductForm({ product }: { product?: Product }) {
               <Field label="Unit cost (₹)" hint="Internal margin reporting"><Input min={0} type="number" value={costPrice} onChange={(event) => setCostPrice(Number(event.target.value))} /></Field>
               <Field label="Tax rate (%)"><Input min={0} max={100} step="0.1" type="number" value={Math.round(taxRate * 1000) / 10} onChange={(event) => setTaxRate(Number(event.target.value) / 100)} /></Field>
               <Field label="Shipping weight (grams)" required hint="Applied to each unit in the cart."><Input required min={1} max={100000} type="number" value={weightGrams} onChange={(event) => setWeightGrams(Number(event.target.value))} /></Field>
-              {isBottomwear(categorySlug) && <Field label="Inseam (inches)"><Input min={0} type="number" value={inseam} onChange={(event) => setInseam(Number(event.target.value))} /></Field>}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
@@ -319,7 +305,6 @@ export function ProductForm({ product }: { product?: Product }) {
             <CardHeader title="Store visibility" />
             <Field label="Status"><Select value={status} onChange={(event) => setStatus(event.target.value as ProductStatus)}><option value="Draft">Draft</option><option value="Active">Active in storefront</option><option value="Archived">Archived</option></Select></Field>
             <Field label="Collection"><Select value={collectionId} onChange={(event) => setCollectionId(Number(event.target.value))}>{collections.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select></Field>
-            <Field label="Brand"><Input value={brand} onChange={(event) => setBrand(event.target.value)} /></Field>
             <label className="flex items-center gap-2 text-sm"><Checkbox checked={featured} onChange={(event) => setFeatured(event.target.checked)} /> Feature this product</label>
             <p className="text-xs text-muted-foreground">New products start as drafts so you can review photos, sizing, stock, and pricing before publishing.</p>
           </Card>

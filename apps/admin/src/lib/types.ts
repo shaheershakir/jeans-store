@@ -1,4 +1,4 @@
-﻿/**
+/**
  * TEESGARAGE Admin — domain model.
  *
  * The admin manages a much richer catalog shape than the storefront
@@ -55,16 +55,16 @@ export interface Product {
   slug: string
   sku: string
   description: string
-  brand: string
+  brand?: string
   categoryId: number
   collectionId: number
-  fit: Fit
-  gender: Gender
-  rise: Rise
-  material: Material
+  fit?: Fit
+  gender?: Gender
+  rise?: Rise
+  material?: Material
   pattern?: string
-  wash: Wash
-  inseam: number
+  wash?: Wash
+  inseam?: number
   price: number
   compareAtPrice: number | null
   costPrice: number
@@ -321,15 +321,18 @@ export interface Review {
 }
 
 export type SizeChartMeasurement = {
-  size: number
-  waist: number
-  hip: number
-  inseam: number
-  thigh: number
+  size: number | string
+  waist?: number
+  hip?: number
+  chest?: number
+  length?: number
+  inseam?: number
+  thigh?: number
+  [key: string]: unknown
 }
 
 export interface SizeChart {
-  fit: Fit
+  categoryId: number
   description: string
   measurements: SizeChartMeasurement[]
 }

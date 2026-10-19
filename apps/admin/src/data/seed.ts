@@ -806,42 +806,15 @@ function buildShippingZones(): ShippingZone[] {
 }
 
 function buildSizeCharts(): SizeChart[] {
-  const fits: Fit[] = ['Skinny', 'Slim', 'Straight', 'Relaxed', 'Bootcut']
-  const descriptions: Record<Fit, string> = {
-    Skinny: 'Tight through the thigh and calf with a narrow leg opening.',
-    Slim: 'Narrow through the leg, closer to the body, still easy to move in.',
-    Straight: 'A consistent width from hip to hem — the classic everyday cut.',
-    Relaxed: 'Roomy through the seat and thigh with a gently tapered leg.',
-    Bootcut: 'Fitted through the hip and thigh, flaring from the knee down.',
-    Oversized: 'Generous silhouette with dropped shoulders and roomy torso.',
-    Boxy: 'Squared off proportions with structured drape.',
-    Regular: 'Classic standard silhouette tailored for balanced everyday comfort.',
-    Baggy: 'Exaggerated relaxed cut through thigh and leg.',
-    Wide: 'Wide leg profile extending straight down from the hip.',
-    Tapered: 'Comfortable through the seat and thigh with a narrower leg opening.',
-  }
-  const hipBoost: Record<Fit, number> = {
-    Skinny: 7,
-    Slim: 8,
-    Straight: 9,
-    Relaxed: 10,
-    Bootcut: 9,
-    Oversized: 10,
-    Boxy: 9,
-    Regular: 8,
-    Baggy: 12,
-    Wide: 11,
-    Tapered: 10,
-  }
-  return fits.map((fit) => ({
-    fit,
-    description: descriptions[fit],
-    measurements: [28, 30, 32, 34, 36, 38, 40].map((size) => ({
+  return CATEGORIES.map((cat) => ({
+    categoryId: cat.id,
+    description: cat.description || `${cat.name} sizing guide and body measurements in inches.`,
+    measurements: sizeRangeFor(cat.slug).map((size) => ({
       size,
-      waist: size,
-      hip: size + hipBoost[fit],
-      inseam: fit === 'Skinny' ? 28 : fit === 'Bootcut' ? 30 : 32,
-      thigh: Math.round(size * 0.72),
+      waist: typeof size === 'number' ? size : 32,
+      hip: typeof size === 'number' ? size + 8 : 40,
+      inseam: (cat.slug === 'trackpants' || cat.slug === 'sweatpants') ? 32 : undefined,
+      thigh: typeof size === 'number' ? Math.round(size * 0.72) : undefined,
     })),
   }))
 }

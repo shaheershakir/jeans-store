@@ -7,29 +7,29 @@ import { saveSizeChart } from '@/services/catalog'
 import { PageContent, PageHeader } from '@/components/ui/page-header'
 import { Button, Card, CardHeader, Field, Input, Select, Textarea } from '@/components/ui/primitives'
 import { toastSuccess, toastError } from '@/components/ui/toast'
-import type { Fit, SizeChart } from '@/lib/types'
-
-const FITS: Fit[] = ['Straight', 'Skinny', 'Slim', 'Relaxed', 'Bootcut']
-
 export default function SizeFitPage() {
   const sizeCharts = useAdminStore((s) => s.data.sizeCharts)
-  const [selectedFit, setSelectedFit] = React.useState<Fit>('Straight')
+  const categories = useAdminStore((s) => s.data.categories)
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState<number>(categories[0]?.id ?? 1)
+
+  const selectedCategory = categories.find((c) => c.id === selectedCategoryId) ?? categories[0]
+  const categoryName = selectedCategory?.name ?? 'Category'
 
   const currentChart = React.useMemo(() => {
     return (
-      sizeCharts.find((c) => c.fit === selectedFit) ?? {
-        fit: selectedFit,
-        description: `${selectedFit} fit sizing guide and body measurements in inches.`,
+      sizeCharts.find((c) => c.categoryId === selectedCategoryId) ?? {
+        categoryId: selectedCategoryId,
+        description: `${categoryName} sizing guide and body measurements in inches.`,
         measurements: [
-          { size: 28, waist: 29.5, hip: 37, inseam: 32, thigh: 22.5 },
-          { size: 30, waist: 31.5, hip: 39, inseam: 32, thigh: 23.5 },
-          { size: 32, waist: 33.5, hip: 41, inseam: 32, thigh: 24.5 },
-          { size: 34, waist: 35.5, hip: 43, inseam: 32, thigh: 25.5 },
-          { size: 36, waist: 37.5, hip: 45, inseam: 32, thigh: 26.5 },
+          { size: 'S', waist: 29.5, hip: 37, inseam: 32, thigh: 22.5 },
+          { size: 'M', waist: 31.5, hip: 39, inseam: 32, thigh: 23.5 },
+          { size: 'L', waist: 33.5, hip: 41, inseam: 32, thigh: 24.5 },
+          { size: 'XL', waist: 35.5, hip: 43, inseam: 32, thigh: 25.5 },
+          { size: 'XXL', waist: 37.5, hip: 45, inseam: 32, thigh: 26.5 },
         ],
       }
     )
-  }, [sizeCharts, selectedFit])
+  }, [sizeCharts, selectedCategoryId, categoryName])
 
   const [description, setDescription] = React.useState(currentChart.description)
   const [measurements, setMeasurements] = React.useState(currentChart.measurements)
@@ -50,11 +50,11 @@ export default function SizeFitPage() {
     try {
       setLoading(true)
       await saveSizeChart({
-        fit: selectedFit,
+        categoryId: selectedCategoryId,
         description,
         measurements,
       })
-      toastSuccess(`Saved size chart for ${selectedFit} fit.`)
+      toastSuccess(`Saved size chart for ${categoryName}.`)
     } catch (err: any) {
       toastError(err?.message || 'Failed to save size chart.')
     } finally {
@@ -66,26 +66,26 @@ export default function SizeFitPage() {
     <div>
       <PageHeader
         title="Size & Fit Guide"
-        description="Configure measurement standards and fit sizing charts displayed to customers"
+        description="Configure measurement standards and category sizing charts displayed to customers"
       />
 
       <PageContent>
-        {/* Select Fit */}
+        {/* Select Category */}
         <Card className="p-4">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold text-ink">Select Fit Type:</span>
-            <div className="flex gap-2">
-              {FITS.map((fit) => (
+            <span className="text-xs font-semibold text-ink">Select Category:</span>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
                 <button
-                  key={fit}
-                  onClick={() => setSelectedFit(fit)}
+                  key={cat.id}
+                  onClick={() => setSelectedCategoryId(cat.id)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    selectedFit === fit
+                    selectedCategoryId === cat.id
                       ? 'bg-primary text-white'
                       : 'bg-surface-subtle text-ink-2 hover:bg-surface-subtle/80 hover:text-ink'
                   }`}
                 >
-                  {fit} Fit
+                  {cat.name}
                 </button>
               ))}
             </div>
@@ -95,7 +95,7 @@ export default function SizeFitPage() {
         {/* Measurements Editor */}
         <Card className="p-5 space-y-4">
           <CardHeader
-            title={`${selectedFit} Fit Measurements (Inches)`}
+            title={`${categoryName} Measurements (Inches)`}
             action={
               <Button size="sm" onClick={handleSave} disabled={loading}>
                 <Save className="h-3.5 w-3.5" /> Save Chart

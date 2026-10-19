@@ -33,14 +33,14 @@ record(
   `status ${listRes.status}, count ${listBody.count}`
 )
 
-const filterRes = await request('/api/products?fit=baggy&sort=price-asc')
-const filterBody = (await filterRes.json()) as { count: number; products: Array<{ fit: string; priceNum: number }> }
+const filterRes = await request('/api/products?category=stripes&sort=price-asc')
+const filterBody = (await filterRes.json()) as { count: number; products: Array<{ category: string; priceNum: number }> }
 const sorted = filterBody.products.every(
   (p, i, arr) => i === 0 || arr[i - 1].priceNum <= p.priceNum
 )
 record(
-  'GET /api/products?fit=baggy&sort=price-asc',
-  filterRes.status === 200 && filterBody.count === 2 && filterBody.products.every((p) => p.fit === 'Baggy') && sorted,
+  'GET /api/products?category=stripes&sort=price-asc',
+  filterRes.status === 200 && filterBody.count >= 1 && filterBody.products.every((p) => p.category === 'stripes') && sorted,
   `status ${filterRes.status}, count ${filterBody.count}, sorted ${sorted}`
 )
 
@@ -71,13 +71,12 @@ const createRes = await request('/api/products', {
   headers: { 'content-type': 'application/json', ...authHeader },
   body: JSON.stringify({
     name: 'Smoke Test Straight',
-    fit: 'Straight',
+    category: 'stripes',
     price: '₹999',
     priceNum: 999,
     img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80',
     img2: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80',
-    desc: 'Created by the smoke script — safe to delete.',
-    wash: 'Smoke Wash'
+    desc: 'Created by the smoke script — safe to delete.'
   })
 })
 const createBody = (await createRes.json()) as { product?: { id: number } }
@@ -200,8 +199,8 @@ const navUpdateRes = await request('/api/navigation', {
   headers: { 'content-type': 'application/json', ...authHeader },
   body: JSON.stringify({
     navigation: [
-      { id: 'nav-1', label: 'All Silhouettes', href: '/', type: 'fit', targetValue: 'all', order: 0, isActive: true, openInNewTab: false },
-      { id: 'nav-2', label: 'Straight', href: '/?fit=Straight', type: 'fit', targetValue: 'Straight', order: 1, isActive: true, openInNewTab: false },
+      { id: 'nav-1', label: 'All Silhouettes', href: '/', type: 'category', targetValue: 'all', order: 0, isActive: true, openInNewTab: false },
+      { id: 'nav-2', label: 'Stripes', href: '/category/stripes', type: 'category', targetValue: 'stripes', order: 1, isActive: true, openInNewTab: false },
       { id: 'nav-smoke', label: 'Smoke Test Link', href: '/test', type: 'custom', order: 2, isActive: true, openInNewTab: false }
     ]
   })

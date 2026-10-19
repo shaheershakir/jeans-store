@@ -121,11 +121,7 @@ export const products = pgTable(
     slug: varchar('slug', { length: 160 }).notNull().unique(),
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description').notNull(),
-    fit: varchar('fit', { length: 50 }),
     status: varchar('status', { length: 20 }).default('draft').notNull(),
-    brand: varchar('brand', { length: 100 }).default('TEESGARAGE').notNull(),
-    gender: varchar('gender', { length: 20 }).default('Unisex').notNull(),
-    styleCode: varchar('style_code', { length: 60 }),
     price: integer('price').notNull(),
     compareAtPrice: integer('compare_at_price'),
     costPrice: integer('cost_price'),
@@ -134,38 +130,16 @@ export const products = pgTable(
     badge: varchar('badge', { length: 50 }),
     isFeatured: boolean('is_featured').default(false).notNull(),
     weightGrams: integer('weight_grams').notNull(),
-    lengthMm: integer('length_mm'),
-    widthMm: integer('width_mm'),
-    heightMm: integer('height_mm'),
-    viewCount: integer('view_count').default(0).notNull(),
-    wishlistCount: integer('wishlist_count').default(0).notNull(),
     ratingAverage: real('rating_average').default(0).notNull(),
     reviewCount: integer('review_count').default(0).notNull(),
-    fabric: varchar('fabric', { length: 120 }),
-    material: varchar('material', { length: 120 }),
-    sleeveLength: varchar('sleeve_length', { length: 60 }),
-    neckType: varchar('neck_type', { length: 60 }),
-    pattern: varchar('pattern', { length: 120 }),
-    printStyle: varchar('print_style', { length: 120 }),
-    trimColor: varchar('trim_color', { length: 80 }),
-    garmentLength: varchar('garment_length', { length: 60 }),
-    closure: varchar('closure', { length: 80 }),
-    pockets: varchar('pockets', { length: 120 }),
-    legStyle: varchar('leg_style', { length: 80 }),
-    rise: varchar('rise', { length: 40 }),
-    inseam: real('inseam'),
-    wash: varchar('wash', { length: 120 }),
     careInstructions: text('care_instructions'),
-    countryOfOrigin: varchar('country_of_origin', { length: 100 }).default('India').notNull(),
     ...timestamps
   },
   (t) => [
     index('products_category_status_idx').on(t.categoryId, t.status),
     index('products_collection_idx').on(t.collectionId),
     index('products_status_created_idx').on(t.status, t.createdAt),
-    uniqueIndex('products_style_code_idx').on(t.styleCode),
     check('products_status_check', sql.raw("status IN ('draft', 'active', 'archived')")),
-    check('products_gender_check', sql.raw("gender IN ('Men', 'Women', 'Unisex')")),
     check('products_price_check', sql.raw('price >= 0')),
     check('products_weight_check', sql.raw('weight_grams > 0')),
     check('products_rating_check', sql.raw('rating_average >= 0 AND rating_average <= 5'))
@@ -236,7 +210,10 @@ export const productVariants = pgTable(
 
 export const sizeCharts = pgTable('size_charts', {
   id: serial('id').primaryKey(),
-  fit: varchar('fit', { length: 50 }).notNull().unique(),
+  categoryId: integer('category_id')
+    .notNull()
+    .unique()
+    .references(() => categories.id, { onDelete: 'cascade' }),
   description: text('description'),
   ...timestamps
 })
@@ -376,7 +353,7 @@ export const promotions = pgTable(
     ...timestamps
   },
   (t) => [
-    check('promotions_target_check', sql.raw("target IN ('Product', 'Category', 'Collection', 'Fit', 'Color')")),
+    check('promotions_target_check', sql.raw("target IN ('Product', 'Category', 'Collection', 'Color')")),
     check('promotions_discount_type_check', sql.raw("discount_type IN ('percentage', 'fixed')")),
     check('promotions_status_check', sql.raw("status IN ('Scheduled', 'Active', 'Ended')"))
   ]
@@ -466,7 +443,6 @@ export const orderItems = pgTable(
     variantId: integer('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
     sku: varchar('sku', { length: 100 }),
     name: varchar('name', { length: 255 }).notNull(),
-    fit: varchar('fit', { length: 50 }),
     size: varchar('size', { length: 50 }).notNull(),
     color: varchar('color', { length: 50 }),
     unitPrice: integer('unit_price').notNull(),
@@ -869,7 +845,7 @@ export const navigationItems = pgTable(
     openInNewTab: boolean('open_in_new_tab').default(false).notNull(),
     ...timestamps
   },
-  (t) => [check('navigation_items_type_check', sql.raw("type IN ('fit', 'category', 'custom')"))]
+  (t) => [check('navigation_items_type_check', sql.raw("type IN ('category', 'collection', 'custom')"))]
 )
 
 export const shippingZones = pgTable('shipping_zones', {

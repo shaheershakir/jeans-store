@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import * as React from 'react'
 import Image from 'next/image'
@@ -18,7 +18,7 @@ export default function ProductsPage() {
   const categories = useAdminStore((s) => s.data.categories)
 
   const [query, setQuery] = React.useState('')
-  const [selectedFit, setSelectedFit] = React.useState<string>('all')
+  const [selectedCategory, setSelectedCategory] = React.useState<string>('all')
   const [selectedStatus, setSelectedStatus] = React.useState<string>('all')
   const [selectedIds, setSelectedIds] = React.useState<number[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -41,11 +41,11 @@ export default function ProductsPage() {
         p.name.toLowerCase().includes(q) ||
         p.sku.toLowerCase().includes(q) ||
         p.variants?.some((v) => v.sku.toLowerCase().includes(q))
-      const matchesFit = selectedFit === 'all' || p.fit === selectedFit
+      const matchesCategory = selectedCategory === 'all' || p.categoryId === Number(selectedCategory)
       const matchesStatus = selectedStatus === 'all' || p.status === selectedStatus
-      return matchesQuery && matchesFit && matchesStatus
+      return matchesQuery && matchesCategory && matchesStatus
     })
-  }, [products, query, selectedFit, selectedStatus])
+  }, [products, query, selectedCategory, selectedStatus])
 
 
   const allSelected =
@@ -119,7 +119,16 @@ export default function ProductsPage() {
                 />
               </div>
 
-              <div className="w-40"><Select value={selectedFit} onChange={(e) => setSelectedFit(e.target.value)}><option value="all">All fits</option><option value="Regular">Regular</option><option value="Oversized">Oversized</option><option value="Boxy">Boxy</option><option value="Relaxed">Relaxed</option><option value="Straight">Straight</option><option value="Baggy">Baggy</option></Select></div>
+              <div className="w-40">
+                <Select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
+                  <option value="all">All categories</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
 
               <div className="w-36">
                 <Select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
@@ -162,7 +171,7 @@ export default function ProductsPage() {
                   </th>
                   <th className="px-4 py-3 font-semibold">Product</th>
                   <th className="px-4 py-3 font-semibold">SKU</th>
-                  <th className="px-4 py-3 font-semibold">Fit & Wash</th>
+                  <th className="px-4 py-3 font-semibold">Category</th>
                   <th className="px-4 py-3 font-semibold text-right">Price</th>
                   <th className="px-4 py-3 font-semibold text-center">Total Stock</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
@@ -227,7 +236,7 @@ export default function ProductsPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-ink-2">
-                          {product.fit} fit &bull; {product.wash}
+                          {categories.find((c) => c.id === product.categoryId)?.name ?? 'Apparel'}
                         </td>
                         <td className="px-4 py-3 text-right font-medium tnum text-ink">
                           {formatINR(product.price)}

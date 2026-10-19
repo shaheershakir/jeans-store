@@ -224,7 +224,7 @@ function breakdown(
 }
 
 export const salesByFit = (data: DbState, days: number | null = null): BreakdownPoint[] =>
-  breakdown(data, (p) => p.fit, days)
+  breakdown(data, (p) => p.fit ?? null, days)
 
 export const salesByColor = (data: DbState, days: number | null = null): BreakdownPoint[] =>
   breakdown(data, (_p, item) => variantOf(data, item.variantId)?.color ?? null, days)
@@ -233,10 +233,10 @@ export const salesBySize = (data: DbState, days: number | null = null): Breakdow
   breakdown(data, (_p, item) => String(variantOf(data, item.variantId)?.size ?? 0), days)
 
 export const salesByWash = (data: DbState, days: number | null = null): BreakdownPoint[] =>
-  breakdown(data, (p) => p.wash, days)
+  breakdown(data, (p) => p.wash ?? null, days)
 
 export const salesByInseam = (data: DbState, days: number | null = null): BreakdownPoint[] =>
-  breakdown(data, (p) => `${p.inseam}"`, days)
+  breakdown(data, (p) => (p.inseam != null ? `${p.inseam}"` : null), days)
 
 /* ------------------------------------------------------------------ */
 /* Product performance                                                 */
@@ -310,13 +310,15 @@ export function returnRateByFit(data: DbState): RatePoint[] {
     for (const item of o.items) {
       const p = data.products.find((x) => x.id === item.productId)
       if (!p) continue
-      units.set(p.fit, (units.get(p.fit) ?? 0) + item.quantity)
+      const fitKey = p.fit ?? 'Regular'
+      units.set(fitKey, (units.get(fitKey) ?? 0) + item.quantity)
     }
   }
   for (const r of data.returns) {
     const p = data.products.find((x) => x.id === r.items[0]?.productId)
     if (!p) continue
-    returnedMap.set(p.fit, (returnedMap.get(p.fit) ?? 0) + r.items.reduce((s, i) => s + i.quantity, 0))
+    const fitKey = p.fit ?? 'Regular'
+    returnedMap.set(fitKey, (returnedMap.get(fitKey) ?? 0) + r.items.reduce((s, i) => s + i.quantity, 0))
   }
   return [...units.entries()].map(([key, unitTotal]) => ({
     key,

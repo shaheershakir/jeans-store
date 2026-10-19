@@ -697,37 +697,22 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
           </div>
 
-          {/* ── Signature Action Buttons (Inherits .card-add-btn styling) ── */}
+          {/* CTAs */}
           <div id="pdp-main-actions" className="pdp-actions-group">
             <button
               id="pdp-add-to-cart-btn"
               type="button"
-              className={`card-add-btn pdp-cta-btn ${added ? 'added' : ''}`}
+              className={`pdp-add-to-cart-btn ${added ? 'added' : ''}`}
               onClick={() => handleAddToCart('pdp')}
               disabled={!availableSizes.includes(selectedSize)}
-              aria-label={
-                !availableSizes.includes(selectedSize)
-                  ? `${product.name} is out of stock in this size`
-                  : `Add ${product.name} size ${selectedSize} to bag`
-              }
             >
-              {!availableSizes.includes(selectedSize) ? (
-                <span>OUT OF STOCK</span>
-              ) : added ? (
-                <div className="card-btn-content">
-                  <Check className="w-4 h-4 stroke-[2.5]" />
-                  <span className="card-btn-text">ADDED TO BAG</span>
-                </div>
+              {added ? (
+                <span>✓ Added to Shopping Bag</span>
               ) : (
-                <div className="card-btn-content">
-                  <div className="card-btn-center">
-                    <ShoppingBag className="w-4 h-4 stroke-[2]" />
-                    <span className="card-btn-text">
-                      ADD TO BAG — {isNumeric ? `${selectedSize}"` : selectedSize}
-                    </span>
-                  </div>
-                  <ArrowRight className="card-btn-arrow w-4 h-4 stroke-[2]" />
-                </div>
+                <>
+                  <span>Add to Bag — {isNumeric ? `${selectedSize}"` : selectedSize}</span>
+                  <span className="pdp-btn-price-tag">{product.price}</span>
+                </>
               )}
             </button>
 
@@ -738,7 +723,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               onClick={() => handleBuyNow('pdp')}
               disabled={!availableSizes.includes(selectedSize)}
             >
-              BUY NOW — EXPRESS CHECKOUT
+              Buy Now
             </button>
           </div>
 
@@ -820,14 +805,12 @@ export default function ProductDetail({ product }: { product: Product }) {
       {/* ── Sticky Bottom Floating Bar on Scroll (Past Buy Now) ── */}
       <StickyPdpBar
         product={product}
-        selectedColor={selectedColor}
         selectedSize={selectedSize}
-        sizeOptions={sizeOptions}
         availableSizes={availableSizes}
-        productImage={images[activeImageIdx] || product.img}
-        onSizeChange={handleSelectSize}
+        isNumeric={isNumeric}
+        added={added}
         onAddToCart={() => handleAddToCart('sticky_bar')}
-        isAdded={added}
+        onBuyNow={() => handleBuyNow('sticky_bar')}
       />
 
       {/* ── Interactive Apple-style Size & Fit Guide Modal ── */}
