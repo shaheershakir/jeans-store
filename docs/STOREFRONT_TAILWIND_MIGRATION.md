@@ -54,6 +54,7 @@ padding/margin. Anything new must stay inside `@layer legacy` (or a later layer)
 | Converted in wave 2 | `ProductCard`, `skeletons/ProductCardSkeleton` |
 | Converted in wave 3 | `ProductDetail`, `skeletons/ProductDetailSkeleton`, `StickyPdpBar`, checkout breadcrumbs |
 | Converted in wave 4 | `Header` (tier-1 bar, desktop nav, mobile drawer, full-screen mobile search, account popover) |
+| Converted in wave 5 | `SearchOverlay` (desktop modal + mobile bottom sheet) |
 
 Wave 1 removed 57 CSS rules (footer, related-products and category-group styling). Wave 2 removed 65 rules
 from the product-card cascade and split the shared `.apple-product-card` selectors so the PDP keeps its
@@ -69,6 +70,13 @@ utilities, and its profile/wishlist rules moved to `legacy-overrides`. Two quirk
 state was dropped; and the desktop nav bar remains top-aligned rather than vertically centred.
 `max-*` variants are strict `<`, so the legacy `max-width` breakpoints land one pixel earlier (the mobile
 header applies at 639 rather than 640).
+
+Wave 5 removed all 24 `SearchOverlay` rules, including the `max-width: 640px` block that held only its
+mobile sheet overrides. `.search-modal` was also dropped from the reduced-transparency group. The overlay
+keeps its `opacity 0.25s` fade and mobile `90dvh` bottom sheet; the input keeps `line-height: normal`
+(not the inherited 1.5) so the header stays 50px tall on mobile. Classes with no CSS in the sheet
+(`search-icon`, `search-clear`, `modal-close`, `tag-label`, `search-results-meta`, `search-empty`,
+`search-item-info`) were left as inert hooks rather than given utilities that never existed.
 
 Wave 2 also fixed the card media link: the `Link` inside the 4:5 stage is `absolute inset-0` so the
 `h-full` image chain resolves. Without it the link collapsed to `0` height and every `ProductCard` (shop

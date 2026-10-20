@@ -2299,130 +2299,35 @@ button {
 /* ==========================================================================
    8. SEARCH OVERLAY & TOAST
    ========================================================================== */
-.search-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(12, 14, 18, 0.65);
-  backdrop-filter: blur(6px);
-  z-index: 70;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 60px 16px;
-}
 
-.search-overlay.open {
-  opacity: 1;
-  pointer-events: auto;
-}
 
-.search-modal {
-  background: var(--paper);
-  width: 100%;
-  max-width: 680px;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-drawer);
-  overflow: hidden;
-  border: 1px solid var(--line);
-}
 
-.search-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--line);
-}
 
-.search-input-wrap {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 
-.search-input-wrap input {
-  flex: 1;
-  border: 0;
-  outline: none;
-  font: 500 13px var(--font-ui);
-  letter-spacing: 0.02em;
-}
 
-.search-quick-tags {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  background: var(--bone);
-  border-bottom: 1px solid var(--line);
-  overflow-x: auto;
-}
 
-.search-tag {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  padding: 4px 10px;
-  border-radius: 16px;
-  font: 500 10px var(--font-ui);
-  text-transform: uppercase;
-  cursor: pointer;
-  white-space: nowrap;
-}
 
-.search-tag:hover {
-  border-color: var(--ink);
-}
 
-.search-results-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 18px 20px;
-  max-height: 50vh;
-  overflow-y: auto;
-}
 
-.search-item {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  border: 1px solid var(--line);
-  padding: 8px;
-  border-radius: var(--radius-xs);
-}
 
-.search-item-img {
-  width: 54px;
-  height: 68px;
-  object-fit: cover;
-  border-radius: 2px;
-}
 
-.search-item-info h4 {
-  font: 600 12px var(--font-brand);
-  margin-bottom: 2px;
-}
 
-.search-item-info p {
-  font: 500 11px var(--font-ui);
-  font-feature-settings: 'tnum';
-  color: var(--ink-muted);
-}
 
-.search-item-add {
-  margin-left: auto;
-  background: var(--ink);
-  color: var(--paper);
-  border: 0;
-  padding: 6px 10px;
-  border-radius: var(--radius-xs);
-  font: 600 10px var(--font-brand);
-  cursor: pointer;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* Toast */
 .toast {
@@ -7555,9 +7460,8 @@ button:active,
 
 @media (prefers-reduced-transparency: reduce) {
   .apple-modal-card,
-  .apple-sticky-bar,
-  .cart-drawer,
-  .search-modal {
+.apple-sticky-bar,
+.cart-drawer{
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background: #ffffff !important;
@@ -14869,55 +14773,7 @@ button, [role="button"], .apple-segment-item, .search-pill-btn, .search-cat-tab 
 /* ==========================================================================
    13. SEARCH OVERLAY RESPONSIVE FIX (Eliminating condensed UI)
    ========================================================================== */
-@media (max-width: 640px) {
-  .search-overlay {
-    padding: 0 !important;
-    align-items: flex-end !important;
-  }
 
-  .search-modal {
-    max-width: 100% !important;
-    height: 90dvh !important;
-    border-radius: 16px 16px 0 0 !important;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .search-header {
-    padding: 14px 16px;
-  }
-
-  .search-input-wrap input {
-    font-size: 16px !important;
-  }
-
-  .search-results-grid {
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
-    padding: 14px 16px !important;
-    flex: 1;
-    max-height: none !important;
-  }
-
-  .search-item {
-    padding: 10px 12px;
-  }
-
-  .search-item-img {
-    width: 60px !important;
-    height: 75px !important;
-  }
-
-  .search-item-info h4 {
-    font-size: 13px !important;
-  }
-
-  .search-item-add {
-    min-height: 34px;
-    padding: 6px 14px;
-    font-size: 11px;
-  }
-}
 
 /* ==========================================================================
    14. PDP, MODALS & CART DRAWER MOBILE SAFE-AREA INSETS

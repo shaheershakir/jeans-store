@@ -71,15 +71,23 @@ export default function SearchOverlay() {
 
   return (
     <div
-      className={`search-overlay${open ? ' open' : ''}`}
+      className={`fixed inset-0 z-[70] flex items-start justify-center bg-[rgba(12,14,18,0.65)] px-4 py-[60px] backdrop-blur-[6px] transition-opacity duration-[250ms] ease-[ease] max-[640px]:items-end max-[640px]:p-0 ${
+        open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+      }`}
       aria-hidden={!open}
       onClick={(e) => {
         if (e.target === e.currentTarget) closeOverlay()
       }}
     >
-      <div className="search-modal" ref={modalRef} role="dialog" aria-modal="true" aria-label="Search catalog">
-        <div className="search-header">
-          <div className="search-input-wrap">
+      <div
+        className="w-full max-w-[680px] overflow-hidden rounded-[10px] border border-line bg-paper shadow-drawer max-[640px]:flex max-[640px]:h-[90dvh] max-[640px]:max-w-full max-[640px]:flex-col max-[640px]:rounded-t-[16px] max-[640px]:rounded-b-none"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search catalog"
+      >
+        <div className="flex items-center gap-3 border-b border-b-line px-5 py-4 max-[640px]:px-4 max-[640px]:py-3.5">
+          <div className="flex flex-1 items-center gap-2.5">
             <span className="search-icon">
               <svg
                 width="18"
@@ -103,6 +111,7 @@ export default function SearchOverlay() {
               spellCheck={false}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              className="flex-1 border-0 text-[13px] font-medium leading-[normal] tracking-[0.02em] outline-none max-[640px]:text-[16px]"
             />
             <button className="search-clear" type="button" aria-label="Clear search" onClick={() => setQuery('')}>
               ✕
@@ -112,13 +121,15 @@ export default function SearchOverlay() {
             ✕
           </button>
         </div>
-        <div className="search-quick-tags">
+        <div className="flex items-center gap-1.5 overflow-x-auto border-b border-b-line bg-bone px-5 py-2.5">
           <span className="tag-label">POPULAR:</span>
           {QUICK_TAGS.map((tag) => (
             <button
               key={tag}
               type="button"
-              className={`search-tag${query.toLowerCase() === tag.toLowerCase() ? ' active' : ''}`}
+              className={`cursor-pointer whitespace-nowrap rounded-[16px] border border-line bg-paper px-2.5 py-1 text-[10px] font-medium uppercase leading-[normal] hover:border-ink ${
+                query.toLowerCase() === tag.toLowerCase() ? 'active' : ''
+              }`}
               onClick={() => setQuery(tag)}
             >
               {tag}
@@ -129,26 +140,26 @@ export default function SearchOverlay() {
           <span>CATALOG EXPLORER</span>
           <b>{results.length} STYLES FOUND</b>
         </div>
-        <div className="search-results-grid">
+        <div className="grid max-h-[50vh] grid-cols-2 gap-3 overflow-y-auto px-5 py-[18px] max-[640px]:max-h-none max-[640px]:flex-1 max-[640px]:grid-cols-1 max-[640px]:gap-2.5 max-[640px]:px-4 max-[640px]:py-3.5">
           {results.length === 0 ? (
             <div className="search-empty">No styles match “{query}”. Try a fit, wash, or price.</div>
           ) : (
             results.map((p) => (
-              <div className="search-item" key={p.id}>
+              <div className="flex items-center gap-3 rounded-[3px] border border-line p-2 max-[640px]:px-3 max-[640px]:py-2.5" key={p.id}>
                 <Link href={getProductUrl(p)} onClick={closeOverlay}>
-                  <Image src={p.img} alt={p.name} width={90} height={112} className="search-item-img" />
+                  <Image src={p.img} alt={p.name} width={90} height={112} className="h-[68px] w-[54px] rounded-[2px] object-cover max-[640px]:h-[75px] max-[640px]:w-[60px]" />
                 </Link>
                 <div className="search-item-info">
                   <Link href={getProductUrl(p)} onClick={closeOverlay}>
-                    <h4>{p.name}</h4>
+                    <h4 className="mb-0.5 font-brand text-[12px] font-semibold leading-[normal] max-[640px]:text-[13px]">{p.name}</h4>
                   </Link>
-                  <p>
+                  <p className="font-ui text-[11px] font-medium leading-[normal] text-ink-muted [font-feature-settings:'tnum']">
                     {p.fit} fit · {p.wash}
                   </p>
                   <strong>{p.price}</strong>
                 </div>
                 <button
-                  className="search-item-add"
+                  className="ml-auto cursor-pointer rounded-[3px] border-0 bg-ink px-2.5 py-1.5 font-brand text-[10px] font-semibold leading-[normal] text-paper max-[640px]:min-h-[34px] max-[640px]:px-3.5 max-[640px]:py-1.5 max-[640px]:text-[11px]"
                   type="button"
                   onClick={() => {
                     addItem(p.id, selectedSize)
@@ -161,19 +172,11 @@ export default function SearchOverlay() {
             ))
           )}
         </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--line)', background: 'var(--bone, #f8f8f6)', display: 'flex', justifyContent: 'center' }}>
+        <div className="flex justify-center border-t border-t-line bg-bone px-5 py-3">
           <Link
             href={query.trim() ? `/search?q=${encodeURIComponent(query.trim())}` : '/search'}
             onClick={closeOverlay}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '12px',
-              fontWeight: 600,
-              color: 'var(--ink, #0c0e12)',
-              textDecoration: 'none'
-            }}
+            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-ink no-underline"
           >
             <span>Open Dedicated Search Page</span>
             <ArrowRight className="w-3.5 h-3.5" />
