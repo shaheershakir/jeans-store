@@ -2,10 +2,52 @@
 @import './teesgarage-home.css';
 
 @theme {
+  /* ── Typography ── */
   --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
   --font-display: 'Playfair Display', Georgia, serif;
   --font-brand: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-ui: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  /* ── Editorial palette ── */
+  --color-ink: #0c0e12;
+  --color-ink-secondary: #3f4753;
+  --color-ink-muted: #6b7280;
+  --color-paper: #ffffff;
+  --color-bone: #f8f8f6;
+  --color-bone-alt: #f1f0ec;
+  --color-navy: #1c2a38;
+  --color-navy-accent: #2e445b;
+  --color-line: rgba(12, 14, 18, 0.09);
+  --color-line-strong: rgba(12, 14, 18, 0.18);
+  --color-accent-green: #15803d;
+  --color-accent-green-bg: #ecfdf5;
+
+  /* ── Storefront surfaces ── */
+  --color-store-paper: #f8f7f3;
+  --color-store-surface: #ffffff;
+  --color-store-ink: #172126;
+  --color-store-muted: #697276;
+  --color-store-line: #dfded8;
+  --color-store-accent: #294455;
+  --color-store-soft: #eeede7;
+
+  /* ── Radii ── */
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* ── Elevation ── */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-panel: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-drawer: -12px 0 40px rgba(0, 0, 0, 0.18);
+
+  /* ── Motion ── */
+  --ease-brand-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-brand-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 :root {
@@ -2863,89 +2905,7 @@ h1.pdp-product-title {
   color: var(--ink-muted);
 }
 
-/* Site Footer */
-.site-footer {
-  border-top: 1px solid var(--line);
-  background: var(--paper);
-  padding: 65px 4% 30px;
-}
 
-.footer-links-grid {
-  max-width: 1440px;
-  margin: 0 auto 50px;
-  display: grid;
-  grid-template-columns: 1.2fr 1.2fr 1fr;
-  gap: 40px;
-}
-
-.footer-heading {
-  font: 600 11px var(--font-ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: 20px;
-  color: var(--ink);
-}
-
-.footer-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.footer-list a,
-.footer-list button {
-  color: var(--ink-secondary);
-  text-decoration: none;
-  font-size: 13px;
-  background: none;
-  border: 0;
-  cursor: pointer;
-  text-align: left;
-  transition: color 0.15s, transform 0.15s;
-}
-
-.footer-list a:hover,
-.footer-list button:hover {
-  color: var(--ink);
-  transform: translateX(3px);
-}
-
-.social-links {
-  display: flex;
-  gap: 12px;
-}
-
-.social-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid var(--line-strong);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink);
-  transition: all 0.2s ease;
-}
-
-.social-circle:hover {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
-  transform: translateY(-2px);
-}
-
-.footer-bottom-bar {
-  max-width: 1440px;
-  margin: 0 auto;
-  border-top: 1px solid var(--line);
-  padding-top: 22px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font: 500 11px var(--font-ui);
-  color: var(--ink-muted);
-}
 
 /* ==========================================================================
    7. YOUR BAG DRAWER (Manifest & Editorial Style)
@@ -4162,10 +4122,8 @@ h1.pdp-product-title {
   .reviews-grid {
     grid-template-columns: 1fr;
   }
-  .footer-links-grid {
-    grid-template-columns: 1fr;
-    gap: 28px;
-  }
+
+
 }
 
 @media (max-width: 480px) {
@@ -8194,8 +8152,7 @@ button:active,
 .hp-section-title,
 .hp-hero-title,
 .apple-modal-title,
-.apple-reviews-title,
-.apple-related-title {
+.apple-reviews-title {
   letter-spacing: -0.035em !important;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 }
@@ -9058,78 +9015,11 @@ button:active,
   padding: 32px 16px;
 }
 
-/* ── 6. Complete the Fit / Related Products Section ── */
-.apple-related-section {
-  padding: 72px 4%;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  background: #fafaf8;
-}
 
-.apple-related-container {
-  max-width: 1360px;
-  margin: 0 auto;
-}
 
-.apple-related-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
 
-.apple-related-eyebrow {
-  display: block;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
 
-.apple-related-title {
-  font-family: var(--font-brand);
-  font-size: clamp(24px, 3vw, 32px);
-  font-weight: 700;
-  color: #0c0e12;
-  margin: 0;
-}
 
-.apple-related-view-all {
-  display: inline-flex;
-  align-items: center;
-  font-family: var(--font-brand);
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #0c0e12;
-  text-decoration: none;
-  transition: opacity 0.2s ease;
-}
-
-.apple-related-view-all:hover {
-  opacity: 0.7;
-}
-
-.apple-related-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-}
-
-@media (max-width: 1024px) {
-  .apple-related-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 600px) {
-  .apple-related-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px 10px;
-  }
-}
 
 /* ── 7. Apple Sticky Quick-Add Floating Bottom Bar (PDP) ── */
 .apple-sticky-bar {
@@ -14196,90 +14086,10 @@ select {
   line-height: 1.5;
 }
 
-.hp-category-groups {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(14px, 2.4vw, 30px);
-}
 
-.hp-category-group {
-  min-width: 0;
-  background: #fff;
-}
 
-.hp-category-group-media {
-  position: relative;
-  min-height: 190px;
-  aspect-ratio: 16 / 8.5;
-  overflow: hidden;
-  background: #314c5d;
-}
-
-.hp-category-group-media > img {
-  object-fit: cover;
-  object-position: center 38%;
-}
-
-.hp-category-group-scrim {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(0deg, rgba(13, 22, 27, 0.68), rgba(13, 22, 27, 0.02) 72%);
-}
-
-.hp-category-group-heading {
-  position: absolute;
-  right: 20px;
-  bottom: 18px;
-  left: 20px;
-  color: #fff;
-}
-
-.hp-category-group-heading h3 {
-  margin: 0 0 4px;
-  font-family: var(--font-serif, 'Playfair Display', Georgia, serif);
-  font-weight: 500;
-  font-size: clamp(24px, 3.2vw, 34px);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-}
-
-.hp-category-group-heading span {
-  font-family: var(--font-mono, 'DM Mono', monospace);
-  font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.hp-category-links {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  padding: 8px 18px 12px;
-}
-
-.hp-category-link {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 4px;
-  border-bottom: 1px solid #ecebe6;
-  color: #273238;
-  font: 500 12px/1.3 var(--font-ui);
-  text-decoration: none;
-}
-
-.hp-category-link svg {
-  flex: 0 0 auto;
-  color: #71808a;
-}
-
-.hp-category-link:focus-visible,
 .hp-root :is(a, button, select):focus-visible,
-.macy-header :is(a, button, input):focus-visible,
-.site-footer :is(a, button):focus-visible {
+.macy-header :is(a, button, input):focus-visible {
   outline: 2px solid #31586f;
   outline-offset: 3px;
 }
@@ -15119,94 +14929,11 @@ select {
   color: #526c7b;
 }
 
-.site-footer {
-  padding: 52px clamp(20px, 5vw, 72px) max(18px, env(safe-area-inset-bottom, 0px));
-  background: #172126;
-  color: #f8f7f3;
-}
 
-.footer-main {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(300px, 1.6fr) minmax(180px, 0.8fr);
-  gap: clamp(28px, 5vw, 76px);
-  max-width: 1180px;
-  margin: 0 auto;
-  padding-bottom: 42px;
-}
-
-.footer-brand-block img {
-  width: auto;
-  max-width: 152px;
-  height: 36px;
-  object-fit: contain;
-  object-position: left center;
-  filter: grayscale(1) brightness(0) invert(1);
-}
-
-.footer-brand-block p {
-  max-width: 230px;
-  margin: 16px 0;
-  color: rgba(248, 247, 243, 0.68);
-  font: 400 13px/1.6 var(--font-ui);
-}
-
-.footer-search-trigger,
-.footer-list a,
-.footer-list span {
-  color: rgba(248, 247, 243, 0.76);
-  font: 400 12px/1.6 var(--font-ui);
-  text-decoration: none;
-}
-
-.footer-search-trigger {
-  padding: 0 0 5px;
-  border: 0;
-  border-bottom: 1px solid rgba(248, 247, 243, 0.45);
-  background: none;
-  cursor: pointer;
-}
-
-.footer-shop-nav {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px;
-}
-
-.footer-heading {
-  margin: 0 0 14px;
-  color: rgba(248, 247, 243, 0.5);
-  font: 600 9px/1.2 var(--font-ui);
-  letter-spacing: 0.14em;
-}
-
-.footer-list {
-  display: grid;
-  gap: 7px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.footer-bottom-bar {
-  display: flex;
-  max-width: 1180px;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 0 auto;
-  padding-top: 18px;
-  border-top: 1px solid rgba(248, 247, 243, 0.16);
-  color: rgba(248, 247, 243, 0.45);
-  font: 500 9px/1.4 var(--font-ui);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
 
 @media (hover: hover) and (pointer: fine) {
-  .hp-category-link:hover,
-  .footer-list a:hover,
-  .footer-search-trigger:hover {
-    color: #b5c8d2;
-  }
+
+
 
   .product-card .product-image-container img {
     transition: opacity 220ms cubic-bezier(0.23, 1, 0.32, 1);
@@ -15227,17 +14954,7 @@ select {
     font-size: clamp(46px, 7vw, 64px);
   }
 
-  .hp-category-groups {
-    gap: 14px;
-  }
 
-  .hp-category-group-media {
-    min-height: 160px;
-  }
-
-  .hp-category-links {
-    padding-inline: 12px;
-  }
 
   .hp-featured-section {
     max-width: 100%;
@@ -15425,30 +15142,7 @@ select {
     font-size: clamp(28px, 8vw, 34px);
   }
 
-  .hp-category-groups {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-  }
 
-  .hp-category-group-media {
-    min-height: 145px;
-    aspect-ratio: 16 / 7.5;
-  }
-
-  .hp-category-group-heading {
-    right: 16px;
-    bottom: 14px;
-    left: 16px;
-  }
-
-  .hp-category-links {
-    padding: 5px 14px 10px;
-  }
-
-  .hp-category-link {
-    min-height: 42px;
-    font-size: 11px;
-  }
 
   .hp-product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -15558,33 +15252,7 @@ select {
     height: 17px;
   }
 
-  .site-footer {
-    padding: 38px 20px max(18px, env(safe-area-inset-bottom, 0px));
-  }
 
-  .footer-main {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-    gap: 28px 18px;
-    padding-bottom: 28px;
-  }
-
-  .footer-brand-block {
-    grid-column: 1 / -1;
-  }
-
-  .footer-shop-nav {
-    grid-column: 1 / -1;
-    gap: 16px;
-  }
-
-  .footer-list {
-    gap: 6px;
-  }
-
-  .footer-bottom-bar {
-    flex-direction: column;
-    gap: 6px;
-  }
 }
 
 @media (pointer: coarse) {
@@ -15598,8 +15266,7 @@ select {
 @media (prefers-reduced-motion: reduce) {
   .hp-root *,
   .macy-header,
-  .mobile-nav-panel,
-  .site-footer * {
+  .mobile-nav-panel {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
