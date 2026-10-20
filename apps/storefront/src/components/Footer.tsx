@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 const footerLink =
   'text-[12px] leading-[1.6] text-[rgba(248,247,243,0.76)] no-underline transition-colors hover:text-[#b5c8d2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#31586f]'
@@ -12,6 +13,11 @@ const footerHeading =
 const footerColumn = 'min-w-0'
 
 export default function Footer() {
+  const pathname = usePathname()
+  if (pathname === '/login' || pathname === '/register' || pathname === '/onboarding') {
+    return null
+  }
+
   return (
     <footer className="border-t border-line bg-[#172126] px-[clamp(20px,5vw,72px)] pt-[52px] pb-[max(18px,env(safe-area-inset-bottom,0px))] text-[#f8f7f3] max-[820px]:px-5 max-[820px]:pt-[38px]">
       <div className="mx-auto grid max-w-[1180px] grid-cols-[minmax(180px,1fr)_minmax(300px,1.6fr)_minmax(180px,0.8fr)] gap-[clamp(28px,5vw,76px)] pb-[42px] max-[820px]:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] max-[820px]:gap-x-[18px] max-[820px]:gap-y-7 max-[820px]:pb-7">

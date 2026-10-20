@@ -193,10 +193,36 @@
   to { opacity: 1; }
 }
 
+@keyframes authEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-auth-enter {
+  animation: authEnter 0.45s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@utility animate-auth-stagger-1 {
+  animation: authEnter 0.45s cubic-bezier(0.23, 1, 0.32, 1) 0.06s both;
+}
+
+@utility animate-auth-stagger-2 {
+  animation: authEnter 0.45s cubic-bezier(0.23, 1, 0.32, 1) 0.12s both;
+}
+
 /* ── Accessibility: Reduced Motion ───────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-  .page-transition-wrapper {
+  .page-transition-wrapper,
+  .animate-auth-enter,
+  .animate-auth-stagger-1,
+  .animate-auth-stagger-2 {
     animation: none !important;
   }
   .reveal-item {

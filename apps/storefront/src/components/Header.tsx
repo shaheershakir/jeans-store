@@ -195,6 +195,11 @@ export default function Header({ initialNavItems }: HeaderProps) {
     }
   }
 
+  const isAuthRoute = pathname === '/login' || pathname === '/register' || pathname === '/onboarding'
+  if (isAuthRoute) {
+    return null
+  }
+
   const count = cartCount(items)
   const activeLinks = navLinks.filter((l) => l.isActive)
   const mobileSuggestions = mobileQuery.trim() ? searchProducts(mobileQuery, PRODUCTS).slice(0, 8) : []

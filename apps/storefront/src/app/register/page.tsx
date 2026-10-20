@@ -1,22 +1,21 @@
 'use client'
 
-import React, { Suspense, useState, useEffect } from 'react'
+import React, { Suspense, useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  ArrowLeft,
   Mail,
   Lock,
   User,
   Eye,
   EyeOff,
-  AlertCircle,
-  ShieldCheck,
-  Check
+  ArrowRight,
+  AlertCircle
 } from 'lucide-react'
-import { signUp, signIn, googleAuth, getGoogleOAuthUrl, getGoogleClientId } from '@/lib/auth'
+import { signUp, googleAuth, getGoogleOAuthUrl, getGoogleClientId } from '@/lib/auth'
 import { useAuthStore, useUIStore, useOnboardingStore } from '@/lib/store'
+import AuthVisualPanel from '@/components/AuthVisualPanel'
 
 function RegisterForm() {
   const router = useRouter()
@@ -27,7 +26,7 @@ function RegisterForm() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [agreeTerms, setAgreeTerms] = useState(true)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,22 +34,22 @@ function RegisterForm() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const user = useAuthStore((s) => s.user)
   const showToast = useUIStore((s) => s.showToast)
+  const isSubmittingRef = useRef(false)
+
+  const redirectParam = searchParams.get('redirect')
 
   useEffect(() => {
     void useAuthStore.persist.rehydrate()
     void useOnboardingStore.persist.rehydrate()
   }, [])
 
-  const isSubmittingRef = React.useRef(false)
-
-  // If already authenticated on initial mount, redirect away
   useEffect(() => {
     if (isSubmittingRef.current) return
     if (isAuthenticated && user) {
-      const redirect = searchParams.get('redirect') || '/'
+      const redirect = redirectParam || '/'
       router.push(redirect)
     }
-  }, [isAuthenticated, user, router, searchParams])
+  }, [isAuthenticated, user, router, redirectParam])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,11 +75,6 @@ function RegisterForm() {
       return
     }
 
-    if (!agreeTerms) {
-      setError('Please agree to the Terms of Service to create your account.')
-      return
-    }
-
     try {
       setLoading(true)
       isSubmittingRef.current = true
@@ -97,8 +91,6 @@ function RegisterForm() {
       const onboarding = useOnboardingStore.getState()
       onboarding.triggerAfterRegister()
 
-      // Redirect immediately to onboarding after registration
-      const redirectParam = searchParams.get('redirect')
       const target = redirectParam && redirectParam !== '/'
         ? `/onboarding?redirect=${encodeURIComponent(redirectParam)}`
         : '/onboarding'
@@ -106,13 +98,13 @@ function RegisterForm() {
       router.push(target)
     } catch (err: any) {
       isSubmittingRef.current = false
-      setError(err?.message || 'Registration failed. Please try a different email.')
+      setError(err?.message || 'Registration failed. Please check your credentials.')
     } finally {
       setLoading(false)
     }
   }
 
-  // Initialize Google Identity Services (One Tap & Credential API) if available
+  // Google One-Tap & Identity Services initialization
   useEffect(() => {
     if (typeof window === 'undefined') return
     const clientId = getGoogleClientId()
@@ -131,7 +123,6 @@ function RegisterForm() {
           const onboarding = useOnboardingStore.getState()
           onboarding.triggerAfterRegister()
 
-          const redirectParam = searchParams.get('redirect')
           const target = redirectParam && redirectParam !== '/'
             ? `/onboarding?redirect=${encodeURIComponent(redirectParam)}`
             : '/onboarding'
@@ -139,7 +130,7 @@ function RegisterForm() {
           return
         }
 
-        const redirect = searchParams.get('redirect') || '/'
+        const redirect = redirectParam || '/'
         router.push(redirect)
       } catch (err: any) {
         isSubmittingRef.current = false
@@ -176,15 +167,14 @@ function RegisterForm() {
         document.body.removeChild(script)
       }
     }
-  }, [router, searchParams, setAuth, showToast])
+  }, [router, redirectParam, setAuth, showToast])
 
   const handleGoogleSignUp = () => {
     setError(null)
     setLoading(true)
     try {
       isSubmittingRef.current = true
-      const redirectParam = searchParams.get('redirect') || '/'
-      const oauthUrl = getGoogleOAuthUrl(undefined, redirectParam)
+      const oauthUrl = getGoogleOAuthUrl(undefined, redirectParam || '/')
       window.location.href = oauthUrl
     } catch (err: any) {
       isSubmittingRef.current = false
@@ -194,86 +184,55 @@ function RegisterForm() {
   }
 
   return (
-    <div className="apple-auth-page">
-      {/* Centered Single-Column Apple Auth Card */}
-      <div className="apple-auth-card">
-        {/* Navigation & Brand Header */}
-        <div className="apple-auth-nav-header">
-          <button
-            type="button"
-            className="apple-auth-back-btn"
-            title="Back"
-            onClick={() => {
-              const redirect = searchParams.get('redirect')
-              if (redirect) {
-                router.push(redirect)
-              } else if (window.history.length > 1) {
-                router.back()
-              } else {
-                router.push('/')
-              }
-            }}
-          >
-            <ArrowLeft className="w-4 h-4 mr-1.5" />
-            <span>Back</span>
-          </button>
-
-          <Link href="/" aria-label="TEESGARAGE Home">
-            <Image
-              src="/teesgarage-logo.svg"
-              alt="TEESGARAGE"
-              width={140}
-              height={40}
-              priority
-              className="apple-auth-brand-logo"
-            />
-          </Link>
+    <div className="min-h-screen w-full bg-white flex items-center justify-center p-3 sm:p-4 lg:p-5 xl:p-6">
+      <div className="w-full max-w-[1360px] min-h-[calc(100vh-2rem)] grid grid-cols-1 lg:grid-cols-[1.14fr_0.86fr] gap-6 lg:gap-10 xl:gap-14 items-center">
+        {/* Left Column: Visual Panel with 3 Sunlit Photos (10s auto-rotate) */}
+        <div className="w-full h-full">
+          <AuthVisualPanel mode="signup" />
         </div>
 
-        {/* Title Group */}
-        <div className="apple-auth-title-group">
-          <h1 className="apple-auth-title">Create your TEESGARAGE account</h1>
-          <p className="apple-auth-subtitle">
-            Sign up for personalized streetwear fits, fast express checkout, and tracked dispatch.
-          </p>
-        </div>
+        {/* Right Column: Clean Form Matching Exact Design 1-to-1 with Extra Confirm Password Column */}
+        <div className="w-full flex flex-col justify-start items-start pt-4 sm:pt-6 lg:pt-10 xl:pt-12 pb-8 px-2 sm:px-4 lg:px-4 xl:px-6 animate-auth-stagger-1">
+          <div className="w-full max-w-[420px]">
+            {/* Brand Logo - Aligned to top-left of the form across from model's head */}
+            <div className="mb-6">
+              <Link href="/" aria-label="TEESGARAGE Home" className="inline-block transition-opacity hover:opacity-80">
+                <Image
+                  src="/teesgarage-logo.svg"
+                  alt="TEESGARAGE"
+                  width={195}
+                  height={57}
+                  priority
+                  className="h-10 sm:h-11 w-auto text-black object-contain -ml-0.5"
+                />
+              </Link>
+            </div>
 
-        {/* Navigation Segmented Control */}
-        <div className="apple-segmented-control auth-segmented" role="tablist">
-          <Link
-            href={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`}
-            role="tab"
-            aria-selected={false}
-            className="apple-segment-item"
-          >
-            <span>Sign In</span>
-          </Link>
-          <div
-            role="tab"
-            aria-selected={true}
-            className="apple-segment-item active"
-          >
-            <span>Create Account</span>
-          </div>
-        </div>
+            {/* Heading & Subtitle */}
+            <div className="mb-7">
+              <h1 className="text-3xl sm:text-[34px] font-bold tracking-tight text-zinc-950 mb-1.5 leading-tight">
+                Create account
+              </h1>
+              <p className="text-zinc-500 text-sm font-normal">
+                Sign up for your Teesgarage account.
+              </p>
+            </div>
 
-        {/* Error Alert Banner */}
-        {error && (
-          <div className="apple-auth-error-banner" role="alert">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
+            {/* Error Banner */}
+            {error && (
+              <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-rose-200/90 bg-rose-50/90 p-3.5 text-xs text-rose-800 animate-auth-enter">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+                <span className="leading-snug">{error}</span>
+              </div>
+            )}
 
-        {/* Continue with Google (Positioned above input fields) */}
-        {Boolean(getGoogleClientId()) && (
-          <div className="apple-auth-social-wrap">
+
+            {/* Continue with Google */}
             <button
               type="button"
-              className="apple-google-btn"
               onClick={handleGoogleSignUp}
               disabled={loading}
-              aria-label="Sign up with Google"
+              className="w-full border border-zinc-200/90 hover:bg-zinc-50/80 active:scale-[0.98] bg-white text-zinc-800 text-sm font-medium py-3 px-4 rounded-xl transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center gap-2.5 shadow-2xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" className="shrink-0" aria-hidden="true">
                 <path
@@ -293,161 +252,166 @@ function RegisterForm() {
                   d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                 />
               </svg>
-              <span>Sign up with Google</span>
+              <span>Continue with Google</span>
             </button>
 
-            <div className="apple-auth-divider">
-              <span>or sign up with email</span>
+            {/* OR Divider */}
+            <div className="relative my-6 flex items-center justify-center">
+              <div className="border-t border-zinc-200/90 w-full" />
+              <span className="bg-white px-3 text-[11px] font-medium tracking-wider text-zinc-400 absolute uppercase">
+                OR
+              </span>
             </div>
-          </div>
-        )}
 
-        {/* Form Stack */}
-        <form onSubmit={handleSubmit} className="apple-auth-form" noValidate>
-          {/* Full Name */}
-          <div className="apple-form-field">
-            <label htmlFor="register-name" className="apple-form-label">
-              Full Name
-            </label>
-            <div className="apple-input-container">
-              <User className="apple-input-icon" />
-              <input
-                id="register-name"
-                type="text"
-                placeholder="Enter your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={loading}
-                required
-                className="apple-form-input has-icon"
-                autoComplete="name"
-              />
-            </div>
-          </div>
 
-          {/* Email Address */}
-          <div className="apple-form-field">
-            <label htmlFor="register-email" className="apple-form-label">
-              Email Address
-            </label>
-            <div className="apple-input-container">
-              <Mail className="apple-input-icon" />
-              <input
-                id="register-email"
-                type="email"
-                placeholder="name@domain.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-                required
-                className="apple-form-input has-icon"
-                autoComplete="email"
-              />
-            </div>
-          </div>
+            {/* Register Form */}
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              {/* Full Name */}
+              <div>
+                <label
+                  htmlFor="register-name"
+                  className="block text-xs font-semibold text-zinc-800 mb-2"
+                >
+                  Full name
+                </label>
+                <div className="relative flex items-center border border-zinc-200/90 rounded-xl bg-zinc-50/40 hover:bg-zinc-50/80 focus-within:bg-white focus-within:border-zinc-950 focus-within:ring-1 focus-within:ring-zinc-950 transition-all duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-2xs">
+                  <User className="w-4 h-4 text-zinc-400 shrink-0 ml-3.5 pointer-events-none" />
+                  <input
+                    id="register-name"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={loading}
+                    required
+                    autoComplete="name"
+                    className="w-full bg-transparent py-3 px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none"
+                  />
+                </div>
+              </div>
 
-          {/* Password */}
-          <div className="apple-form-field">
-            <label htmlFor="register-password" className="apple-form-label">
-              Password
-            </label>
-            <div className="apple-input-container">
-              <Lock className="apple-input-icon" />
-              <input
-                id="register-password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Minimum 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                required
-                className="apple-form-input has-icon has-eye"
-                autoComplete="new-password"
-              />
+              {/* Email Address */}
+              <div>
+                <label
+                  htmlFor="register-email"
+                  className="block text-xs font-semibold text-zinc-800 mb-2"
+                >
+                  Email address
+                </label>
+                <div className="relative flex items-center border border-zinc-200/90 rounded-xl bg-zinc-50/40 hover:bg-zinc-50/80 focus-within:bg-white focus-within:border-zinc-950 focus-within:ring-1 focus-within:ring-zinc-950 transition-all duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-2xs">
+                  <Mail className="w-4 h-4 text-zinc-400 shrink-0 ml-3.5 pointer-events-none" />
+                  <input
+                    id="register-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
+                    required
+                    autoComplete="email"
+                    className="w-full bg-transparent py-3 px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label
+                  htmlFor="register-password"
+                  className="block text-xs font-semibold text-zinc-800 mb-2"
+                >
+                  Password
+                </label>
+                <div className="relative flex items-center border border-zinc-200/90 rounded-xl bg-zinc-50/40 hover:bg-zinc-50/80 focus-within:bg-white focus-within:border-zinc-950 focus-within:ring-1 focus-within:ring-zinc-950 transition-all duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-2xs">
+                  <Lock className="w-4 h-4 text-zinc-400 shrink-0 ml-3.5 pointer-events-none" />
+                  <input
+                    id="register-password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Minimum 8 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    required
+                    autoComplete="new-password"
+                    className="w-full bg-transparent py-3 px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="mr-3.5 text-zinc-400 hover:text-zinc-700 transition-colors duration-150 focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password (Extra column requested by user) */}
+              <div>
+                <label
+                  htmlFor="register-confirm-password"
+                  className="block text-xs font-semibold text-zinc-800 mb-2"
+                >
+                  Confirm password
+                </label>
+                <div className="relative flex items-center border border-zinc-200/90 rounded-xl bg-zinc-50/40 hover:bg-zinc-50/80 focus-within:bg-white focus-within:border-zinc-950 focus-within:ring-1 focus-within:ring-zinc-950 transition-all duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-2xs">
+                  <Lock className="w-4 h-4 text-zinc-400 shrink-0 ml-3.5 pointer-events-none" />
+                  <input
+                    id="register-confirm-password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={loading}
+                    required
+                    autoComplete="new-password"
+                    className="w-full bg-transparent py-3 px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    className="mr-3.5 text-zinc-400 hover:text-zinc-700 transition-colors duration-150 focus:outline-none"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
               <button
-                type="button"
-                className="apple-input-eye-btn"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          {/* Confirm Password */}
-          <div className="apple-form-field">
-            <label htmlFor="register-confirm-password" className="apple-form-label">
-              Confirm Password
-            </label>
-            <div className="apple-input-container">
-              <Lock className="apple-input-icon" />
-              <input
-                id="register-confirm-password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Re-enter your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                type="submit"
                 disabled={loading}
-                required
-                className="apple-form-input has-icon"
-                autoComplete="new-password"
-              />
+                className="w-full mt-2 bg-[#121212] hover:bg-black active:scale-[0.98] text-white text-sm font-medium py-3.5 px-4 rounded-xl transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Creating account...</span>
+                  </div>
+                ) : (
+                  <>
+                    <span>Create account</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            
+
+            {/* Footer Navigation Link */}
+            <div className="mt-8 text-center text-xs text-zinc-500">
+              Already have an account?{' '}
+              <Link
+                href={`/login${redirectParam ? `?redirect=${encodeURIComponent(redirectParam)}` : ''}`}
+                className="text-zinc-950 font-semibold underline underline-offset-2 hover:text-black transition-colors"
+              >
+                Sign in
+              </Link>
             </div>
           </div>
-
-          {/* Terms Agreement & Encryption note */}
-          <div className="apple-auth-meta-row">
-            <label className="apple-checkbox-label">
-              <input
-                type="checkbox"
-                checked={agreeTerms}
-                onChange={(e) => setAgreeTerms(e.target.checked)}
-                className="apple-checkbox"
-              />
-              <span>I agree to Terms &amp; Privacy</span>
-            </label>
-            <span className="apple-security-note">
-              <ShieldCheck className="w-3.5 h-3.5 text-zinc-400 mr-1" />
-              <span>Encrypted</span>
-            </span>
-          </div>
-
-          {/* Primary Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="apple-auth-submit-btn"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="apple-spinner" />
-                <span>Creating Account...</span>
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                <Check className="w-4 h-4" />
-                <span>Create Account &amp; Continue</span>
-              </span>
-            )}
-          </button>
-        </form>
-
-        {/* Existing account prompt */}
-        <div className="mt-5 text-center font-ui text-xs text-zinc-500">
-          Already have a TEESGARAGE account?{' '}
-          <Link
-            href={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`}
-            className="text-zinc-900 font-semibold hover:underline"
-          >
-            Sign in here
-          </Link>
         </div>
-
-        {/* Footer Guarantee */}
-        <p className="apple-auth-footer-note">
-          By registering, you agree to TEESGARAGE&apos;s Terms of Service and Privacy Policy.
-        </p>
       </div>
     </div>
   )
@@ -460,4 +424,3 @@ export default function RegisterPage() {
     </Suspense>
   )
 }
-
