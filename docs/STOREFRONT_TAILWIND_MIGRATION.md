@@ -12,8 +12,11 @@ The storefront is moving from a single hand-authored stylesheet to Tailwind CSS 
 | Design tokens | Exported through `@theme` in `globals.css` (see below) |
 | Legacy CSS | `src/app/globals.css` (~17.8k lines) + `src/app/teesgarage-home.css` |
 | Converted in wave 1 | `Footer`, `RelatedProducts`, `homepage/CategoryGroups` |
+| Converted in wave 2 | `ProductCard`, `skeletons/ProductCardSkeleton` |
 
-Wave 1 removed 57 CSS rules (footer, related-products and category-group styling).
+Wave 1 removed 57 CSS rules (footer, related-products and category-group styling). Wave 2 removed 65 rules from the product-card cascade and split the shared `.apple-product-card` selectors so the PDP keeps its shell.
+
+Card and footer visual checks were done against a production build at 1440px on `/shop`, `/` and a PDP route.
 
 ## Token mapping
 
@@ -40,20 +43,18 @@ Prefer these names over arbitrary values. The matching `:root` variables (`--ink
 
 These reuse class names across files, so they must be converted together or the CSS kept:
 
-- **`ProductCard` + `ProductDetail`**: `.product-card` scopes styles with `:not(.pdp-details-card)`; `.apple-product-card`, `.product-fav-btn`, `.product-badge-pill`, `.card-pagination-dots` and `.product-wash-label` are shared with the PDP. Convert the card, then remove only `.product-card …` rules; the unprefixed rules still serve the PDP.
-- **`ProductCardSkeleton` / `ProductDetailSkeleton`**: reuse card and PDP shells.
-- **Skeletons in general**: `AuthSkeleton`, `CheckoutSkeleton`, `HomepageSkeleton`, `OrdersSkeleton`, `ProfileSkeleton`, `ShopSkeleton` reuse page-level classes (`shop-grid`, `apple-profile-*`, `teesgarage-*`), so they follow their host pages.
+- **`ProductDetail` + `ProductDetailSkeleton`**: the PDP still consumes the unprefixed `.product-fav-btn`, `.fav-heart-icon`, `.product-image-container`, `.product-title`, `.product-price`, `.product-wash-label` and `.pdp-*` rules. Convert both together, then delete the generic card leftovers. The `.apple-product-card` shell was deliberately kept for the PDP.
+- **Remaining skeletons**: `AuthSkeleton`, `CheckoutSkeleton`, `HomepageSkeleton`, `OrdersSkeleton`, `ProfileSkeleton`, `ShopSkeleton` reuse page-level classes (`shop-grid`, `apple-profile-*`, `teesgarage-*`), so they follow their host pages. `Skeleton` itself still uses `.apple-skeleton-pulse` / `.skeleton-*` and should be converted with them.
 
 ## Suggested batches
 
-1. `ProductCard` + `ProductCardSkeleton` (delete `.product-card …` rules only).
-2. `ProductDetail` + `ProductDetailSkeleton` (delete `.pdp-*` and the remaining generic card rules).
-3. `Header` + `SearchOverlay` + `CartDrawer` (header is duplicated in `teesgarage-home.css` and the 15k-line page-system block).
-4. Shop: `ShopClient` + `ShopSkeleton`.
-5. Checkout: `CheckoutClient` + `CheckoutSkeleton`.
-6. Account: `Profile`, `Orders`, `Auth`, `Onboarding` pages and skeletons.
-7. Bag, favorites, search, order confirmation.
-8. Remove `teesgarage-home.css` and the remaining legacy blocks; keep only `@theme`, resets and keyframes.
+1. `ProductDetail` + `ProductDetailSkeleton` (delete `.pdp-*` and the remaining generic card rules).
+2. `Header` + `SearchOverlay` + `CartDrawer` (header is duplicated in `teesgarage-home.css` and the 15k-line page-system block).
+3. Shop: `ShopClient` + `ShopSkeleton`.
+4. Checkout: `CheckoutClient` + `CheckoutSkeleton`.
+5. Account: `Profile`, `Orders`, `Auth`, `Onboarding` pages and skeletons.
+6. Bag, favorites, search, order confirmation.
+7. Remove `teesgarage-home.css` and the remaining legacy blocks; keep only `@theme`, resets and keyframes.
 
 ## Verification
 

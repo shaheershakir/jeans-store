@@ -28,6 +28,20 @@ const COLOR_HEX: Record<string, string> = {
   'vintage acid black': '#242426'
 }
 
+const cardClass =
+  'group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-black/5 bg-[#fbfbfa] p-2 pb-3.5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-[box-shadow,border-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/[0.08] hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]'
+
+const cardImageClass =
+  'absolute inset-0 h-full w-full object-cover transition-opacity duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-[1.03]'
+
+const dotClass = (active: boolean) =>
+  `rounded-full transition-all duration-[250ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+    active ? 'h-1.5 w-1.5 scale-[1.15] bg-white' : 'h-[5px] w-[5px] bg-white/55'
+  }`
+
+const swatchClass =
+  'h-3.5 w-3.5 cursor-pointer rounded-full border-0 p-0 outline-none transition-[transform,box-shadow] duration-150 hover:scale-[1.15]'
+
 export default function ProductCard({ product }: { product: Product }) {
   const addItem = useCartStore((state) => state.addItem)
   const openOverlay = useUIStore((state) => state.openOverlay)
@@ -73,11 +87,17 @@ export default function ProductCard({ product }: { product: Product }) {
       const parts = product.color.split('/').map((s) => s.trim())
       return parts.map((name, idx) => ({
         name,
-        hex: idx === 0 ? (COLOR_HEX[name.toLowerCase()] || '#171717') : (COLOR_HEX[name.toLowerCase()] || '#85878b')
+        hex:
+          idx === 0
+            ? COLOR_HEX[name.toLowerCase()] || '#171717'
+            : COLOR_HEX[name.toLowerCase()] || '#85878b'
       }))
     }
     const mainCol = product.color || 'Washed Black'
-    const altCol = mainCol.toLowerCase().includes('black') || mainCol.toLowerCase().includes('charcoal') ? 'Ash' : 'Black'
+    const altCol =
+      mainCol.toLowerCase().includes('black') || mainCol.toLowerCase().includes('charcoal')
+        ? 'Ash'
+        : 'Black'
     return [
       { name: mainCol, hex: COLOR_HEX[mainCol.toLowerCase()] || '#171717' },
       { name: altCol, hex: COLOR_HEX[altCol.toLowerCase()] || '#85878b' }
@@ -87,7 +107,9 @@ export default function ProductCard({ product }: { product: Product }) {
   const activeColor = swatches[activeColorIdx]?.name || product.color || 'Standard'
   const colorWashLabel =
     product.wash ||
-    (swatches.length > 1 ? `${swatches[0].name} / ${swatches[1].name}` : product.color || 'Washed Black / Ash')
+    (swatches.length > 1
+      ? `${swatches[0].name} / ${swatches[1].name}`
+      : product.color || 'Washed Black / Ash')
 
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
@@ -128,8 +150,6 @@ export default function ProductCard({ product }: { product: Product }) {
       selectedColor: activeColor,
       availableSizes
     })
-
-
   }
 
   function handleFavoriteClick(e: React.MouseEvent) {
@@ -176,22 +196,30 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <article
-      className="product-card apple-product-card"
+      className={cardClass}
       onMouseEnter={() => secondaryImg && setActiveImageIdx(1)}
       onMouseLeave={() => setActiveImageIdx(0)}
     >
       {/* ── 1. Image Container with Badge, Heart & Dots ── */}
-      <div className="product-image-container">
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-[#eeede7]">
         {/* Top-Left Circular Favorite Button */}
         <button
           type="button"
-          className={`product-fav-btn ${mounted && isFavorite ? 'active' : ''} ${favAnimate ? 'pop' : ''}`}
+          className={`absolute left-2.5 top-2.5 z-10 flex h-9 w-9 cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-white p-0 text-[#18181b] shadow-[0_2px_10px_rgba(0,0,0,0.12)] transition-[transform,background] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.08] hover:bg-white active:scale-[0.92] ${
+            favAnimate ? 'animate-heart-pop' : ''
+          }`}
           onClick={handleFavoriteClick}
-          aria-label={mounted && isFavorite ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`}
+          aria-label={
+            mounted && isFavorite
+              ? `Remove ${product.name} from favorites`
+              : `Add ${product.name} to favorites`
+          }
           title={mounted && isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         >
           <Heart
-            className={`fav-heart-icon ${mounted && isFavorite ? 'filled' : ''}`}
+            className={`h-[17px] w-[17px] transition-[transform,stroke,fill] duration-200 ${
+              favAnimate ? 'animate-heart-pop-icon' : ''
+            }`}
             fill={mounted && isFavorite ? '#e11d48' : 'none'}
             stroke={mounted && isFavorite ? '#e11d48' : '#18181b'}
             strokeWidth={mounted && isFavorite ? 2 : 1.75}
@@ -200,25 +228,28 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Top-Right Bold Black Badge */}
         {badgeText && (
-          <span className="product-badge-pill" aria-label={`Badge: ${badgeText}`}>
+          <span
+            className="absolute right-2.5 top-2.5 z-10 rounded-md bg-[#09090b] px-[9px] py-1 font-brand text-[10.5px] font-bold uppercase tracking-[0.08em] text-white shadow-[0_2px_6px_rgba(0,0,0,0.15)]"
+            aria-label={`Badge: ${badgeText}`}
+          >
             {badgeText}
           </span>
         )}
 
         <Link
           href={getProductUrl(product)}
-          className="product-image-link"
+          className="relative block w-full"
           aria-label={product.name}
           onClick={handleCardClick}
         >
-          <div className="image-wrapper">
+          <div className="relative h-full w-full overflow-hidden">
             <Image
               src={product.img}
               alt={product.name}
               width={600}
               height={800}
               sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 24vw"
-              className={`primary-img ${activeImageIdx === 1 ? 'faded' : ''}`}
+              className={`${cardImageClass} ${activeImageIdx === 0 ? 'opacity-100' : 'opacity-0'}`}
               loading="lazy"
             />
             {secondaryImg && (
@@ -228,7 +259,9 @@ export default function ProductCard({ product }: { product: Product }) {
                 width={600}
                 height={800}
                 sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 24vw"
-                className={`secondary-img ${activeImageIdx === 1 ? 'visible' : ''}`}
+                className={`${cardImageClass} pointer-events-none ${
+                  activeImageIdx === 1 ? 'opacity-100' : 'opacity-0'
+                }`}
                 loading="lazy"
               />
             )}
@@ -237,40 +270,52 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Bottom-Left Carousel Indicator — only when multiple images exist */}
         {secondaryImg && (
-          <div className="card-pagination-dots" aria-hidden="true">
-            <span className={`dot ${activeImageIdx === 0 ? 'active' : ''}`} />
-            <span className={`dot ${activeImageIdx === 1 ? 'active' : ''}`} />
+          <div
+            className="pointer-events-none absolute bottom-2.5 left-3 z-10 flex items-center gap-[5px] [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+            aria-hidden="true"
+          >
+            <span className={dotClass(activeImageIdx === 0)} />
+            <span className={dotClass(activeImageIdx === 1)} />
           </div>
         )}
       </div>
 
       {/* ── 2. Product Information Section ── */}
-      <div className="product-info-wrap">
+      <div className="flex flex-1 flex-col px-1.5 pb-0.5 pt-3.5 max-[640px]:px-1 max-[640px]:pb-0.5 max-[640px]:pt-2.5">
         {/* Overline / Fit Tag */}
-        <div className="product-fit-overline">{fitText}</div>
+        <div className="mb-1 font-ui text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8e8e93]">
+          {fitText}
+        </div>
 
         {/* Product Title */}
         <Link
           href={getProductUrl(product)}
-          className="product-title-link"
+          className="text-inherit no-underline"
           onClick={handleCardClick}
         >
-          <h3 className="product-title" title={product.name}>
+          <h3
+            className="mb-2 line-clamp-2 min-h-[2.5em] overflow-hidden text-ellipsis whitespace-nowrap font-brand text-[17px] font-bold leading-[1.28] tracking-[-0.015em] text-[#111827] transition-colors duration-150 hover:text-black max-[640px]:mb-1 max-[640px]:text-[14.5px]"
+            title={product.name}
+          >
             {product.name}
           </h3>
         </Link>
 
         {/* Price & Color Swatches Row */}
-        <div className="product-price-swatches-row">
-          <span className="product-price">{product.price}</span>
+        <div className="mb-0.5 flex items-center justify-between">
+          <span className="font-brand text-[21px] font-bold leading-none tracking-[-0.02em] text-[#111827] tabular-nums max-[640px]:text-[17px]">
+            {product.price}
+          </span>
 
           {/* Interactive Swatches on the Right */}
-          <div className="product-color-swatches" role="group" aria-label="Color choices">
+          <div className="flex items-center gap-[7px]" role="group" aria-label="Color choices">
             {swatches.map((swatch, idx) => (
               <button
                 key={swatch.name}
                 type="button"
-                className={`product-color-swatch-dot ${activeColorIdx === idx ? 'active' : ''}`}
+                className={`${swatchClass} ${
+                  activeColorIdx === idx ? 'shadow-[0_0_0_1.5px_#fff,0_0_0_3px_#111]' : ''
+                }`}
                 style={{ backgroundColor: swatch.hex }}
                 onClick={(e) => {
                   e.preventDefault()
@@ -285,12 +330,16 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         {/* Color / Wash Label */}
-        <p className="product-wash-label">{colorWashLabel}</p>
+        <p className="mb-3.5 truncate font-ui text-[12.5px] font-medium text-[#71717a] max-[640px]:mb-2.5 max-[640px]:text-[11.5px]">
+          {colorWashLabel}
+        </p>
 
         {/* ── 3. Full-Width "ADD TO BAG →" Action Button ── */}
         <button
           type="button"
-          className={`card-add-btn ${isAdded ? 'added' : ''}`}
+          className={`group/btn relative mt-auto flex h-11 w-full cursor-pointer touch-manipulation items-center justify-center rounded-[10px] border-0 px-4 font-brand text-[12.5px] font-semibold uppercase tracking-[0.02em] text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] enabled:hover:-translate-y-px enabled:hover:bg-[#27272a] enabled:hover:shadow-[0_4px_14px_rgba(0,0,0,0.16)] enabled:active:scale-[0.97] enabled:active:translate-y-0 enabled:active:bg-black disabled:cursor-not-allowed disabled:bg-[#e4e4e7] disabled:text-[#a1a1aa] disabled:shadow-none max-[640px]:h-10 max-[640px]:px-3 ${
+            isAdded ? 'bg-[#166534]' : 'bg-[#111]'
+          }`}
           onClick={handleAddToCart}
           disabled={availableSizes.length === 0}
           aria-label={
@@ -302,17 +351,21 @@ export default function ProductCard({ product }: { product: Product }) {
           {availableSizes.length === 0 ? (
             <span>Out of stock</span>
           ) : isAdded ? (
-            <div className="card-btn-content">
-              <Check className="w-4 h-4 stroke-[2.5]" />
-              <span className="card-btn-text">ADDED</span>
+            <div className="relative flex w-full items-center justify-center">
+              <Check className="h-4 w-4 stroke-[2.5]" />
+              <span className="font-brand text-[12.5px] font-bold uppercase tracking-[0.08em] text-white max-[640px]:text-[11px] max-[640px]:tracking-[0.05em]">
+                ADDED
+              </span>
             </div>
           ) : (
-            <div className="card-btn-content">
-              <div className="card-btn-center">
-                <ShoppingBag className="w-4 h-4 stroke-[2]" />
-                <span className="card-btn-text">ADD TO BAG</span>
+            <div className="relative flex w-full items-center justify-center">
+              <div className="inline-flex items-center gap-2">
+                <ShoppingBag className="h-4 w-4 stroke-[2]" />
+                <span className="font-brand text-[12.5px] font-bold uppercase tracking-[0.08em] text-white max-[640px]:text-[11px] max-[640px]:tracking-[0.05em]">
+                  ADD TO BAG
+                </span>
               </div>
-              <ArrowRight className="card-btn-arrow w-4 h-4 stroke-[2]" />
+              <ArrowRight className="absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 stroke-[2] transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/btn:translate-x-[3px]" />
             </div>
           )}
         </button>
