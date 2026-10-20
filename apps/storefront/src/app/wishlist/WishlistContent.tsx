@@ -184,8 +184,8 @@ export default function WishlistContent() {
 
   return (
     <div className="min-h-screen bg-[#FAF9F6] text-[#111111] selection:bg-black selection:text-white">
-      <div className="mx-auto max-w-[1400px] px-6 lg:px-8 py-10 max-[768px]:py-6">
-        <div className="flex gap-10 lg:gap-14 max-[860px]:flex-col">
+      <div className="mx-auto max-w-[1240px] px-6 lg:px-8 py-10 max-[768px]:py-6">
+        <div className="flex gap-10 lg:gap-14 max-[860px]:flex-col max-[860px]:gap-6">
           {/* ── Left Sidebar Navigation ─────────────────────────────── */}
           <AccountSidebar activeTab="wishlist" />
 
@@ -224,8 +224,8 @@ export default function WishlistContent() {
               </div>
             </header>
 
-            {/* Product Cards 4-Column Grid */}
-            <div className="grid grid-cols-4 gap-4.5 max-[1200px]:grid-cols-3 max-[900px]:grid-cols-2 max-[540px]:grid-cols-1">
+            {/* Product Cards 3-Column Grid */}
+            <div className="grid grid-cols-3 gap-5 max-[1024px]:grid-cols-2 max-[540px]:grid-cols-1">
               {sortedItems.map((product) => {
                 return (
                   <div

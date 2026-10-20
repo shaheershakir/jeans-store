@@ -44,7 +44,7 @@ export default function AccountSidebar({ activeTab, className = '' }: AccountSid
     (() => {
       if (!pathname) return 'account'
       if (pathname.startsWith('/orders')) return 'orders'
-      if (pathname.startsWith('/wishlist')) return 'wishlist'
+      if (pathname.startsWith('/wishlist') || pathname.startsWith('/favorites')) return 'wishlist'
       if (pathname.startsWith('/addresses')) return 'addresses'
       if (pathname.startsWith('/settings')) return 'settings'
       if (pathname.startsWith('/profile')) return 'account'
@@ -59,17 +59,17 @@ export default function AccountSidebar({ activeTab, className = '' }: AccountSid
 
   return (
     <aside
-      className={`w-[240px] shrink-0 max-[860px]:w-full ${className}`.trim()}
+      className={`w-[230px] shrink-0 max-[860px]:w-full ${className}`.trim()}
       aria-label="Account Navigation"
     >
-      <nav className="flex flex-col gap-1 sticky top-[96px] max-[860px]:static max-[860px]:flex-row max-[860px]:overflow-x-auto max-[860px]:pb-3 max-[860px]:border-b max-[860px]:border-black/8 scrollbar-none">
+      <nav className="flex flex-col gap-1 sticky top-[96px] max-[860px]:static max-[860px]:flex-row max-[860px]:overflow-x-auto max-[860px]:pb-2.5 max-[860px]:border-b max-[860px]:border-black/8 scrollbar-none">
         {ACCOUNT_NAV_ITEMS.map(({ label, href, Icon, id }) => {
           const isActive = currentTab === id
           return (
             <Link
               key={id}
               href={href}
-              className={`group flex items-center gap-3.5 px-4 py-3 rounded-[14px] text-[13.5px] transition-colors whitespace-nowrap ${
+              className={`group flex items-center gap-3.5 px-4 py-3 rounded-[14px] text-[13.5px] transition-colors whitespace-nowrap w-full max-[860px]:w-auto shrink-0 ${
                 isActive
                   ? 'font-bold text-[#111111] bg-[#e8e6e1]'
                   : 'font-medium text-[#555555] hover:text-[#111111] hover:bg-black/4'
@@ -92,7 +92,7 @@ export default function AccountSidebar({ activeTab, className = '' }: AccountSid
         <button
           type="button"
           onClick={handleLogout}
-          className="group flex items-center gap-3.5 px-4 py-3 rounded-[14px] text-[13.5px] font-medium text-red-600 hover:text-red-700 hover:bg-red-500/10 transition-colors text-left cursor-pointer max-[860px]:whitespace-nowrap w-full"
+          className="group flex items-center gap-3.5 px-4 py-3 rounded-[14px] text-[13.5px] font-medium text-red-600 hover:text-red-700 hover:bg-red-500/10 transition-colors text-left cursor-pointer whitespace-nowrap w-full max-[860px]:w-auto shrink-0"
         >
           <LogOut
             className="w-[18px] h-[18px] shrink-0 stroke-[1.8] text-red-600 group-hover:text-red-700 transition-colors"

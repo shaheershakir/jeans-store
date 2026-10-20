@@ -140,18 +140,18 @@ export default function SettingsContent() {
   return (
     <div className="min-h-screen bg-[#FAF9F6] text-[#111111] selection:bg-black selection:text-white">
       <div className="mx-auto max-w-[1240px] px-6 lg:px-8 py-10 max-[768px]:py-6">
-        <div className="flex gap-10 lg:gap-14 max-[860px]:flex-col">
+        <div className="flex gap-10 lg:gap-14 max-[860px]:flex-col max-[860px]:gap-6">
           {/* ── Left Sidebar Navigation ─────────────────────────────── */}
           <AccountSidebar activeTab="settings" />
 
           {/* ── Right Content Area ─────────────────────────────────── */}
           <main className="flex-1 min-w-0">
             {/* Header */}
-            <header className="mb-6">
-              <h1 className="text-[30px] md:text-[34px] font-extrabold tracking-[-0.03em] text-[#111111] leading-tight">
+            <header className="mb-7">
+              <h1 className="text-[32px] md:text-[36px] font-extrabold tracking-[-0.03em] text-[#111111] leading-tight">
                 Account Settings
               </h1>
-              <p className="mt-1 text-[14.5px] text-[#666666]">
+              <p className="mt-1 text-[15px] text-[#666666]">
                 Manage your account details, preferences and security.
               </p>
             </header>
