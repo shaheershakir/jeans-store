@@ -49,13 +49,14 @@ padding/margin. Anything new must stay inside `@layer legacy` (or a later layer)
 | PostCSS | `apps/storefront/postcss.config.mjs` |
 | Entry point | `@import 'tailwindcss'` in `src/app/globals.css`, inside the layer order above |
 | Design tokens | Exported through `@theme` in `globals.css` (see below) |
-| Legacy CSS | `src/app/globals.css` (~14.3k lines) + `src/app/teesgarage-home.css`, both in `@layer legacy` |
+| Legacy CSS | `src/app/globals.css` (~13.6k lines) + `src/app/teesgarage-home.css`, both in `@layer legacy` |
 | Converted in wave 1 | `Footer`, `RelatedProducts`, `homepage/CategoryGroups` |
 | Converted in wave 2 | `ProductCard`, `skeletons/ProductCardSkeleton` |
 | Converted in wave 3 | `ProductDetail`, `skeletons/ProductDetailSkeleton`, `StickyPdpBar`, checkout breadcrumbs |
 | Converted in wave 4 | `Header` (tier-1 bar, desktop nav, mobile drawer, full-screen mobile search, account popover) |
 | Converted in wave 5 | `SearchOverlay` (desktop modal + mobile bottom sheet) |
 | Converted in wave 6 | `CartDrawer` (overlay, header, shipping meter, delivery lookup, items, cross-sell, totals) |
+| Converted in wave 7 | `BagClient` (breadcrumb, manifest header, items, steppers, summary, delivery promise, mobile bar, empty state) |
 
 Wave 1 removed 57 CSS rules (footer, related-products and category-group styling). Wave 2 removed 65 rules
 from the product-card cascade and split the shared `.apple-product-card` selectors so the PDP keeps its
@@ -91,6 +92,16 @@ dashed rule, and a 12.5px underlined clear link. The item image keeps the legacy
 0-width image only because the image had not loaded yet, and the legacy classes produce the same 96px
 layout once it is loaded.
 
+Wave 7 converted `BagClient` and removed the remaining 119 `.bag-*` rules, including the dead
+`.bag-shipping-meter*` group, plus three media blocks that became empty (hover, pointer-coarse, max-1024)
+and the comment-only max-768 sticky-bar block. The shared rules kept for the drawer in wave 6 are gone too,
+so no `.bag-*` selector remains. Unlike the header wave, the page used inclusive `@media(max-width: 1024px /
+768px / 640px)` arbitrary variants: at exactly 1024 or 768 the legacy layout is visibly different, so the
+strict `max-*` one-pixel offset was not acceptable. The hidden mobile bar's inner elements now carry their
+styles at every width (the parent is `hidden` until 768), which shows up in desktop computed diffs but not
+on screen. `.toast-view-bag-btn`, the generic `.button.primary` / `.cart-sys-label`, and the
+`bag-pincode-input` DOM id were left alone.
+
 Wave 2 also fixed the card media link: the `Link` inside the 4:5 stage is `absolute inset-0` so the
 `h-full` image chain resolves. Without it the link collapsed to `0` height and every `ProductCard` (shop
 grid and related products) showed an empty media area.
@@ -116,6 +127,8 @@ exist because legacy CSS consumes them; do not remove them until the last rule u
    Later rules win.
 2. Keep arbitrary values for one-off geometry (`grid-cols-[minmax(180px,1fr)_...]`, `gap-[clamp(28px,5vw,76px)]`).
 3. Responsive overrides become `max-[820px]:` / `max-[640px]:` utilities that mirror the original media queries.
+   Tailwind's `max-*` is strict `<`; when a legacy `max-width` boundary matters at the exact pixel (tablet
+   768/1024 layouts), use an inclusive arbitrary variant such as `[@media(max-width:768px)]:` instead.
 4. Delete the CSS rules only after the **last** consumer of the class has moved to utilities. Grep the class
    across `apps/storefront/src` first.
 5. When a rule is shared by several selectors, split the selector instead of deleting the whole rule.
@@ -143,7 +156,7 @@ These reuse class names across files, so they must be converted together or the 
 3. Shop: `CollectionClient` / `ShopClient` + `ShopSkeleton`.
 4. Checkout: `CheckoutClient` + `CheckoutSkeleton`.
 5. Account: `Profile`, `Orders`, `Auth`, `Onboarding` pages and skeletons.
-6. Bag, favorites, search, order confirmation.
+6. ~~Bag~~ (done, wave 7); favorites, search, order confirmation still to go.
 7. Remove `teesgarage-home.css` and the remaining legacy blocks; keep only `@theme`, resets and keyframes.
 
 ## Verification
