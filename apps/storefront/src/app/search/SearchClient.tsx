@@ -147,25 +147,25 @@ export default function SearchClient({
   }
 
   return (
-    <div className="search-page-container">
+    <div className="min-h-[calc(100dvh-120px)] bg-paper pb-[clamp(48px,8vw,96px)]">
       {/* 1. Mobile & Desktop Sticky Search Bar */}
-      <div className="search-page-header">
-        <div className="search-page-bar-inner">
+      <div className="sticky top-0 z-[35] border-b border-line bg-[rgba(255,255,255,0.96)] pt-[max(8px,env(safe-area-inset-top,0px))]">
+        <div className="mx-auto flex max-w-[1240px] items-center gap-2.5 px-4 py-2.5">
           <button
             type="button"
-            className="search-back-btn"
+            className="flex h-10 w-10 min-w-10 cursor-pointer touch-manipulation items-center justify-center rounded-full border border-transparent bg-transparent text-ink transition-all duration-150 ease-[ease] hover:bg-bone"
             onClick={handleBack}
             aria-label="Go back"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          <form className="search-form-control" onSubmit={handleFormSubmit} role="search">
-            <SearchIcon className="search-input-icon" aria-hidden="true" />
+          <form className="relative flex flex-1 items-center rounded-full border border-transparent bg-bone transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] focus-within:border-ink focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(12,14,18,0.08)]" onSubmit={handleFormSubmit} role="search">
+            <SearchIcon className="pointer-events-none absolute left-3.5 h-[18px] w-[18px] text-[#71717a]" aria-hidden="true" />
             <input
               ref={inputRef}
               type="search"
-              className="search-main-input"
+              className="h-11 w-full border-0 bg-transparent py-0 pl-[42px] pr-10 font-ui text-base text-ink outline-none placeholder:text-[13.5px] placeholder:text-[#a1a1aa]"
               placeholder="Search by fit, style, wash, or fabric..."
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
@@ -179,7 +179,7 @@ export default function SearchClient({
             {query && (
               <button
                 type="button"
-                className="search-clear-btn"
+                className="absolute right-2.5 flex h-[26px] w-[26px] cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-[#e4e4e7] text-[#52525b]"
                 onClick={handleClear}
                 aria-label="Clear search input"
               >
@@ -190,9 +190,9 @@ export default function SearchClient({
         </div>
 
         {/* 2. Quick Tags Bar */}
-        <div className="search-filter-pills-bar">
-          <div className="search-pills-scroll">
-            <span className="search-pill-label">
+        <div className="mx-auto max-w-[1240px] px-4 pb-2.5">
+          <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden">
+            <span className="inline-flex items-center whitespace-nowrap font-brand text-[10.5px] font-bold tracking-[0.06em] text-ink-muted">
               <TrendingUp className="w-3.5 h-3.5 mr-1" />
               POPULAR:
             </span>
@@ -202,7 +202,7 @@ export default function SearchClient({
                 <button
                   key={tag}
                   type="button"
-                  className={`search-pill-btn ${active ? 'active' : ''}`}
+                  className={`cursor-pointer touch-manipulation whitespace-nowrap rounded-2xl border px-3 py-[5px] font-ui text-[11.5px] font-medium transition-all duration-150 ease-[ease] ${active ? 'border-ink bg-ink text-white' : 'border-line bg-paper text-ink-secondary hover:border-ink hover:text-ink'}`}
                   onClick={() => handleTagClick(tag)}
                 >
                   {tag}
@@ -214,15 +214,15 @@ export default function SearchClient({
       </div>
 
       {/* 3. Search Body Content */}
-      <div className="search-page-content">
+      <div className="mx-auto max-w-[1240px] px-4 py-5">
         {/* Category Filter Pills & Sort Bar */}
-        <div className="search-meta-bar">
-          <div className="search-categories-scroll">
+        <div className="mb-6 flex flex-col gap-3.5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden">
             {QUICK_CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
-                className={`search-cat-tab ${selectedCategory === cat.id ? 'active' : ''}`}
+                className={`cursor-pointer touch-manipulation whitespace-nowrap rounded-[6px] border border-transparent px-3.5 py-1.5 font-ui text-[12.5px] font-medium transition-all duration-150 ease-[ease] ${selectedCategory === cat.id ? 'bg-ink text-white' : 'bg-bone text-[#52525b]'}`}
                 onClick={() => setSelectedCategory(cat.id)}
               >
                 {cat.label}
@@ -230,12 +230,12 @@ export default function SearchClient({
             ))}
           </div>
 
-          <div className="search-results-summary">
-            <span className="search-count-text">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="font-ui text-[13px] text-[#52525b]">
               {query.trim() ? (
                 <>
                   Showing <b>{searchResults.length}</b> {searchResults.length === 1 ? 'item' : 'items'} for{' '}
-                  <span className="search-term-highlight">“{query}”</span>
+                  <span className="font-semibold text-ink">“{query}”</span>
                 </>
               ) : (
                 <>
@@ -244,10 +244,10 @@ export default function SearchClient({
               )}
             </span>
 
-            <div className="search-sort-wrap">
+            <div className="inline-flex items-center rounded-[6px] border border-line bg-bone px-2.5 py-1">
               <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500 mr-1" />
               <select
-                className="search-sort-select"
+                className="cursor-pointer border-0 bg-transparent font-ui text-xs font-medium text-[#18181b] outline-none"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 aria-label="Sort search results"
@@ -262,23 +262,23 @@ export default function SearchClient({
 
         {/* 4. Product Grid or Empty State */}
         {searchResults.length === 0 ? (
-          <div className="search-zero-state">
-            <div className="search-zero-icon">
+          <div className="mx-auto max-w-[480px] px-5 py-16 text-center">
+            <div className="mb-3 inline-flex h-16 w-16 items-center justify-center rounded-full bg-bone">
               <SearchIcon className="w-8 h-8 text-zinc-400" />
             </div>
-            <h3 className="search-zero-title">No styles found for “{query}”</h3>
-            <p className="search-zero-desc">
+            <h3 className="mb-2 font-brand text-[20px] leading-[26px] font-bold text-ink">No styles found for “{query}”</h3>
+            <p className="mb-6 font-ui text-[13.5px] leading-normal text-ink-muted">
               Check your spelling or explore our popular everyday heavy cotton fits, stripes, and bottomwear.
             </p>
 
-            <div className="search-zero-tags">
-              <span>TRY SEARCHING:</span>
-              <div className="search-zero-pills">
+            <div className="mb-7">
+              <span className="mb-2.5 block font-brand text-[10.5px] font-bold tracking-[0.08em] text-ink-muted">TRY SEARCHING:</span>
+              <div className="flex flex-wrap justify-center gap-2">
                 {POPULAR_TAGS.slice(0, 5).map((tag) => (
                   <button
                     key={tag}
                     type="button"
-                    className="search-zero-pill"
+                    className="cursor-pointer rounded-2xl border border-line bg-white px-3.5 py-1.5 font-ui text-[12px] leading-[18px] font-medium transition-all duration-150 ease-[ease] hover:bg-ink hover:text-white"
                     onClick={() => handleTagClick(tag)}
                   >
                     {tag}
@@ -287,13 +287,13 @@ export default function SearchClient({
               </div>
             </div>
 
-            <Link href="/shop" className="search-zero-cta">
+            <Link href="/shop" className="inline-flex h-[46px] items-center justify-center rounded-[6px] bg-ink px-6 font-brand text-[13.5px] font-semibold tracking-[0.03em] text-white no-underline transition-opacity duration-150 ease-[ease] hover:opacity-90">
               <ShoppingBag className="w-4 h-4 mr-2" />
               Browse Entire Collection
             </Link>
           </div>
         ) : (
-          <div className="search-grid-spacing grid grid-cols-4 gap-x-4 gap-y-6 [@media(max-width:1200px)]:grid-cols-3 [@media(max-width:768px)]:grid-cols-2 [@media(max-width:768px)]:gap-x-2.5 [@media(max-width:768px)]:gap-y-4">
+          <div className="mt-2.5 grid grid-cols-4 gap-x-4 gap-y-6 [@media(max-width:1200px)]:grid-cols-3 [@media(max-width:768px)]:grid-cols-2 [@media(max-width:768px)]:gap-x-2.5 [@media(max-width:768px)]:gap-y-4">
             {searchResults.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

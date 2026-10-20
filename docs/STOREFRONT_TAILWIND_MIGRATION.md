@@ -49,7 +49,7 @@ padding/margin. Anything new must stay inside `@layer legacy` (or a later layer)
 | PostCSS | `apps/storefront/postcss.config.mjs` |
 | Entry point | `@import 'tailwindcss'` in `src/app/globals.css`, inside the layer order above |
 | Design tokens | Exported through `@theme` in `globals.css` (see below) |
-| Legacy CSS | `src/app/globals.css` (~11.4k lines) + `src/app/teesgarage-home.css`, both in `@layer legacy` |
+| Legacy CSS | `src/app/globals.css` (~11.1k lines) + `src/app/teesgarage-home.css`, both in `@layer legacy` |
 | Converted in wave 1 | `Footer`, `RelatedProducts`, `homepage/CategoryGroups` |
 | Converted in wave 2 | `ProductCard`, `skeletons/ProductCardSkeleton` |
 | Converted in wave 3 | `ProductDetail`, `skeletons/ProductDetailSkeleton`, `StickyPdpBar`, checkout breadcrumbs |
@@ -59,6 +59,7 @@ padding/margin. Anything new must stay inside `@layer legacy` (or a later layer)
 | Converted in wave 7 | `BagClient` (breadcrumb, manifest header, items, steppers, summary, delivery promise, mobile bar, empty state) |
 | Converted in wave 8 | `ShopClient` (page, toolbar, facets, grid, mobile bar, sort sheet, filter drawer), `ShopSkeleton`, and the shared `.shop-grid` consumer in `SearchClient` |
 | Removed in wave 9 | Unused `CollectionClient` and `category/[slug]/CategoryClient` plus 48 catalog/filter rules |
+| Converted in wave 10 | Dedicated `/search` page (`SearchClient` + `page.tsx` Suspense fallback) and all `.search-*` page rules |
 
 Wave 1 removed 57 CSS rules (footer, related-products and category-group styling). Wave 2 removed 65 rules
 from the product-card cascade and split the shared `.apple-product-card` selectors so the PDP keeps its
@@ -107,7 +108,8 @@ on screen. `.toast-view-bag-btn`, the generic `.button.primary` / `.cart-sys-lab
 Wave 8 converted `ShopClient` and `ShopSkeleton`, and moved the Search results grid off the shared
 `.shop-grid` class. It removed 126 shop rules, trimmed five mixed selector lists (the two page-system
 groups plus the `.category-tab-chip` base/hover/active trio), and deleted eight media blocks that became
-empty. The `.category-tab-chip` rules were left for `CollectionClient` at the time and removed with that dead\ncomponent in wave 9; `.search-grid-spacing` stays for Search.
+empty. The `.category-tab-chip` rules were left for `CollectionClient` at the time and removed with that dead
+component in wave 9. `.search-grid-spacing` stayed for Search until wave 10.
 The `:is(...)` focus-visible group lost `.shop-page`, and the page root now carries the same 2px `#31586f`
 outline with a 3px offset as utilities. The legacy `.shop-page .shop-container` ≤639px
 `padding-bottom: calc(68px + safe-area)` quirk is reproduced on every container (breadcrumb, header,
@@ -125,6 +127,14 @@ page header, tabs, fit pills, filter drawer, checkbox rows, sort select, and emp
 `.collection-grid` stays for `HomepageSkeleton`; `.empty-title` / `.empty-desc` stay for Checkout; the
 Header/HeroCarousel `collection-toolbar-wrapper` lookup now simply finds nothing. Orphan comments and the
 blank runs left in that block were removed, and no rendered route changed.
+
+Wave 10 converted the dedicated `/search` page (`SearchClient` plus the `search/page.tsx` Suspense
+fallback) and removed 42 `.search-*` rules, the `@media (min-width: 768px)` meta-bar block, and the two
+page selectors from the shared button select-prevention list. The sticky header keeps its
+`rgba(255,255,255,0.96)` background without `backdrop-filter`, because the legacy blur serialised as `none`
+and rendered flat in the baseline. The zero-state title and pill line heights are pinned to `26px` and
+`18px` so the card stays 474px tall. Pixel parity is 0 at 1440/768/390 for the results, empty-query and
+no-results states; remaining computed diffs are radius/shadow serialisation and zero-width border colours.
 
 Wave 2 also fixed the card media link: the `Link` inside the 4:5 stage is `absolute inset-0` so the
 `h-full` image chain resolves. Without it the link collapsed to `0` height and every `ProductCard` (shop
@@ -176,12 +186,12 @@ These reuse class names across files, so they must be converted together or the 
 ## Suggested batches
 
 1. ~~`ProductDetail` + `ProductDetailSkeleton`~~ (done, wave 3).
-2. `Header` + `SearchOverlay` + `CartDrawer`.
+2. ~~`Header` + `SearchOverlay` + `CartDrawer`~~ (done, waves 4-6).
 3. ~~Shop: `ShopClient` + `ShopSkeleton`~~ (done, wave 8). ~~`CollectionClient` / `CategoryClient`~~ removed
    as dead code in wave 9; the live `.collection-grid` rule stays for `HomepageSkeleton`.
-4. Search page, then Checkout: `CheckoutClient` + `CheckoutSkeleton`.
+4. ~~Search page~~ (done, wave 10); Checkout: `CheckoutClient` + `CheckoutSkeleton`.
 5. Account: `Profile`, `Orders`, `Auth`, `Onboarding` pages and skeletons.
-6. ~~Bag~~ (done, wave 7); favorites, search, order confirmation still to go.
+6. ~~Bag~~ (done, wave 7); favorites and order confirmation still to go.
 7. Remove `teesgarage-home.css` and the remaining legacy blocks; keep only `@theme`, resets and keyframes.
 
 ## Verification
