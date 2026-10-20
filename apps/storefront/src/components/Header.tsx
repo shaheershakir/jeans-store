@@ -30,6 +30,9 @@ import UserOrdersModal from '@/components/UserOrdersModal'
 
 const TRENDING_SEARCHES = ['Stripes', 'Printed Tees', 'Henley', 'Trackpants', 'Oversized', 'Sweatpants']
 
+const HEADER_ACTION_BTN =
+  'grid h-[38px] w-[38px] cursor-pointer place-items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#111] no-underline transition-[background-color] duration-150 ease-[ease] hover:bg-[rgba(0,0,0,0.05)]'
+
 interface HeaderProps {
   initialNavItems?: NavigationItem[]
 }
@@ -49,7 +52,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
   const [mounted, setMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [ordersModalOpen, setOrdersModalOpen] = useState(false)
   // Mobile full-screen search overlay (Flipkart-style)
@@ -70,7 +72,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
     void useFavoriteStore.persist.rehydrate()
 
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20)
       setUserMenuOpen(false)
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -200,165 +201,15 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
   return (
     <>
-      <style jsx global>{`
-        .macy-header {
-          position: sticky;
-          top: 0;
-          z-index: 60;
-          background: rgba(250, 249, 246, 0.96);
-          border-bottom: 1px solid #e9e7e1;
-          box-shadow: none;
-          backdrop-filter: blur(18px);
-        }
-        .macy-header-main { min-height: 72px; }
-        .macy-header-main-inner {
-          position: relative;
-          display: grid;
-          grid-template-columns: minmax(150px, 1fr) auto minmax(150px, 1fr);
-          align-items: center;
-          max-width: 1480px;
-          min-height: 72px;
-          padding: 0 30px;
-        }
-        .macy-brand {
-          justify-self: start;
-          color: #111;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
-        }
-        .macy-brand-svg {
-          height: 32px;
-          width: auto;
-          display: block;
-        }
-        .macy-brand-wordmark { display: none; }
-        .macy-search-trigger { display: none; }
-        .macy-actions-group {
-          grid-column: 3;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-right: 0;
-          justify-self: end;
-        }
-        .apple-user-name-label, .apple-chevron, .apple-header-account-btn span { display: none; }
-        .apple-header-user-btn, .apple-header-account-btn, .macy-action-btn {
-          display: grid;
-          width: 38px;
-          height: 38px;
-          place-items: center;
-          padding: 0;
-          border: 0;
-          background: transparent;
-          color: #111;
-          cursor: pointer;
-          border-radius: 50%;
-          text-decoration: none;
-          transition: background-color 0.15s ease;
-        }
-        .apple-user-avatar-circle {
-          display: grid;
-          width: 30px;
-          height: 30px;
-          place-items: center;
-          border-radius: 50%;
-          border: 1.5px solid #1c1c1c;
-          background: transparent;
-          color: #111111;
-          font-size: 13.5px;
-          font-weight: 600;
-          line-height: 1;
-        }
-        .macy-bag-btn { width: 38px; height: 38px; color: #111; }
-        .macy-favorite-btn { display: grid; width: 38px; height: 38px; place-items: center; color: #111; text-decoration: none; }
-        .macy-favorite-btn:hover, .macy-bag-btn:hover, .apple-header-user-btn:hover, .apple-header-account-btn:hover, .macy-action-btn:hover {
-          background: rgba(0, 0, 0, 0.05);
-        }
-        .macy-nav-bar {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          width: 100%;
-          height: 72px;
-          justify-content: center;
-          pointer-events: none;
-          border: 0;
-          background: transparent;
-        }
-        .macy-nav-container {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: auto;
-          max-width: none;
-          padding: 0;
-          pointer-events: auto;
-        }
-        .macy-shop-all-btn { display: none; }
-        .macy-nav-links-scroll { gap: 30px; overflow: visible; }
-        .macy-nav-link {
-          padding: 8px 0;
-          color: #242424;
-          font-size: 13px;
-          font-weight: 500;
-          white-space: nowrap;
-        }
-        .macy-nav-link::after { bottom: 1px; }
-        .apple-detail-card { border: 1px solid #ebe9e4; border-radius: 18px; background: rgba(255,255,255,.5); box-shadow: 0 7px 20px rgba(32,28,20,.025); }
-        .apple-card-title { color: #151515; letter-spacing: -.035em; }
-        .apple-card-subtitle { color: #72747a; }
-        .apple-profile-page { background: #faf9f6; }
-        .apple-profile-layout { gap: 46px; }
-        .apple-profile-sidebar { width: 220px; flex: 0 0 220px; }
-        .apple-profile-sidebar .apple-glass-card { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
-        .apple-profile-sidebar .apple-id-header { display: none; }
-        .apple-profile-sidebar .apple-sidebar-nav { gap: 4px; }
-        .apple-profile-sidebar .apple-nav-item { min-height: 48px; border: 0; border-radius: 12px; padding: 0 15px; color: #64666a; background: transparent; }
-        .apple-profile-sidebar .apple-nav-item.active { background: #efeeeb; color: #111; }
-        .apple-profile-sidebar .apple-nav-item.active :is(span, svg) { color: #111; }
-        .apple-profile-sidebar .apple-nav-item.active .apple-nav-chevron { opacity: 0; }
-        .apple-profile-sidebar .apple-sidebar-actions { margin-top: 18px; padding-top: 14px; border-top: 1px solid #e9e7e2; }
-        .wishlist-row { border-color: #ebe9e4; background: rgba(255,255,255,.45); }
-        @media (max-width: 1100px) {
-          .macy-header-main-inner { display: grid; grid-template-columns: 1fr auto; padding: 0 20px; }
-          .macy-search-trigger { right: 175px; }
-          .macy-actions-group { grid-column: 2; }
-          .macy-nav-bar { position: absolute; inset: 0; height: 72px; border: 0; }
-          .macy-nav-container { width: auto; justify-content: center; }
-          .macy-nav-links-scroll { gap: 14px; }
-        }
-        @media (max-width: 1000px) {
-          .macy-nav-bar { position: static; height: 42px; overflow: hidden; border-top: 1px solid #efeee9; }
-          .macy-nav-container { width: 100%; justify-content: flex-start; overflow: hidden; }
-          .macy-nav-links-scroll { width: 100%; justify-content: flex-start; gap: 22px; overflow-x: auto; padding: 0 20px; scrollbar-width: none; }
-          .macy-nav-links-scroll::-webkit-scrollbar { display: none; }
-          .macy-nav-link { font-size: 12px; }
-        }
-        @media (max-width: 700px) {
-          .macy-header-main, .macy-header-main-inner { min-height: 60px; }
-          .macy-header-main-inner { display: flex; justify-content: space-between; padding: 0 16px; }
-          .macy-brand-wordmark { font-size: 18px; }
-          .macy-search-trigger { display: none; }
-          .macy-actions-group { gap: 7px; }
-          .macy-favorite-btn, .macy-bag-btn, .apple-header-user-btn, .apple-header-account-btn { width: 38px; height: 38px; }
-          .macy-nav-bar { position: static; height: 42px; overflow: hidden; border-top: 1px solid #efeee9; }
-          .macy-nav-container { width: 100%; justify-content: flex-start; overflow: hidden; }
-          .macy-nav-links-scroll { width: 100%; justify-content: flex-start; gap: 22px; overflow-x: auto; padding: 0 16px; scrollbar-width: none; }
-          .macy-nav-links-scroll::-webkit-scrollbar { display: none; }
-          .macy-nav-link { font-size: 12px; }
-        }
-        @media (max-width: 1023px) {
-          .apple-profile-layout { gap: 24px; }
-        }
-      `}</style>
-      <header className={`macy-header ${scrolled ? 'scrolled' : ''} ${userMenuOpen ? 'user-popover-open' : ''}`}>
+      <header
+        className={`sticky top-0 ${userMenuOpen ? 'z-[1005]' : 'z-[60]'} border-b border-b-[#e9e7e1] bg-[rgba(250,249,246,0.96)] backdrop-blur-[18px] transition-[box-shadow,background-color] duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] [@media(prefers-reduced-transparency:reduce)]:bg-white [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none [&_:is(a,button,input):focus-visible]:outline-2 [&_:is(a,button,input):focus-visible]:outline-[#31586f] [&_:is(a,button,input):focus-visible]:outline-offset-[3px] motion-reduce:[transition-duration:0.01ms]`}
+      >
         {/* Tier 1: Main Brand, Search Trigger & Customer Action Utilities */}
-        <div className="macy-header-main">
-          <div className="macy-header-main-inner">
+        <div className="min-h-[72px] border-b border-b-[rgba(0,0,0,0.05)] bg-transparent pt-[env(safe-area-inset-top)] max-[700px]:min-h-[60px]">
+          <div className="relative mx-auto grid h-[72px] min-h-[72px] max-w-[1480px] grid-cols-[minmax(150px,1fr)_auto_minmax(150px,1fr)] items-center justify-between gap-[clamp(14px,2.2vw,30px)] px-[30px] max-[1100px]:grid-cols-[1fr_auto] max-[1100px]:px-5 max-[700px]:flex max-[700px]:min-h-[60px] max-[700px]:justify-between max-[700px]:px-4 max-[640px]:h-[58px] max-[640px]:gap-1">
             {/* Mobile Menu Hamburger */}
             <button
-              className="macy-mobile-toggle"
+              className="hidden h-[42px] w-[42px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] max-[640px]:flex max-[640px]:w-10 max-[640px]:shrink-0"
               type="button"
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
@@ -368,21 +219,25 @@ export default function Header({ initialNavItems }: HeaderProps) {
             </button>
 
             {/* Brand Logo */}
-            <Link className="macy-brand" href="/" aria-label="TEESGARAGE Homepage">
+            <Link
+              className="inline-flex shrink-0 items-center justify-self-start text-[#111] no-underline transition-opacity duration-200 ease-[ease] hover:opacity-[0.88]"
+              href="/"
+              aria-label="TEESGARAGE Homepage"
+            >
               <Image
                 src="/teesgarage_logo.svg"
                 alt="TEESGARAGE"
                 width={124}
                 height={38}
                 priority
-                className="macy-brand-svg"
+                className="block h-8 w-auto"
               />
             </Link>
 
             {/* Mobile search icon (visible only on mobile) */}
             <button
               type="button"
-              className="macy-mobile-search"
+              className="hidden h-[42px] w-[42px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] max-[640px]:inline-flex max-[640px]:w-10 max-[640px]:shrink-0"
               aria-label="Search products"
               onClick={openMobileSearch}
             >
@@ -390,11 +245,11 @@ export default function Header({ initialNavItems }: HeaderProps) {
             </button>
 
             {/* Right Action Utilities (Search, Wishlist, Bag, Sign In / User Popover) */}
-            <div className="macy-actions-group">
+            <div className="col-start-3 flex shrink-0 items-center justify-self-end gap-2.5 max-[1100px]:col-start-2 max-[700px]:gap-[7px]">
               {/* 1. Desktop Search Trigger */}
               <button
                 type="button"
-                className="macy-action-btn"
+                className={HEADER_ACTION_BTN}
                 aria-label="Search products (press / to open)"
                 onClick={() => openOverlay('search')}
               >
@@ -404,7 +259,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
               {/* 2. Wishlist */}
               <Link
                 href="/favorites"
-                className="macy-action-btn"
+                className={HEADER_ACTION_BTN}
                 aria-label={favorites.length ? `Wishlist with ${favorites.length} saved items` : 'Wishlist'}
                 title="Wishlist"
               >
@@ -413,29 +268,33 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
               {/* 3. Shopping Bag Button with Badge */}
               <button
-                className="macy-action-btn macy-bag-btn"
+                className={`${HEADER_ACTION_BTN} min-h-[42px] min-w-[42px] max-[640px]:min-h-10 max-[640px]:min-w-10`}
                 type="button"
                 aria-label={`Shopping bag with ${count} items`}
                 title="View shopping bag"
                 onClick={() => openOverlay('cart')}
               >
-                <div className="macy-bag-icon-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="relative inline-flex items-center justify-center">
                   <ShoppingBag className="h-5 w-5" strokeWidth={1.8} />
-                  {count > 0 && <span className={`macy-bag-count highlight`}>{count}</span>}
+                  {count > 0 && (
+                    <span className="absolute -right-2 -top-1.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#e01a2b] px-1 text-[10px] font-bold leading-none text-white tabular-nums">
+                      {count}
+                    </span>
+                  )}
                 </div>
               </button>
 
               {/* 4. User Avatar Circle */}
               {mounted && isAuthenticated && user ? (
-                <div className="apple-user-menu-wrap" ref={userMenuRef}>
+                <div className="relative" ref={userMenuRef}>
                   <button
                     type="button"
-                    className={`apple-header-user-btn ${userMenuOpen ? 'active' : ''}`}
+                    className={HEADER_ACTION_BTN}
                     onClick={() => setUserMenuOpen((v) => !v)}
                     aria-expanded={userMenuOpen}
                     aria-label={`Account menu for ${user.name}`}
                   >
-                    <div className="apple-user-avatar-circle">
+                    <div className="grid h-[30px] w-[30px] place-items-center justify-center rounded-full border-[1.5px] border-[#1c1c1c] bg-transparent text-[13.5px] font-semibold leading-none text-[#111]">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                   </button>
@@ -446,43 +305,43 @@ export default function Header({ initialNavItems }: HeaderProps) {
                     {/* Backdrop: portaled to body so sticky header does not trap fixed coordinates */}
                     {mounted && typeof document !== 'undefined' && createPortal(
                       <div
-                        className="apple-user-popover-backdrop"
+                        className="fixed inset-0 z-[998] animate-[popoverBackdropIn_var(--dur-fast,180ms)_var(--ease-out,ease)_both] bg-[rgba(18,20,24,0.35)] backdrop-blur-[16px] backdrop-brightness-[0.88] backdrop-saturate-[1.8] supports-[not(backdrop-filter:blur(1px))]:bg-[rgba(18,20,24,0.45)]"
                         aria-hidden="true"
                         onClick={() => setUserMenuOpen(false)}
                       />,
                       document.body
                     )}
-                    <div className="apple-user-popover">
+                    <div className="absolute right-0 top-[calc(100%+10px)] z-[1010] w-[280px] max-w-[calc(100vw-24px)] origin-top-right animate-[applePopoverEnter_var(--dur-base,220ms)_var(--ease-out,cubic-bezier(0.16,1,0.3,1))] rounded-[14px] border border-[rgba(21,21,21,0.1)] bg-[rgba(255,255,255,0.96)] p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.9),0_24px_54px_-10px_rgba(12,14,18,0.22),0_8px_18px_-4px_rgba(12,14,18,0.08)] backdrop-blur-[32px] backdrop-saturate-[2] supports-[not(backdrop-filter:blur(1px))]:bg-white">
                       <Link
                         href="/profile"
-                        className="apple-popover-profile clickable"
+                        className="group flex cursor-pointer items-center gap-3 rounded-[8px] px-2.5 py-2 no-underline transition-[background,transform] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] active:scale-[0.99]"
                         onClick={() => setUserMenuOpen(false)}
                         title="Go to Profile & Account Settings"
                       >
-                        <div className="apple-popover-avatar">{user.name.charAt(0).toUpperCase()}</div>
-                        <div className="apple-popover-user-info">
-                          <h4 className="apple-popover-name">{user.name}</h4>
-                          <span className="apple-popover-subtext">Manage Profile &amp; Account</span>
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0c0e12] text-[14px] font-bold text-white [font-family:var(--font-brand)]">{user.name.charAt(0).toUpperCase()}</div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="m-0 truncate text-[13.5px] font-bold tracking-[-0.01em] text-[#0c0e12] [font-family:var(--font-brand)]">{user.name}</h4>
+                          <span className="mt-px block text-[11px] font-medium text-[#71717a]">Manage Profile &amp; Account</span>
                         </div>
-                        <ChevronRight className="h-4 w-4 apple-popover-arrow" />
+                        <ChevronRight className="h-4 w-4 shrink-0 text-[#a1a1aa] transition-[transform,color] duration-200 ease-[ease] group-hover:translate-x-0.5 group-hover:text-[#18181b]" />
                       </Link>
 
-                      <div className="apple-popover-divider" />
+                      <div className="mx-0.5 my-[5px] h-px bg-[rgba(12,14,18,0.07)]" />
 
-                      <div className="apple-popover-actions">
+                      <div className="flex flex-col gap-0.5">
                         <Link
                           href="/orders"
-                          className="apple-popover-item"
+                          className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
                           onClick={() => setUserMenuOpen(false)}
                         >
                           <Package className="h-4 w-4 mr-2.5 text-zinc-700" />
                           <span>My Orders &amp; Tracking</span>
-                          <span className="apple-popover-pill">Active</span>
+                          <span className="ml-auto rounded-full bg-[#0c0e12] px-1.5 py-px text-[10px] font-bold text-white">Active</span>
                         </Link>
 
                         <Link
                           href="/profile"
-                          className="apple-popover-item"
+                          className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
                           onClick={() => setUserMenuOpen(false)}
                         >
                           <Settings className="h-4 w-4 mr-2.5 text-zinc-700" />
@@ -491,17 +350,17 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
                         <Link
                           href="/profile?tab=favorites"
-                          className="apple-popover-item"
+                          className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
                           onClick={() => setUserMenuOpen(false)}
                         >
                           <Heart className="h-4 w-4 mr-2.5 text-rose-500" />
                           <span>Favorites &amp; Saved Fits</span>
-                          {favorites.length > 0 && <span className="apple-popover-pill">{favorites.length}</span>}
+                          {favorites.length > 0 && <span className="ml-auto rounded-full bg-[#0c0e12] px-1.5 py-px text-[10px] font-bold text-white">{favorites.length}</span>}
                         </Link>
 
                         <button
                           type="button"
-                          className="apple-popover-item"
+                          className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
                           onClick={() => {
                             setUserMenuOpen(false)
                             openOverlay('cart')
@@ -509,12 +368,12 @@ export default function Header({ initialNavItems }: HeaderProps) {
                         >
                           <ShoppingBag className="h-4 w-4 mr-2.5 text-zinc-700" />
                           <span>Shopping Bag</span>
-                          {count > 0 && <span className="apple-popover-pill">{count}</span>}
+                          {count > 0 && <span className="ml-auto rounded-full bg-[#0c0e12] px-1.5 py-px text-[10px] font-bold text-white">{count}</span>}
                         </button>
 
                         <Link
                           href="/profile?tab=preferences"
-                          className="apple-popover-item"
+                          className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
                           onClick={() => setUserMenuOpen(false)}
                         >
                           <Sparkles className="h-4 w-4 mr-2.5 text-amber-600" />
@@ -526,7 +385,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                             href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi TEESGARAGE, I have an inquiry regarding my account.')}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="apple-popover-item"
+                            className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
                             onClick={() => setUserMenuOpen(false)}
                           >
                             <MessageCircle className="h-4 w-4 mr-2.5 text-emerald-600" />
@@ -535,11 +394,11 @@ export default function Header({ initialNavItems }: HeaderProps) {
                         )}
                       </div>
 
-                      <div className="apple-popover-divider" />
+                      <div className="mx-0.5 my-[5px] h-px bg-[rgba(12,14,18,0.07)]" />
 
                       <button
                         type="button"
-                        className="apple-popover-item logout"
+                        className="mt-0.5 flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#dc2626] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(220,38,38,0.08)] hover:text-[#b91c1c] active:scale-[0.99]"
                         onClick={() => {
                           setUserMenuOpen(false)
                           logout()
@@ -553,8 +412,8 @@ export default function Header({ initialNavItems }: HeaderProps) {
                   )}
                 </div>
               ) : (
-                <Link href="/login" className="macy-action-btn" aria-label="Sign in to your account">
-                  <div className="apple-user-avatar-circle">
+                <Link href="/login" className={HEADER_ACTION_BTN} aria-label="Sign in to your account">
+                  <div className="grid h-[30px] w-[30px] place-items-center justify-center rounded-full border-[1.5px] border-[#1c1c1c] bg-transparent text-[13.5px] font-semibold leading-none text-[#111]">
                     S
                   </div>
                 </Link>
@@ -564,12 +423,15 @@ export default function Header({ initialNavItems }: HeaderProps) {
         </div>
 
         {/* Tier 2: Category Navigation Bar (Shop All, Categories, Silhouettes, and Sale) */}
-        <nav className="macy-nav-bar" aria-label="Department and Category Navigation">
-          <div className="macy-nav-container">
+        <nav
+          className="pointer-events-none absolute inset-0 flex h-[72px] w-full justify-center bg-transparent max-[1000px]:static max-[1000px]:h-[42px] max-[1000px]:overflow-hidden max-[1000px]:border-t max-[1000px]:border-t-[#efeee9]"
+          aria-label="Department and Category Navigation"
+        >
+          <div className="pointer-events-auto mx-auto flex h-[42px] min-h-[42px] w-auto max-w-none items-center justify-center gap-5 p-0 max-[1000px]:w-full max-[1000px]:justify-start max-[1000px]:overflow-hidden">
             {/* Shop All Menu Trigger */}
             <button
               type="button"
-              className={`macy-shop-all-btn ${pathname === '/shop' ? 'active' : ''}`}
+              className="hidden"
               onClick={handleShopAllClick}
             >
               <Menu className="h-3.5 w-3.5 mr-1.5" />
@@ -577,7 +439,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
             </button>
 
             {/* Department & Category Links (Dynamically configured via Admin) */}
-            <div className="macy-nav-links-scroll">
+            <div className="flex items-center gap-[30px] overflow-visible [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden max-[1100px]:gap-3.5 max-[1000px]:w-full max-[1000px]:justify-start max-[1000px]:gap-[22px] max-[1000px]:overflow-x-auto max-[1000px]:px-5 max-[1000px]:[scrollbar-width:none] max-[640px]:px-4">
               {activeLinks.map((link) => {
                 const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
                 const isActive = isLinkActive(link.href)
@@ -585,13 +447,21 @@ export default function Header({ initialNavItems }: HeaderProps) {
                   <Link
                     key={link.id || link.label}
                     href={link.href}
-                    className={`macy-nav-link ${isSale ? 'sale-link' : ''} ${isActive ? 'active' : ''}`}
+                    className={`relative whitespace-nowrap px-0 py-2 text-[13px] font-medium leading-none tracking-[0.025em] text-[#242424] no-underline transition-[color] duration-150 ease-[ease] hover:text-black active:[transform:scale(0.97)] active:[transition:transform_80ms_cubic-bezier(0.16,1,0.3,1)] max-[1000px]:text-[12px] ${
+                      isSale ? 'font-semibold text-[#e01a2b]!' : ''
+                    } ${
+                      isActive
+                        ? "after:absolute after:inset-x-0 after:bottom-px after:h-0.5 after:rounded-[1px] after:bg-black after:content-['']"
+                        : ''
+                    }`}
                     target={link.openInNewTab ? '_blank' : undefined}
                     rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
                     onClick={(e) => handleNavClick(link, e)}
                   >
                     <span>{link.label}</span>
-                    {link.badge && <span className="macy-nav-badge">{link.badge}</span>}
+                    {link.badge && (
+                      <span className="ml-[5px] rounded-[2px] bg-black px-[5px] py-px text-[9px] font-semibold uppercase text-white">{link.badge}</span>
+                    )}
                   </Link>
                 )
               })}
@@ -601,21 +471,11 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
         {/* Mobile Navigation Drawer */}
         {menuOpen && (
-          <div className="mobile-nav-panel">
-            <div className="mobile-nav-links">
+          <div className="block animate-[navPanelSlideIn_var(--dur-base)_var(--ease-out)_both] border-t border-t-[#e4e2dd] bg-[rgba(250,249,246,0.92)] px-[max(20px,env(safe-area-inset-right))] pb-[calc(22px+env(safe-area-inset-bottom))] pl-[max(20px,env(safe-area-inset-left))] pt-3 backdrop-blur-[20px] backdrop-saturate-[1.8] motion-reduce:[animation-duration:0.01ms]">
+            <div className="flex flex-col gap-0">
               <Link
                 href="/search"
-                className="mobile-nav-item"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  background: 'var(--paper-subtle, #f4f4f5)',
-                  borderRadius: '8px',
-                  padding: '10px 14px',
-                  marginBottom: '10px',
-                  fontWeight: 600
-                }}
+                className="mb-2.5 flex min-h-[46px] items-center justify-between gap-2.5 rounded-[8px] border-b border-b-[#e9e7e1] bg-[#f4f4f5] px-3.5 py-2.5 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
                 onClick={() => setMenuOpen(false)}
               >
                 <Search className="h-4 w-4 text-zinc-500" />
@@ -624,8 +484,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
               <button
                 type="button"
-                className={`mobile-nav-item ${pathname === '/shop' ? 'active' : ''}`}
-                style={{ textAlign: 'left', background: 'none', border: 'none', font: 'inherit', cursor: 'pointer', fontWeight: 600 }}
+                className={`flex min-h-[46px] cursor-pointer items-center justify-between border-0 bg-transparent py-2 pr-0 text-left text-[14px] font-semibold uppercase leading-normal text-[#182126] [font-family:var(--font-ui)] ${pathname === '/shop' ? 'rounded-[6px] pl-2.5 text-black' : 'pl-0'}`}
                 onClick={() => {
                   handleShopAllClick()
                   setMenuOpen(false)
@@ -641,7 +500,11 @@ export default function Header({ initialNavItems }: HeaderProps) {
                   <Link
                     key={link.id || link.label}
                     href={link.href}
-                    className={`mobile-nav-item ${isSale ? 'sale-link' : ''} ${isActive ? 'active' : ''}`}
+                    className={`flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] py-2 text-[13px] uppercase leading-[normal] no-underline [font-family:var(--font-brand)] ${
+                      isActive
+                        ? 'rounded-[6px] bg-[var(--bone)] pr-0 pl-2.5 font-bold text-black'
+                        : 'px-0 font-semibold text-[#182126]'
+                    } ${isSale ? 'font-semibold' : ''}`}
                     target={link.openInNewTab ? '_blank' : undefined}
                     rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
                     onClick={(e) => {
@@ -650,7 +513,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                     }}
                   >
                     <span>{link.label}</span>
-                    {link.badge && <span className="nav-item-badge">{link.badge}</span>}
+                    {link.badge && <span>{link.badge}</span>}
                   </Link>
                 )
               })}
@@ -659,7 +522,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 <>
                   <Link
                     href="/orders"
-                    className="mobile-nav-item"
+                    className="flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
                     onClick={() => setMenuOpen(false)}
                   >
                     My Orders &amp; Tracking
@@ -667,7 +530,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
                   <Link
                     href="/profile"
-                    className="mobile-nav-item"
+                    className="flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
                     onClick={() => setMenuOpen(false)}
                   >
                     Profile &amp; Addresses
@@ -675,7 +538,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
                   <Link
                     href="/profile?tab=favorites"
-                    className="mobile-nav-item"
+                    className="flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
                     onClick={() => setMenuOpen(false)}
                   >
                     Saved Favorites ({favorites.length})
@@ -683,8 +546,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
                   <button
                     type="button"
-                    className="mobile-nav-item text-red-600"
-                    style={{ textAlign: 'left', background: 'none', border: 'none', font: 'inherit', cursor: 'pointer' }}
+                    className="flex min-h-[46px] cursor-pointer items-center justify-between border-0 bg-transparent py-2 pr-0 pl-0 text-left text-[14px] font-semibold uppercase leading-normal text-red-600 [font-family:var(--font-ui)]"
                     onClick={() => {
                       if (window.confirm(`Sign out from ${user.name}?`)) {
                         logout()
@@ -698,14 +560,14 @@ export default function Header({ initialNavItems }: HeaderProps) {
               ) : (
                 <Link
                   href="/login"
-                  className="mobile-nav-item"
+                  className="flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
                   onClick={() => setMenuOpen(false)}
                 >
                   Sign In / Create Account
                 </Link>
               )}
 
-              <div className="mobile-nav-meta">
+              <div className="mt-2.5 flex flex-col justify-between gap-1 border-t border-t-[var(--line)] pt-3 text-[11px] font-medium leading-[normal] text-[#6b7280]">
                 <span>Direct Studio Support</span>
                 <a href="mailto:concierge@teesgarage.in">concierge@teesgarage.in</a>
               </div>
@@ -725,12 +587,17 @@ export default function Header({ initialNavItems }: HeaderProps) {
           MOBILE FULL-SCREEN SEARCH OVERLAY (Flipkart-style)
           ============================================================ */}
       {mobileSearchOpen && (
-        <div className="mobile-search-overlay" role="dialog" aria-modal="true" aria-label="Search">
+        <div
+          className="fixed inset-0 z-[9999] flex animate-[mobileSearchSlideIn_0.22s_cubic-bezier(0.32,0.72,0,1)_both] flex-col overscroll-contain bg-[#faf9f6]"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Search"
+        >
           {/* Top bar */}
-          <div className="mobile-search-overlay-bar">
+          <div className="flex items-center gap-1.5 border-b border-b-[rgba(0,0,0,0.07)] bg-[rgba(250,249,246,0.96)] px-3 pb-2.5 pt-[calc(env(safe-area-inset-top)+10px)] backdrop-blur-[20px] backdrop-saturate-[1.8]">
             <button
               type="button"
-              className="mobile-search-back-btn"
+              className="flex h-10 w-10 flex-[0_0_40px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] transition-[background] duration-150 ease-[ease] [-webkit-tap-highlight-color:transparent] active:bg-[rgba(0,0,0,0.07)]"
               onClick={closeMobileSearch}
               aria-label="Close search"
             >
@@ -738,15 +605,15 @@ export default function Header({ initialNavItems }: HeaderProps) {
             </button>
 
             <form
-              className="mobile-search-overlay-form"
+              className="relative flex flex-1 items-center"
               onSubmit={(e) => { e.preventDefault(); handleMobileSearchSubmit(mobileQuery) }}
               role="search"
             >
-              <Search className="mobile-search-overlay-icon" aria-hidden="true" />
+              <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[#6b7280]" aria-hidden="true" />
               <input
                 ref={mobileSearchInputRef}
                 type="search"
-                className="mobile-search-overlay-input"
+                className="h-[42px] w-full appearance-none rounded-[10px] border-[1.5px] border-transparent bg-[rgba(0,0,0,0.055)] px-10 text-[15px] font-normal text-[#182126] outline-none transition-[background,border-color] duration-150 ease-[ease] placeholder:text-[#9ca3af] focus:border-[rgba(40,72,92,0.25)] focus:bg-white focus:shadow-[0_0_0_3px_rgba(40,72,92,0.08)] [&::-webkit-search-cancel-button]:appearance-none"
                 placeholder="Search garments, fits, styles…"
                 value={mobileQuery}
                 onChange={(e) => setMobileQuery(e.target.value)}
@@ -760,7 +627,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
               {mobileQuery && (
                 <button
                   type="button"
-                  className="mobile-search-overlay-clear"
+                  className="absolute right-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-0 bg-[rgba(0,0,0,0.1)] p-0 text-[#6b7280] [-webkit-tap-highlight-color:transparent]"
                   onClick={() => { setMobileQuery(''); mobileSearchInputRef.current?.focus() }}
                   aria-label="Clear"
                 >
@@ -771,19 +638,19 @@ export default function Header({ initialNavItems }: HeaderProps) {
           </div>
 
           {/* Body */}
-          <div className="mobile-search-overlay-body">
+          <div className="flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
             {mobileQuery.trim().length === 0 ? (
-              <div className="mobile-search-trending">
-                <p className="mobile-search-section-label">
+              <div className="px-4 py-5">
+                <p className="mb-3.5 flex items-center gap-1.5 text-[10px] font-bold tracking-[0.1em] text-[#9ca3af]">
                   <TrendingUp className="h-3.5 w-3.5" />
                   TRENDING NOW
                 </p>
-                <div className="mobile-search-trending-pills">
+                <div className="flex flex-wrap gap-2">
                   {TRENDING_SEARCHES.map((t) => (
                     <button
                       key={t}
                       type="button"
-                      className="mobile-search-trending-pill"
+                      className="inline-flex cursor-pointer items-center rounded-full border border-[#e4e2dd] bg-[#f0efeb] px-4 py-2 text-[13px] font-medium text-[#182126] transition-[background] duration-150 ease-[ease] [-webkit-tap-highlight-color:transparent] active:bg-[#e4e2dd]"
                       onClick={() => handleMobileSearchSubmit(t)}
                     >
                       {t}
@@ -792,27 +659,27 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 </div>
               </div>
             ) : mobileSuggestions.length === 0 ? (
-              <div className="mobile-search-no-results">
+              <div className="flex flex-col items-center gap-2.5 px-6 py-12 text-center text-[#9ca3af]">
                 <Search className="h-8 w-8" />
-                <p>No results for <strong>&ldquo;{mobileQuery}&rdquo;</strong></p>
-                <span>Try checking your spelling or different keywords</span>
+                <p className="m-0 text-[15px] text-[#182126]">No results for <strong>&ldquo;{mobileQuery}&rdquo;</strong></p>
+                <span className="text-[13px] text-[#6b7280]">Try checking your spelling or different keywords</span>
               </div>
             ) : (
-              <ul className="mobile-search-suggestions" role="listbox">
+              <ul className="m-0 list-none py-2" role="listbox">
                 <li>
                   <button
                     type="button"
-                    className="mobile-search-suggestion-row search-for"
+                    className="flex w-full cursor-pointer items-center gap-3 mb-1 border-0 border-b border-b-[rgba(0,0,0,0.05)] bg-transparent px-4 pb-3.5 pt-2.5 text-left text-inherit no-underline transition-[background] duration-[120ms] ease-[ease] [-webkit-tap-highlight-color:transparent] active:bg-[rgba(0,0,0,0.04)]"
                     onClick={() => handleMobileSearchSubmit(mobileQuery)}
                     role="option"
                   >
-                    <span className="mobile-suggestion-icon">
+                    <span className="flex h-9 w-9 flex-[0_0_36px] items-center justify-center rounded-[8px] bg-[#f0efeb] text-[#6b7280]">
                       <Search className="h-4 w-4" />
                     </span>
-                    <span className="mobile-suggestion-text">
+                    <span className="flex-1 text-[14px] text-[#182126] [&_strong]:font-semibold">
                       Search for <strong>&ldquo;{mobileQuery}&rdquo;</strong>
                     </span>
-                    <ArrowRight className="mobile-suggestion-arrow h-3.5 w-3.5" />
+                    <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#d1d5db]" />
                   </button>
                 </li>
 
@@ -820,26 +687,26 @@ export default function Header({ initialNavItems }: HeaderProps) {
                   <li key={product.id}>
                     <Link
                       href={`/product/${product.id}`}
-                      className="mobile-search-suggestion-row product-row"
+                      className="flex w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-4 py-2.5 text-left text-inherit no-underline transition-[background] duration-[120ms] ease-[ease] [-webkit-tap-highlight-color:transparent] active:bg-[rgba(0,0,0,0.04)]"
                       onClick={closeMobileSearch}
                       role="option"
                     >
-                      <div className="mobile-suggestion-thumb">
+                      <div className="h-[54px] w-11 flex-[0_0_44px] overflow-hidden rounded-[6px] bg-[#eeede7]">
                         <Image
                           src={product.img}
                           alt={product.name}
                           width={44}
                           height={54}
-                          className="mobile-suggestion-thumb-img"
+                          className="h-full w-full object-cover"
                         />
                       </div>
-                      <div className="mobile-suggestion-details">
-                        <span className="mobile-suggestion-name">{product.name}</span>
-                        <span className="mobile-suggestion-meta">
+                      <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                        <span className="block truncate text-[13.5px] font-semibold text-[#182126]">{product.name}</span>
+                        <span className="text-[12px] text-[#6b7280]">
                           {product.fit ? `${product.fit} fit` : product.category} · {product.price}
                         </span>
                       </div>
-                      <ArrowRight className="mobile-suggestion-arrow h-3.5 w-3.5" />
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#d1d5db]" />
                     </Link>
                   </li>
                 ))}

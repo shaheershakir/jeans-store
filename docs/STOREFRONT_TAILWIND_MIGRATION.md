@@ -8,7 +8,7 @@ The storefront is moving from a single hand-authored stylesheet to Tailwind CSS 
 legacy sheet in a `legacy` layer:
 
 ```css
-@layer properties, theme, base, legacy, components, utilities;
+@layer properties, theme, base, legacy, legacy-overrides, components, utilities;
 @import 'tailwindcss';
 @import './teesgarage-home.css' layer(legacy);
 
@@ -17,9 +17,19 @@ legacy sheet in a `legacy` layer:
 @layer legacy {
   /* the whole legacy stylesheet */
 }
+
+@layer legacy-overrides {
+  /* late overrides that must outrank the legacy sheet */
+}
 ```
 
-Priority, low to high: `properties`, `theme`, `base` (Preflight), `legacy`, `components`, `utilities`.
+Priority, low to high: `properties`, `theme`, `base` (Preflight), `legacy`, `legacy-overrides`,
+`components`, `utilities`.
+
+`legacy-overrides` exists for rules that were previously injected unlayered (the old Header
+`<style jsx global>` block) and therefore outranked the legacy sheet regardless of specificity. It sits
+above `legacy` to keep that result and below `utilities` so converted markup still wins. It currently
+holds only the profile/wishlist overrides; delete the layer once those surfaces are converted.
 
 This is load-bearing. **Unlayered CSS beats every cascade layer**, regardless of specificity. Before the
 legacy sheet was layered, its `* { margin: 0; padding: 0 }` reset and generic element rules (`a`, `h1`, …)
@@ -43,12 +53,22 @@ padding/margin. Anything new must stay inside `@layer legacy` (or a later layer)
 | Converted in wave 1 | `Footer`, `RelatedProducts`, `homepage/CategoryGroups` |
 | Converted in wave 2 | `ProductCard`, `skeletons/ProductCardSkeleton` |
 | Converted in wave 3 | `ProductDetail`, `skeletons/ProductDetailSkeleton`, `StickyPdpBar`, checkout breadcrumbs |
+| Converted in wave 4 | `Header` (tier-1 bar, desktop nav, mobile drawer, full-screen mobile search, account popover) |
 
 Wave 1 removed 57 CSS rules (footer, related-products and category-group styling). Wave 2 removed 65 rules
 from the product-card cascade and split the shared `.apple-product-card` selectors so the PDP keeps its
 shell. Wave 3 removed 166 rules (148 PDP rules + 18 press-feedback/disabled leftovers), split the shared
 `.apple-product-card` shell, and pruned the last dead `.pdp-*` entries from shared selector lists. The
 `.pdp-container` entry inside the mixed `:is(...)` focus-visible group is intentionally kept.
+
+Wave 4 removed the header's inline `<style jsx global>` block and 161 legacy rules (`.macy-*`,
+`.mobile-nav-*`, `.mobile-search-*`, `.mobile-suggestion-*`, `.apple-popover-*`, account-button helpers).
+The inline block was unlayered, so it beat both the legacy sheet and utilities; its header rules are now
+utilities, and its profile/wishlist rules moved to `legacy-overrides`. Two quirks were preserved: the
+`.scrolled` state never had a visual effect (background stayed `rgba(250,249,246,0.96)`, no shadow), so the
+state was dropped; and the desktop nav bar remains top-aligned rather than vertically centred.
+`max-*` variants are strict `<`, so the legacy `max-width` breakpoints land one pixel earlier (the mobile
+header applies at 639 rather than 640).
 
 Wave 2 also fixed the card media link: the `Link` inside the 4:5 stage is `absolute inset-0` so the
 `h-full` image chain resolves. Without it the link collapsed to `0` height and every `ProductCard` (shop
