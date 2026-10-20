@@ -206,27 +206,43 @@ export default function CartDrawer() {
 
   return (
     <div
-      className={`cart-overlay${open ? ' open' : ''}`}
+      className={`fixed inset-0 z-[99999] flex justify-end bg-[rgba(0,0,0,0.45)] backdrop-blur-[4px] transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] max-[640px]:items-end ${
+        open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+      }`}
       aria-hidden={!open}
       onClick={(e) => {
         if (e.target === e.currentTarget) closeOverlay()
       }}
     >
-      <div className="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping bag">
+      <div
+        className={`relative flex h-[100dvh] w-full max-w-[480px] flex-col overflow-hidden bg-white text-[#111827] shadow-[-12px_0_36px_rgba(0,0,0,0.12)] transition-transform duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] max-[640px]:max-h-[92dvh] max-[640px]:max-w-full max-[640px]:rounded-t-[20px] ${
+          open
+            ? 'translate-x-0 max-[640px]:translate-y-0'
+            : 'translate-x-full max-[640px]:translate-x-0 max-[640px]:translate-y-full'
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Shopping bag"
+      >
         {/* Mobile Pull Handle */}
-        <div className="cart-drawer-handle" aria-hidden="true" />
+        <div
+          className="hidden max-[640px]:mx-auto max-[640px]:mb-0.5 max-[640px]:mt-2.5 max-[640px]:block max-[640px]:h-1 max-[640px]:w-9 max-[640px]:shrink-0 max-[640px]:rounded-full max-[640px]:bg-[#e5e7eb]"
+          aria-hidden="true"
+        />
 
         {/* 1. Header */}
-        <div className="bag-header">
-          <div className="bag-header-info">
-            <span className="bag-eyebrow">TEESGARAGE</span>
-            <h2 className="bag-title">
-              Your Bag <span>({count})</span>
+        <div className="mb-8 flex shrink-0 flex-wrap items-end justify-between gap-5 border-b border-b-line px-6 pb-5 pt-5 max-[640px]:px-5 max-[640px]:pt-3">
+          <div>
+            <span className="mb-0.5 block font-brand text-[11px] font-bold uppercase tracking-[0.14em] text-[#71717a]">
+              TEESGARAGE
+            </span>
+            <h2 className="m-0 flex items-baseline font-brand text-[clamp(28px,3.5vw,38px)] font-bold leading-[1.15] tracking-[-0.03em] text-ink">
+              Your Bag <span className="ml-1.5 font-sans text-xl font-medium leading-[1.15] text-[#6b7280]">({count})</span>
             </h2>
-            <p className="bag-subtitle">Looks good on you.</p>
+            <p className="mb-0 mt-[3px] font-ui text-[13.5px] text-[#6b7280]">Looks good on you.</p>
           </div>
           <button
-            className="bag-close-btn"
+            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[8px] border-0 bg-[#f4f4f5] p-0 text-[#374151] transition-[background,transform] duration-150 ease-[ease] hover:bg-[#e4e4e7]"
             type="button"
             aria-label="Close shopping bag"
             onClick={closeOverlay}
@@ -236,36 +252,36 @@ export default function CartDrawer() {
         </div>
 
         {/* Scrollable Drawer Body */}
-        <div className="bag-body">
+        <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto [-webkit-overflow-scrolling:touch] [scrollbar-color:#e4e4e7_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar-thumb:hover]:bg-[#d4d4d8] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#e4e4e7] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-[5px]">
           {/* 2. Free Shipping Progress Bar */}
-          <div className="bag-shipping-box">
-          <div className="bag-shipping-row">
-            <div className="bag-shipping-left">
+          <div className="mx-6 mb-3.5 shrink-0 rounded-[12px] border border-[#f3f4f6] bg-[#f9fafb] px-4 py-3 max-[640px]:mx-5 max-[640px]:mb-3">
+          <div className="flex items-center justify-between font-ui text-[12.5px] text-[#374151]">
+            <div className="flex min-w-0 items-center gap-2">
               <Truck className="h-4 w-4 text-zinc-800 shrink-0" />
               <span>
                 {amountToFreeShipping > 0 ? (
                   <>
-                    Add <strong>{formatPrice(amountToFreeShipping)}</strong> more for free shipping
+                    Add <strong className="font-bold text-[#111827]">{formatPrice(amountToFreeShipping)}</strong> more for free shipping
                   </>
                 ) : (
-                  <strong>You&apos;ve unlocked free shipping!</strong>
+                  <strong className="font-bold text-[#111827]">You&apos;ve unlocked free shipping!</strong>
                 )}
               </span>
             </div>
-            <span className="bag-shipping-goal">{formatPrice(FREE_SHIPPING_THRESHOLD)}</span>
+            <span className="ml-2 shrink-0 font-mono text-[12px] font-semibold text-[#6b7280]">{formatPrice(FREE_SHIPPING_THRESHOLD)}</span>
           </div>
-          <div className="bag-shipping-bar-track">
+          <div className="mt-[9px] h-[5px] w-full overflow-hidden rounded-full bg-[#e5e7eb]">
             <div
-              className="bag-shipping-bar-fill"
+              className="h-full rounded-full bg-[#111827] transition-[width] duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
               style={{ width: `${freeShippingPct}%` }}
             />
           </div>
         </div>
 
         {/* 3. Delivery Section */}
-        <div className="bag-delivery-section">
-          <div className="bag-delivery-header">
-            <div className="bag-delivery-title">
+        <div className="shrink-0 border-b border-[#f3f4f6] px-6 pb-3.5 max-[640px]:px-5 max-[640px]:pb-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-brand text-[11px] font-bold uppercase leading-[normal] tracking-[0.05em] text-[#166534]">
               <MapPin className="h-4 w-4 text-zinc-700" />
               <span>Delivery to</span>
             </div>
@@ -273,7 +289,7 @@ export default function CartDrawer() {
               <Link
                 href="/profile?tab=addresses"
                 onClick={closeOverlay}
-                className="bag-delivery-add"
+                className="cursor-pointer font-ui text-[12px] font-medium text-[#6b7280] no-underline transition-colors duration-150 hover:text-[#111827]"
               >
                 Saved addresses
               </Link>
@@ -281,13 +297,13 @@ export default function CartDrawer() {
               <Link
                 href={isAuthenticated ? '/profile?tab=addresses' : '/login?redirect=/profile'}
                 onClick={closeOverlay}
-                className="bag-delivery-add"
+                className="cursor-pointer font-ui text-[12px] font-medium text-[#6b7280] no-underline transition-colors duration-150 hover:text-[#111827]"
               >
                 + Add new
               </Link>
             )}
           </div>
-          <div className="bag-delivery-input-row">
+          <div className="flex gap-2">
             <input
               id="bag-delivery-pincode"
               type="text"
@@ -298,11 +314,11 @@ export default function CartDrawer() {
               onChange={(e) => handlePincodeChange(e.target.value)}
               placeholder="Enter 6-digit PIN code (e.g. 682001)"
               aria-label="Delivery PIN code"
-              className="bag-pincode-input"
+              className="h-10 flex-1 rounded-[8px] border border-[#e5e7eb] bg-white px-3 font-ui text-[13px] text-[#111827] outline-none transition-[border-color] duration-150 ease-[ease] focus:border-[#111827]"
             />
             <button
               type="button"
-              className="bag-check-btn"
+              className="h-10 cursor-pointer whitespace-nowrap rounded-[8px] border-0 bg-[#111827] px-[18px] font-brand text-[13px] font-semibold text-white transition-colors duration-150 ease-[ease] enabled:hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => verifyPincode(pincode)}
               disabled={pincodeLoading}
             >
@@ -311,7 +327,7 @@ export default function CartDrawer() {
           </div>
 
           {pincodeLocation && !pincodeError && (
-            <p className="bag-delivery-verified">
+            <p className="mt-1.5 flex items-center gap-1 font-ui text-[11.5px] font-medium text-[#15803d]">
               <Check className="h-3.5 w-3.5 shrink-0" />
               <span>
                 Delivering to <strong>{pincodeLocation}</strong>
@@ -321,31 +337,31 @@ export default function CartDrawer() {
           )}
 
           {!pincodeLocation && !pincodeError && (
-            <p className="bag-delivery-note">
+            <p className="mt-1.5 font-ui text-[11.5px] text-[#9ca3af]">
               Enter your pincode to see delivery options and charges.
             </p>
           )}
 
           {pincodeError && (
-            <p role="alert" className="bag-delivery-error">
+            <p role="alert" className="mt-1.5 font-ui text-[11.5px] text-[#dc2626]">
               {pincodeError}
             </p>
           )}
           {quoteError && !pincodeError && (
-            <p role="alert" className="bag-delivery-error">
+            <p role="alert" className="mt-1.5 font-ui text-[11.5px] text-[#dc2626]">
               {quoteError}
             </p>
           )}
         </div>
 
         {/* 4. Items List */}
-        <div className="bag-items-section">
-          <div className="bag-items-header">
-            <span className="bag-items-title">Items ({count})</span>
+        <div className="px-6 max-[640px]:px-5">
+          <div className="flex items-center justify-between border-b border-[#f3f4f6] pb-2 pt-3">
+            <span className="font-brand text-[13.5px] font-semibold text-[#111827]">Items ({count})</span>
             {count > 0 && (
               <button
                 type="button"
-                className="bag-clear-btn"
+                className="cursor-pointer border-0 bg-transparent p-0 font-ui text-[12.5px] font-medium leading-[normal] text-ink-secondary underline underline-offset-[3px] transition-colors duration-150 hover:text-[#dc2626]"
                 onClick={handleClearBag}
               >
                 Clear bag
@@ -354,42 +370,42 @@ export default function CartDrawer() {
           </div>
 
           {items.length === 0 ? (
-            <div className="bag-empty-state">
-              <p className="bag-empty-title">Your bag is empty</p>
-              <p className="bag-empty-desc">
+            <div className="px-4 py-10 text-center">
+              <p className="mb-3 font-brand text-[28px] font-bold leading-[1.2] tracking-[-0.02em] text-ink">Your bag is empty</p>
+              <p className="mx-auto mb-7 max-w-[440px] font-ui text-[15px] leading-[1.6] text-ink-secondary">
                 Find your fit from our heavyweight combed cotton collections.
               </p>
               <Link
                 href="/shop"
-                className="bag-empty-cta"
+                className="inline-flex items-center rounded-[6px] bg-[#111827] px-[18px] py-2.5 font-brand text-[12.5px] font-semibold text-white no-underline transition-colors duration-150 hover:bg-black"
                 onClick={closeOverlay}
               >
                 Explore shop ↗
               </Link>
             </div>
           ) : (
-            <div className="bag-items-list">
+            <div>
               {items.map((item) => (
-                <div className="bag-item" key={`${item.id}-${item.variantId ?? item.size}`}>
+                <div className="flex gap-3.5 border-b border-[#f3f4f6] py-4" key={`${item.id}-${item.variantId ?? item.size}`}>
                   <Link href={getProductUrl(item)} onClick={closeOverlay}>
                     <Image
                       src={item.img}
                       alt={item.name}
                       width={76}
                       height={92}
-                      className="bag-item-img"
+                      className="h-full w-full shrink-0 rounded-[8px] bg-[#f4f4f5] object-cover [transition:transform_0.3s_ease]"
                     />
                   </Link>
 
-                  <div className="bag-item-content">
-                    <div className="bag-item-top">
-                      <div className="bag-item-meta">
-                        <div className="bag-item-title-row">
+                  <div className="flex min-w-0 flex-1 flex-col justify-between">
+                    <div className="flex flex-col gap-0.5">
+                      <div className="w-full">
+                        <div className="flex items-start justify-between gap-2">
                           <Link href={getProductUrl(item)} onClick={closeOverlay}>
-                            <h4 className="bag-item-title">{item.name}</h4>
+                            <h4 className="m-0 font-brand text-[16px] font-semibold leading-[1.35] text-ink [overflow-wrap:anywhere]">{item.name}</h4>
                           </Link>
                           <button
-                            className="bag-item-remove-x"
+                            className="shrink-0 cursor-pointer border-0 bg-transparent p-0.5 text-[#9ca3af] transition-colors duration-150 hover:text-[#111827]"
                             type="button"
                             title="Remove item"
                             onClick={() => removeItem(item.id, item.size, item.variantId)}
@@ -399,8 +415,8 @@ export default function CartDrawer() {
                           </button>
                         </div>
 
-                        <div className="bag-item-spec-row">
-                          <p className="bag-item-spec">
+                        <div className="mt-[3px] flex items-center justify-between gap-2">
+                          <p className="m-0 font-ui text-[12px] text-[#71717a]">
                             {[
                               item.color,
                               item.fit ? `${item.fit} Fit` : null,
@@ -409,31 +425,31 @@ export default function CartDrawer() {
                               .filter(Boolean)
                               .join(' · ')}
                           </p>
-                          <strong className="bag-item-price bag-item-price-desktop">
+                          <strong className="block shrink-0 font-mono text-[13.5px] font-bold text-[#111827] max-[640px]:hidden">
                             {formatPrice(item.priceNum * item.qty)}
                           </strong>
                         </div>
 
-                        <strong className="bag-item-price bag-item-price-mobile">
+                        <strong className="mt-1 hidden font-mono text-[13.5px] font-bold text-[#111827] max-[640px]:block">
                           {formatPrice(item.priceNum * item.qty)}
                         </strong>
                       </div>
                     </div>
 
-                    <div className="bag-item-actions">
-                      <div className="bag-stepper">
+                    <div className="mt-2.5 flex items-center gap-2.5 max-[640px]:w-full max-[640px]:justify-between">
+                      <div className="inline-flex h-9 select-none items-center overflow-hidden rounded-[3px] border border-line-strong bg-white">
                         <button
                           type="button"
-                          className="bag-stepper-btn"
+                          className="flex h-9 w-9 min-h-9 min-w-9 cursor-pointer touch-manipulation items-center justify-center border-0 bg-transparent text-[14px] font-medium text-ink transition-[background,transform] duration-150 ease-[ease] active:bg-bone hover:bg-bone"
                           onClick={() => updateQty(item.id, item.size, -1, item.variantId)}
                           aria-label="Decrease quantity"
                         >
                           −
                         </button>
-                        <span className="bag-stepper-count">{item.qty}</span>
+                        <span className="min-w-8 px-1 text-center font-ui text-[13px] font-semibold leading-[normal] text-ink [font-feature-settings:'tnum']">{item.qty}</span>
                         <button
                           type="button"
-                          className="bag-stepper-btn"
+                          className="flex h-9 w-9 min-h-9 min-w-9 cursor-pointer touch-manipulation items-center justify-center border-0 bg-transparent text-[14px] font-medium text-ink transition-[background,transform] duration-150 ease-[ease] active:bg-bone hover:bg-bone"
                           onClick={() => updateQty(item.id, item.size, 1, item.variantId)}
                           aria-label="Increase quantity"
                         >
@@ -443,7 +459,7 @@ export default function CartDrawer() {
 
                       <button
                         type="button"
-                        className="bag-wishlist-btn"
+                        className="inline-flex h-7 cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-[6px] border border-[#e4e4e7] bg-white px-2.5 font-ui text-[11.5px] font-medium text-[#3f3f46] transition-all duration-150 ease-[ease] hover:border-[#111827] hover:text-[#111827] max-[640px]:hidden"
                         onClick={() => handleMoveToWishlist(item)}
                       >
                         <Heart className="h-3.5 w-3.5" />
@@ -452,7 +468,7 @@ export default function CartDrawer() {
 
                       <button
                         type="button"
-                        className="bag-trash-btn"
+                        className="hidden h-7 w-7 cursor-pointer items-center justify-center rounded-[6px] border border-[#e4e4e7] bg-white text-[#71717a] transition-all duration-150 ease-[ease] hover:border-[#dc2626] hover:text-[#dc2626] max-[640px]:flex"
                         onClick={() => removeItem(item.id, item.size, item.variantId)}
                         title="Delete item"
                         aria-label="Delete item"
@@ -468,25 +484,25 @@ export default function CartDrawer() {
 
           {/* 5. You might also like (Cross-sell grid) */}
           {crossSellProducts.length > 0 && (
-            <div className="bag-crosssell">
-              <div className="bag-crosssell-header">
-                <span className="bag-crosssell-title">You might also like</span>
+            <div className="border-b border-[#f3f4f6] py-[18px] max-[640px]:py-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="font-brand text-[13.5px] font-semibold text-[#111827]">You might also like</span>
                 <Link
                   href="/shop"
                   onClick={closeOverlay}
-                  className="bag-crosssell-link"
+                  className="cursor-pointer font-ui text-[12px] font-medium text-[#6b7280] no-underline transition-colors duration-150 hover:text-[#111827]"
                 >
                   See all →
                 </Link>
               </div>
 
-              <div className="bag-crosssell-grid">
+              <div className="grid grid-cols-3 gap-2.5 max-[640px]:flex max-[640px]:flex-col max-[640px]:gap-2">
                 {crossSellProducts.map((p) => (
-                  <div key={`cross-${p.id}`} className="bag-crosssell-card">
+                  <div key={`cross-${p.id}`} className="group flex min-w-0 flex-col [-webkit-tap-highlight-color:transparent] max-[640px]:flex-row max-[640px]:items-center max-[640px]:gap-3 max-[640px]:rounded-[12px] max-[640px]:border max-[640px]:border-[#f3f4f6] max-[640px]:bg-[#fafafa] max-[640px]:px-3 max-[640px]:py-2 max-[640px]:transition-colors max-[640px]:duration-150 max-[640px]:active:bg-[#f4f4f5]">
                     <Link
                       href={getProductUrl(p)}
                       onClick={closeOverlay}
-                      className="bag-crosssell-img-wrap"
+                      className="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#f4f4f5] max-[640px]:h-[54px] max-[640px]:w-[54px] max-[640px]:shrink-0"
                       aria-label={`View ${p.name}`}
                     >
                       <Image
@@ -494,31 +510,31 @@ export default function CartDrawer() {
                         alt={p.name}
                         width={120}
                         height={120}
-                        className="bag-crosssell-img"
+                        className="h-full w-full object-cover [transition:transform_0.2s_ease] group-hover:scale-[1.04]"
                       />
                     </Link>
-                    <div className="bag-crosssell-info">
-                      <div className="bag-crosssell-meta">
+                    <div className="mt-1.5 flex items-start justify-between gap-1 max-[640px]:mt-0 max-[640px]:min-w-0 max-[640px]:flex-1 max-[640px]:items-center max-[640px]:gap-3">
+                      <div className="min-w-0 flex-1">
                         <Link
                           href={getProductUrl(p)}
                           onClick={closeOverlay}
-                          className="bag-crosssell-name-link"
+                          className="block text-inherit no-underline"
                         >
-                          <p className="bag-crosssell-name" title={p.name}>
+                          <p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap font-brand text-[11px] font-semibold leading-[1.25] text-[#111827] max-[640px]:text-[13px] max-[640px]:leading-[1.3]" title={p.name}>
                             {p.name}
                           </p>
                         </Link>
-                        <p className="bag-crosssell-price">{formatPrice(p.priceNum)}</p>
+                        <p className="mb-0 mt-0.5 font-mono text-[11.5px] font-bold text-[#111827] max-[640px]:text-[12.5px]">{formatPrice(p.priceNum)}</p>
                       </div>
                       <button
                         type="button"
-                        className="bag-crosssell-add-btn"
+                        className="flex h-6 w-6 shrink-0 cursor-pointer touch-manipulation select-none items-center justify-center rounded-full border-0 bg-[#111827] text-white [-webkit-touch-callout:none] [transition:transform_0.12s_ease,background_0.15s_ease] hover:scale-[1.08] hover:bg-black max-[640px]:h-8 max-[640px]:w-auto max-[640px]:gap-1 max-[640px]:px-3.5 max-[640px]:font-brand max-[640px]:text-[12px] max-[640px]:font-semibold"
                         title={`Add ${p.name} to bag`}
                         aria-label={`Add ${p.name} to bag`}
                         onClick={() => handleQuickAdd(p)}
                       >
                         <Plus className="h-3.5 w-3.5 shrink-0" />
-                        <span className="bag-crosssell-add-text">Add</span>
+                        <span className="hidden max-[640px]:inline">Add</span>
                       </button>
                     </div>
                   </div>
@@ -531,13 +547,13 @@ export default function CartDrawer() {
 
         {/* 6. Footer & Totals */}
         {items.length > 0 && (
-          <div className="bag-footer">
-            <div className="bag-summary">
-              <div className="bag-summary-row">
+          <div className="shrink-0 border-t border-[#f3f4f6] bg-white px-6 pt-4 pb-[calc(16px_+_env(safe-area-inset-bottom,0px))] max-[640px]:px-5 max-[640px]:pt-3.5 max-[640px]:pb-[calc(14px_+_env(safe-area-inset-bottom,0px))]">
+            <div className="mb-3 flex flex-col gap-[7px]">
+              <div className="flex justify-between font-ui text-[13px] text-[#6b7280]">
                 <span>Subtotal</span>
                 <span>{formatPrice(quote?.subtotal ?? subtotal)}</span>
               </div>
-              <div className="bag-summary-row">
+              <div className="flex justify-between font-ui text-[13px] text-[#6b7280]">
                 <span>Delivery charge</span>
                 <span>
                   {quote
@@ -549,16 +565,16 @@ export default function CartDrawer() {
                       : 'Enter PIN code'}
                 </span>
               </div>
-              <div className="bag-summary-row total">
+              <div className="flex justify-between border-t border-[#f3f4f6] pt-2 font-brand text-[14px] font-bold text-[#111827]">
                 <span>Total before delivery</span>
-                <span className="price">{formatPrice(quote?.total ?? subtotal)}</span>
+                <span className="font-mono text-[16.5px] font-extrabold text-[#111827]">{formatPrice(quote?.total ?? subtotal)}</span>
               </div>
             </div>
 
-            <div className="bag-footer-actions">
+            <div className="flex flex-col flex-wrap items-center justify-between gap-3 border-t border-dashed border-line pt-3.5">
               <Link
                 href="/bag/checkout"
-                className="bag-checkout-btn"
+                className="flex h-12 w-full cursor-pointer items-center justify-center rounded-[8px] border-0 bg-[#111827] font-brand text-[14px] font-semibold text-white no-underline shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-[background,transform] duration-150 ease-[ease] hover:bg-black"
                 onClick={closeOverlay}
               >
                 <span>Proceed to checkout</span>
@@ -566,23 +582,23 @@ export default function CartDrawer() {
               </Link>
               <Link
                 href="/bag"
-                className="bag-view-btn"
+                className="flex h-[42px] w-full cursor-pointer items-center justify-center rounded-[8px] border border-[#e5e7eb] bg-white font-brand text-[13.5px] font-semibold text-[#111827] no-underline transition-[background,border-color] duration-150 ease-[ease] hover:border-[#d1d5db] hover:bg-[#f9fafb]"
                 onClick={closeOverlay}
               >
                 <span>View full bag ({count})</span>
               </Link>
             </div>
 
-            <div className="bag-trust-badges">
-              <div className="bag-trust-badge">
+            <div className="mt-3 flex items-center justify-between border-t border-[#f3f4f6] pt-2.5">
+              <div className="flex items-center gap-1 font-ui text-[10px] text-[#71717a]">
                 <RefreshCw className="h-3 w-3 shrink-0" />
                 <span>Free 7-day exchanges</span>
               </div>
-              <div className="bag-trust-badge">
+              <div className="flex items-center gap-1 font-ui text-[10px] text-[#71717a]">
                 <Lock className="h-3 w-3 shrink-0" />
                 <span>Secure Razorpay payment</span>
               </div>
-              <div className="bag-trust-badge">
+              <div className="flex items-center gap-1 font-ui text-[10px] text-[#71717a]">
                 <Shield className="h-3 w-3 shrink-0" />
                 <span>Easy returns</span>
               </div>

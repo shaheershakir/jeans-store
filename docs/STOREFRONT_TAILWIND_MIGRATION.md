@@ -49,12 +49,13 @@ padding/margin. Anything new must stay inside `@layer legacy` (or a later layer)
 | PostCSS | `apps/storefront/postcss.config.mjs` |
 | Entry point | `@import 'tailwindcss'` in `src/app/globals.css`, inside the layer order above |
 | Design tokens | Exported through `@theme` in `globals.css` (see below) |
-| Legacy CSS | `src/app/globals.css` (~17.8k lines) + `src/app/teesgarage-home.css`, both in `@layer legacy` |
+| Legacy CSS | `src/app/globals.css` (~14.3k lines) + `src/app/teesgarage-home.css`, both in `@layer legacy` |
 | Converted in wave 1 | `Footer`, `RelatedProducts`, `homepage/CategoryGroups` |
 | Converted in wave 2 | `ProductCard`, `skeletons/ProductCardSkeleton` |
 | Converted in wave 3 | `ProductDetail`, `skeletons/ProductDetailSkeleton`, `StickyPdpBar`, checkout breadcrumbs |
 | Converted in wave 4 | `Header` (tier-1 bar, desktop nav, mobile drawer, full-screen mobile search, account popover) |
 | Converted in wave 5 | `SearchOverlay` (desktop modal + mobile bottom sheet) |
+| Converted in wave 6 | `CartDrawer` (overlay, header, shipping meter, delivery lookup, items, cross-sell, totals) |
 
 Wave 1 removed 57 CSS rules (footer, related-products and category-group styling). Wave 2 removed 65 rules
 from the product-card cascade and split the shared `.apple-product-card` selectors so the PDP keeps its
@@ -77,6 +78,18 @@ keeps its `opacity 0.25s` fade and mobile `90dvh` bottom sheet; the input keeps 
 (not the inherited 1.5) so the header stays 50px tall on mobile. Classes with no CSS in the sheet
 (`search-icon`, `search-clear`, `modal-close`, `tag-label`, `search-results-meta`, `search-empty`,
 `search-item-info`) were left as inert hooks rather than given utilities that never existed.
+
+Wave 6 converted `CartDrawer` and removed 115 drawer-only rules, two hover media blocks that became empty,
+and the `.cart-drawer` entry in the reduced-transparency group. The drawer shares class names with the Bag
+page, so those rules (`bag-header`, `bag-title`, `bag-item-img`, `bag-item-title`, `bag-stepper*`,
+`bag-clear-btn`, `bag-footer-actions`, `bag-empty-title`/`desc`, `bag-delivery-title`) stay until the Bag
+page converts. Because the Bag page's copies come later in the legacy layer, the drawer's utilities were
+taken from the final cascade rather than the drawer block alone: 38px brand title, green uppercase 11px
+delivery label, 36px stepper with a 3px radius, 16px item title, column footer actions with a 12px gap and
+dashed rule, and a 12.5px underlined clear link. The item image keeps the legacy `width/height: 100%` pair
+(its loaded 96px width comes from the flex row, not a fixed size); the desktop before-snapshot showed a
+0-width image only because the image had not loaded yet, and the legacy classes produce the same 96px
+layout once it is loaded.
 
 Wave 2 also fixed the card media link: the `Link` inside the 4:5 stage is `absolute inset-0` so the
 `h-full` image chain resolves. Without it the link collapsed to `0` height and every `ProductCard` (shop
