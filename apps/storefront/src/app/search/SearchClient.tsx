@@ -293,7 +293,7 @@ export default function SearchClient({
             </Link>
           </div>
         ) : (
-          <div className="shop-grid search-grid-spacing">
+          <div className="search-grid-spacing grid grid-cols-4 gap-x-4 gap-y-6 [@media(max-width:1200px)]:grid-cols-3 [@media(max-width:768px)]:grid-cols-2 [@media(max-width:768px)]:gap-x-2.5 [@media(max-width:768px)]:gap-y-4">
             {searchResults.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

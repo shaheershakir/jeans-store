@@ -31,6 +31,11 @@ const SORT_OPTIONS: { mode: SortMode; label: string }[] = [
   { mode: 'price-desc', label: 'Price: High to Low' },
 ]
 
+const SIZE_PILL_INACTIVE =
+  'flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[2px] border border-[#d2d3ce] bg-white font-ui text-[11.5px] font-semibold leading-[17.25px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#ff3f6c]'
+const SIZE_PILL_ACTIVE =
+  'flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[2px] border border-store-ink bg-store-ink font-ui text-[11.5px] font-semibold leading-[17.25px] text-white transition-all duration-150'
+
 const SHOP_CATEGORIES = [
   { id: 'all', slug: 'all', href: '/shop', label: 'All Garments' },
   { id: 'stripes', slug: 'stripes', href: '/shop/stripes', label: 'Stripes' },
@@ -748,43 +753,49 @@ export default function ShopClient({
 
   // Render individual facet block
   const renderFacetBlock = (key: FacetKey, isDrawer = false) => {
+    const facetBlockClass = isDrawer
+      ? 'border-b-0 pb-4 pt-1'
+      : 'border-b border-store-line py-4 first:pt-0 last:border-b-0'
+    const facetTitleClass = isDrawer
+      ? 'hidden'
+      : 'mb-3 font-brand text-[12.5px] font-bold uppercase leading-[16.25px] tracking-[0.04em] text-[#59666c]'
     // CATEGORIES: Shown ONLY on /shop route (routeCategory === 'all')
     if (key === 'categories') {
       if (routeCategory !== 'all') return null
       const isAllChecked = filterCategories.length === 0
 
       return (
-        <div key="facet-categories" className="shop-facet-block">
-          <h3 className="shop-facet-title">CATEGORIES</h3>
-          <div className="shop-facet-checkbox-list">
-            <label className="shop-facet-row">
-              <input
+        <div key="facet-categories" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>CATEGORIES</h3>
+          <div className="flex flex-col gap-[9px]">
+            <label className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+              <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                 type="checkbox"
                 checked={isAllChecked}
                 onChange={() => setCategories([])}
               />
-              <span className="shop-facet-box">
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                 {isAllChecked && <Check className="h-3 w-3 stroke-[3]" />}
               </span>
-              <span className="shop-facet-text">All Garments</span>
-              <span className="shop-facet-qty">({initialProducts.length})</span>
+              <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">All Garments</span>
+              <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({initialProducts.length})</span>
             </label>
 
             {SHOP_CATEGORIES.filter((cat) => cat.slug !== 'all').map((cat) => {
               const isChecked = filterCategories.includes(cat.slug)
               const count = counts[`cat-${cat.slug}`] ?? 0
               return (
-                <label key={cat.slug} className="shop-facet-row">
-                  <input
+                <label key={cat.slug} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleCategory(cat.slug)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{cat.label}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{cat.label}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -795,9 +806,9 @@ export default function ShopClient({
 
     if (key === 'size') {
       return (
-        <div key="facet-size" className="shop-facet-block">
-          <h3 className="shop-facet-title">SIZE</h3>
-          <div className="shop-size-pills-wrap">
+        <div key="facet-size" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>SIZE</h3>
+          <div className="flex flex-wrap gap-[7px]">
             {ALL_SIZES.map((sz) => {
               const isChecked = selectedSizes.includes(sz)
               const count = counts[`size-${sz}`] ?? 0
@@ -805,7 +816,7 @@ export default function ShopClient({
                 <button
                   key={sz}
                   type="button"
-                  className={`shop-size-pill-btn ${isChecked ? 'active' : ''}`}
+                  className={isChecked ? SIZE_PILL_ACTIVE : SIZE_PILL_INACTIVE}
                   onClick={() => toggleStringItem(setSelectedSizes, sz)}
                   title={`${sz} (${count} available)`}
                 >
@@ -820,9 +831,9 @@ export default function ShopClient({
 
     if (key === 'waistSize') {
       return (
-        <div key="facet-waist" className="shop-facet-block">
-          <h3 className="shop-facet-title">WAIST SIZE</h3>
-          <div className="shop-size-pills-wrap">
+        <div key="facet-waist" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>WAIST SIZE</h3>
+          <div className="flex flex-wrap gap-[7px]">
             {ALL_WAIST_SIZES.map((ws) => {
               const isChecked = selectedWaistSizes.includes(ws)
               const count = counts[`waist-${ws}`] ?? 0
@@ -830,7 +841,7 @@ export default function ShopClient({
                 <button
                   key={ws}
                   type="button"
-                  className={`shop-size-pill-btn ${isChecked ? 'active' : ''}`}
+                  className={isChecked ? SIZE_PILL_ACTIVE : SIZE_PILL_INACTIVE}
                   onClick={() => toggleStringItem(setSelectedWaistSizes, ws)}
                   title={`Waist ${ws}" (${count} available)`}
                 >
@@ -845,29 +856,29 @@ export default function ShopClient({
 
     if (key === 'color') {
       return (
-        <div key="facet-color" className="shop-facet-block">
-          <h3 className="shop-facet-title">COLOR</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-color" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>COLOR</h3>
+          <div className="flex flex-col gap-[9px]">
             {COLOR_PALETTE.map(({ name, hex }) => {
               const isChecked = selectedColors.includes(name)
               const count = counts[`color-${name}`] ?? 0
               return (
-                <label key={name} className="shop-facet-row">
-                  <input
+                <label key={name} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedColors, name)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
                   <span
-                    className="shop-color-swatch-dot"
+                    className="h-[13px] w-[13px] shrink-0 rounded-full border border-black/[0.12]"
                     style={{ backgroundColor: hex }}
                     aria-hidden="true"
                   />
-                  <span className="shop-facet-text">{name}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{name}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -878,24 +889,24 @@ export default function ShopClient({
 
     if (key === 'price') {
       return (
-        <div key="facet-price" className="shop-facet-block">
-          <h3 className="shop-facet-title">PRICE</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-price" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>PRICE</h3>
+          <div className="flex flex-col gap-[9px]">
             {(Object.keys(PRICE_LABELS) as PriceRange[]).map((range) => {
               const isChecked = prices.includes(range)
               const count = counts[`price-${range}`] ?? 0
               return (
-                <label key={range} className="shop-facet-row">
-                  <input
+                <label key={range} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => togglePrice(range)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{PRICE_LABELS[range]}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{PRICE_LABELS[range]}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -907,15 +918,15 @@ export default function ShopClient({
     if (key === 'fit') {
       const fitOptions = ['Slim', 'Regular', 'Relaxed', 'Oversized', 'Boxy', 'Baggy']
       return (
-        <div key="facet-fit" className="shop-facet-block">
-          <h3 className="shop-facet-title">FIT</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-fit" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>FIT</h3>
+          <div className="flex flex-col gap-[9px]">
             {fitOptions.map((f) => {
               const isChecked = selectedFits.includes(f) || filterFit === f
               const count = counts[`fit-${f}`] ?? 0
               return (
-                <label key={f} className="shop-facet-row">
-                  <input
+                <label key={f} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => {
@@ -923,11 +934,11 @@ export default function ShopClient({
                       toggleStringItem(setSelectedFits, f)
                     }}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{f}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{f}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -939,24 +950,24 @@ export default function ShopClient({
     if (key === 'fabric') {
       const fabricOptions = ['Cotton', 'Cotton blend', 'Polyester', 'French terry', 'Fleece']
       return (
-        <div key="facet-fabric" className="shop-facet-block">
-          <h3 className="shop-facet-title">FABRIC</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-fabric" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>FABRIC</h3>
+          <div className="flex flex-col gap-[9px]">
             {fabricOptions.map((fb) => {
               const isChecked = selectedFabrics.includes(fb)
               const count = counts[`fabric-${fb}`] ?? 0
               return (
-                <label key={fb} className="shop-facet-row">
-                  <input
+                <label key={fb} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedFabrics, fb)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{fb}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{fb}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -975,24 +986,24 @@ export default function ShopClient({
         'Fleece',
       ]
       return (
-        <div key="facet-material" className="shop-facet-block">
-          <h3 className="shop-facet-title">MATERIAL</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-material" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>MATERIAL</h3>
+          <div className="flex flex-col gap-[9px]">
             {materialOptions.map((mat) => {
               const isChecked = selectedMaterials.includes(mat)
               const count = counts[`mat-${mat}`] ?? 0
               return (
-                <label key={mat} className="shop-facet-row">
-                  <input
+                <label key={mat} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedMaterials, mat)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{mat}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{mat}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1004,24 +1015,24 @@ export default function ShopClient({
     if (key === 'sleeveLength') {
       const sleeveOptions = ['Short Sleeve', 'Full Sleeve', '3/4 Sleeve']
       return (
-        <div key="facet-sleeve" className="shop-facet-block">
-          <h3 className="shop-facet-title">SLEEVE LENGTH</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-sleeve" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>SLEEVE LENGTH</h3>
+          <div className="flex flex-col gap-[9px]">
             {sleeveOptions.map((sl) => {
               const isChecked = selectedSleeveLengths.includes(sl)
               const count = counts[`sleeve-${sl}`] ?? 0
               return (
-                <label key={sl} className="shop-facet-row">
-                  <input
+                <label key={sl} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedSleeveLengths, sl)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{sl}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{sl}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1033,24 +1044,24 @@ export default function ShopClient({
     if (key === 'neckType') {
       const neckOptions = ['Crew neck', 'V-neck']
       return (
-        <div key="facet-neck" className="shop-facet-block">
-          <h3 className="shop-facet-title">NECK TYPE</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-neck" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>NECK TYPE</h3>
+          <div className="flex flex-col gap-[9px]">
             {neckOptions.map((nk) => {
               const isChecked = selectedNeckTypes.includes(nk)
               const count = counts[`neck-${nk}`] ?? 0
               return (
-                <label key={nk} className="shop-facet-row">
-                  <input
+                <label key={nk} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedNeckTypes, nk)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{nk}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{nk}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1062,24 +1073,24 @@ export default function ShopClient({
     if (key === 'pattern') {
       const patternOptions = ['Solid', 'Striped', 'Printed', 'Color-block']
       return (
-        <div key="facet-pattern" className="shop-facet-block">
-          <h3 className="shop-facet-title">PATTERN</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-pattern" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>PATTERN</h3>
+          <div className="flex flex-col gap-[9px]">
             {patternOptions.map((pt) => {
               const isChecked = selectedPatterns.includes(pt)
               const count = counts[`pattern-${pt}`] ?? 0
               return (
-                <label key={pt} className="shop-facet-row">
-                  <input
+                <label key={pt} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedPatterns, pt)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{pt}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{pt}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1091,24 +1102,24 @@ export default function ShopClient({
     if (key === 'printStyle') {
       const printOptions = ['Graphic', 'Typography', 'Abstract', 'Minimal']
       return (
-        <div key="facet-print" className="shop-facet-block">
-          <h3 className="shop-facet-title">PRINT STYLE</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-print" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>PRINT STYLE</h3>
+          <div className="flex flex-col gap-[9px]">
             {printOptions.map((ps) => {
               const isChecked = selectedPrintStyles.includes(ps)
               const count = counts[`print-${ps}`] ?? 0
               return (
-                <label key={ps} className="shop-facet-row">
-                  <input
+                <label key={ps} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedPrintStyles, ps)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{ps}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{ps}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1120,24 +1131,24 @@ export default function ShopClient({
     if (key === 'trimColor') {
       const trimOptions = ['Cobalt', 'Forest Green', 'Chocolate', 'Navy']
       return (
-        <div key="facet-trim" className="shop-facet-block">
-          <h3 className="shop-facet-title">COLLAR / TRIM COLOR</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-trim" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>COLLAR / TRIM COLOR</h3>
+          <div className="flex flex-col gap-[9px]">
             {trimOptions.map((tc) => {
               const isChecked = selectedTrimColors.includes(tc)
               const count = counts[`trim-${tc}`] ?? 0
               return (
-                <label key={tc} className="shop-facet-row">
-                  <input
+                <label key={tc} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedTrimColors, tc)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{tc}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{tc}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1149,24 +1160,24 @@ export default function ShopClient({
     if (key === 'buttons') {
       const buttonOptions = ['2-button', '3-button', '4-button']
       return (
-        <div key="facet-buttons" className="shop-facet-block">
-          <h3 className="shop-facet-title">BUTTONS</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-buttons" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>BUTTONS</h3>
+          <div className="flex flex-col gap-[9px]">
             {buttonOptions.map((btn) => {
               const isChecked = selectedButtons.includes(btn)
               const count = counts[`btn-${btn}`] ?? 0
               return (
-                <label key={btn} className="shop-facet-row">
-                  <input
+                <label key={btn} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedButtons, btn)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{btn}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{btn}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1178,24 +1189,24 @@ export default function ShopClient({
     if (key === 'length') {
       const lengthOptions = ['Full Length', 'Ankle Length']
       return (
-        <div key="facet-length" className="shop-facet-block">
-          <h3 className="shop-facet-title">LENGTH</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-length" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>LENGTH</h3>
+          <div className="flex flex-col gap-[9px]">
             {lengthOptions.map((len) => {
               const isChecked = selectedLengths.includes(len)
               const count = counts[`len-${len}`] ?? 0
               return (
-                <label key={len} className="shop-facet-row">
-                  <input
+                <label key={len} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedLengths, len)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{len}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{len}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1207,24 +1218,24 @@ export default function ShopClient({
     if (key === 'closure') {
       const closureOptions = ['Drawstring', 'Elastic waist']
       return (
-        <div key="facet-closure" className="shop-facet-block">
-          <h3 className="shop-facet-title">CLOSURE</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-closure" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>CLOSURE</h3>
+          <div className="flex flex-col gap-[9px]">
             {closureOptions.map((cl) => {
               const isChecked = selectedClosures.includes(cl)
               const count = counts[`closure-${cl}`] ?? 0
               return (
-                <label key={cl} className="shop-facet-row">
-                  <input
+                <label key={cl} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedClosures, cl)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{cl}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{cl}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1236,24 +1247,24 @@ export default function ShopClient({
     if (key === 'pockets') {
       const pocketOptions = ['Cargo Pockets', 'Zippered Pockets', 'Slash Pockets']
       return (
-        <div key="facet-pockets" className="shop-facet-block">
-          <h3 className="shop-facet-title">POCKETS</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-pockets" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>POCKETS</h3>
+          <div className="flex flex-col gap-[9px]">
             {pocketOptions.map((pk) => {
               const isChecked = selectedPockets.includes(pk)
               const count = counts[`pocket-${pk}`] ?? 0
               return (
-                <label key={pk} className="shop-facet-row">
-                  <input
+                <label key={pk} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedPockets, pk)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{pk}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{pk}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1265,24 +1276,24 @@ export default function ShopClient({
     if (key === 'use') {
       const useOptions = ['Sports', 'Casual', 'Training']
       return (
-        <div key="facet-use" className="shop-facet-block">
-          <h3 className="shop-facet-title">USE / OCCASION</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-use" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>USE / OCCASION</h3>
+          <div className="flex flex-col gap-[9px]">
             {useOptions.map((u) => {
               const isChecked = selectedUses.includes(u)
               const count = counts[`use-${u}`] ?? 0
               return (
-                <label key={u} className="shop-facet-row">
-                  <input
+                <label key={u} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedUses, u)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{u}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{u}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1294,24 +1305,24 @@ export default function ShopClient({
     if (key === 'legStyle') {
       const legOptions = ['Cuffed', 'Open hem']
       return (
-        <div key="facet-leg" className="shop-facet-block">
-          <h3 className="shop-facet-title">LEG STYLE</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-leg" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>LEG STYLE</h3>
+          <div className="flex flex-col gap-[9px]">
             {legOptions.map((ls) => {
               const isChecked = selectedLegStyles.includes(ls)
               const count = counts[`leg-${ls}`] ?? 0
               return (
-                <label key={ls} className="shop-facet-row">
-                  <input
+                <label key={ls} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedLegStyles, ls)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{ls}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{ls}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1323,24 +1334,24 @@ export default function ShopClient({
     if (key === 'rise') {
       const riseOptions = ['Mid-rise', 'High-rise']
       return (
-        <div key="facet-rise" className="shop-facet-block">
-          <h3 className="shop-facet-title">RISE</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-rise" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>RISE</h3>
+          <div className="flex flex-col gap-[9px]">
             {riseOptions.map((rs) => {
               const isChecked = selectedRises.includes(rs)
               const count = counts[`rise-${rs}`] ?? 0
               return (
-                <label key={rs} className="shop-facet-row">
-                  <input
+                <label key={rs} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedRises, rs)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{rs}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{rs}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1355,14 +1366,14 @@ export default function ShopClient({
         { id: 'out-of-stock', label: 'Out of stock', count: counts['avail-out-of-stock'] ?? 0 },
       ]
       return (
-        <div key="facet-avail" className="shop-facet-block">
-          <h3 className="shop-facet-title">AVAILABILITY</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-avail" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>AVAILABILITY</h3>
+          <div className="flex flex-col gap-[9px]">
             {availOptions.map(({ id, label, count }) => {
               const isChecked = selectedAvailability === id
               return (
-                <label key={id} className="shop-facet-row">
-                  <input
+                <label key={id} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="radio"
                     name={isDrawer ? 'drawer-avail' : 'sidebar-avail'}
                     checked={isChecked}
@@ -1371,9 +1382,9 @@ export default function ShopClient({
                       if (isChecked) setSelectedAvailability(null)
                     }}
                   />
-                  <span className="shop-facet-radio" />
-                  <span className="shop-facet-text">{label}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="relative h-4 w-4 shrink-0 rounded-[2px] border-[1.5px] border-[#c8cbc7] transition-[border-color] duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink peer-checked:after:absolute peer-checked:after:inset-[3px] peer-checked:after:rounded-full peer-checked:after:bg-[#ff3f6c] peer-checked:after:content-['']" />
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{label}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1385,24 +1396,24 @@ export default function ShopClient({
     if (key === 'discount') {
       const discounts = [10, 20, 30, 40, 50]
       return (
-        <div key="facet-discount" className="shop-facet-block">
-          <h3 className="shop-facet-title">DISCOUNT RANGE</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-discount" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>DISCOUNT RANGE</h3>
+          <div className="flex flex-col gap-[9px]">
             {discounts.map((pct) => {
               const isChecked = selectedDiscount === pct
               const count = counts[`disc-${pct}`] ?? 0
               return (
-                <label key={pct} className="shop-facet-row">
-                  <input
+                <label key={pct} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => setSelectedDiscount(isChecked ? null : pct)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{pct}% and above</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{pct}% and above</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1417,23 +1428,23 @@ export default function ShopClient({
         { val: 3, label: '3★ and above', count: counts['rate-3'] ?? 0 },
       ]
       return (
-        <div key="facet-rating" className="shop-facet-block">
-          <h3 className="shop-facet-title">CUSTOMER RATING</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-rating" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>CUSTOMER RATING</h3>
+          <div className="flex flex-col gap-[9px]">
             {ratingOptions.map(({ val, label, count }) => {
               const isChecked = selectedRating === val
               return (
-                <label key={val} className="shop-facet-row">
-                  <input
+                <label key={val} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => setSelectedRating(isChecked ? null : val)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{label}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{label}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1445,24 +1456,24 @@ export default function ShopClient({
     if (key === 'collection') {
       const collectionOptions = ['New arrivals', 'Bestsellers', 'Featured']
       return (
-        <div key="facet-collection" className="shop-facet-block">
-          <h3 className="shop-facet-title">COLLECTION</h3>
-          <div className="shop-facet-checkbox-list">
+        <div key="facet-collection" className={facetBlockClass}>
+          <h3 className={facetTitleClass}>COLLECTION</h3>
+          <div className="flex flex-col gap-[9px]">
             {collectionOptions.map((col) => {
               const isChecked = selectedCollections.includes(col)
               const count = counts[`col-${col}`] ?? 0
               return (
-                <label key={col} className="shop-facet-row">
-                  <input
+                <label key={col} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
+                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleStringItem(setSelectedCollections, col)}
                   />
-                  <span className="shop-facet-box">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                   </span>
-                  <span className="shop-facet-text">{col}</span>
-                  <span className="shop-facet-qty">({count})</span>
+                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{col}</span>
+                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
                 </label>
               )
             })}
@@ -1475,30 +1486,30 @@ export default function ShopClient({
   }
 
   return (
-    <div className="shop-page">
+    <div className="min-h-dvh bg-store-paper pb-10 font-ui text-store-ink [@media(max-width:768px)]:pb-[70px] [&_:is(a,button,input,select,textarea):focus-visible]:outline-2 [&_:is(a,button,input,select,textarea):focus-visible]:outline-[#31586f] [&_:is(a,button,input,select,textarea):focus-visible]:outline-offset-[3px]">
       {/* 1. Breadcrumbs */}
-      <nav className="shop-breadcrumb-bar" aria-label="Breadcrumb navigation">
-        <div className="shop-container">
-          <ol className="shop-breadcrumbs-list">
+      <nav className="pt-3.5 pb-2.5" aria-label="Breadcrumb navigation">
+        <div className="mx-auto max-w-[1440px] px-[3%] [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:pb-[calc(68px+env(safe-area-inset-bottom,0px))]">
+          <ol className="flex list-none items-center gap-1.5 font-ui text-[12px] leading-[18px] text-store-muted">
             <li>
-              <Link href="/" className="shop-crumb-link">
+              <Link href="/" className="text-store-muted no-underline [transition:color_0.15s_ease] hover:text-[#ff3f6c]">
                 Home
               </Link>
             </li>
-            <li className="shop-crumb-sep" aria-hidden="true">
+            <li className="text-[11px] leading-[16.5px] text-[#878b94]" aria-hidden="true">
               /
             </li>
             <li>
-              <Link href="/shop" className="shop-crumb-link">
+              <Link href="/shop" className="text-store-muted no-underline [transition:color_0.15s_ease] hover:text-[#ff3f6c]">
                 Shop
               </Link>
             </li>
             {routeCategory !== 'all' && (
               <>
-                <li className="shop-crumb-sep" aria-hidden="true">
+                <li className="text-[11px] leading-[16.5px] text-[#878b94]" aria-hidden="true">
                   /
                 </li>
-                <li className="shop-crumb-current" aria-current="page">
+                <li className="font-semibold text-store-muted" aria-current="page">
                   {title}
                 </li>
               </>
@@ -1508,11 +1519,11 @@ export default function ShopClient({
       </nav>
 
       {/* 2. Top Title and Item Count */}
-      <div className="shop-header-strip">
-        <div className="shop-container">
-          <div className="shop-heading-line">
-            <h1 className="shop-title-text">{title}</h1>
-            <span className="shop-item-counter">
+      <div className="pt-1 pb-3.5">
+        <div className="mx-auto max-w-[1440px] px-[3%] [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:pb-[calc(68px+env(safe-area-inset-bottom,0px))]">
+          <div className="flex items-baseline gap-2">
+            <h1 className="font-brand text-[clamp(16px,2vw,19px)] font-bold tracking-[-0.055em] text-store-ink">{title}</h1>
+            <span className="font-ui text-[13.5px] font-normal leading-[20.25px] text-store-muted">
               - {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'}
             </span>
           </div>
@@ -1520,15 +1531,15 @@ export default function ShopClient({
       </div>
 
       {/* 3. Top Toolbar Strip */}
-      <div className="shop-top-toolbar">
-        <div className="shop-container">
-          <div className="shop-top-toolbar-inner">
-            <div className="shop-toolbar-filters-label">
-              <span className="shop-filters-heading">FILTERS</span>
+      <div className="border-y border-store-line bg-store-paper [@media(max-width:768px)]:hidden">
+        <div className="mx-auto max-w-[1440px] px-[3%] [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:pb-[calc(68px+env(safe-area-inset-bottom,0px))]">
+          <div className="flex h-[50px] items-center justify-between">
+            <div className="flex h-full w-[250px] shrink-0 items-center justify-between border-r border-line pr-5 text-[#59666c]">
+              <span className="font-brand text-[13.5px] font-bold uppercase leading-[20.25px] tracking-[0.04em] text-[#59666c]">FILTERS</span>
               {activeFilterCount > 0 && (
                 <button
                   type="button"
-                  className="shop-clear-all-link"
+                  className="cursor-pointer border-0 bg-transparent font-ui text-[11px] font-bold uppercase leading-[16.5px] tracking-[0.02em] text-[#ff3f6c]"
                   onClick={clearAllFilters}
                 >
                   CLEAR ALL
@@ -1537,7 +1548,7 @@ export default function ShopClient({
             </div>
 
             {/* Middle: Active filter chips */}
-            <div className="shop-active-filter-chips">
+            <div className="flex flex-1 items-center gap-2 overflow-x-auto pl-[18px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {routeCategory === 'all' &&
                 filterCategories.map((catSlug) => {
                   const catLabel =
@@ -1546,7 +1557,7 @@ export default function ShopClient({
                     <button
                       key={`chip-cat-${catSlug}`}
                       type="button"
-                      className="shop-chip"
+                      className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                       onClick={() => toggleCategory(catSlug)}
                       title={`Remove ${catLabel} filter`}
                     >
@@ -1559,7 +1570,7 @@ export default function ShopClient({
               {filterFit !== 'all' && (
                 <button
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => setFit('all')}
                   title="Remove fit filter"
                 >
@@ -1572,7 +1583,7 @@ export default function ShopClient({
                 <button
                   key={`chip-fit-${f}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedFits, f)}
                 >
                   Fit: {f}
@@ -1584,7 +1595,7 @@ export default function ShopClient({
                 <button
                   key={`chip-p-${range}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => togglePrice(range)}
                 >
                   {PRICE_LABELS[range]}
@@ -1596,7 +1607,7 @@ export default function ShopClient({
                 <button
                   key={`chip-sz-${sz}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedSizes, sz)}
                 >
                   Size: {sz}
@@ -1608,7 +1619,7 @@ export default function ShopClient({
                 <button
                   key={`chip-ws-${ws}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedWaistSizes, ws)}
                 >
                   Waist: {ws}&quot;
@@ -1620,7 +1631,7 @@ export default function ShopClient({
                 <button
                   key={`chip-c-${col}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedColors, col)}
                 >
                   Color: {col}
@@ -1632,7 +1643,7 @@ export default function ShopClient({
                 <button
                   key={`chip-fb-${fb}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedFabrics, fb)}
                 >
                   Fabric: {fb}
@@ -1644,7 +1655,7 @@ export default function ShopClient({
                 <button
                   key={`chip-mat-${mat}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedMaterials, mat)}
                 >
                   Material: {mat}
@@ -1656,7 +1667,7 @@ export default function ShopClient({
                 <button
                   key={`chip-sl-${sl}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedSleeveLengths, sl)}
                 >
                   Sleeve: {sl}
@@ -1668,7 +1679,7 @@ export default function ShopClient({
                 <button
                   key={`chip-nk-${nk}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedNeckTypes, nk)}
                 >
                   Neck: {nk}
@@ -1680,7 +1691,7 @@ export default function ShopClient({
                 <button
                   key={`chip-pt-${pt}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedPatterns, pt)}
                 >
                   Pattern: {pt}
@@ -1692,7 +1703,7 @@ export default function ShopClient({
                 <button
                   key={`chip-ps-${ps}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedPrintStyles, ps)}
                 >
                   Print: {ps}
@@ -1704,7 +1715,7 @@ export default function ShopClient({
                 <button
                   key={`chip-tc-${tc}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedTrimColors, tc)}
                 >
                   Trim: {tc}
@@ -1716,7 +1727,7 @@ export default function ShopClient({
                 <button
                   key={`chip-btn-${btn}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedButtons, btn)}
                 >
                   Buttons: {btn}
@@ -1728,7 +1739,7 @@ export default function ShopClient({
                 <button
                   key={`chip-len-${len}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedLengths, len)}
                 >
                   Length: {len}
@@ -1740,7 +1751,7 @@ export default function ShopClient({
                 <button
                   key={`chip-cl-${cl}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedClosures, cl)}
                 >
                   Closure: {cl}
@@ -1752,7 +1763,7 @@ export default function ShopClient({
                 <button
                   key={`chip-pk-${pk}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedPockets, pk)}
                 >
                   Pockets: {pk}
@@ -1764,7 +1775,7 @@ export default function ShopClient({
                 <button
                   key={`chip-u-${u}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedUses, u)}
                 >
                   Use: {u}
@@ -1776,7 +1787,7 @@ export default function ShopClient({
                 <button
                   key={`chip-ls-${ls}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedLegStyles, ls)}
                 >
                   Leg: {ls}
@@ -1788,7 +1799,7 @@ export default function ShopClient({
                 <button
                   key={`chip-rs-${rs}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedRises, rs)}
                 >
                   Rise: {rs}
@@ -1799,7 +1810,7 @@ export default function ShopClient({
               {selectedAvailability && (
                 <button
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => setSelectedAvailability(null)}
                 >
                   Availability: {selectedAvailability === 'in-stock' ? 'In stock' : 'Out of stock'}
@@ -1810,7 +1821,7 @@ export default function ShopClient({
               {selectedDiscount !== null && (
                 <button
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => setSelectedDiscount(null)}
                 >
                   {selectedDiscount}%+ Off
@@ -1821,7 +1832,7 @@ export default function ShopClient({
               {selectedRating !== null && (
                 <button
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => setSelectedRating(null)}
                 >
                   {selectedRating}★ & above
@@ -1833,7 +1844,7 @@ export default function ShopClient({
                 <button
                   key={`chip-col-${col}`}
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => toggleStringItem(setSelectedCollections, col)}
                 >
                   {col}
@@ -1844,7 +1855,7 @@ export default function ShopClient({
               {searchQuery.trim() && (
                 <button
                   type="button"
-                  className="shop-chip"
+                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
                   onClick={() => setSearchQuery('')}
                   title="Clear search query"
                 >
@@ -1855,11 +1866,11 @@ export default function ShopClient({
             </div>
 
             {/* Right: Sort Dropdown */}
-            <div className="shop-sort-box">
-              <span className="shop-sort-label">Sort by :</span>
+            <div className="flex shrink-0 items-center gap-2 pl-3">
+              <span className="whitespace-nowrap font-ui text-[13px] font-normal leading-[19.5px] text-[#7e818c]">Sort by :</span>
               <select
                 id="shop-sort-select"
-                className="shop-sort-select-native"
+                className="h-[34px] cursor-pointer rounded-[2px] border border-[#c8cbc7] bg-white px-2.5 font-brand text-[13px] font-semibold text-[#282c3f] outline-none"
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortMode)}
                 aria-label="Sort products"
@@ -1876,33 +1887,33 @@ export default function ShopClient({
       </div>
 
       {/* 4. Main 2-Column Layout */}
-      <div className="shop-container">
-        <div className="shop-main-layout">
+      <div className="mx-auto max-w-[1440px] px-[3%] [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:pb-[calc(68px+env(safe-area-inset-bottom,0px))]">
+        <div className="mt-3.5 grid grid-cols-[250px_1fr] items-start gap-8 [@media(max-width:768px)]:mt-1.5 [@media(max-width:768px)]:block [@media(max-width:768px)]:pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
           {/* Left Column: Fixed/Sticky Desktop Sidebar */}
-          <aside className="shop-desktop-sidebar" aria-label="Catalog filters sidebar">
-            <div className="shop-facets-sidebar-inner">
+          <aside className="sticky top-[90px] max-h-[calc(100vh-105px)] overflow-y-auto border-r border-store-line bg-store-paper pr-[18px] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-[2px] [&::-webkit-scrollbar-thumb]:bg-[#d4d5d9] [@media(max-width:768px)]:hidden" aria-label="Catalog filters sidebar">
+            <div>
               {activeFacets.map((facetKey) => renderFacetBlock(facetKey, false))}
             </div>
           </aside>
 
           {/* Right Column: Catalog Grid */}
-          <main className="shop-content-area">
+          <main className="min-w-0">
             {filteredProducts.length === 0 ? (
-              <div className="shop-empty-state">
-                <h2 className="shop-empty-title">We couldn&apos;t find any matches</h2>
-                <p className="shop-empty-desc">
+              <div className="mx-auto my-10 max-w-[500px] rounded-[8px] border border-dashed border-[#d4d5d9] bg-[#fafafb] px-5 py-16 text-center">
+                <h2 className="mb-1.5 font-brand text-[18px] font-bold leading-[21.6px] text-[#282c3f]">We couldn&apos;t find any matches</h2>
+                <p className="mb-5 font-ui text-[13.5px] leading-[1.5] text-[#7e818c]">
                   Try clearing some of your filters or searching for another silhouette or color.
                 </p>
                 <button
                   type="button"
-                  className="shop-empty-cta-btn"
+                  className="cursor-pointer rounded-[2px] border-0 bg-store-ink px-5 py-2.5 font-brand text-[12.5px] font-bold leading-[18.75px] tracking-[0.03em] text-white transition-opacity duration-150 hover:opacity-[0.92]"
                   onClick={clearAllFilters}
                 >
                   CLEAR ALL FILTERS
                 </button>
               </div>
             ) : (
-              <div className="shop-grid">
+              <div className="grid grid-cols-4 gap-x-4 gap-y-6 [@media(max-width:1200px)]:grid-cols-3 [@media(max-width:768px)]:grid-cols-2 [@media(max-width:768px)]:gap-x-2.5 [@media(max-width:768px)]:gap-y-4">
                 {filteredProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -1916,25 +1927,25 @@ export default function ShopClient({
       {mounted && typeof document !== 'undefined' && createPortal(
         <>
           {/* Mobile Fixed Bottom Action Bar */}
-          <div className="shop-mobile-bottom-bar" aria-label="Mobile filter actions">
+          <div className="fixed inset-x-0 bottom-0 z-[95] hidden h-[calc(54px+env(safe-area-inset-bottom,0px))] w-full border-t border-black/[0.08] bg-[rgba(255,255,255,0.94)] pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(0,0,0,0.05),0_-1px_3px_rgba(0,0,0,0.03)] [@media(max-width:768px)]:flex [@media(max-width:768px)]:items-stretch" aria-label="Mobile filter actions">
             <button
               type="button"
-              className="shop-mobile-bar-btn"
+              className="flex flex-1 cursor-pointer touch-manipulation select-none items-center justify-center gap-2 border-0 bg-transparent font-brand text-[12.5px] font-bold uppercase leading-[18.75px] tracking-[0.06em] text-store-ink [-webkit-tap-highlight-color:transparent] [transition:transform_0.12s_cubic-bezier(0.16,1,0.3,1),background-color_0.15s_ease] active:bg-black/[0.04]"
               onClick={() => setSortSheetOpen(true)}
             >
               <ArrowUpDown className="h-4 w-4" />
               <span>SORT</span>
             </button>
-            <div className="shop-mobile-bar-divider" />
+            <div className="h-[22px] w-px self-center bg-black/[0.08]" />
             <button
               type="button"
-              className="shop-mobile-bar-btn"
+              className="flex flex-1 cursor-pointer touch-manipulation select-none items-center justify-center gap-2 border-0 bg-transparent font-brand text-[12.5px] font-bold uppercase leading-[18.75px] tracking-[0.06em] text-store-ink [-webkit-tap-highlight-color:transparent] [transition:transform_0.12s_cubic-bezier(0.16,1,0.3,1),background-color_0.15s_ease] active:bg-black/[0.04]"
               onClick={() => setDrawerOpen(true)}
             >
               <SlidersHorizontal className="h-4 w-4" />
               <span>FILTER</span>
               {activeFilterCount > 0 && (
-                <span className="shop-mobile-badge">{activeFilterCount}</span>
+                <span className="ml-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-store-ink px-1 font-mono text-[10px] font-bold leading-[15px] text-white">{activeFilterCount}</span>
               )}
             </button>
           </div>
@@ -1942,42 +1953,42 @@ export default function ShopClient({
           {/* Mobile Sort Bottom Sheet */}
           {sortSheetOpen && (
             <div
-              className="shop-modal-backdrop"
+              className="fixed inset-0 z-[99998] hidden bg-[rgba(0,0,0,0.55)] [animation:fadeInModalBackdrop_0.2s_ease] [@media(max-width:768px)]:block"
               onClick={() => setSortSheetOpen(false)}
               aria-hidden="true"
             />
           )}
           <div
-            className={`shop-sort-sheet ${sortSheetOpen ? 'open' : ''}`}
+            className={`fixed inset-x-0 bottom-0 z-[99999] hidden max-h-[80vh] overflow-y-auto rounded-t-2xl bg-store-paper shadow-[0_-4px_24px_rgba(0,0,0,0.18)] [transition:transform_0.25s_cubic-bezier(0.16,1,0.3,1),visibility_0.25s] [@media(max-width:768px)]:block ${sortSheetOpen ? 'visible pointer-events-auto [transform:translateY(0)]' : 'invisible pointer-events-none [transform:translateY(100%)]'}`}
             aria-hidden={!sortSheetOpen}
             role="dialog"
             aria-label="Sort options"
           >
-            <div className="shop-sort-sheet-header">
-              <span className="shop-sort-sheet-title">SORT BY</span>
+            <div className="flex items-center justify-between border-b border-[#f3f4f6] px-5 py-4">
+              <span className="font-brand text-[13.5px] font-bold leading-[20.25px] tracking-[0.04em] text-[#282c3f]">SORT BY</span>
               <button
                 type="button"
-                className="shop-sheet-close-btn"
+                className="flex cursor-pointer items-center justify-center border-0 bg-transparent p-1 text-[#878b94]"
                 onClick={() => setSortSheetOpen(false)}
                 aria-label="Close sort dialog"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="shop-sort-sheet-options">
+            <div className="flex flex-col pb-5 pt-1.5">
               {SORT_OPTIONS.map((opt) => (
                 <label
                   key={opt.mode}
-                  className={`shop-sort-sheet-row ${sort === opt.mode ? 'selected' : ''}`}
+                  className={`flex cursor-pointer items-center gap-3.5 px-5 py-3.5 [transition:background_0.15s_ease] ${sort === opt.mode ? 'bg-[#fafafb]' : ''}`}
                   onClick={() => {
                     setSort(opt.mode)
                     setSortSheetOpen(false)
                   }}
                 >
-                  <span className="shop-sort-radio-outer">
-                    {sort === opt.mode && <span className="shop-sort-radio-inner" />}
+                  <span className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 ${sort === opt.mode ? 'border-[#ff3f6c]' : 'border-[#d4d5d9]'}`}>
+                    {sort === opt.mode && <span className="h-2 w-2 rounded-full bg-[#ff3f6c]" />}
                   </span>
-                  <span className="shop-sort-sheet-text">{opt.label}</span>
+                  <span className="font-ui text-[13.5px] font-medium leading-[20.25px] text-[#282c3f]">{opt.label}</span>
                 </label>
               ))}
             </div>
@@ -1985,19 +1996,19 @@ export default function ShopClient({
 
           {/* Mobile Filter Modal (2-Column Split Body) */}
           <div
-            className={`shop-mobile-drawer ${drawerOpen ? 'open' : ''}`}
+            className={`fixed inset-0 z-[99999] hidden h-[100dvh] w-screen flex-col overflow-hidden bg-white [transition:transform_0.28s_cubic-bezier(0.16,1,0.3,1),visibility_0.28s] [@media(max-width:768px)]:flex ${drawerOpen ? 'visible pointer-events-auto [transform:translateY(0)]' : 'invisible pointer-events-none [transform:translateY(100%)]'}`}
             aria-hidden={!drawerOpen}
             role="dialog"
             aria-label="Filter catalog"
           >
             {/* Header */}
-            <div className="shop-mobile-filter-header">
-              <span className="shop-mobile-filter-title">FILTERS</span>
-              <div className="shop-mobile-filter-header-actions">
+            <div className="flex shrink-0 items-center justify-between border-b border-store-line bg-store-paper px-5 py-4">
+              <span className="font-brand text-[15px] font-bold uppercase leading-[22.5px] tracking-[0.05em] text-[#282c3f]">FILTERS</span>
+              <div className="flex items-center gap-3">
                 {activeFilterCount > 0 && (
                   <button
                     type="button"
-                    className="shop-mobile-filter-clear-link"
+                    className="cursor-pointer border-0 bg-transparent px-2 py-1 font-brand text-[12px] font-bold leading-[18px] tracking-[0.04em] text-[#ff3f6c]"
                     onClick={clearAllFilters}
                   >
                     CLEAR ALL
@@ -2005,7 +2016,7 @@ export default function ShopClient({
                 )}
                 <button
                   type="button"
-                  className="shop-mobile-filter-close-btn"
+                  className="flex cursor-pointer items-center justify-center rounded-[4px] border-0 bg-transparent p-1 text-[#555964] [transition:color_0.15s,background-color_0.15s] hover:bg-[#f3f4f6] hover:text-[#111827]"
                   onClick={() => setDrawerOpen(false)}
                   aria-label="Close filters"
                 >
@@ -2015,47 +2026,47 @@ export default function ShopClient({
             </div>
 
             {/* 2-Column Body */}
-            <div className="shop-mobile-filter-body">
+            <div className="flex flex-1 overflow-hidden bg-white">
               {/* Left Column: Facet Tabs for Active Category */}
-              <div className="shop-mobile-filter-tabs">
+              <div className="flex w-[38%] min-w-[125px] max-w-[155px] shrink-0 flex-col overflow-y-auto border-r border-[#eaeaec] bg-[#f5f5f6] [-webkit-overflow-scrolling:touch]">
                 {activeFacets.map((facetKey) => {
                   const hasSelection = checkFacetHasSelection(facetKey)
                   return (
                     <button
                       key={facetKey}
                       type="button"
-                      className={`shop-mobile-tab-btn ${activeMobileTab === facetKey ? 'active' : ''}`}
+                      className={`relative flex w-full cursor-pointer items-center justify-between border-0 border-b border-[#eaeaec] px-3.5 py-4 text-left font-ui text-[13.5px] leading-[20.25px] text-[#282c3f] [transition:background_0.15s_ease,font-weight_0.15s_ease] ${activeMobileTab === facetKey ? '-mr-px border-r border-r-white bg-white font-bold' : 'bg-[#f5f5f6] font-medium'}`}
                       onClick={() => setActiveMobileTab(facetKey)}
                     >
-                      <span className="shop-mobile-tab-label">
+                      <span className="flex-1 leading-[1.3]">
                         {FACET_TITLES[facetKey]}
                       </span>
-                      {hasSelection && <span className="shop-mobile-tab-dot" />}
+                      {hasSelection && <span className="ml-1.5 h-[7px] w-[7px] shrink-0 rounded-full bg-[#ff3f6c]" />}
                     </button>
                   )
                 })}
               </div>
 
               {/* Right Column: Facet Options for Active Tab */}
-              <div className="shop-mobile-filter-pane">
-                <div style={{ padding: '12px 16px' }}>
+              <div className="flex-1 overflow-y-auto bg-white [-webkit-overflow-scrolling:touch]">
+                <div className="px-4 py-3">
                   {renderFacetBlock(activeMobileTab, true)}
                 </div>
               </div>
             </div>
 
             {/* Bottom Action Footer */}
-            <div className="shop-mobile-filter-footer">
+            <div className="flex h-[52px] shrink-0 border-t border-store-line bg-[rgba(248,247,243,0.97)]">
               <button
                 type="button"
-                className="shop-mobile-btn-close"
+                className="flex flex-1 cursor-pointer items-center justify-center rounded-[2px] border-0 border-r border-[#eaeaec] bg-store-ink font-brand text-[13px] font-bold uppercase leading-[19.5px] tracking-[0.05em] text-white [transition:background_0.15s_ease] active:bg-[#f5f5f6]"
                 onClick={() => setDrawerOpen(false)}
               >
                 CLOSE
               </button>
               <button
                 type="button"
-                className="shop-mobile-btn-apply"
+                className="flex flex-1 cursor-pointer items-center justify-center rounded-[2px] border-0 bg-store-ink font-brand text-[13px] font-bold uppercase leading-[19.5px] tracking-[0.05em] text-white [transition:background_0.15s_ease] active:bg-[#fff5f7]"
                 onClick={() => setDrawerOpen(false)}
               >
                 APPLY {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}

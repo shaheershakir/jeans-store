@@ -76,11 +76,14 @@ export default function ShopSkeleton() {
       </div>
 
       {/* 3. Main Catalog Layout (Sidebar + Grid) */}
-      <div className="shop-container">
-        <div className="shop-main-layout">
+      <div className="mx-auto max-w-[1440px] px-[3%]">
+        <div className="mt-3.5 grid grid-cols-[250px_1fr] items-start gap-8 [@media(max-width:768px)]:mt-1.5 [@media(max-width:768px)]:block [@media(max-width:768px)]:pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
           {/* Desktop Left Sidebar Facets */}
-          <aside className="shop-desktop-sidebar" aria-hidden="true">
-            <div className="shop-facets-sidebar-inner" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <aside
+            className="sticky top-[90px] max-h-[calc(100vh-105px)] overflow-y-auto border-r border-store-line bg-store-paper pr-[18px] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-[2px] [&::-webkit-scrollbar-thumb]:bg-[#d4d5d9] [@media(max-width:768px)]:hidden"
+            aria-hidden="true"
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} style={{ borderBottom: '1px solid var(--line, rgba(12,14,18,0.08))', paddingBottom: 18 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -98,8 +101,8 @@ export default function ShopSkeleton() {
           </aside>
 
           {/* Catalog Grid Area */}
-          <main className="shop-content-area">
-            <div className="shop-grid">
+          <main className="min-w-0">
+            <div className="grid grid-cols-4 gap-x-4 gap-y-6 [@media(max-width:1200px)]:grid-cols-3 [@media(max-width:768px)]:grid-cols-2 [@media(max-width:768px)]:gap-x-2.5 [@media(max-width:768px)]:gap-y-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
