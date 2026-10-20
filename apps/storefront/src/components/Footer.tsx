@@ -18,11 +18,11 @@ export default function Footer() {
         <div className="max-[820px]:col-span-full">
           <Link href="/" aria-label="TEESGARAGE home" className="inline-block">
             <Image
-              src="/teesgarage_logo.svg"
+              src="/teesgarage-logo.svg"
               alt="TEESGARAGE"
               width={160}
               height={48}
-              className="h-9 w-auto max-w-[152px] object-contain object-left grayscale brightness-0 invert"
+              className="h-8 w-auto max-w-[152px] object-contain object-left grayscale brightness-0 invert"
             />
           </Link>
           <p className="my-4 max-w-[230px] text-[13px] leading-[1.6] text-[rgba(248,247,243,0.68)]">

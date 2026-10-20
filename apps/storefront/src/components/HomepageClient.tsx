@@ -1,0 +1,515 @@
+'use client'
+
+import { useEffect } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { Heart } from 'lucide-react'
+import type { Product, HomepageConfig } from '@/lib/constants'
+import { useCartStore, useFilterStore, useFavoriteStore } from '@/lib/store'
+
+// ─── Data Definitions matching Mockup ───────────────────────────────────────
+
+interface QuickCategory {
+  name: string
+  href: string
+  image: string
+}
+
+const QUICK_CATEGORIES: QuickCategory[] = [
+  { name: 'Stripes', href: '/shop/stripes', image: '/mock-assets/quick-cat-stripes.jpg' },
+  { name: 'Fullsleeve', href: '/shop/fullsleeve', image: '/mock-assets/quick-cat-fullsleeve.jpg' },
+  { name: 'Drsleeve', href: '/shop/drsleeve', image: '/mock-assets/quick-cat-drsleeve.jpg' },
+  { name: 'Printed tees', href: '/shop/printed-tees', image: '/mock-assets/quick-cat-printed-tees.jpg' },
+  { name: 'Ringer tees', href: '/shop/ringer-tees', image: '/mock-assets/quick-cat-ringer-tees.jpg' },
+  { name: 'Henley', href: '/shop/henley', image: '/mock-assets/quick-cat-henley.jpg' },
+  { name: 'Trackpants', href: '/shop/trackpants', image: '/mock-assets/quick-cat-trackpants.jpg' },
+  { name: 'Sweatpants', href: '/shop/sweatpants', image: '/mock-assets/quick-cat-sweatpants.jpg' },
+]
+
+interface MockArrival {
+  fallbackId: number
+  name: string
+  wash: string
+  price: string
+  swatches: string[]
+  image: string
+  searchTerm: string
+}
+
+const MOCK_NEW_ARRIVALS: MockArrival[] = [
+  {
+    fallbackId: 101,
+    name: 'Vintage Skate Micro-Stripe Tee',
+    wash: 'Washed Black / Ash',
+    price: '₹1,249',
+    swatches: ['#1c1c1c', '#9e9e9e'],
+    image: '/mock-assets/product-vintage-skate-clean.jpg',
+    searchTerm: 'Vintage Skate'
+  },
+  {
+    fallbackId: 102,
+    name: 'Doodle Archive Oversized Tee',
+    wash: 'Off White',
+    price: '₹1,099',
+    swatches: ['#333333', '#e0dcd5', '#7a7a7a'],
+    image: '/mock-assets/product-doodle-archive-clean.jpg',
+    searchTerm: 'Doodle Archive'
+  },
+  {
+    fallbackId: 103,
+    name: 'Good Days Ahead Tee',
+    wash: 'Forest Green',
+    price: '₹1,249',
+    swatches: ['#1c3b2b', '#232323'],
+    image: '/mock-assets/product-good-days-ahead-clean.jpg',
+    searchTerm: 'Good Days Ahead'
+  },
+  {
+    fallbackId: 104,
+    name: 'Daisy Minimal Tee',
+    wash: 'Black',
+    price: '₹1,099',
+    swatches: ['#111111', '#c5c5c5'],
+    image: '/mock-assets/product-daisy-minimal-clean.jpg',
+    searchTerm: 'Daisy Minimal'
+  }
+]
+
+interface ShopCategory {
+  name: string
+  href: string
+  image: string
+}
+
+const SHOP_CATEGORIES: ShopCategory[] = [
+  { name: 'Stripes', href: '/shop/stripes', image: '/mock-assets/shop-cat-stripes-clean.jpg' },
+  { name: 'Fullsleeve', href: '/shop/fullsleeve', image: '/mock-assets/shop-cat-fullsleeve-clean.jpg' },
+  { name: 'Drsleeve', href: '/shop/drsleeve', image: '/mock-assets/shop-cat-drsleeve-clean.jpg' },
+  { name: 'Printed tees', href: '/shop/printed-tees', image: '/mock-assets/shop-cat-printed-tees-clean.jpg' },
+  { name: 'Ringer tees', href: '/shop/ringer-tees', image: '/mock-assets/shop-cat-ringer-tees-clean.jpg' },
+  { name: 'Henley', href: '/shop/henley', image: '/mock-assets/shop-cat-henley-clean.jpg' },
+  { name: 'Trackpants', href: '/shop/trackpants', image: '/mock-assets/shop-cat-trackpants-clean.jpg' },
+  { name: 'Sweatpants', href: '/shop/sweatpants', image: '/mock-assets/shop-cat-sweatpants-clean.jpg' },
+]
+
+// ─── Main Homepage Component ────────────────────────────────────────────────
+
+interface HomepageClientProps {
+  products: Product[]
+  config?: HomepageConfig
+}
+
+export default function HomepageClient({ products }: HomepageClientProps) {
+  const isFavorite = useFavoriteStore((s) => s.isFavorite)
+  const toggleFavorite = useFavoriteStore((s) => s.toggleFavorite)
+
+  useEffect(() => {
+    void useCartStore.persist.rehydrate()
+    void useFilterStore.persist.rehydrate()
+    void useFavoriteStore.persist.rehydrate()
+  }, [])
+
+  // Resolve product links to existing DB products where matching, or fallback to search
+  const resolvedArrivals = MOCK_NEW_ARRIVALS.map((arrival) => {
+    const match = products.find((p) =>
+      p.name.toLowerCase().includes(arrival.searchTerm.toLowerCase())
+    )
+    const id = match ? match.id : arrival.fallbackId
+    const href = match ? `/product/${match.id}` : `/shop?search=${encodeURIComponent(arrival.searchTerm)}`
+    return {
+      ...arrival,
+      id,
+      href,
+    }
+  })
+
+  return (
+    <div className="min-h-screen bg-[#FAF9F6] text-[#111111] selection:bg-black selection:text-white">
+      {/* ── 1. Hero Section ────────────────────────────────────────── */}
+      <section className="pt-3 pb-6 max-[768px]:pt-2 max-[768px]:pb-4" aria-label="Hero Banner">
+        <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
+          <div className="relative flex min-h-[500px] md:min-h-[540px] lg:min-h-[570px] w-full items-center overflow-hidden rounded-[26px] bg-[#e6a49b] shadow-[0_4px_24px_rgba(0,0,0,0.03)] max-[768px]:min-h-[360px] max-[768px]:rounded-[18px]">
+            {/* Background Model Image */}
+            <Image
+              src="/test-hero-model.jpg"
+              alt="Graphic Tees for Real Life - New Season"
+              fill
+              priority
+              className="absolute inset-0 h-full w-full object-cover object-[70%_25%] z-0"
+              sizes="(max-width: 1440px) 100vw, 1400px"
+            />
+
+            {/* Stamp Logo top-right */}
+            <Image
+              src="/mock-assets/good-tees-stamp.png"
+              alt="Good Tees Better Days"
+              width={130}
+              height={130}
+              priority
+              className="pointer-events-none absolute right-8 lg:right-11 top-7 lg:top-9 z-10 w-28 lg:w-32 h-auto opacity-90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.06)] max-[768px]:right-4 max-[768px]:top-4 max-[768px]:w-[72px]"
+            />
+
+            {/* Content Left */}
+            <div className="relative z-10 max-w-[560px] p-10 md:p-14 lg:p-16 max-[768px]:p-6 max-[768px]:max-w-full">
+              <span className="mb-3.5 block text-[13px] font-bold uppercase tracking-[0.14em] text-[#1a1a1a]">
+                NEW SEASON
+              </span>
+              <h1 className="mb-4 text-[clamp(36px,4.5vw,60px)] font-extrabold leading-[1.04] tracking-[-0.035em] text-[#111111]">
+                Graphic Tees<br />for Real Life
+              </h1>
+              <p className="mb-7 max-w-[370px] text-[clamp(14.5px,1.35vw,17px)] leading-[1.46] text-[#333333]">
+                Clean designs. Better fits. Made for<br />everyday escapes.
+              </p>
+              <Link
+                href="/shop/printed-tees"
+                className="inline-flex items-center gap-2.5 rounded-[13px] bg-[#141414] px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,0.14)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#262626] hover:shadow-[0_6px_18px_rgba(0,0,0,0.2)] active:scale-[0.98]"
+              >
+                <span>Shop Printed Tees</span>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </Link>
+
+              {/* Bottom Carousel Dots */}
+              <div className="flex items-center gap-2 mt-7 lg:mt-9" aria-hidden="true">
+                <span className="h-2 w-2 rounded-full bg-white shadow-xs" />
+                <span className="h-2 w-2 rounded-full bg-white/50" />
+                <span className="h-2 w-2 rounded-full bg-white/50" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 2. Quick Category Strip (8 Cards Row) ──────────────────── */}
+      <section className="pb-12" aria-label="Quick Category Shortcuts">
+        <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
+          <div className="grid grid-cols-8 gap-3 max-[1024px]:flex max-[1024px]:overflow-x-auto max-[1024px]:gap-3 max-[1024px]:pb-2.5 max-[1024px]:snap-x max-[1024px]:snap-mandatory scrollbar-none">
+            {QUICK_CATEGORIES.map((cat) => (
+              <Link
+                key={cat.name}
+                href={cat.href}
+                className="group relative flex flex-col overflow-hidden rounded-[18px] bg-[#f4f2ee] shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(0,0,0,0.08)] max-[1024px]:flex-[0_0_135px] max-[1024px]:snap-start"
+              >
+                <div className="relative w-full aspect-[1/1.42] overflow-hidden bg-[#e9e6df]">
+                  <Image
+                    src={cat.image}
+                    alt={cat.name}
+                    fill
+                    sizes="(max-width: 1024px) 135px, 165px"
+                    className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  />
+                </div>
+                <div className="m-2 flex items-center justify-between gap-1 rounded-[14px] bg-white/95 px-3 py-2 shadow-xs border border-black/4 backdrop-blur-xs">
+                  <span className="truncate text-[12.5px] font-bold text-[#111111]">{cat.name}</span>
+                  <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border border-black/15 text-[#111111] transition-all duration-200 group-hover:border-[#111111] group-hover:bg-[#111111] group-hover:text-white group-hover:translate-x-0.5" aria-hidden="true">
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 3. New Arrivals (4 Products) ───────────────────────────── */}
+      <section className="pb-14" aria-labelledby="tg-arrivals-heading">
+        <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
+          <div className="mb-5.5 flex items-end justify-between">
+            <div>
+              <h2 className="text-[clamp(26px,3vw,34px)] font-bold tracking-[-0.025em] text-[#111111] leading-tight" id="tg-arrivals-heading">
+                New Arrivals
+              </h2>
+              <p className="mt-1 text-[15px] text-[#666666]">Fresh drops. Same good energy.</p>
+            </div>
+            <Link
+              href="/shop"
+              className="group inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-[#111111] transition-colors hover:text-black"
+            >
+              <span>View All</span>
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="transition-transform duration-200 group-hover:translate-x-1"
+              >
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-4 gap-4.5 max-[900px]:grid-cols-2 max-[900px]:gap-3.5">
+            {resolvedArrivals.map((item) => {
+              const favorited = isFavorite(item.id)
+              return (
+                <div key={item.name} className="group relative flex flex-col">
+                  {/* Image Stage */}
+                  <div className="relative w-full aspect-[1/1.18] overflow-hidden rounded-[18px] bg-[#edeae4] shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(0,0,0,0.07)]">
+                    <Link href={item.href} className="absolute inset-0 z-0 block h-full w-full" aria-label={`View ${item.name}`}>
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        sizes="(max-width: 900px) 50vw, 25vw"
+                        className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-104"
+                      />
+                    </Link>
+                    <button
+                      type="button"
+                      className={`absolute right-2.5 top-2.5 z-10 flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-xs backdrop-blur-xs transition-all duration-200 hover:scale-110 hover:bg-white ${
+                        favorited ? 'text-[#e11d48]' : 'text-[#222222]'
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        toggleFavorite(item.id)
+                      }}
+                      aria-label={favorited ? `Remove ${item.name} from wishlist` : `Add ${item.name} to wishlist`}
+                    >
+                      <Heart
+                        className="h-4 w-4"
+                        fill={favorited ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Product Details */}
+                  <div className="mt-2.5 flex flex-col">
+                    <Link href={item.href} className="truncate text-[13.5px] font-bold leading-snug text-[#111111] no-underline transition-colors hover:underline">
+                      <h3>{item.name}</h3>
+                    </Link>
+                    <p className="mt-0.5 text-[11.5px] text-[#777777]">{item.wash}</p>
+                    <div className="mt-1.5 flex items-center justify-between">
+                      <span className="text-[14.5px] font-extrabold tracking-tight text-[#111111]">{item.price}</span>
+                      <div className="flex items-center gap-1.5" aria-label="Available colors">
+                        {item.swatches.map((color, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-block h-[9px] w-[9px] rounded-full border border-black/15"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 4. Editorial Feature Banner ────────────────────────────── */}
+      <section className="pb-14" aria-label="Everyday Essentials Editorial Banner">
+        <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
+          <div className="relative flex min-h-[350px] lg:min-h-[390px] w-full items-center overflow-hidden rounded-[26px] bg-[#8f796c] shadow-[0_4px_20px_rgba(0,0,0,0.04)] max-[768px]:min-h-[300px] max-[768px]:rounded-[18px] max-[640px]:min-h-[280px]">
+            <Image
+              src="/mock-assets/editorial-banner-clean.jpg"
+              alt="Everyday Essentials - Oversized Fits Minimal Effort"
+              fill
+              sizes="(max-width: 1440px) 100vw, 1400px"
+              className="absolute inset-0 h-full w-full object-cover object-center z-0"
+            />
+            <div className="relative z-10 ml-auto mr-[clamp(40px,7vw,100px)] max-w-[440px] py-11 text-left max-[900px]:mr-6 max-[900px]:max-w-[320px] max-[900px]:py-8 max-[640px]:mr-4 max-[640px]:max-w-[260px]">
+              <span className="mb-2.5 block text-[12.5px] font-bold uppercase tracking-[0.14em] text-black/70">
+                EVERYDAY ESSENTIALS
+              </span>
+              <h2 className="mb-3 text-[clamp(28px,3.4vw,42px)] font-extrabold leading-[1.1] tracking-[-0.025em] text-[#111111]">
+                Oversized Fits<br />Minimal Effort
+              </h2>
+              <p className="mb-5.5 text-[15px] leading-[1.45] text-[#3a3a3a] max-[640px]:mb-4 max-[640px]:text-[13px]">
+                Relaxed silhouettes. Timeless designs.<br />Built for wherever you&apos;re headed.
+              </p>
+              <Link
+                href="/shop"
+                className="inline-flex items-center gap-2.5 rounded-[13px] bg-[#141414] px-7 py-3.5 text-[14.5px] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,0.14)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#262626] hover:shadow-[0_6px_18px_rgba(0,0,0,0.2)] active:scale-[0.98]"
+              >
+                <span>Shop Now</span>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 5. Shop by Category (8 Cards: 2 Rows x 4 Cols) ─────────── */}
+      <section className="pb-14" aria-labelledby="tg-shop-cats-heading">
+        <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
+          <div className="mb-5.5">
+            <h2 className="text-[clamp(26px,3vw,34px)] font-bold tracking-[-0.025em] text-[#111111] leading-tight" id="tg-shop-cats-heading">
+              Shop by Category
+            </h2>
+            <p className="mt-1 text-[15px] text-[#666666]">Find your fit. Explore the collection.</p>
+          </div>
+          <div className="grid grid-cols-4 gap-4 max-[900px]:grid-cols-2 max-[900px]:gap-3">
+            {SHOP_CATEGORIES.map((cat) => (
+              <Link
+                key={cat.name}
+                href={cat.href}
+                className="group flex flex-col overflow-hidden rounded-[18px] border border-black/6 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(0,0,0,0.07)]"
+              >
+                <div className="relative w-full aspect-[16/10] overflow-hidden bg-[#edeae4]">
+                  <Image
+                    src={cat.image}
+                    alt={cat.name}
+                    fill
+                    sizes="(max-width: 900px) 50vw, 25vw"
+                    className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  />
+                </div>
+                <div className="flex items-center justify-between bg-white px-4 py-3">
+                  <span className="text-[13.5px] font-bold text-[#111111]">{cat.name}</span>
+                  <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border border-[#e5e3dc] text-[#111111] transition-all duration-200 group-hover:border-[#111111] group-hover:bg-[#111111] group-hover:text-white group-hover:translate-x-0.5" aria-hidden="true">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. Trust Bar (Value Props Strip) ───────────────────────── */}
+      <section className="mt-4 border-y border-[#ebe8e1] bg-[#FAF8F5] py-9.5" aria-label="Store Guarantees">
+        <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
+          <div className="grid grid-cols-4 items-center max-[800px]:grid-cols-2 max-[800px]:gap-y-7">
+            <div className="flex items-center justify-center gap-3.5 px-4 [&:not(:last-child)]:border-r [&:not(:last-child)]:border-[#e8e5dc] max-[800px]:[&:nth-child(2)]:border-r-0 max-[800px]:[&:nth-child(3)]:border-r max-[800px]:[&:nth-child(3)]:border-[#e8e5dc]">
+              <svg
+                className="h-8 w-8 shrink-0 text-[#222222]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.35"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                <line x1="12" y1="22.08" x2="12" y2="12" />
+              </svg>
+              <div className="flex flex-col">
+                <span className="text-[13.5px] font-bold leading-tight text-[#1c1c1c]">Free 7-day</span>
+                <span className="text-[13px] leading-tight text-[#666666]">exchanges</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-3.5 px-4 [&:not(:last-child)]:border-r [&:not(:last-child)]:border-[#e8e5dc] max-[800px]:[&:nth-child(2)]:border-r-0 max-[800px]:[&:nth-child(3)]:border-r max-[800px]:[&:nth-child(3)]:border-[#e8e5dc]">
+              <svg
+                className="h-8 w-8 shrink-0 text-[#222222]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.35"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+              <div className="flex flex-col">
+                <span className="text-[13.5px] font-bold leading-tight text-[#1c1c1c]">Secure</span>
+                <span className="text-[13px] leading-tight text-[#666666]">payments</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-3.5 px-4 [&:not(:last-child)]:border-r [&:not(:last-child)]:border-[#e8e5dc] max-[800px]:[&:nth-child(2)]:border-r-0 max-[800px]:[&:nth-child(3)]:border-r max-[800px]:[&:nth-child(3)]:border-[#e8e5dc]">
+              <svg
+                className="h-8 w-8 shrink-0 text-[#222222]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.35"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="1" y="3" width="15" height="13" />
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                <circle cx="5.5" cy="18.5" r="2.5" />
+                <circle cx="18.5" cy="18.5" r="2.5" />
+              </svg>
+              <div className="flex flex-col">
+                <span className="text-[13.5px] font-bold leading-tight text-[#1c1c1c]">Pan India</span>
+                <span className="text-[13px] leading-tight text-[#666666]">delivery</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-3.5 px-4">
+              <svg
+                className="h-8 w-8 shrink-0 text-[#222222]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.35"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+              </svg>
+              <div className="flex flex-col">
+                <span className="text-[13.5px] font-bold leading-tight text-[#1c1c1c]">Dedicated</span>
+                <span className="text-[13px] leading-tight text-[#666666]">support</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}

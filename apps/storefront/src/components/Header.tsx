@@ -204,49 +204,82 @@ export default function Header({ initialNavItems }: HeaderProps) {
       <header
         className={`sticky top-0 ${userMenuOpen ? 'z-[1005]' : 'z-[60]'} border-b border-b-[#e9e7e1] bg-[rgba(250,249,246,0.96)] backdrop-blur-[18px] transition-[box-shadow,background-color] duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] [@media(prefers-reduced-transparency:reduce)]:bg-white [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none [&_:is(a,button,input):focus-visible]:outline-2 [&_:is(a,button,input):focus-visible]:outline-[#31586f] [&_:is(a,button,input):focus-visible]:outline-offset-[3px] motion-reduce:[transition-duration:0.01ms]`}
       >
-        {/* Tier 1: Main Brand, Search Trigger & Customer Action Utilities */}
-        <div className="min-h-[72px] border-b border-b-[rgba(0,0,0,0.05)] bg-transparent pt-[env(safe-area-inset-top)] max-[700px]:min-h-[60px]">
-          <div className="relative mx-auto grid h-[72px] min-h-[72px] max-w-[1480px] grid-cols-[minmax(150px,1fr)_auto_minmax(150px,1fr)] items-center justify-between gap-[clamp(14px,2.2vw,30px)] px-[30px] max-[1100px]:grid-cols-[1fr_auto] max-[1100px]:px-5 max-[700px]:flex max-[700px]:min-h-[60px] max-[700px]:justify-between max-[700px]:px-4 max-[640px]:h-[58px] max-[640px]:gap-1">
-            {/* Mobile Menu Hamburger */}
-            <button
-              className="hidden h-[42px] w-[42px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] max-[640px]:flex max-[640px]:w-10 max-[640px]:shrink-0"
-              type="button"
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((v) => !v)}
-            >
-              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+        {/* Main Navigation Bar: Single row, perfectly vertically centered */}
+        <div className="h-[76px] min-h-[76px] bg-transparent pt-[env(safe-area-inset-top)] max-[700px]:h-[60px] max-[700px]:min-h-[60px]">
+          <div className="mx-auto flex h-full max-w-[1400px] items-center justify-between gap-4 px-6 lg:px-8">
+            {/* Left: Mobile Hamburger + Brand Logo */}
+            <div className="flex shrink-0 items-center gap-3">
+              <button
+                className="hidden h-[42px] w-[42px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] max-[1024px]:flex max-[640px]:w-10 max-[640px]:shrink-0"
+                type="button"
+                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((v) => !v)}
+              >
+                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
 
-            {/* Brand Logo */}
-            <Link
-              className="inline-flex shrink-0 items-center justify-self-start text-[#111] no-underline transition-opacity duration-200 ease-[ease] hover:opacity-[0.88]"
-              href="/"
-              aria-label="TEESGARAGE Homepage"
-            >
-              <Image
-                src="/teesgarage_logo.svg"
-                alt="TEESGARAGE"
-                width={124}
-                height={38}
-                priority
-                className="block h-8 w-auto"
-              />
-            </Link>
+              <Link
+                className="inline-flex shrink-0 items-center text-[#111] no-underline transition-opacity duration-200 hover:opacity-85"
+                href="/"
+                aria-label="TEESGARAGE Homepage"
+              >
+                <Image
+                  src="/teesgarage-logo.svg"
+                  alt="TEESGARAGE"
+                  width={160}
+                  height={46}
+                  priority
+                  className="block h-[38px] md:h-[42px] w-auto max-[640px]:h-[26px]"
+                />
+              </Link>
+            </div>
 
-            {/* Mobile search icon (visible only on mobile) */}
-            <button
-              type="button"
-              className="hidden h-[42px] w-[42px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] max-[640px]:inline-flex max-[640px]:w-10 max-[640px]:shrink-0"
-              aria-label="Search products"
-              onClick={openMobileSearch}
+            {/* Center: Department & Category Links (Vertically Centered with logo and buttons) */}
+            <nav
+              className="hidden lg:flex flex-1 items-center justify-center gap-7 xl:gap-8"
+              aria-label="Department and Category Navigation"
             >
-              <Search className="h-5 w-5" aria-hidden="true" />
-            </button>
+              {activeLinks.map((link) => {
+                const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
+                const isActive = isLinkActive(link.href)
+                return (
+                  <Link
+                    key={link.id || link.label}
+                    href={link.href}
+                    className={`relative whitespace-nowrap text-[13.5px] font-medium leading-none tracking-[0.02em] text-[#242424] no-underline transition-colors duration-150 hover:text-black active:scale-[0.98] ${
+                      isSale ? 'font-semibold text-[#e01a2b]!' : ''
+                    } ${
+                      isActive
+                        ? "font-semibold text-black after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:rounded-[1px] after:bg-black after:content-['']"
+                        : ''
+                    }`}
+                    target={link.openInNewTab ? '_blank' : undefined}
+                    rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
+                    onClick={(e) => handleNavClick(link, e)}
+                  >
+                    <span>{link.label}</span>
+                    {link.badge && (
+                      <span className="ml-[5px] rounded-[2px] bg-black px-[5px] py-px text-[9px] font-semibold uppercase text-white">{link.badge}</span>
+                    )}
+                  </Link>
+                )
+              })}
+            </nav>
 
-            {/* Right Action Utilities (Search, Wishlist, Bag, Sign In / User Popover) */}
-            <div className="col-start-3 flex shrink-0 items-center justify-self-end gap-2.5 max-[1100px]:col-start-2 max-[700px]:gap-[7px]">
-              {/* 1. Desktop Search Trigger */}
+            {/* Right: Action Utilities (Search, Wishlist, Bag, Sign In / User Popover) */}
+            <div className="flex shrink-0 items-center gap-2 md:gap-3">
+              {/* Mobile search icon */}
+              <button
+                type="button"
+                className="hidden h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] max-[1024px]:inline-flex"
+                aria-label="Search products"
+                onClick={openMobileSearch}
+              >
+                <Search className="h-5 w-5" aria-hidden="true" />
+              </button>
+
+              {/* Desktop Search Trigger */}
               <button
                 type="button"
                 className={HEADER_ACTION_BTN}
@@ -256,7 +289,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 <Search className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
               </button>
 
-              {/* 2. Wishlist */}
+              {/* Wishlist */}
               <Link
                 href="/favorites"
                 className={HEADER_ACTION_BTN}
@@ -266,7 +299,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 <Heart className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
               </Link>
 
-              {/* 3. Shopping Bag Button with Badge */}
+              {/* Shopping Bag Button with Badge */}
               <button
                 className={`${HEADER_ACTION_BTN} min-h-[42px] min-w-[42px] max-[640px]:min-h-10 max-[640px]:min-w-10`}
                 type="button"
@@ -277,14 +310,14 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 <div className="relative inline-flex items-center justify-center">
                   <ShoppingBag className="h-5 w-5" strokeWidth={1.8} />
                   {count > 0 && (
-                    <span className="absolute -right-2 -top-1.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#e01a2b] px-1 text-[10px] font-bold leading-none text-white tabular-nums">
+                    <span className="absolute -right-2 -top-1.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#e01a2b] px-1 text-[9.5px] font-bold leading-none text-white tabular-nums">
                       {count}
                     </span>
                   )}
                 </div>
               </button>
 
-              {/* 4. User Avatar Circle */}
+              {/* User Avatar Circle */}
               {mounted && isAuthenticated && user ? (
                 <div className="relative" ref={userMenuRef}>
                   <button
@@ -294,7 +327,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                     aria-expanded={userMenuOpen}
                     aria-label={`Account menu for ${user.name}`}
                   >
-                    <div className="grid h-[30px] w-[30px] place-items-center justify-center rounded-full border-[1.5px] border-[#1c1c1c] bg-transparent text-[13.5px] font-semibold leading-none text-[#111]">
+                    <div className="grid h-[32px] w-[32px] place-items-center justify-center rounded-full border-[1.5px] border-[#1c1c1c] bg-transparent text-[13px] font-semibold leading-none text-[#111]">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                   </button>
@@ -413,7 +446,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 </div>
               ) : (
                 <Link href="/login" className={HEADER_ACTION_BTN} aria-label="Sign in to your account">
-                  <div className="grid h-[30px] w-[30px] place-items-center justify-center rounded-full border-[1.5px] border-[#1c1c1c] bg-transparent text-[13.5px] font-semibold leading-none text-[#111]">
+                  <div className="grid h-[32px] w-[32px] place-items-center justify-center rounded-full border-[1.5px] border-[#1c1c1c] bg-transparent text-[13px] font-semibold leading-none text-[#111]">
                     S
                   </div>
                 </Link>
@@ -421,53 +454,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
             </div>
           </div>
         </div>
-
-        {/* Tier 2: Category Navigation Bar (Shop All, Categories, Silhouettes, and Sale) */}
-        <nav
-          className="pointer-events-none absolute inset-0 flex h-[72px] w-full justify-center bg-transparent max-[1000px]:static max-[1000px]:h-[42px] max-[1000px]:overflow-hidden max-[1000px]:border-t max-[1000px]:border-t-[#efeee9]"
-          aria-label="Department and Category Navigation"
-        >
-          <div className="pointer-events-auto mx-auto flex h-[42px] min-h-[42px] w-auto max-w-none items-center justify-center gap-5 p-0 max-[1000px]:w-full max-[1000px]:justify-start max-[1000px]:overflow-hidden">
-            {/* Shop All Menu Trigger */}
-            <button
-              type="button"
-              className="hidden"
-              onClick={handleShopAllClick}
-            >
-              <Menu className="h-3.5 w-3.5 mr-1.5" />
-              <span>Shop All</span>
-            </button>
-
-            {/* Department & Category Links (Dynamically configured via Admin) */}
-            <div className="flex items-center gap-[30px] overflow-visible [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden max-[1100px]:gap-3.5 max-[1000px]:w-full max-[1000px]:justify-start max-[1000px]:gap-[22px] max-[1000px]:overflow-x-auto max-[1000px]:px-5 max-[1000px]:[scrollbar-width:none] max-[640px]:px-4">
-              {activeLinks.map((link) => {
-                const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
-                const isActive = isLinkActive(link.href)
-                return (
-                  <Link
-                    key={link.id || link.label}
-                    href={link.href}
-                    className={`relative whitespace-nowrap px-0 py-2 text-[13px] font-medium leading-none tracking-[0.025em] text-[#242424] no-underline transition-[color] duration-150 ease-[ease] hover:text-black active:[transform:scale(0.97)] active:[transition:transform_80ms_cubic-bezier(0.16,1,0.3,1)] max-[1000px]:text-[12px] ${
-                      isSale ? 'font-semibold text-[#e01a2b]!' : ''
-                    } ${
-                      isActive
-                        ? "after:absolute after:inset-x-0 after:bottom-px after:h-0.5 after:rounded-[1px] after:bg-black after:content-['']"
-                        : ''
-                    }`}
-                    target={link.openInNewTab ? '_blank' : undefined}
-                    rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
-                    onClick={(e) => handleNavClick(link, e)}
-                  >
-                    <span>{link.label}</span>
-                    {link.badge && (
-                      <span className="ml-[5px] rounded-[2px] bg-black px-[5px] py-px text-[9px] font-semibold uppercase text-white">{link.badge}</span>
-                    )}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        </nav>
 
         {/* Mobile Navigation Drawer */}
         {menuOpen && (

@@ -220,7 +220,7 @@ function LoginForm() {
 
           <Link href="/" aria-label="TEESGARAGE Home">
             <Image
-              src="/teesgarage_logo.svg"
+              src="/teesgarage-logo.svg"
               alt="TEESGARAGE"
               width={140}
               height={40}

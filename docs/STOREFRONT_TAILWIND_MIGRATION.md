@@ -2,44 +2,30 @@
 
 The storefront is moving from a single hand-authored stylesheet to Tailwind CSS v4 utilities in markup.
 
-## Cascade layers (read this first)
+## Cascade layers & CSS Structure
 
-`src/app/globals.css` declares the layer order before Tailwind is imported, and wraps the entire
-legacy sheet in a `legacy` layer:
+`src/app/globals.css` is refactored according to `/tailwind-best-practices` to pure Tailwind CSS v4 (~180 lines). All legacy stylesheet blocks have been removed:
 
 ```css
-@layer properties, theme, base, legacy, legacy-overrides, components, utilities;
 @import 'tailwindcss';
-@import './teesgarage-home.css' layer(legacy);
 
-@theme { /* tokens */ }
-
-@layer legacy {
-  /* the whole legacy stylesheet */
+@theme {
+  /* tokens: fonts, colors, radii, shadows, motion */
 }
 
-@layer legacy-overrides {
-  /* late overrides that must outrank the legacy sheet */
+:root {
+  /* tokens preserved for CSS variable access */
 }
+
+@layer base {
+  /* resets & base typography */
+}
+
+@utility page-transition-wrapper { /* ... */ }
+@utility reveal-item { /* ... */ }
+@utility tnum { /* ... */ }
+@utility scrollbar-none { /* ... */ }
 ```
-
-Priority, low to high: `properties`, `theme`, `base` (Preflight), `legacy`, `legacy-overrides`,
-`components`, `utilities`.
-
-`legacy-overrides` exists for rules that were previously injected unlayered (the old Header
-`<style jsx global>` block) and therefore outranked the legacy sheet regardless of specificity. It sits
-above `legacy` to keep that result and below `utilities` so converted markup still wins. It currently
-holds only the profile/wishlist overrides; delete the layer once those surfaces are converted.
-
-This is load-bearing. **Unlayered CSS beats every cascade layer**, regardless of specificity. Before the
-legacy sheet was layered, its `* { margin: 0; padding: 0 }` reset and generic element rules (`a`, `h1`, …)
-silently overrode Tailwind's spacing and typography utilities, so converted components rendered with zero
-padding/margin. Anything new must stay inside `@layer legacy` (or a later layer), never unlayered.
-
-- `@theme` stays outside the layer so Tailwind can read the tokens.
-- `@keyframes`, `@font-face` and `@property` may stay unlayered.
-- Utilities no longer need `!` to beat legacy CSS.
-- The legacy sheet still overrides Preflight, so unconverted pages keep their original look.
 
 ## Current state
 
@@ -47,9 +33,9 @@ padding/margin. Anything new must stay inside `@layer legacy` (or a later layer)
 | --- | --- |
 | Tailwind install | v4.3.3 via `tailwindcss` + `@tailwindcss/postcss` |
 | PostCSS | `apps/storefront/postcss.config.mjs` |
-| Entry point | `@import 'tailwindcss'` in `src/app/globals.css`, inside the layer order above |
+| Entry point | `@import 'tailwindcss'` in `src/app/globals.css` |
 | Design tokens | Exported through `@theme` in `globals.css` (see below) |
-| Legacy CSS | `src/app/globals.css` (~11.1k lines) + `src/app/teesgarage-home.css`, both in `@layer legacy` |
+| Legacy CSS | Dropped completely; `globals.css` is 100% pure Tailwind v4 (~180 lines) |
 | Converted in wave 1 | `Footer`, `RelatedProducts`, `homepage/CategoryGroups` |
 | Converted in wave 2 | `ProductCard`, `skeletons/ProductCardSkeleton` |
 | Converted in wave 3 | `ProductDetail`, `skeletons/ProductDetailSkeleton`, `StickyPdpBar`, checkout breadcrumbs |
