@@ -1034,7 +1034,7 @@ export class ProductStore {
           const current = existingById.get(variant.id)!
           const sku =
             color.toLowerCase() === current.color.toLowerCase() &&
-            size.toUpperCase() === current.size.toUpperCase() &&
+            size.toUpperCase() === String(current.size).toUpperCase() &&
             (patch.category === undefined || patch.category === existing.category)
               ? current.sku
               : await this.generateSku({

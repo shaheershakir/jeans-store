@@ -14,8 +14,6 @@ import {
   RotateCcw,
   MapPin
 } from 'lucide-react'
-import Header from '@/components/Header'
-import Footer from '@/components/Footer'
 import { useCartStore, useUIStore, useAuthStore } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
 import { getProductUrl } from '@/lib/products'
@@ -88,29 +86,6 @@ export default function OrdersPage() {
           <span className="teesgarage-breadcrumb-current">My Orders &amp; Tracking</span>
         </nav>
 
-        {/* Top Header Card */}
-        <div className="teesgarage-account-hero">
-          <div className="teesgarage-hero-user-cluster">
-            <div className="teesgarage-hero-avatar">
-              {(user?.name || 'Account').charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h1 className="teesgarage-hero-name">
-                {user?.name || 'Your account'}
-              </h1>
-              <p className="teesgarage-hero-meta">
-                Active shipments &amp; order history
-              </p>
-            </div>
-          </div>
-
-          <div className="teesgarage-hero-actions">
-            <Link href="/profile" className="teesgarage-btn-pill-secondary">
-              Profile &amp; Addresses
-            </Link>
-          </div>
-        </div>
-
         {/* Filter Pills Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-6 border-b border-[#e7e7e4]">
           <h2 className="font-brand text-lg font-bold text-zinc-900 tracking-tight m-0">
@@ -156,8 +131,24 @@ export default function OrdersPage() {
           <div className="text-center py-20 text-sm text-zinc-500" role="status">Loading your order history…</div>
         ) : loadError ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-[#e7e7e4] my-8 shadow-sm" role="alert">
+            <Package className="w-12 h-12 mx-auto text-zinc-300 stroke-[1.5] mb-4" />
             <h3 className="font-brand text-lg font-bold text-zinc-900">Could not load your orders</h3>
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1">{loadError}</p>
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-6">{loadError}</p>
+            <div className="flex items-center justify-center gap-3">
+              <Link href="/login?redirect=/orders" className="teesgarage-btn-primary">
+                Sign in again
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  useAuthStore.getState().logout()
+                  window.location.href = '/login?redirect=/orders'
+                }}
+                className="teesgarage-btn-pill-secondary"
+              >
+                Switch Account
+              </button>
+            </div>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-[#e7e7e4] my-8 shadow-sm">
@@ -310,8 +301,6 @@ export default function OrdersPage() {
           </div>
         )}
       </main>
-
-      <Footer />
     </div>
   )
 }

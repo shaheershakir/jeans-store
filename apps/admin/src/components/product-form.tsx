@@ -207,9 +207,16 @@ export function ProductForm({ product }: { product?: Product }) {
         costPrice: Number(costPrice), taxRate: Number(taxRate), status, featured, isFreeSize, weightGrams: Number(weightGrams),
         image, images: [{ url: image, alt: `${name} product photo` }, ...(image2 ? [{ url: image2, alt: `${name} alternate view` }] : [])],
         variants: variants.map((variant) => ({
-          id: variant.id, size: variant.size.trim(), color: variant.color.trim(),
-          price: Number(variant.price || price), stock: Math.max(0, Number(isFreeSize ? variants[0]?.stock ?? variant.stock : variant.stock)),
-          reorderPoint: Math.max(0, Number(variant.reorderPoint)), weight: Number(weightGrams), barcode: variant.barcode, status: 'Active' as const,
+          id: variant.id,
+          sku: variant.sku || generateBaseSku({ category: categorySlug, productType: 'Regular', color: variant.color.trim(), size: variant.size.trim() }),
+          size: variant.size.trim(),
+          color: variant.color.trim(),
+          price: Number(variant.price || price),
+          stock: Math.max(0, Number(isFreeSize ? variants[0]?.stock ?? variant.stock : variant.stock)),
+          reorderPoint: Math.max(0, Number(variant.reorderPoint)),
+          weight: Number(weightGrams),
+          barcode: variant.barcode,
+          status: 'Active' as const,
         })),
       }
       if (isEdit) {

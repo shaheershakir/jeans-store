@@ -70,13 +70,6 @@ interface DeliveryQuote {
   deliveryEstimation?: DeliveryEstimation
 }
 
-interface SubmittedOrder {
-  orderId: string
-  summary: string
-  paymentId?: string
-  total: number
-}
-
 const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:4000'
 
 const INITIAL_FORM: CheckoutForm = {
@@ -228,7 +221,6 @@ export default function CheckoutClient({ mode = { type: 'bag' }, checkoutUrl }: 
   const [errors, setErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({})
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
-  const [submittedOrder, setSubmittedOrder] = useState<SubmittedOrder | null>(null)
   const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuote | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
@@ -554,47 +546,6 @@ export default function CheckoutClient({ mode = { type: 'bag' }, checkoutUrl }: 
     return Object.keys(nextErrors).length === 0
   }
 
-  function buildSummaryText(orderId: string, paymentId?: string) {
-    const itemLines = items
-      .map((item, index) => {
-        const spec = [item.fit ? `${item.fit} Fit` : null, `Size ${item.size}`, item.wash]
-          .filter(Boolean)
-          .join(', ')
-        return `${index + 1}. ${item.name} (${spec})\n   Qty: ${item.qty} | ${formatPrice(item.priceNum * item.qty)}`
-      })
-      .join('\n')
-
-    return [
-      `*TEESGARAGE ORDER CONFIRMATION [${orderId}]*`,
-      '--------------------------------',
-      'Payment Method: Razorpay (Paid Online)',
-      paymentId ? `Razorpay Payment ID: ${paymentId}` : null,
-      '',
-      '*Customer Information:*',
-      `Name: ${form.name.trim()}`,
-      `Mobile: ${form.phone.trim()}`,
-      `Account Email: ${user?.email || 'N/A'}`,
-      '',
-      '*Delivery Address:*',
-      form.address.trim(),
-      `${form.place.trim()}, ${form.district.trim()}`,
-      `${form.state.trim()} - ${form.pincode.trim()}`,
-      `Estimated Delivery: ${deliveryEstimationInfo.formattedRange}`,
-      '',
-      '*Ordered Items:*',
-      itemLines,
-      '',
-      '*Bill Summary:*',
-      `Subtotal: ${formatPrice(subtotal)}`,
-      `Delivery charge: ${formatPrice(shipping)}`,
-      `Total: ${formatPrice(total)}`,
-      '--------------------------------',
-      'Confirmed and queued for TEESGARAGE delivery.'
-    ]
-      .filter(Boolean)
-      .join('\n')
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
@@ -732,12 +683,40 @@ export default function CheckoutClient({ mode = { type: 'bag' }, checkoutUrl }: 
               })
             }
 
-            setSubmittedOrder({
-              orderId,
-              paymentId: response.razorpay_payment_id,
-              total: Number(verifyData.order?.total ?? rzpData.total ?? total),
-              summary: buildSummaryText(orderId, response.razorpay_payment_id)
-            })
+            const confirmedOrder = verifyData.order || {}
+            try {
+              window.sessionStorage.setItem('teesgarage-order-confirmation', JSON.stringify({
+                orderNumber: confirmedOrder.orderNumber || orderId,
+                paymentId: response.razorpay_payment_id,
+                total: Number(confirmedOrder.total ?? rzpData.total ?? total),
+                subtotal: Number(confirmedOrder.subtotal ?? rzpData.subtotal ?? subtotal),
+                shipping: Number(confirmedOrder.shipping ?? rzpData.shipping ?? shipping),
+                createdAt: confirmedOrder.createdAt || new Date().toISOString(),
+                customerName: confirmedOrder.customerName || form.name.trim(),
+                address: confirmedOrder.address || form.address.trim(),
+                apartment: confirmedOrder.apartment || form.place.trim(),
+                city: confirmedOrder.city || form.district.trim(),
+                state: confirmedOrder.state || form.state.trim(),
+                pincode: confirmedOrder.pincode || form.pincode.trim(),
+                items: Array.isArray(confirmedOrder.items)
+                  ? confirmedOrder.items
+                  : items.map((item) => ({
+                      id: item.id,
+                      name: item.name,
+                      fit: item.fit,
+                      size: item.size,
+                      quantity: item.qty,
+                      price: item.price,
+                      priceNum: item.priceNum,
+                      img: item.img,
+                      color: item.color,
+                      wash: item.wash
+                    }))
+              }))
+            } catch {
+              // The order is already verified. Do not turn a storage limitation
+              // into a payment failure; the receipt page can recover via orders.
+            }
 
             trackEvent('order_completed', {
               order_id: orderId,
@@ -762,6 +741,7 @@ export default function CheckoutClient({ mode = { type: 'bag' }, checkoutUrl }: 
             if (!isProductMode) {
               clearCart()
             }
+            router.replace('/order-confirmation')
           } catch (err: any) {
             setPaymentError(err.message || 'Payment verification encountered an issue. Please contact support.')
           } finally {
@@ -788,77 +768,7 @@ export default function CheckoutClient({ mode = { type: 'bag' }, checkoutUrl }: 
     }
   }
 
-  // 1. Order Placed Confirmation View
-  if (submittedOrder) {
-    return (
-      <main className="checkout-page">
-        <div className="checkout-container confirmation-card">
-          <div className="confirmation-header">
-            <span className="confirmation-status-pill success">
-              ✓ Paid via Razorpay
-            </span>
-            <h1 className="confirmation-title">Thank you, {form.name.split(' ')[0]}.</h1>
-            <p className="confirmation-lead">
-              Reference code: <strong>{submittedOrder.orderId}</strong>
-            </p>
-          </div>
-
-          <div className="confirmation-body">
-            <p>
-              Your payment of <strong>{formatPrice(submittedOrder.total)}</strong> has been verified
-              through Razorpay. Our studio is preparing your pieces for delivery.
-            </p>
-
-            <div className="checkout-delivery-card" style={{ margin: '18px 0' }}>
-              <div className="delivery-card-icon">
-                <Truck className="w-4 h-4" />
-              </div>
-              <div className="delivery-card-body">
-                <div className="delivery-card-title">Expected delivery</div>
-                <div className="delivery-card-range">{deliveryEstimationInfo.formattedRange}</div>
-                <p className="delivery-card-note">
-                  Delivering to {form.district ? `${form.district}, ` : ''}{form.state} ({form.pincode}). You will receive shipment tracking details by SMS and email.
-                </p>
-              </div>
-            </div>
-
-            {submittedOrder.paymentId && (
-              <div className="confirmation-payment-meta">
-                <div className="confirmation-payment-meta-row">
-                  <span>Razorpay Payment ID:</span>
-                  <strong>{submittedOrder.paymentId}</strong>
-                </div>
-                <div className="confirmation-payment-meta-row">
-                  <span>Payment Status:</span>
-                  <strong className="text-emerald-700">Verified &amp; Captured</strong>
-                </div>
-                <div className="confirmation-payment-meta-row">
-                  <span>Delivery Address:</span>
-                  <span>{form.address}, {form.place}, {form.district}</span>
-                </div>
-              </div>
-            )}
-
-            <details className="confirmation-details">
-              <summary>View order transmission copy</summary>
-              <pre className="order-summary-raw">{submittedOrder.summary}</pre>
-            </details>
-          </div>
-
-          <div className="confirmation-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <Link href="/orders" className="button secondary">
-              View My Orders
-            </Link>
-            <Link href="/" className="button primary">
-              Back to Catalog
-            </Link>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
-  // 2. Empty Bag View
+  // Empty Bag View
   if (!isProductMode && count === 0) {
     return (
       <main className="checkout-page">

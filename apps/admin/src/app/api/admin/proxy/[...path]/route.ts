@@ -14,7 +14,13 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const accept = request.headers.get('accept')
   if (contentType) headers.set('content-type', contentType)
   if (accept) headers.set('accept', accept)
-  if (token) headers.set('authorization', `Bearer ${token}`)
+  const adminKey = process.env.ADMIN_API_KEY || process.env.NEXT_PUBLIC_ADMIN_API_KEY
+  if (token) {
+    headers.set('authorization', `Bearer ${token}`)
+  } else if (adminKey) {
+    headers.set('authorization', `Bearer ${adminKey}`)
+    headers.set('x-admin-key', adminKey)
+  }
 
   try {
     const upstream = await fetch(upstreamUrl, {

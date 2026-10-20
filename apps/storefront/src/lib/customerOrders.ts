@@ -56,8 +56,16 @@ interface ApiOrder {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : '')
 
 function displayStatus(status: string): string {
-  if (status === 'Shipped' || status === 'Out for Delivery') return 'Dispatched'
-  return status
+  if (!status) return 'Pending'
+  const s = status.trim().toLowerCase()
+  if (s === 'shipped' || s === 'out for delivery' || s === 'dispatched') return 'Dispatched'
+  if (s === 'delivered') return 'Delivered'
+  if (s === 'cancelled') return 'Cancelled'
+  if (s === 'returned') return 'Returned'
+  if (s === 'confirmed' || s === 'paid') return 'Confirmed'
+  if (s === 'processing') return 'Processing'
+  if (s === 'pending') return 'Pending'
+  return status.charAt(0).toUpperCase() + status.slice(1)
 }
 
 function formatDate(date: string): string {
@@ -105,7 +113,9 @@ function mapOrder(order: ApiOrder): CustomerOrder {
 }
 
 export function isActiveCustomerOrder(status: string): boolean {
-  return !['Delivered', 'Cancelled', 'Returned'].includes(status)
+  if (!status) return true
+  const s = status.trim().toLowerCase()
+  return !['delivered', 'cancelled', 'returned'].includes(s)
 }
 
 export async function fetchCustomerOrders(token: string, signal?: AbortSignal): Promise<CustomerOrder[]> {

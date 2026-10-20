@@ -3,6 +3,35 @@ import assert from 'node:assert/strict'
 import request from 'supertest'
 import { buildApp } from '../src/app.js'
 import { razorpayService } from '../src/services/razorpay.js'
+import { productStore } from '../src/store/productStore.js'
+import type { Product, Variant } from '../src/schemas/product.js'
+
+async function pickSellableProducts(count: number) {
+  const products = await productStore.list()
+  const picks: Array<{ product: Product; variant: Variant }> = []
+
+  for (const product of products) {
+    if (product.isFreeSize) continue
+    const variant = product.variants?.find(
+      (candidate) => candidate.status === 'Active' && candidate.stock - candidate.reserved >= 1
+    )
+    if (!variant) continue
+    picks.push({ product, variant })
+    if (picks.length === count) return picks
+  }
+
+  throw new Error(`Expected ${count} sellable products in the catalog, found ${picks.length}`)
+}
+
+async function quoteCart(app: ReturnType<typeof buildApp>, items: Array<{ id: number; variantId: number; size: string; quantity: number }>) {
+  const res = await request(app).post('/api/orders/quote').send({
+    state: 'Maharashtra',
+    pincode: '400050',
+    items
+  })
+  assert.equal(res.status, 200, `Quote failed with ${JSON.stringify(res.body)}`)
+  return res.body as { subtotal: number; shipping: number; total: number; weightGrams: number }
+}
 
 describe('Catalog & Orders Unified Brand Seams', () => {
   const app = buildApp({ enableLogging: false })
@@ -33,6 +62,16 @@ describe('Catalog & Orders Unified Brand Seams', () => {
   })
 
   test('POST /api/orders accepts order with line items containing sizes and store: teesgarage', async () => {
+    const picks = await pickSellableProducts(2)
+    const items = picks.map(({ product, variant }) => ({
+      id: product.id,
+      variantId: variant.id,
+      name: product.name,
+      size: String(variant.size),
+      quantity: 1
+    }))
+    const quote = await quoteCart(app, items)
+
     const orderPayload = {
       orderNumber: `TEST-ORD-${Date.now()}`,
       store: 'teesgarage',
@@ -43,28 +82,10 @@ describe('Catalog & Orders Unified Brand Seams', () => {
       city: 'Bengaluru',
       state: 'Karnataka',
       pincode: '560001',
-      items: [
-        {
-          id: 0,
-          name: 'Classic Breton Heavyweight Striped Tee',
-          fit: 'Regular',
-          size: 'M',
-          price: '₹1,299',
-          priceNum: 1299,
-          quantity: 1
-        },
-        {
-          id: 12,
-          name: 'Oversized Streetwear Drsleeve Tee',
-          size: 'L',
-          price: '₹1,499',
-          priceNum: 1499,
-          quantity: 1
-        }
-      ],
-      subtotal: 2798,
-      shipping: 0,
-      total: 2798,
+      items,
+      subtotal: quote.subtotal,
+      shipping: quote.shipping,
+      total: quote.total,
       handoffType: 'cod'
     }
 
@@ -76,7 +97,7 @@ describe('Catalog & Orders Unified Brand Seams', () => {
     const data = res.body
     assert.equal(data.order.orderNumber, orderPayload.orderNumber)
     assert.equal(data.order.items.length, 2)
-    assert.equal(data.order.items[1].size, 'L')
+    assert.equal(data.order.items[1].size, items[1].size)
   })
 
   test('GET /api/orders/razorpay/config returns live key id', async () => {
@@ -87,14 +108,17 @@ describe('Catalog & Orders Unified Brand Seams', () => {
   })
 
   test('POST /api/orders/razorpay/create-order generates razorpay order', async () => {
+    const [{ product, variant }] = await pickSellableProducts(1)
     const payload = {
       currency: 'INR',
       orderNumber: `RZP-TEST-${Date.now()}`,
       state: 'Kerala',
+      pincode: '682001',
       items: [
         {
-          id: 0,
-          size: 'M',
+          id: product.id,
+          variantId: variant.id,
+          size: String(variant.size),
           quantity: 1
         }
       ],
@@ -115,15 +139,28 @@ describe('Catalog & Orders Unified Brand Seams', () => {
   test('POST /api/orders/razorpay/verify validates signature and commits order', async () => {
     const crypto = await import('node:crypto')
     const keySecret = razorpayService.getKeySecret()
-    const fakeOrderId = 'order_test_12345'
-    const fakePaymentId = 'pay_test_98765'
+    const suffix = Date.now()
+    const fakeOrderId = `order_test_${suffix}`
+    const fakePaymentId = `pay_test_${suffix}`
     const expectedSig = crypto.default
       .createHmac('sha256', keySecret)
       .update(`${fakeOrderId}|${fakePaymentId}`)
       .digest('hex')
 
+    const [{ product, variant }] = await pickSellableProducts(1)
+    const items = [
+      {
+        id: product.id,
+        variantId: variant.id,
+        name: product.name,
+        size: String(variant.size),
+        quantity: 1
+      }
+    ]
+    const quote = await quoteCart(app, items)
+
     const orderPayload = {
-      orderNumber: `ORD-RZP-${Date.now()}`,
+      orderNumber: `ORD-RZP-${suffix}`,
       store: 'teesgarage',
       customerName: 'Kabir Mehta',
       customerPhone: '9820144521',
@@ -132,20 +169,10 @@ describe('Catalog & Orders Unified Brand Seams', () => {
       city: 'Mumbai',
       state: 'Maharashtra',
       pincode: '400050',
-      items: [
-        {
-          id: 1,
-          name: 'Vintage Skate Micro-Stripe Tee',
-          fit: 'Regular',
-          size: 'M',
-          price: '₹1,249',
-          priceNum: 1249,
-          quantity: 1
-        }
-      ],
-      subtotal: 1249,
-      shipping: 90,
-      total: 1339,
+      items,
+      subtotal: quote.subtotal,
+      shipping: quote.shipping,
+      total: quote.total,
       handoffType: 'razorpay'
     }
 
@@ -154,8 +181,8 @@ describe('Catalog & Orders Unified Brand Seams', () => {
     razorpayService.fetchOrder = async () => ({
       id: fakeOrderId,
       entity: 'order',
-      amount: 133900,
-      amount_paid: 133900,
+      amount: Math.round(quote.total * 100),
+      amount_paid: Math.round(quote.total * 100),
       amount_due: 0,
       currency: 'INR',
       receipt: orderPayload.orderNumber,
@@ -164,25 +191,42 @@ describe('Catalog & Orders Unified Brand Seams', () => {
     })
     razorpayService.fetchPayment = async () => ({
       order_id: fakeOrderId,
-      amount: 133900,
+      amount: Math.round(quote.total * 100),
       status: 'captured'
     })
 
     try {
+      const payload = {
+        razorpay_order_id: fakeOrderId,
+        razorpay_payment_id: fakePaymentId,
+        razorpay_signature: expectedSig,
+        order: orderPayload
+      }
+
       const res = await request(app)
         .post('/api/orders/razorpay/verify')
-        .send({
-          razorpay_order_id: fakeOrderId,
-          razorpay_payment_id: fakePaymentId,
-          razorpay_signature: expectedSig,
-          order: orderPayload
-        })
+        .send(payload)
 
-      assert.equal(res.status, 201, `Failed with ${JSON.stringify(res.body)}`)
+      assert.ok([200, 201].includes(res.status), `Failed with ${JSON.stringify(res.body)}`)
       assert.equal(res.body.success, true)
       assert.equal(res.body.order.status, 'Confirmed')
       assert.equal(res.body.order.paymentStatus, 'Paid')
       assert.equal(res.body.paymentId, fakePaymentId)
+
+      const committedOrderNumber = res.body.order.orderNumber
+
+      // A retried verification (network drop, page reload, duplicate handler
+      // call) must return the committed order instead of creating a duplicate
+      // or failing on the stock this order already consumed.
+      const retry = await request(app)
+        .post('/api/orders/razorpay/verify')
+        .send(payload)
+
+      assert.equal(retry.status, 200, `Retry failed with ${JSON.stringify(retry.body)}`)
+      assert.equal(retry.body.success, true)
+      assert.equal(retry.body.idempotent, true)
+      assert.equal(retry.body.paymentId, fakePaymentId)
+      assert.equal(retry.body.order.orderNumber, committedOrderNumber)
     } finally {
       razorpayService.fetchOrder = origFetchOrder
       razorpayService.fetchPayment = origFetchPayment

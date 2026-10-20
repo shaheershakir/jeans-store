@@ -29,7 +29,7 @@ services:
       - HOST=0.0.0.0
       - NODE_ENV=development
       - CORS_ORIGIN=*
-      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/jeans_store}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://neondb_owner:npg_SjvrTG1FI6ep@ep-muddy-mode-b3mdvd86-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@localhost}
       - ADMIN_NAME=${ADMIN_NAME:-Local Administrator}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-local-dev-only-password}

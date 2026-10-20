@@ -208,14 +208,13 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order } = parsed.data
 
   const customer = await getOptionalCustomerClaims(req)
-  if (customer === false) {
-    res.status(401).json({ error: 'Your customer session is invalid or expired. Please sign in again.' })
-    return
-  }
-  if (customer && customer.email !== order.customerEmail.trim().toLowerCase()) {
-    res.status(403).json({ error: 'Checkout email must match the signed-in customer account.' })
-    return
-  }
+  // Payment verification must not depend on a customer session. The payment may
+  // complete after the account token expires while Razorpay is open. Keep the
+  // verified payment and save it as a guest order in that case.
+  const accountCustomer = customer &&
+    customer.email === order.customerEmail.trim().toLowerCase()
+    ? customer
+    : null
 
   const isValid = razorpayService.verifyPaymentSignature({
     razorpay_order_id,
@@ -227,6 +226,40 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
     logger.warn({ razorpay_order_id, razorpay_payment_id }, 'Payment signature verification failed')
     res.status(400).json({ error: 'Invalid payment signature. Verification failed.' })
     return
+  }
+
+  // Razorpay verification can be retried by the client after a network drop or
+  // a page reload. The payment may already be committed, and recalculating the
+  // cart would fail on the stock this order already consumed. Return the
+  // committed order instead of charging ahead with a duplicate.
+  try {
+    const existingPaidOrder = await orderStore.getByRazorpayPaymentId(razorpay_payment_id)
+    if (existingPaidOrder) {
+      if (existingPaidOrder.razorpayOrderId && existingPaidOrder.razorpayOrderId !== razorpay_order_id) {
+        logger.warn(
+          { razorpay_order_id, razorpay_payment_id, orderNumber: existingPaidOrder.orderNumber },
+          'Payment is already linked to a different Razorpay order'
+        )
+        res.status(409).json({ error: 'This payment is already linked to another order.' })
+        return
+      }
+      logger.info(
+        { orderNumber: existingPaidOrder.orderNumber, paymentId: razorpay_payment_id },
+        'Razorpay payment already committed; returning existing order'
+      )
+      res.status(200).json({
+        success: true,
+        order: existingPaidOrder,
+        paymentId: razorpay_payment_id,
+        idempotent: true
+      })
+      return
+    }
+  } catch (err: any) {
+    logger.error(
+      { err, message: err?.message, razorpay_payment_id },
+      'Failed to check for an existing order before committing payment'
+    )
   }
 
   try {
@@ -245,10 +278,33 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
       return
     }
     let userId: number | undefined
-    if (customer) {
-      const user = await userStore.findByEmail(customer.email)
+    if (accountCustomer) {
+      const user = await userStore.findByEmail(accountCustomer.email)
       if (user) userId = user.id
     }
+
+    // A different payment must never be attached to an order number that is
+    // already recorded. Surface the conflict instead of letting the unique
+    // constraint produce a generic commit failure.
+    const existingByNumber = await orderStore.getByOrderNumber(order.orderNumber)
+    if (existingByNumber) {
+      if (existingByNumber.razorpayPaymentId === razorpay_payment_id) {
+        res.status(200).json({
+          success: true,
+          order: existingByNumber,
+          paymentId: razorpay_payment_id,
+          idempotent: true
+        })
+        return
+      }
+      logger.warn(
+        { orderNumber: order.orderNumber, razorpay_payment_id, existingOrderNumber: existingByNumber.orderNumber },
+        'Order number already recorded for a different payment'
+      )
+      res.status(409).json({ error: 'This order number has already been recorded. Please contact support with your payment ID.' })
+      return
+    }
+
     const paymentNote = `Razorpay Payment ID: ${razorpay_payment_id} | Order ID: ${razorpay_order_id}`
     const finalOrder = await orderStore.create({
       ...calculatedOrder,
@@ -289,7 +345,43 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
       paymentId: razorpay_payment_id
     })
   } catch (err: any) {
-    logger.error({ err }, 'Failed to save confirmed order')
+    logger.error(
+      {
+        err,
+        message: err?.message,
+        stack: err?.stack,
+        orderNumber: order.orderNumber,
+        razorpay_order_id,
+        razorpay_payment_id
+      },
+      'Failed to save confirmed order'
+    )
+
+    // The order may have been committed by a concurrent retry between our
+    // idempotency check and the insert (for example a duplicate checkout
+    // handler call). Return that order rather than reporting a false failure.
+    try {
+      const committed = await orderStore.getByRazorpayPaymentId(razorpay_payment_id)
+      if (committed) {
+        logger.info(
+          { orderNumber: committed.orderNumber, paymentId: razorpay_payment_id },
+          'Order was committed by a concurrent verification; returning it'
+        )
+        res.status(200).json({
+          success: true,
+          order: committed,
+          paymentId: razorpay_payment_id,
+          idempotent: true
+        })
+        return
+      }
+    } catch (lookupErr: any) {
+      logger.error(
+        { err: lookupErr, message: lookupErr?.message, razorpay_payment_id },
+        'Failed to look up order after commit error'
+      )
+    }
+
     res.status(500).json({ error: 'Payment received but failed to commit order' })
   }
 })

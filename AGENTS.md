@@ -1,4 +1,4 @@
-﻿# AGENTS.md
+# AGENTS.md
 
 TEESGARAGE is an apparel e-commerce platform structured as a Turborepo monorepo with npm workspaces. The product categories are Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants.
 
@@ -27,6 +27,7 @@ jeans-store/
 All commands can be run from the repository root using Turborepo or npm workspaces:
 
 ### Root Development & Build
+
 ```bash
 npm run dev               # Start all services concurrently (storefront, admin, api)
 npm run build             # Build all apps and packages in topological order
@@ -37,6 +38,7 @@ npm run format            # Run prettier across the codebase
 ```
 
 ### Scoped Commands
+
 ```bash
 # Storefront (apps/storefront)
 npm run dev:storefront    # Local dev server on :3000 with Turbopack
@@ -55,6 +57,7 @@ npm run db:seed           # Seed database with initial products
 ```
 
 ### Local Multi-Container Development (Docker Compose)
+
 ```bash
 docker compose up -d      # Spins up postgres:5432, api:4000, storefront:3000, admin:3001
 ```

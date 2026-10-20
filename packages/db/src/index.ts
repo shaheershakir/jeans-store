@@ -23,7 +23,12 @@ export function maskDatabaseUrl(rawUrl?: string): string {
 
 const databaseUrl = getDatabaseUrl()
 
-export const pool: Pool | null = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null
+export const pool: Pool | null = databaseUrl
+  ? new Pool({
+      connectionString: databaseUrl,
+      ssl: databaseUrl.includes('neon.tech') ? { rejectUnauthorized: false } : undefined
+    })
+  : null
 
 export const db: NodePgDatabase<typeof schema> | null = pool ? drizzle(pool, { schema }) : null
 

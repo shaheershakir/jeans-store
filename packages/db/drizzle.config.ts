@@ -11,6 +11,8 @@ export default defineConfig({
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL || 'postgresql://jeans_store:jeans_store@localhost:5432/jeans_store'
+    url:
+      process.env.DATABASE_URL ||
+      'postgresql://neondb_owner:npg_SjvrTG1FI6ep@ep-muddy-mode-b3mdvd86-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
   }
 })

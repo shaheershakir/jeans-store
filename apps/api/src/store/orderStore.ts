@@ -7,6 +7,7 @@ import {
   orderItems as orderItemsTable,
   orders as ordersTable,
   payments as paymentsTable,
+  productImages as productImagesTable,
   products as productsTable,
   productVariants,
   shipments as shipmentsTable,
@@ -32,20 +33,36 @@ function toOrder(
   eventRows: DbOrderEvent[] = [],
   shipment?: DbShipment,
   payment?: DbPayment,
-  customer?: DbCustomer
+  customer?: DbCustomer,
+  productImageMap?: Map<number, string>
 ): Order {
-  const items: Order['items'] = itemsRows.map((item) => ({
-    id: item.productId ?? 0,
-    variantId: item.variantId ?? undefined,
-    name: item.name,
-    size: item.size,
-    price: formatPrice(item.unitPrice),
-    priceNum: item.unitPrice,
-    sku: item.sku ?? undefined,
-    quantity: item.quantity,
-    weightGrams: item.weightGrams,
-    img: item.imageKey ? assetUrl(item.imageKey) : ((item as any).imageUrl ?? undefined)
-  }))
+  const items: Order['items'] = itemsRows.map((item) => {
+    let img: string | undefined = undefined
+    if (item.imageKey) {
+      img = item.imageKey.startsWith('http://') || item.imageKey.startsWith('https://') || item.imageKey.startsWith('/')
+        ? item.imageKey
+        : assetUrl(item.imageKey)
+    }
+    if (!img && item.productId && productImageMap) {
+      img = productImageMap.get(item.productId)
+    }
+    if (!img) {
+      img = (item as any).imageUrl ?? undefined
+    }
+
+    return {
+      id: item.productId ?? 0,
+      variantId: item.variantId ?? undefined,
+      name: item.name,
+      size: item.size,
+      price: formatPrice(item.unitPrice),
+      priceNum: item.unitPrice,
+      sku: item.sku ?? undefined,
+      quantity: item.quantity,
+      weightGrams: item.weightGrams,
+      img
+    }
+  })
 
   const events = eventRows
     .filter((event) => event.kind === 'status')
@@ -160,6 +177,26 @@ class OrderStore {
       if (!paymentByOrder.has(payment.orderId)) paymentByOrder.set(payment.orderId, payment)
     }
     const customerById = new Map<number, DbCustomer>(allCustomers.map((customer) => [customer.id, customer]))
+    const productIdsWithMissingImages = allItems
+      .filter((item) => item.productId && (!item.imageKey || !item.imageKey.trim()))
+      .map((item) => item.productId!)
+    const uniqueProductIds = [...new Set(productIdsWithMissingImages)]
+
+    const productImages = uniqueProductIds.length > 0
+      ? await db!
+          .select()
+          .from(productImagesTable)
+          .where(inArray(productImagesTable.productId, uniqueProductIds))
+          .orderBy(productImagesTable.position)
+      : []
+
+    const productImageMap = new Map<number, string>()
+    for (const img of productImages) {
+      if (!productImageMap.has(img.productId)) {
+        const resolved = img.externalUrl || (img.storageKey ? assetUrl(img.storageKey) : '')
+        if (resolved) productImageMap.set(img.productId, resolved)
+      }
+    }
 
     return orderRows.map((row) =>
       toOrder(
@@ -168,7 +205,8 @@ class OrderStore {
         eventsByOrder.get(row.id),
         shipmentByOrder.get(row.id),
         paymentByOrder.get(row.id),
-        customerById.get(row.customerId)
+        customerById.get(row.customerId),
+        productImageMap
       )
     )
   }
@@ -185,10 +223,23 @@ class OrderStore {
   async listByCustomerEmail(email: string): Promise<Order[]> {
     const normalizedEmail = email.trim().toLowerCase()
     if (isDatabaseConfigured() && db) {
+      const customerRows = await db
+        .select({ id: customersTable.id })
+        .from(customersTable)
+        .where(sql`lower(${customersTable.email}) = ${normalizedEmail}`)
+      const customerIds = customerRows.map((row) => row.id)
+      const condition =
+        customerIds.length > 0
+          ? or(
+              inArray(ordersTable.customerId, customerIds),
+              sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail}`
+            )
+          : sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail}`
+
       const rows = await db
         .select()
         .from(ordersTable)
-        .where(sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail}`)
+        .where(condition)
         .orderBy(desc(ordersTable.createdAt))
       return this.hydrateOrders(rows)
     }
@@ -251,6 +302,26 @@ class OrderStore {
     }
     if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
     return this.memoryOrders.find((order) => order.orderNumber === orderNumber)
+  }
+
+  /**
+   * Looks up an order by the gateway payment id. Razorpay verification can be
+   * retried by the client (network drop after payment, page reload, duplicate
+   * handler calls), so callers use this to return the already-committed order
+   * instead of creating a second one or decrementing stock twice.
+   */
+  async getByRazorpayPaymentId(gatewayPaymentId: string): Promise<Order | undefined> {
+    if (!gatewayPaymentId) return undefined
+    if (isDatabaseConfigured() && db) {
+      const [payment] = await db
+        .select({ orderId: paymentsTable.orderId })
+        .from(paymentsTable)
+        .where(eq(paymentsTable.gatewayPaymentId, gatewayPaymentId))
+      if (!payment) return undefined
+      return this.getById(payment.orderId)
+    }
+    if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
+    return this.memoryOrders.find((order) => order.razorpayPaymentId === gatewayPaymentId)
   }
 
   private async upsertCustomer(input: CalculatedOrder & { userId?: number }): Promise<number> {
@@ -423,7 +494,7 @@ class OrderStore {
         createdOrderId = row.id
 
         for (const item of input.items) {
-          const imageKey = item.img ? keyFromUrl(item.img) : null
+          const imageKey = item.img ? (keyFromUrl(item.img) || item.img) : null
           await db.insert(orderItemsTable).values({
             orderId: row.id,
             productId: item.id || null,
@@ -588,14 +659,25 @@ class OrderStore {
             .set({ carrier, trackingNumber, status: shipmentStatus, shippedAt, deliveredAt, updatedAt: now })
             .where(eq(shipmentsTable.id, existingShipment.id))
         } else {
-          await db.insert(shipmentsTable).values({
-            orderId: id,
-            carrier,
-            trackingNumber,
-            status: shipmentStatus,
-            shippedAt,
-            deliveredAt
-          })
+          const [byTracking] = await db
+            .select()
+            .from(shipmentsTable)
+            .where(eq(shipmentsTable.trackingNumber, trackingNumber))
+          if (byTracking) {
+            await db
+              .update(shipmentsTable)
+              .set({ orderId: id, carrier, status: shipmentStatus, shippedAt, deliveredAt, updatedAt: now })
+              .where(eq(shipmentsTable.id, byTracking.id))
+          } else {
+            await db.insert(shipmentsTable).values({
+              orderId: id,
+              carrier,
+              trackingNumber,
+              status: shipmentStatus,
+              shippedAt,
+              deliveredAt
+            })
+          }
         }
       }
 
