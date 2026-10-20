@@ -2,21 +2,57 @@
 
 The storefront is moving from a single hand-authored stylesheet to Tailwind CSS v4 utilities in markup.
 
+## Cascade layers (read this first)
+
+`src/app/globals.css` declares the layer order before Tailwind is imported, and wraps the entire
+legacy sheet in a `legacy` layer:
+
+```css
+@layer properties, theme, base, legacy, components, utilities;
+@import 'tailwindcss';
+@import './teesgarage-home.css' layer(legacy);
+
+@theme { /* tokens */ }
+
+@layer legacy {
+  /* the whole legacy stylesheet */
+}
+```
+
+Priority, low to high: `properties`, `theme`, `base` (Preflight), `legacy`, `components`, `utilities`.
+
+This is load-bearing. **Unlayered CSS beats every cascade layer**, regardless of specificity. Before the
+legacy sheet was layered, its `* { margin: 0; padding: 0 }` reset and generic element rules (`a`, `h1`, …)
+silently overrode Tailwind's spacing and typography utilities, so converted components rendered with zero
+padding/margin. Anything new must stay inside `@layer legacy` (or a later layer), never unlayered.
+
+- `@theme` stays outside the layer so Tailwind can read the tokens.
+- `@keyframes`, `@font-face` and `@property` may stay unlayered.
+- Utilities no longer need `!` to beat legacy CSS.
+- The legacy sheet still overrides Preflight, so unconverted pages keep their original look.
+
 ## Current state
 
 | Area | State |
 | --- | --- |
 | Tailwind install | v4.3.3 via `tailwindcss` + `@tailwindcss/postcss` |
 | PostCSS | `apps/storefront/postcss.config.mjs` |
-| Entry point | `@import 'tailwindcss'` at the top of `src/app/globals.css` |
+| Entry point | `@import 'tailwindcss'` in `src/app/globals.css`, inside the layer order above |
 | Design tokens | Exported through `@theme` in `globals.css` (see below) |
-| Legacy CSS | `src/app/globals.css` (~17.8k lines) + `src/app/teesgarage-home.css` |
+| Legacy CSS | `src/app/globals.css` (~17.8k lines) + `src/app/teesgarage-home.css`, both in `@layer legacy` |
 | Converted in wave 1 | `Footer`, `RelatedProducts`, `homepage/CategoryGroups` |
 | Converted in wave 2 | `ProductCard`, `skeletons/ProductCardSkeleton` |
+| Converted in wave 3 | `ProductDetail`, `skeletons/ProductDetailSkeleton`, `StickyPdpBar`, checkout breadcrumbs |
 
-Wave 1 removed 57 CSS rules (footer, related-products and category-group styling). Wave 2 removed 65 rules from the product-card cascade and split the shared `.apple-product-card` selectors so the PDP keeps its shell.
+Wave 1 removed 57 CSS rules (footer, related-products and category-group styling). Wave 2 removed 65 rules
+from the product-card cascade and split the shared `.apple-product-card` selectors so the PDP keeps its
+shell. Wave 3 removed 166 rules (148 PDP rules + 18 press-feedback/disabled leftovers), split the shared
+`.apple-product-card` shell, and pruned the last dead `.pdp-*` entries from shared selector lists. The
+`.pdp-container` entry inside the mixed `:is(...)` focus-visible group is intentionally kept.
 
-Card and footer visual checks were done against a production build at 1440px on `/shop`, `/` and a PDP route.
+Wave 2 also fixed the card media link: the `Link` inside the 4:5 stage is `absolute inset-0` so the
+`h-full` image chain resolves. Without it the link collapsed to `0` height and every `ProductCard` (shop
+grid and related products) showed an empty media area.
 
 ## Token mapping
 
@@ -29,28 +65,41 @@ Card and footer visual checks were done against a production build at 1440px on 
 - Elevation: `shadow-card`, `shadow-panel`, `shadow-drawer`
 - Easing: `ease-brand-out`, `ease-brand-in-out`, `ease-drawer`
 
-Prefer these names over arbitrary values. The matching `:root` variables (`--ink`, `--font-brand`, …) still exist because legacy CSS consumes them; do not remove them until the last rule using them is gone.
+Prefer these names over arbitrary values. The matching `:root` variables (`--ink`, `--font-brand`, …) still
+exist because legacy CSS consumes them; do not remove them until the last rule using them is gone.
 
 ## Conversion rules
 
-1. Read the **final** rule for a selector, not the first. `globals.css` contains several generations of the same component (for example `.site-footer` was defined at three locations and `.product-card` at six). Later rules win.
+1. Read the **final** rule for a selector, not the first. `globals.css` contains several generations of the
+   same component (for example `.site-footer` was defined at three locations and `.product-card` at six).
+   Later rules win.
 2. Keep arbitrary values for one-off geometry (`grid-cols-[minmax(180px,1fr)_...]`, `gap-[clamp(28px,5vw,76px)]`).
 3. Responsive overrides become `max-[820px]:` / `max-[640px]:` utilities that mirror the original media queries.
-4. Delete the CSS rules only after the **last** consumer of the class has moved to utilities. Grep the class across `apps/storefront/src` first.
+4. Delete the CSS rules only after the **last** consumer of the class has moved to utilities. Grep the class
+   across `apps/storefront/src` first.
 5. When a rule is shared by several selectors, split the selector instead of deleting the whole rule.
+6. Preserve computed quirks unless the change is deliberate. `getComputedStyle` beats reading the source —
+   later rules, resets and media queries routinely change the outcome.
+7. Buttons lose the legacy `cursor: pointer`; add `cursor-pointer` (and `disabled:cursor-not-allowed`) back.
+8. Tailwind v4 animates with the `translate` / `scale` / `rotate` properties, not `transform`. Don't "fix" a
+   `transform: none` diff until you have checked those properties.
 
 ## Entangled components (next up)
 
 These reuse class names across files, so they must be converted together or the CSS kept:
 
-- **`ProductDetail` + `ProductDetailSkeleton`**: the PDP still consumes the unprefixed `.product-fav-btn`, `.fav-heart-icon`, `.product-image-container`, `.product-title`, `.product-price`, `.product-wash-label` and `.pdp-*` rules. Convert both together, then delete the generic card leftovers. The `.apple-product-card` shell was deliberately kept for the PDP.
-- **Remaining skeletons**: `AuthSkeleton`, `CheckoutSkeleton`, `HomepageSkeleton`, `OrdersSkeleton`, `ProfileSkeleton`, `ShopSkeleton` reuse page-level classes (`shop-grid`, `apple-profile-*`, `teesgarage-*`), so they follow their host pages. `Skeleton` itself still uses `.apple-skeleton-pulse` / `.skeleton-*` and should be converted with them.
+- **`Header` + `SearchOverlay` + `CartDrawer`**: the header is duplicated in `teesgarage-home.css` and the
+  page-system block; the overlays share `apple-modal-*`, `macy-*` and `search-*` rules.
+- **Remaining skeletons**: `AuthSkeleton`, `CheckoutSkeleton`, `HomepageSkeleton`, `OrdersSkeleton`,
+  `ProfileSkeleton`, `ShopSkeleton` reuse page-level classes (`shop-grid`, `apple-profile-*`,
+  `teesgarage-*`), so they follow their host pages. `Skeleton` itself still uses `.apple-skeleton-pulse` /
+  `.skeleton-*` and should be converted with them.
 
 ## Suggested batches
 
-1. `ProductDetail` + `ProductDetailSkeleton` (delete `.pdp-*` and the remaining generic card rules).
-2. `Header` + `SearchOverlay` + `CartDrawer` (header is duplicated in `teesgarage-home.css` and the 15k-line page-system block).
-3. Shop: `ShopClient` + `ShopSkeleton`.
+1. ~~`ProductDetail` + `ProductDetailSkeleton`~~ (done, wave 3).
+2. `Header` + `SearchOverlay` + `CartDrawer`.
+3. Shop: `CollectionClient` / `ShopClient` + `ShopSkeleton`.
 4. Checkout: `CheckoutClient` + `CheckoutSkeleton`.
 5. Account: `Profile`, `Orders`, `Auth`, `Onboarding` pages and skeletons.
 6. Bag, favorites, search, order confirmation.
@@ -61,6 +110,7 @@ These reuse class names across files, so they must be converted together or the 
 ```bash
 npm run typecheck -w @jeans-store/storefront
 npm run build -w @jeans-store/storefront
+npm run lint -w @jeans-store/storefront
 ```
 
 Check the generated CSS when a utility is suspicious:
@@ -69,4 +119,12 @@ Check the generated CSS when a utility is suspicious:
 Get-ChildItem apps/storefront/.next/static/css | Get-Content -Raw | Select-String 'your-value'
 ```
 
-Visual check per wave: home page, shop grid, PDP, bag drawer, checkout. The footer is on every route, so a broken footer change shows up immediately.
+Visual check per wave: home page, shop grid, PDP, bag drawer, checkout. The footer is on every route, so a
+broken footer change shows up immediately.
+
+For a conversion wave, compare computed styles before and after in headless Chrome at 1440px and 390px,
+keyed by DOM position rather than class name (class names are removed by the conversion). In practice:
+snapshot the old build, convert, snapshot the new build, diff every layout/typography/colour property.
+Screenshots alone are not enough — they miss inherited font sizes, borders and hover constants. Note that
+headless Chrome defaults to `prefers-reduced-motion: reduce`, so legacy animations are frozen in snapshots
+and `backdrop-filter` may serialise as `none`.

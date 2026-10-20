@@ -797,20 +797,23 @@ export default function CheckoutClient({ mode = { type: 'bag' }, checkoutUrl }: 
       <main className="checkout-page">
         <div className="checkout-container">
           <div className="checkout-header">
-            <nav className="pdp-breadcrumb" aria-label="Breadcrumb">
+            <nav
+              className="mb-6 flex items-center gap-2 font-ui text-[11px] font-medium uppercase tracking-[0.025em] text-[#747d80]"
+              aria-label="Breadcrumb"
+            >
               <Link href="/">Home</Link>
-              <span className="crumb-sep">/</span>
+              <span className="text-[#a1a1aa] opacity-40">/</span>
               {isProductMode && product ? (
                 <>
                   <Link href={getProductUrl(product)}>{product.name}</Link>
-                  <span className="crumb-sep">/</span>
-                  <span className="crumb-current">Checkout</span>
+                  <span className="text-[#a1a1aa] opacity-40">/</span>
+                  <span className="max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-[#172126]">Checkout</span>
                 </>
               ) : (
                 <>
                   <Link href="/bag">Shopping Bag</Link>
-                  <span className="crumb-sep">/</span>
-                  <span className="crumb-current">Checkout</span>
+                  <span className="text-[#a1a1aa] opacity-40">/</span>
+                  <span className="max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-[#172126]">Checkout</span>
                 </>
               )}
             </nav>
@@ -1086,20 +1089,23 @@ export default function CheckoutClient({ mode = { type: 'bag' }, checkoutUrl }: 
     <main className="checkout-page">
       <div className="checkout-container">
         <div className="checkout-header">
-          <nav className="pdp-breadcrumb" aria-label="Breadcrumb">
+          <nav
+              className="mb-6 flex items-center gap-2 font-ui text-[11px] font-medium uppercase tracking-[0.025em] text-[#747d80]"
+              aria-label="Breadcrumb"
+            >
             <Link href="/">Home</Link>
-            <span className="crumb-sep">/</span>
+            <span className="text-[#a1a1aa] opacity-40">/</span>
             {isProductMode && product ? (
               <>
                 <Link href={getProductUrl(product)}>{product.name}</Link>
-                <span className="crumb-sep">/</span>
-                <span className="crumb-current">Checkout</span>
+                <span className="text-[#a1a1aa] opacity-40">/</span>
+                <span className="max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-[#172126]">Checkout</span>
               </>
             ) : (
               <>
                 <Link href="/bag">Shopping Bag</Link>
-                <span className="crumb-sep">/</span>
-                <span className="crumb-current">Checkout</span>
+                <span className="text-[#a1a1aa] opacity-40">/</span>
+                <span className="max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-[#172126]">Checkout</span>
               </>
             )}
           </nav>

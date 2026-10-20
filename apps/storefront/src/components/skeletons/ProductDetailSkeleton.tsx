@@ -7,50 +7,51 @@ import Skeleton from './Skeleton'
  */
 export default function ProductDetailSkeleton() {
   return (
-    <div className="skeleton-pdp-wrap" aria-busy="true" aria-label="Loading Product Details">
+    <div
+      className="mx-auto max-w-[1440px] px-[4%] pt-6 pb-[90px]"
+      aria-busy="true"
+      aria-label="Loading Product Details"
+    >
       {/* 1. Breadcrumbs */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 24 }}>
+      <div className="mb-6 flex items-center gap-2">
         <Skeleton width={45} height={12} />
-        <span style={{ color: 'var(--ink-muted, #999)', fontSize: 12 }}>/</span>
+        <span className="text-[12px] text-[#999]">/</span>
         <Skeleton width={40} height={12} />
-        <span style={{ color: 'var(--ink-muted, #999)', fontSize: 12 }}>/</span>
+        <span className="text-[12px] text-[#999]">/</span>
         <Skeleton width={70} height={12} />
-        <span style={{ color: 'var(--ink-muted, #999)', fontSize: 12 }}>/</span>
+        <span className="text-[12px] text-[#999]">/</span>
         <Skeleton width={140} height={12} />
       </div>
 
       {/* 2. Main 2-Column Split: Dual Card System */}
-      <div className="pdp-layout">
+      <div className="grid grid-cols-[1.08fr_0.92fr] items-start gap-[clamp(24px,3.5vw,44px)] max-[1080px]:grid-cols-1 max-[1080px]:gap-7">
         {/* Left Column: Product Showcase Card */}
-        <div className="pdp-showcase-card apple-product-card" style={{ gap: 12 }}>
+        <div className="relative flex min-w-0 flex-col gap-3 overflow-hidden rounded-2xl border border-black/5 bg-[#fbfbfa] p-2 pb-3.5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
           {/* Main Hero Stage */}
-          <div
-            className="pdp-hero-stage product-image-container"
-            style={{ width: '100%', aspectRatio: '4/5', borderRadius: 14, overflow: 'hidden' }}
-          >
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-sm bg-[#f4f4f2]">
             <Skeleton width="100%" height="100%" />
           </div>
         </div>
 
         {/* Right Column: Product Detail Card */}
-        <div className="pdp-details-card apple-product-card" style={{ gap: 16 }}>
+        <div className="relative flex min-w-0 flex-col gap-4 overflow-hidden rounded-2xl border border-black/5 bg-[#fbfbfa] p-2 pb-3.5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
           {/* Overline & title */}
           <div>
-            <Skeleton width={90} height={12} style={{ marginBottom: 10 }} />
-            <Skeleton width="92%" height={32} style={{ marginBottom: 8 }} />
-            <Skeleton width="65%" height={32} style={{ marginBottom: 14 }} />
+            <Skeleton width={90} height={12} className="mb-2.5" />
+            <Skeleton width="92%" height={32} className="mb-2" />
+            <Skeleton width="65%" height={32} className="mb-3.5" />
 
             {/* Price & Stock row */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="flex items-center justify-between">
               <Skeleton width={110} height={28} />
               <Skeleton variant="pill" width={140} height={24} />
             </div>
           </div>
 
-          <div style={{ height: 1, backgroundColor: 'rgba(0,0,0,0.06)', margin: '4px 0' }} />
+          <div className="my-1 h-px bg-black/[0.06]" />
 
           {/* Description narrative */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="flex flex-col gap-2">
             <Skeleton width="100%" height={14} />
             <Skeleton width="95%" height={14} />
             <Skeleton width="80%" height={14} />
@@ -58,11 +59,11 @@ export default function ProductDetailSkeleton() {
 
           {/* Color / Wash Swatches */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div className="mb-2.5 flex justify-between">
               <Skeleton width={110} height={14} />
               <Skeleton width={90} height={14} />
             </div>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div className="flex gap-2.5">
               {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} variant="circular" width={24} height={24} />
               ))}
@@ -71,39 +72,25 @@ export default function ProductDetailSkeleton() {
 
           {/* Sizing Section */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div className="mb-3 flex items-center justify-between">
               <Skeleton width={120} height={14} />
               <Skeleton width={85} height={14} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+            <div className="grid grid-cols-5 gap-2">
               {['XS', 'S', 'M', 'L', 'XL'].map((_, i) => (
-                <Skeleton
-                  key={i}
-                  width="100%"
-                  height={48}
-                  style={{ borderRadius: 10 }}
-                />
+                <Skeleton key={i} width="100%" height={48} className="rounded-[2px]" />
               ))}
             </div>
           </div>
 
           {/* Action CTAs */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-            <Skeleton width="100%" height={52} style={{ borderRadius: 12 }} />
-            <Skeleton width="100%" height={48} style={{ borderRadius: 12 }} />
+          <div className="mt-1 flex flex-col gap-2.5">
+            <Skeleton width="100%" height={48} className="rounded-[2px]" />
+            <Skeleton width="100%" height={48} className="rounded-[2px]" />
           </div>
 
           {/* Shipping & Delivery Guarantee box */}
-          <div
-            style={{
-              padding: '16px 18px',
-              backgroundColor: '#f4f3ee',
-              borderRadius: 14,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12
-            }}
-          >
+          <div className="flex flex-col gap-3 rounded-[14px] border border-black/5 bg-[#f4f3ee] px-[18px] py-4">
             <Skeleton width="75%" height={14} />
             <Skeleton width="60%" height={12} />
           </div>

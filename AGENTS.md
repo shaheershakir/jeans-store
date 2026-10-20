@@ -77,7 +77,7 @@ docker compose up -d      # Spins up postgres:5432, api:4000, storefront:3000, a
 
 - **Windows dev server**: Spawning individual dev servers from Windows shells requires `cmd /c npm run dev` if node subshell spawning fails.
 - **Path aliases**: Storefront and Admin resolve `@/*` to `./src/*`, plus direct workspace package paths (`@jeans-store/*`).
-- **Styling**: `apps/storefront` is migrating to Tailwind CSS v4 (configured in `postcss.config.mjs`, tokens in `@theme` at `src/app/globals.css`). Legacy component CSS still lives in `globals.css`; convert rule-by-rule, delete a rule only after its last consumer moves to utilities, and follow `docs/STOREFRONT_TAILWIND_MIGRATION.md`. `apps/admin` uses Tailwind CSS v4.
+- **Styling**: `apps/storefront` is migrating to Tailwind CSS v4 (configured in `postcss.config.mjs`, tokens in `@theme` at `src/app/globals.css`). Legacy component CSS still lives in `globals.css` but is wrapped in `@layer legacy`, between Preflight and `utilities` — never add unlayered rules there or they will override every utility. Convert rule-by-rule, delete a rule only after its last consumer moves to utilities, and follow `docs/STOREFRONT_TAILWIND_MIGRATION.md`. `apps/admin` uses Tailwind CSS v4.
 - **Unsplash Images**: `images.unsplash.com` and `storage.googleapis.com` are allowed in `next.config.ts`.
 
 <!-- BEGIN:turborepo-agent-rules -->

@@ -238,7 +238,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
         <Link
           href={getProductUrl(product)}
-          className="relative block w-full"
+          className="absolute inset-0 block h-full w-full"
           aria-label={product.name}
           onClick={handleCardClick}
         >
