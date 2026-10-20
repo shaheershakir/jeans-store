@@ -26,7 +26,7 @@ const ACCOUNT_NAV_LINKS = [
   { label: 'My Account', href: '/profile', Icon: User, id: 'account' },
   { label: 'Orders', href: '/orders', Icon: Package, id: 'orders' },
   { label: 'Wishlist', href: '/wishlist', Icon: Heart, id: 'wishlist' },
-  { label: 'Addresses', href: '/profile?tab=addresses', Icon: MapPin, id: 'addresses' },
+  { label: 'Addresses', href: '/addresses', Icon: MapPin, id: 'addresses' },
   { label: 'Payment Methods', href: '/profile?tab=payment', Icon: CreditCard, id: 'payment' },
   { label: 'Account Settings', href: '/profile?tab=settings', Icon: Settings, id: 'settings' },
 ]
