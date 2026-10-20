@@ -28,7 +28,7 @@ const ACCOUNT_NAV_LINKS = [
   { label: 'Wishlist', href: '/wishlist', Icon: Heart, id: 'wishlist' },
   { label: 'Addresses', href: '/addresses', Icon: MapPin, id: 'addresses' },
   { label: 'Payment Methods', href: '/profile?tab=payment', Icon: CreditCard, id: 'payment' },
-  { label: 'Account Settings', href: '/profile?tab=settings', Icon: Settings, id: 'settings' },
+  { label: 'Account Settings', href: '/settings', Icon: Settings, id: 'settings' },
 ]
 
 // ─── Wishlist Items Matching Mockup 1:1 ───────────────────────────────────────
