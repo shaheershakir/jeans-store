@@ -1,0 +1,2 @@
+ALTER TABLE "products" ALTER COLUMN "tax_rate" TYPE real USING CASE WHEN "tax_rate" > 1 THEN "tax_rate" / 100.0 ELSE "tax_rate"::real END;--> statement-breakpoint
+ALTER TABLE "products" ALTER COLUMN "tax_rate" SET DEFAULT 0;

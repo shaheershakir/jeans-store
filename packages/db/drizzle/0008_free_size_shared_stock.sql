@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "is_free_size" boolean DEFAULT false NOT NULL;

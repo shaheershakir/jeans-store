@@ -7,6 +7,7 @@ import {
   orderItems as orderItemsTable,
   orders as ordersTable,
   payments as paymentsTable,
+  products as productsTable,
   productVariants,
   shipments as shipmentsTable,
   type DbCustomer,
@@ -331,11 +332,26 @@ class OrderStore {
 
     if (isDatabaseConfigured() && db) {
       const decremented: Array<{ variantId: number; quantity: number }> = []
+      const freeSizeQuantities = new Map<number, { quantity: number; name: string; size: string }>()
       let createdOrderId: number | null = null
 
       try {
         for (const item of input.items) {
           if (!item.variantId) throw new Error(`A saved product variant is required for ${item.name}.`)
+          const [product] = await db
+            .select({ isFreeSize: productsTable.isFreeSize })
+            .from(productsTable)
+            .where(eq(productsTable.id, item.id))
+          if (product?.isFreeSize) {
+            const current = freeSizeQuantities.get(item.id)
+            freeSizeQuantities.set(item.id, {
+              quantity: (current?.quantity ?? 0) + item.quantity,
+              name: item.name,
+              size: item.size
+            })
+            continue
+          }
+
           const [variant] = await db
             .update(productVariants)
             .set({ stock: sql`${productVariants.stock} - ${item.quantity}`, updatedAt: createdAt })
@@ -348,6 +364,32 @@ class OrderStore {
             .returning({ id: productVariants.id })
           if (!variant) throw new Error(`Insufficient stock for ${item.name} (${item.size}).`)
           decremented.push({ variantId: item.variantId, quantity: item.quantity })
+        }
+
+        for (const [productId, shared] of freeSizeQuantities) {
+          const updatedVariants = await db.transaction(async (tx) => {
+            const variantRows = await tx
+              .select({ id: productVariants.id })
+              .from(productVariants)
+              .where(eq(productVariants.productId, productId))
+            if (variantRows.length === 0) throw new Error(`${shared.name} has no available size variants.`)
+
+            const updated = await tx
+              .update(productVariants)
+              .set({ stock: sql`${productVariants.stock} - ${shared.quantity}`, updatedAt: createdAt })
+              .where(
+                and(
+                  eq(productVariants.productId, productId),
+                  sql`${productVariants.stock} - ${productVariants.reserved} >= ${shared.quantity}`
+                )
+              )
+              .returning({ id: productVariants.id })
+            if (updated.length !== variantRows.length) {
+              throw new Error(`${shared.name} (${shared.size}) does not have enough shared stock.`)
+            }
+            return updated
+          })
+          decremented.push(...updatedVariants.map((variant) => ({ variantId: variant.id, quantity: shared.quantity })))
         }
 
         const customerId = await this.upsertCustomer(input)

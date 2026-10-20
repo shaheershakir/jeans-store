@@ -50,6 +50,20 @@
       "when": 1792449904299,
       "tag": "0006_dashing_the_executioner",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792510000000,
+      "tag": "0007_product_tax_rate_fraction",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792596400000,
+      "tag": "0008_free_size_shared_stock",
+      "breakpoints": true
     }
   ]
 }

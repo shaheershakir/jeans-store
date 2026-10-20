@@ -71,6 +71,7 @@ export interface Product {
   taxRate: number
   status: ProductStatus
   featured: boolean
+  isFreeSize?: boolean
   weightGrams?: number
   views: number
   wishlists: number

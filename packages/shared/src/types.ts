@@ -59,6 +59,7 @@ export interface Product {
   taxRate?: number
   hsnCode?: string
   isFeatured?: boolean
+  isFreeSize?: boolean
   careInstructions?: string
   img: string
   img2: string

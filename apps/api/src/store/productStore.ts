@@ -184,8 +184,10 @@ export function toProduct(
   const firstVariant = variants[0]
   const adminData: Record<string, unknown> = {
     status: adminStatus(normalizeStatus(row.status)),
+    collectionId: row.collectionId,
     weightGrams: row.weightGrams,
     isFeatured: row.isFeatured,
+    isFreeSize: row.isFreeSize,
     compareAtPrice: row.compareAtPrice,
     costPrice: row.costPrice,
     taxRate: row.taxRate,
@@ -212,6 +214,7 @@ export function toProduct(
     taxRate: row.taxRate,
     hsnCode: row.hsnCode ?? undefined,
     isFeatured: row.isFeatured,
+    isFreeSize: row.isFreeSize,
     careInstructions: row.careInstructions ?? undefined,
     img: urls[0] ?? FALLBACK_IMAGE,
     img2: urls[1] ?? urls[0] ?? FALLBACK_IMAGE,
@@ -462,14 +465,20 @@ export class ProductStore {
     return currentProductId === undefined || ownerProductId !== currentProductId
   }
 
-  async generateSku(components: SkuComponents): Promise<string> {
+  async generateSku(components: SkuComponents, reservedSkus: string[] = []): Promise<string> {
     const baseSku = generateBaseSku(components)
-    const claimed = await this.isSkuClaimedByOtherProduct(
-      baseSku,
-      components.productId ? Number(components.productId) : undefined
-    )
+    const reserved = new Set(reservedSkus.map((sku) => sku.toUpperCase()))
+    const isTaken = async (sku: string) => reserved.has(sku.toUpperCase()) || this.isSkuClaimedByOtherProduct(sku)
+    const claimed = await isTaken(baseSku)
     if (!claimed) return baseSku
-    return generateProductScopedSku(components)
+
+    const scopedSku = generateProductScopedSku(components)
+    if (!(await isTaken(scopedSku))) return scopedSku
+
+    for (let suffix = 2; ; suffix++) {
+      const candidate = `${scopedSku}-${suffix}`
+      if (!(await isTaken(candidate))) return candidate
+    }
   }
 
   async list(filters?: {
@@ -585,6 +594,39 @@ export class ProductStore {
 
   async adjustStock(variantId: number, delta: number): Promise<Variant> {
     if (isDatabaseConfigured() && db) {
+      const [target] = await db
+        .select({ productId: productVariantsTable.productId, isFreeSize: productsTable.isFreeSize })
+        .from(productVariantsTable)
+        .innerJoin(productsTable, eq(productsTable.id, productVariantsTable.productId))
+        .where(eq(productVariantsTable.id, variantId))
+      if (!target) throw new Error('Variant not found.')
+
+      if (target.isFreeSize) {
+        const rows = await db.transaction(async (tx) => {
+          const updated = await tx
+            .update(productVariantsTable)
+            .set({ stock: sql`${productVariantsTable.stock} + ${delta}`, updatedAt: new Date() })
+            .where(
+              and(
+                eq(productVariantsTable.productId, target.productId),
+                sql`${productVariantsTable.stock} + ${delta} >= ${productVariantsTable.reserved}`
+              )
+            )
+            .returning()
+          const existing = await tx
+            .select({ id: productVariantsTable.id })
+            .from(productVariantsTable)
+            .where(eq(productVariantsTable.productId, target.productId))
+          if (updated.length !== existing.length) {
+            throw new Error('Shared stock adjustment would reduce stock below reserved units.')
+          }
+          return updated
+        })
+        const updatedTarget = rows.find((row) => row.id === variantId)
+        if (!updatedTarget) throw new Error('Variant not found.')
+        return variantFromRow(updatedTarget)
+      }
+
       const [row] = await db
         .update(productVariantsTable)
         .set({ stock: sql`${productVariantsTable.stock} + ${delta}`, updatedAt: new Date() })
@@ -602,9 +644,16 @@ export class ProductStore {
     if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
     const variant = this.memoryVariants.find((item) => item.id === variantId)
     if (!variant) throw new Error('Variant not found.')
-    if (variant.stock + delta < variant.reserved) {
-      throw new Error('Adjustment would reduce stock below reserved units.')
+    const product = this.memoryProducts.find((item) => item.id === variant.productId)
+    if (product?.isFreeSize) {
+      const variants = this.memoryVariants.filter((item) => item.productId === product.id)
+      if (variants.some((item) => item.stock + delta < item.reserved)) {
+        throw new Error('Shared stock adjustment would reduce stock below reserved units.')
+      }
+      for (const item of variants) item.stock += delta
+      return { ...variant }
     }
+    if (variant.stock + delta < variant.reserved) throw new Error('Adjustment would reduce stock below reserved units.')
     variant.stock += delta
     return { ...variant }
   }
@@ -654,6 +703,7 @@ export class ProductStore {
   private productColumns(input: CreateProduct, _attributes: Record<string, unknown>, weightGrams: number) {
     const adminData = (input.adminData ?? {}) as Record<string, any>
     return {
+      ...(input.collectionId !== undefined ? { collectionId: input.collectionId } : {}),
       price: input.priceNum,
       compareAtPrice: input.compareAtPrice ?? adminData.compareAtPrice ?? null,
       costPrice: input.costPrice ?? adminData.costPrice ?? null,
@@ -661,6 +711,7 @@ export class ProductStore {
       hsnCode: input.hsnCode ?? adminData.hsnCode ?? null,
       badge: input.badge ?? null,
       isFeatured: input.isFeatured ?? Boolean(adminData.featured) ?? false,
+      isFreeSize: input.isFreeSize ?? Boolean(adminData.isFreeSize),
       weightGrams,
       careInstructions: input.careInstructions ?? (adminData.careInstructions as string) ?? null
     }
@@ -763,6 +814,7 @@ export class ProductStore {
       const createdProduct: Product = {
         ...input,
         id: newProductId,
+        isFreeSize: input.isFreeSize ?? false,
         category: rawCategory as Category,
         categoryId,
         slug,
@@ -792,6 +844,7 @@ export class ProductStore {
   ): Promise<ReadyVariant[]> {
     const seenCombos = new Set<string>()
     const variantsToInsert: ReadyVariant[] = []
+    const sharedStock = input.isFreeSize ? rawVariants[0]?.stock ?? 20 : undefined
 
     for (const variant of rawVariants) {
       const color = String(variant.color || 'Black').trim()
@@ -804,24 +857,15 @@ export class ProductStore {
       }
       seenCombos.add(comboKey)
 
-      let sku = variant.sku?.trim().toUpperCase()
-      if (!sku) {
-        sku = await this.generateSku({
-          category: input.category || 'printed-tees',
-          productType: (input as any).fit || (input as any).productType || 'Regular',
-          color,
-          size,
-          productId
-        })
-      } else if (await this.isSkuClaimedByOtherProduct(sku, productId)) {
-        sku = await this.generateSku({
-          category: input.category || 'printed-tees',
-          productType: (input as any).fit || (input as any).productType || 'Regular',
-          color,
-          size,
-          productId
-        })
-      }
+      // The API owns SKU assignment so every new variant follows the same
+      // collision rules, regardless of which admin client created it.
+      const sku = await this.generateSku({
+        category: input.category || 'printed-tees',
+        productType: (input as any).fit || (input as any).productType || 'Regular',
+        color,
+        size,
+        productId
+      }, variantsToInsert.map((item) => item.sku))
 
       if (!isDatabaseConfigured() || !db) {
         this.memoryClaimedSkus.set(sku, productId)
@@ -834,7 +878,7 @@ export class ProductStore {
         size,
         color,
         price: variant.price ?? input.priceNum,
-        stock: variant.stock ?? 20,
+        stock: sharedStock ?? variant.stock ?? 20,
         reserved: variant.reserved ?? 0,
         reorderPoint: variant.reorderPoint ?? 5,
         weight: variant.weight ?? productWeight,
@@ -924,6 +968,7 @@ export class ProductStore {
       if (patch.taxRate !== undefined) updateData.taxRate = patch.taxRate
       if (patch.hsnCode !== undefined) updateData.hsnCode = patch.hsnCode
       if (patch.isFeatured !== undefined) updateData.isFeatured = patch.isFeatured
+      if (patch.isFreeSize !== undefined) updateData.isFreeSize = patch.isFreeSize
       if (patch.careInstructions !== undefined) updateData.careInstructions = patch.careInstructions
 
       await db.update(productsTable).set(updateData).where(eq(productsTable.id, id))
@@ -951,6 +996,7 @@ export class ProductStore {
       ...existing,
       ...patch,
       id,
+      isFreeSize: patch.isFreeSize ?? existing.isFreeSize ?? false,
       category: (patch.category as Category) || existing.category,
       categoryId,
       slug,
@@ -979,28 +1025,40 @@ export class ProductStore {
       }
 
       const newVariants: Variant[] = []
+      const useSharedStock = patch.isFreeSize ?? existing.isFreeSize ?? false
+      const sharedStock = useSharedStock ? patch.variants[0]?.stock ?? existingForProduct[0]?.stock ?? 0 : undefined
       for (const variant of patch.variants) {
         const color = String(variant.color).trim()
         const size = String(variant.size).trim()
         if (variant.id && existingById.has(variant.id)) {
           const current = existingById.get(variant.id)!
+          const sku =
+            color.toLowerCase() === current.color.toLowerCase() &&
+            size.toUpperCase() === current.size.toUpperCase() &&
+            (patch.category === undefined || patch.category === existing.category)
+              ? current.sku
+              : await this.generateSku({
+                  category: patch.category || existing.category || 'printed-tees',
+                  productType: (patch as any).fit || (patch as any).productType || 'Regular',
+                  color,
+                  size,
+                  productId: id
+                })
           newVariants.push({
             ...current,
             ...variant,
-            sku: variant.sku?.trim().toUpperCase() || current.sku,
+            sku,
             size,
             color
           })
         } else {
-          const sku =
-            variant.sku?.trim().toUpperCase() ||
-            (await this.generateSku({
-              category: patch.category || existing.category || 'printed-tees',
-              productType: (patch as any).fit || (patch as any).productType || 'Regular',
-              color,
-              size,
-              productId: id
-            }))
+          const sku = await this.generateSku({
+            category: patch.category || existing.category || 'printed-tees',
+            productType: (patch as any).fit || (patch as any).productType || 'Regular',
+            color,
+            size,
+            productId: id
+          })
           newVariants.push({
             id: this.memoryVariants.length + newVariants.length + 1,
             productId: id,
@@ -1008,7 +1066,7 @@ export class ProductStore {
             size,
             color,
             price: variant.price ?? patch.priceNum ?? existing.priceNum,
-            stock: variant.stock ?? 20,
+            stock: sharedStock ?? variant.stock ?? 20,
             reserved: 0,
             reorderPoint: variant.reorderPoint ?? 5,
             weight: variant.weight ?? existing.weightGrams ?? 350,
@@ -1072,6 +1130,8 @@ export class ProductStore {
     const existingById = new Map(existingDbVariants.map((variant) => [variant.id, variant]))
     const updatedIds = new Set<number>()
     const newProductPrice = patch.priceNum ?? existing.priceNum
+    const useSharedStock = patch.isFreeSize ?? existing.isFreeSize ?? false
+    const sharedStock = useSharedStock ? patch.variants![0]?.stock ?? existingDbVariants[0]?.stock ?? 0 : undefined
 
     for (const variant of patch.variants!) {
       const color = String(variant.color).trim()
@@ -1082,14 +1142,26 @@ export class ProductStore {
       if (variant.id && existingById.has(variant.id)) {
         const current = existingById.get(variant.id)!
         updatedIds.add(variant.id)
+        const sku =
+          color.toLowerCase() === current.color.toLowerCase() &&
+          size.toUpperCase() === current.size.toUpperCase() &&
+          (patch.category === undefined || patch.category === existing.category)
+            ? current.sku
+            : await this.generateSku({
+                category: patch.category || existing.category || 'printed-tees',
+                productType: (patch as any).fit || (patch as any).productType || 'Regular',
+                color,
+                size,
+                productId: id
+              })
         await db!
           .update(productVariantsTable)
           .set({
-            sku: variant.sku?.trim().toUpperCase() || current.sku,
+            sku,
             size,
             color,
             price: price !== newProductPrice ? price : null,
-            stock: variant.stock ?? current.stock,
+            stock: sharedStock ?? variant.stock ?? current.stock,
             reorderPoint: variant.reorderPoint ?? current.reorderPoint,
             weightGrams: weight !== productWeight ? weight : null,
             barcode: variant.barcode ?? current.barcode,
@@ -1098,15 +1170,13 @@ export class ProductStore {
           })
           .where(eq(productVariantsTable.id, variant.id))
       } else {
-        const sku =
-          variant.sku?.trim().toUpperCase() ||
-          (await this.generateSku({
-            category: patch.category || existing.category || 'printed-tees',
-            productType: (patch as any).fit || (patch as any).productType || 'Regular',
-            color,
-            size,
-            productId: id
-          }))
+        const sku = await this.generateSku({
+          category: patch.category || existing.category || 'printed-tees',
+          productType: (patch as any).fit || (patch as any).productType || 'Regular',
+          color,
+          size,
+          productId: id
+        })
         const [created] = await db!
           .insert(productVariantsTable)
           .values({
@@ -1115,7 +1185,7 @@ export class ProductStore {
             size,
             color,
             price: price !== newProductPrice ? price : null,
-            stock: variant.stock ?? 20,
+            stock: sharedStock ?? variant.stock ?? 20,
             reserved: 0,
             reorderPoint: variant.reorderPoint ?? 5,
             weightGrams: weight !== productWeight ? weight : null,

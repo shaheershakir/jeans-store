@@ -4,13 +4,13 @@ import * as React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ImagePlus, LoaderCircle, Plus, RefreshCw, Trash2, UploadCloud } from 'lucide-react'
+import { ArrowLeft, ImagePlus, LoaderCircle, Plus, Trash2, UploadCloud } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
 import { createProduct, deleteProduct, updateProduct, uploadProductImage } from '@/services/catalog'
 import { Button, Card, CardHeader, Field, Input, Select, Textarea, Checkbox } from '@/components/ui/primitives'
 import { toastError, toastSuccess } from '@/components/ui/toast'
 import type { Product, ProductStatus } from '@/lib/types'
-import { generateBaseSku, fetchBackendSkuPreview } from '@/lib/sku'
+import { generateBaseSku } from '@/lib/sku'
 
 interface VariantRow {
   id?: number
@@ -22,7 +22,6 @@ interface VariantRow {
   reorderPoint: number
   weight: number
   barcode: string
-  isCustomSku: boolean
 }
 
 const APPAREL_CATEGORIES = [
@@ -59,7 +58,6 @@ function makeVariant(size: string, categorySlug: string, price: number, weight: 
     reorderPoint: 5,
     weight,
     barcode: BARCODE(),
-    isCustomSku: false,
   }
 }
 
@@ -73,7 +71,6 @@ export function ProductForm({ product }: { product?: Product }) {
   const initialWeight = product?.weightGrams ?? defaultWeight(initialCategorySlug)
   const [name, setName] = React.useState(product?.name ?? '')
   const [slug, setSlug] = React.useState(product?.slug ?? '')
-  const [sku, setSku] = React.useState(product?.sku ?? '')
   const [description, setDescription] = React.useState(product?.description ?? '')
   const [categoryId, setCategoryId] = React.useState(product?.categoryId ?? categories.find((category) => category.slug === 'printed-tees')?.id ?? categories[0]?.id ?? 1)
   const [collectionId, setCollectionId] = React.useState(product?.collectionId ?? collections[0]?.id ?? 1)
@@ -84,6 +81,7 @@ export function ProductForm({ product }: { product?: Product }) {
   const [taxRate, setTaxRate] = React.useState(product?.taxRate ?? 0.05)
   const [status, setStatus] = React.useState<ProductStatus>(product?.status ?? 'Draft')
   const [featured, setFeatured] = React.useState(product?.featured ?? false)
+  const [isFreeSize, setIsFreeSize] = React.useState(product?.isFreeSize ?? false)
   const [image, setImage] = React.useState(product?.image ?? '')
   const [image2, setImage2] = React.useState(product?.images[1]?.url ?? '')
   const [uploading, setUploading] = React.useState<'primary' | 'secondary' | null>(null)
@@ -104,7 +102,6 @@ export function ProductForm({ product }: { product?: Product }) {
         reorderPoint: variant.reorderPoint,
         weight: variant.weight || initialWeight,
         barcode: variant.barcode,
-        isCustomSku: false,
       }))
     }
     const defaults = isBottomwear(initialCategorySlug) ? ['30', '32', '34', '36', '38'] : ['S', 'M', 'L', 'XL', 'XXL']
@@ -115,7 +112,7 @@ export function ProductForm({ product }: { product?: Product }) {
     setVariants((current) => current.map((variant, rowIndex) => {
       if (rowIndex !== index) return variant
       const next = { ...variant, ...patch }
-      if ((patch.size !== undefined || patch.color !== undefined) && !variant.isCustomSku && variant.id === undefined) {
+      if (patch.size !== undefined || patch.color !== undefined) {
         next.sku = generateBaseSku({
           category: categorySlug,
           productType: 'Regular',
@@ -123,9 +120,18 @@ export function ProductForm({ product }: { product?: Product }) {
           size: next.size,
         })
       }
-      if (patch.sku !== undefined && patch.isCustomSku === undefined) next.isCustomSku = true
       return next
     }))
+  }
+
+  const handleFreeSizeChange = (checked: boolean) => {
+    setIsFreeSize(checked)
+    if (checked) {
+      setVariants((current) => {
+        const sharedStock = current[0]?.stock ?? 0
+        return current.map((variant) => ({ ...variant, stock: sharedStock }))
+      })
+    }
   }
 
   const handleCategoryChange = (nextId: number) => {
@@ -140,7 +146,7 @@ export function ProductForm({ product }: { product?: Product }) {
         ...variant,
         size,
         weight: nextWeight,
-        sku: variant.isCustomSku ? variant.sku : generateBaseSku({ category: nextCategory, productType: 'Regular', color: variant.color, size }),
+        sku: generateBaseSku({ category: nextCategory, productType: 'Regular', color: variant.color, size }),
       }
     }))
   }
@@ -170,19 +176,10 @@ export function ProductForm({ product }: { product?: Product }) {
   const addVariant = () => {
     const existing = new Set(variants.map((variant) => variant.size))
     const nextSize = sizeOptions.find((size) => !existing.has(size)) ?? ''
-    setVariants((current) => [...current, makeVariant(nextSize, categorySlug, price, weightGrams)])
-  }
-
-  const regenerateSku = async (index: number) => {
-    const variant = variants[index]
-    if (!variant) return
-    try {
-      const nextSku = await fetchBackendSkuPreview({ category: categorySlug, productType: 'Regular', color: variant.color, size: variant.size, productId: product?.id })
-      updateVariant(index, { sku: nextSku, isCustomSku: false })
-      toastSuccess(`SKU updated: ${nextSku}`)
-    } catch (error) {
-      toastError(error instanceof Error ? error.message : 'Could not generate SKU.')
-    }
+    setVariants((current) => [
+      ...current,
+      { ...makeVariant(nextSize, categorySlug, price, weightGrams), stock: isFreeSize ? current[0]?.stock ?? 0 : 0 }
+    ])
   }
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -202,17 +199,16 @@ export function ProductForm({ product }: { product?: Product }) {
     try {
       setSubmitting(true)
       const cleanSlug = slug.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-      const masterSku = sku.trim() || generateBaseSku({ category: categorySlug, productType: 'Regular', color: 'BASE', size: 'BASE' }).replace('-BASE-BASE', '')
       const input = {
         id: product?.id,
-        name: name.trim(), slug: cleanSlug, sku: masterSku, description: description.trim(),
+        name: name.trim(), slug: cleanSlug, sku: variants[0]?.sku ?? '', description: description.trim(),
         categoryId: Number(categoryId), collectionId: Number(collectionId),
         price: Number(price), compareAtPrice: compareAtPrice === '' ? null : Number(compareAtPrice),
-        costPrice: Number(costPrice), taxRate: Number(taxRate), status, featured, weightGrams: Number(weightGrams),
+        costPrice: Number(costPrice), taxRate: Number(taxRate), status, featured, isFreeSize, weightGrams: Number(weightGrams),
         image, images: [{ url: image, alt: `${name} product photo` }, ...(image2 ? [{ url: image2, alt: `${name} alternate view` }] : [])],
         variants: variants.map((variant) => ({
-          id: variant.id, size: variant.size.trim(), color: variant.color.trim(), sku: variant.sku.trim(),
-          price: Number(variant.price || price), stock: Math.max(0, Number(variant.stock)),
+          id: variant.id, size: variant.size.trim(), color: variant.color.trim(),
+          price: Number(variant.price || price), stock: Math.max(0, Number(isFreeSize ? variants[0]?.stock ?? variant.stock : variant.stock)),
           reorderPoint: Math.max(0, Number(variant.reorderPoint)), weight: Number(weightGrams), barcode: variant.barcode, status: 'Active' as const,
         })),
       }
@@ -262,7 +258,6 @@ export function ProductForm({ product }: { product?: Product }) {
               <Field label="Product name" required><Input required value={name} onChange={(event) => { setName(event.target.value); if (!isEdit && !slug) setSlug(event.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')) }} placeholder="e.g. Contrast Ringer Tee" /></Field>
               <Field label="Category" required><Select value={categoryId} onChange={(event) => handleCategoryChange(Number(event.target.value))}>{APPAREL_CATEGORIES.map((option) => { const match = categories.find((item) => item.slug === option.slug); return match ? <option key={match.id} value={match.id}>{option.name}</option> : null })}</Select></Field>
               <Field label="Product slug"><Input value={slug} onChange={(event) => setSlug(event.target.value)} placeholder="auto-generated-from-name" /></Field>
-              <Field label="Product SKU prefix"><Input value={sku} onChange={(event) => setSku(event.target.value.toUpperCase())} placeholder="Auto-generated if blank" /></Field>
             </div>
             <Field label="Description"><Textarea rows={4} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the garment construction, fabric, and care." /></Field>
           </Card>
@@ -281,12 +276,20 @@ export function ProductForm({ product }: { product?: Product }) {
               <div><h3 className="text-sm font-semibold">Size and color variants</h3><p className="text-xs text-muted-foreground">Apparel sizes are suggested by category; you can enter a custom size.</p></div>
               <Button type="button" variant="secondary" size="sm" onClick={addVariant}><Plus className="h-4 w-4" /> Add size</Button>
             </div>
+            <label className="flex items-start gap-2 rounded-md border border-border p-3 text-sm">
+              <Checkbox checked={isFreeSize} onChange={(event) => handleFreeSizeChange(event.target.checked)} />
+              <span><span className="font-medium">Free size with shared stock</span><span className="mt-1 block text-xs text-muted-foreground">Keep these size variants. Every size uses the same stock count, and each order reduces stock for all sizes.</span></span>
+            </label>
             <div className="space-y-3">
               {variants.map((variant, index) => <div key={`${variant.id ?? 'new'}-${index}`} className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-[1fr_1fr_1.4fr_100px_100px_40px] sm:items-end">
                 <Field label="Size"><Input list={`sizes-${index}`} value={variant.size} onChange={(event) => updateVariant(index, { size: event.target.value })} placeholder={isBottomwear(categorySlug) ? '32' : 'M'} /><datalist id={`sizes-${index}`}>{sizeOptions.map((option) => <option key={option} value={option} />)}</datalist></Field>
                 <Field label="Color"><Select value={variant.color} onChange={(event) => updateVariant(index, { color: event.target.value })}>{COLORS.map((color) => <option key={color}>{color}</option>)}</Select></Field>
-                <Field label="Variant SKU"><div className="flex gap-1"><Input className="font-mono text-xs" value={variant.sku} onChange={(event) => updateVariant(index, { sku: event.target.value })} /><Button type="button" variant="ghost" size="icon" aria-label="Regenerate SKU" onClick={() => void regenerateSku(index)}><RefreshCw className="h-4 w-4" /></Button></div></Field>
-                <Field label="Stock"><Input min={0} type="number" value={variant.stock} onChange={(event) => updateVariant(index, { stock: Number(event.target.value) })} /></Field>
+                <Field label="Variant SKU"><Input className="font-mono text-xs" value={variant.sku} readOnly aria-label={`Automatically generated SKU for ${variant.color} size ${variant.size}`} /></Field>
+                <Field label={isFreeSize ? 'Shared stock' : 'Stock'}><Input min={0} type="number" value={variant.stock} onChange={(event) => {
+                  const stock = Math.max(0, Number(event.target.value))
+                  if (isFreeSize) setVariants((current) => current.map((item) => ({ ...item, stock })))
+                  else updateVariant(index, { stock })
+                }} /></Field>
                 <Field label="Reorder at"><Input min={0} type="number" value={variant.reorderPoint} onChange={(event) => updateVariant(index, { reorderPoint: Number(event.target.value) })} /></Field>
                 <Button type="button" variant="ghost" size="icon" aria-label={`Remove size ${variant.size || index + 1}`} disabled={variants.length <= 1} onClick={() => setVariants((current) => current.filter((_, rowIndex) => rowIndex !== index))}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </div>)}

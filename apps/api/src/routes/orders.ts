@@ -52,6 +52,7 @@ async function calculateCheckout(
   let subtotal = 0
   let weightGrams = 0
   const items: CalculatedOrder['items'] = []
+  const freeSizeRequested = new Map<number, { quantity: number; available: number; name: string }>()
 
   for (const requested of itemsRequest) {
     const product = await productStore.getById(requested.id)
@@ -66,6 +67,14 @@ async function calculateCheckout(
     }
     if (variant.stock - variant.reserved < requested.quantity) {
       throw new Error(`${product.name} (${requested.size}) does not have enough stock.`)
+    }
+    if (product.isFreeSize) {
+      const current = freeSizeRequested.get(product.id)
+      freeSizeRequested.set(product.id, {
+        quantity: (current?.quantity ?? 0) + requested.quantity,
+        available: variant.stock - variant.reserved,
+        name: product.name
+      })
     }
     const unitPrice = typeof variant.price === 'number' && variant.price > 0 ? variant.price : product.priceNum
     const lineTotal = unitPrice * requested.quantity
@@ -83,6 +92,10 @@ async function calculateCheckout(
       weightGrams: variant.weight,
       img: product.img
     })
+  }
+
+  for (const shared of freeSizeRequested.values()) {
+    if (shared.quantity > shared.available) throw new Error(`${shared.name} does not have enough shared stock.`)
   }
 
   const rates = await getShippingRates()

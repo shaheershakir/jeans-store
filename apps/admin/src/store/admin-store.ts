@@ -86,6 +86,7 @@ export interface ProductInput {
   taxRate: number
   status: ProductStatus
   featured: boolean
+  isFreeSize?: boolean
   weightGrams?: number
   image: string
   images: Array<{ url: string; alt: string; id?: number; order?: number }>
@@ -510,6 +511,7 @@ export const useAdminStore = create<AdminState>()(
             taxRate: input.taxRate,
             status: input.status,
             featured: input.featured,
+            isFreeSize: input.isFreeSize ?? false,
             views: 0,
             wishlists: 0,
             image: input.image,

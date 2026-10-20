@@ -31,6 +31,7 @@ interface ApiProduct {
   img: string
   img2: string
   images?: string[]
+  isFreeSize?: boolean
   badge?: string
   desc: string
   wash?: string
@@ -69,6 +70,7 @@ function fromApiProduct(value: ApiProduct): Product {
     taxRate: numeric('taxRate', 0.12),
     status: text('status', value.badge === 'Draft' ? 'Draft' : 'Active') as ProductStatus,
     featured: Boolean(metadata.featured ?? false),
+    isFreeSize: value.isFreeSize ?? Boolean(metadata.isFreeSize ?? false),
     weightGrams: numeric('weightGrams', value.variants?.[0]?.weight ?? 350),
     views: numeric('views', 0),
     wishlists: numeric('wishlists', 0),
@@ -103,7 +105,8 @@ function toApiProduct(input: ProductInput) {
     store: 'teesgarage',
     category: category?.slug ?? 'printed-tees',
     name: input.name,
-    sku: input.sku,
+    isFreeSize: input.isFreeSize ?? false,
+    collectionId: input.collectionId || null,
     fit: input.fit,
     price: `₹${input.price.toLocaleString('en-IN')}`,
     priceNum: input.price,
@@ -129,7 +132,6 @@ function toApiProduct(input: ProductInput) {
     })),
     adminData: {
       slug: input.slug,
-      sku: input.sku,
       brand: input.brand,
       categoryId: input.categoryId,
       collectionId: input.collectionId,
@@ -144,6 +146,7 @@ function toApiProduct(input: ProductInput) {
       taxRate: input.taxRate,
       status: input.status,
       featured: input.featured,
+      isFreeSize: input.isFreeSize ?? false,
       weightGrams: input.weightGrams ?? input.variants[0]?.weight ?? 350
     }
   }
