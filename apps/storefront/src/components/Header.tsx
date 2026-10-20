@@ -291,7 +291,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
               {/* Wishlist */}
               <Link
-                href="/favorites"
+                href="/wishlist"
                 className={HEADER_ACTION_BTN}
                 aria-label={favorites.length ? `Wishlist with ${favorites.length} saved items` : 'Wishlist'}
                 title="Wishlist"
