@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './teesgarage-home.css';
 
 @theme {
   --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

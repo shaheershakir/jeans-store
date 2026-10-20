@@ -220,56 +220,61 @@ export default function Header({ initialNavItems }: HeaderProps) {
           min-height: 72px;
           padding: 0 30px;
         }
-        .macy-brand { justify-self: start; color: #111; text-decoration: none; }
-        .macy-brand-wordmark { display: block; font-size: 21px; font-weight: 750; letter-spacing: -.025em; line-height: 1; }
-        .macy-search-trigger {
-          grid-column: 3;
-          justify-self: end;
-          display: inline-flex;
-          width: 42px;
-          height: 42px;
-          align-items: center;
-          justify-content: center;
-          padding: 0;
-          border: 0;
-          border-radius: 50%;
-          background: transparent;
+        .macy-brand {
+          justify-self: start;
           color: #111;
+          text-decoration: none;
+          display: flex;
+          align-items: center;
         }
-        .macy-search-trigger-icon { width: 22px; height: 22px; color: #111; stroke: #111; }
-        .macy-search-trigger-text, .macy-search-shortcut { display: none; }
+        .macy-brand-svg {
+          height: 32px;
+          width: auto;
+          display: block;
+        }
+        .macy-brand-wordmark { display: none; }
+        .macy-search-trigger { display: none; }
         .macy-actions-group {
           grid-column: 3;
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 10px;
           margin-right: 0;
+          justify-self: end;
         }
-        .macy-header-main-inner > .macy-search-trigger { position: absolute; right: 174px; }
         .apple-user-name-label, .apple-chevron, .apple-header-account-btn span { display: none; }
-        .apple-header-user-btn, .apple-header-account-btn {
+        .apple-header-user-btn, .apple-header-account-btn, .macy-action-btn {
           display: grid;
-          width: 42px;
-          height: 42px;
+          width: 38px;
+          height: 38px;
           place-items: center;
           padding: 0;
           border: 0;
           background: transparent;
+          color: #111;
+          cursor: pointer;
+          border-radius: 50%;
+          text-decoration: none;
+          transition: background-color 0.15s ease;
         }
         .apple-user-avatar-circle {
           display: grid;
-          width: 40px;
-          height: 40px;
+          width: 30px;
+          height: 30px;
           place-items: center;
           border-radius: 50%;
-          background: #e9e7e2;
-          color: #555;
-          font-size: 15px;
-          font-weight: 500;
+          border: 1.5px solid #1c1c1c;
+          background: transparent;
+          color: #111111;
+          font-size: 13.5px;
+          font-weight: 600;
+          line-height: 1;
         }
-        .macy-bag-btn { width: 42px; height: 42px; color: #111; }
-        .macy-favorite-btn { display: grid; width: 42px; height: 42px; place-items: center; color: #111; text-decoration: none; }
-        .macy-favorite-btn:hover, .macy-bag-btn:hover, .macy-search-trigger:hover { background: #f0efeb; }
+        .macy-bag-btn { width: 38px; height: 38px; color: #111; }
+        .macy-favorite-btn { display: grid; width: 38px; height: 38px; place-items: center; color: #111; text-decoration: none; }
+        .macy-favorite-btn:hover, .macy-bag-btn:hover, .apple-header-user-btn:hover, .apple-header-account-btn:hover, .macy-action-btn:hover {
+          background: rgba(0, 0, 0, 0.05);
+        }
         .macy-nav-bar {
           position: absolute;
           inset: 0;
@@ -364,20 +369,15 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
             {/* Brand Logo */}
             <Link className="macy-brand" href="/" aria-label="TEESGARAGE Homepage">
-              <span className="macy-brand-wordmark">TEESGARAGE</span>
+              <Image
+                src="/teesgarage_logo.svg"
+                alt="TEESGARAGE"
+                width={124}
+                height={38}
+                priority
+                className="macy-brand-svg"
+              />
             </Link>
-
-            {/* Desktop search trigger — opens shared SearchOverlay (same UI as mobile) */}
-            <button
-              type="button"
-              className="macy-search-trigger"
-              aria-label="Search products (press / to open)"
-              onClick={() => openOverlay('search')}
-            >
-              <Search className="macy-search-trigger-icon" aria-hidden="true" />
-              <span className="macy-search-trigger-text">What are you looking for?</span>
-              <kbd className="macy-search-shortcut" aria-hidden="true">/</kbd>
-            </button>
 
             {/* Mobile search icon (visible only on mobile) */}
             <button
@@ -389,9 +389,43 @@ export default function Header({ initialNavItems }: HeaderProps) {
               <Search className="h-5 w-5" aria-hidden="true" />
             </button>
 
-            {/* Right Action Utilities (Sign In / User Popover & Bag) */}
+            {/* Right Action Utilities (Search, Wishlist, Bag, Sign In / User Popover) */}
             <div className="macy-actions-group">
-              {/* Account Sign In / User Control Section */}
+              {/* 1. Desktop Search Trigger */}
+              <button
+                type="button"
+                className="macy-action-btn"
+                aria-label="Search products (press / to open)"
+                onClick={() => openOverlay('search')}
+              >
+                <Search className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+              </button>
+
+              {/* 2. Wishlist */}
+              <Link
+                href="/favorites"
+                className="macy-action-btn"
+                aria-label={favorites.length ? `Wishlist with ${favorites.length} saved items` : 'Wishlist'}
+                title="Wishlist"
+              >
+                <Heart className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+              </Link>
+
+              {/* 3. Shopping Bag Button with Badge */}
+              <button
+                className="macy-action-btn macy-bag-btn"
+                type="button"
+                aria-label={`Shopping bag with ${count} items`}
+                title="View shopping bag"
+                onClick={() => openOverlay('cart')}
+              >
+                <div className="macy-bag-icon-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ShoppingBag className="h-5 w-5" strokeWidth={1.8} />
+                  {count > 0 && <span className={`macy-bag-count highlight`}>{count}</span>}
+                </div>
+              </button>
+
+              {/* 4. User Avatar Circle */}
               {mounted && isAuthenticated && user ? (
                 <div className="apple-user-menu-wrap" ref={userMenuRef}>
                   <button
@@ -404,8 +438,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
                     <div className="apple-user-avatar-circle">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
-                    <span className="apple-user-name-label">{user.name.split(' ')[0]}</span>
-                    <ChevronDown className={`h-3 w-3 apple-chevron ${userMenuOpen ? 'open' : ''}`} />
                   </button>
 
                   {/* User Controls Dropdown Popover */}
@@ -521,36 +553,12 @@ export default function Header({ initialNavItems }: HeaderProps) {
                   )}
                 </div>
               ) : (
-                <Link href="/login" className="apple-header-account-btn" aria-label="Sign in to your account">
-                  <User className="h-3.5 w-3.5 mr-1.5" />
-                  <span>Sign In</span>
+                <Link href="/login" className="macy-action-btn" aria-label="Sign in to your account">
+                  <div className="apple-user-avatar-circle">
+                    S
+                  </div>
                 </Link>
               )}
-
-              <Link
-                href="/favorites"
-                className="macy-favorite-btn"
-                aria-label={favorites.length ? `Wishlist with ${favorites.length} saved items` : 'Wishlist'}
-                title="Wishlist"
-              >
-                <Heart className="h-5 w-5" aria-hidden="true" />
-              </Link>
-
-          
-
-              {/* Shopping Bag Button with Badge */}
-              <button
-                className="macy-bag-btn"
-                type="button"
-                aria-label={`Shopping bag with ${count} items`}
-                title="View shopping bag"
-                onClick={() => openOverlay('cart')}
-              >
-                <div className="macy-bag-icon-wrap">
-                  <ShoppingBag className="h-5 w-5" />
-                  <span className={`macy-bag-count ${count > 0 ? 'highlight' : ''}`}>{count}</span>
-                </div>
-              </button>
             </div>
           </div>
         </div>

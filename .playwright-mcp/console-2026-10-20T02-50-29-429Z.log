@@ -1,3 +1,97 @@
 [  150093ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15739-f901-77f1-980c-4af64cabf85c, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 08:22:59 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_e2c80fe2._.js:9336
 [  152885ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1573a-03e9-75a2-9de0-ea40d2f528d9, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 08:23:02 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_e2c80fe2._.js:9336
 [  315829ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1573c-8068-728e-873c-5bb5985d03d3, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 08:25:45 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_e2c80fe2._.js:9336
+[  332510ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1573c-c192-7782-89a3-74bf38446be5, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 08:26:01 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_e2c80fe2._.js:9336
+[  335034ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1573c-cb6d-7859-b32e-152e5d6426e2, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 08:26:04 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_e2c80fe2._.js:9336
+[  346976ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1573c-fa14-7e18-b6c8-b903022036f4, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 08:26:16 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_e2c80fe2._.js:9336
+[  349228ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1573d-02e0-715b-b1b9-fd79f063aebe, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 08:26:18 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_e2c80fe2._.js:9336
+[  613944ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15741-0ce9-7a70-927c-2c37ff45f86b, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 08:30:43 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_e2c80fe2._.js:9336
+[  929579ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  935888ms] [LOG] [Fast Refresh] done in 6418ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  935994ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  937940ms] [LOG] [Fast Refresh] done in 2049ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2059750ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2061836ms] [LOG] [Fast Refresh] done in 2253ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2062158ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2062346ms] [LOG] [Fast Refresh] done in 295ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2062733ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2063384ms] [LOG] [Fast Refresh] done in 758ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2064000ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2064203ms] [LOG] [Fast Refresh] done in 309ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2196087ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 2198729ms] [LOG] [Fast Refresh] done in 2758ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 2215868ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 2219530ms] [LOG] [Fast Refresh] done in 3711ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 2662334ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 2664805ms] [LOG] [Fast Refresh] done in 2269ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 2699438ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 2702815ms] [LOG] [Fast Refresh] done in 3468ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 2702980ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 2703002ms] [LOG] [Fast Refresh] done in 127ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 2703697ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 2703701ms] [LOG] [Fast Refresh] done in 107ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 2703948ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 2704554ms] [LOG] [Fast Refresh] done in 709ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 2705798ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 2706036ms] [LOG] [Fast Refresh] done in 338ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 2706866ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:14537
+[ 2707320ms] [LOG] [PostHog.js] set_config {config: Object, oldConfig: Object, newConfig: Object} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2707327ms] [LOG] [PostHog.js] Persistence loaded localStorage+cookie {$device_id: 01a15737-dd5f-705b-847f-9675a3223e4f, distinct_id: 01a15737-dd5f-705b-847f-9675a3223e4f, $sesid: Array(3), $initial_person_info: Object, $user_state: anonymous} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2707339ms] [LOG] [PostHog.js] Persistence loaded sessionStorage {$sdk_debug_extensions_init_method: synchronous, $sdk_debug_extensions_init_time_ms: 3, $referrer: $direct, $referring_domain: $direct, $sdk_debug_replay_remote_trigger_matching_config: null} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2707346ms] [LOG] [PostHog.js] Initializing extensions synchronously @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2707348ms] [LOG] [PostHog.js] [Web Vitals] enabled, starting... @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2707358ms] [LOG] [PostHog.js] [SessionRecording] starting @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2707359ms] [LOG] [PostHog.js] [Heatmaps] starting... @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2707363ms] [LOG] [PostHog.js] Starting in debug mode {this: i, config: Object, thisC: Object, p: Object, s: Object} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2707364ms] [LOG] You're now in debug mode. All calls to PostHog will be logged in your console.
+You can disable this with `posthog.debug(false)`. @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:14792
+[ 2707367ms] [LOG] [PostHog.js] set_config {config: Object, oldConfig: Object, newConfig: Object} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2707368ms] [LOG] [PostHog.js] [SessionRecording] starting @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2707414ms] [LOG] [PostHog.js] [Dead Clicks] starting... @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2707647ms] [LOG] [PostHog.js] send "$pageview" {uuid: 01a15760-ff6b-717e-a601-bb00697d8fa3, event: $pageview, properties: Object, timestamp: Tue Oct 20 2026 09:05:37 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2709426ms] [LOG] [PostHog.js] set_config {config: Object, oldConfig: Object, newConfig: Object} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2709427ms] [LOG] [PostHog.js] [Surveys] flags response received, isSurveysEnabled: false @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2709441ms] [LOG] [PostHog.js] [Surveys] Surveys loaded successfully @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2712574ms] [LOG] [PostHog.js] send "$web_vitals" {uuid: 01a15761-12ae-7b58-9569-40427b892187, event: $web_vitals, properties: Object, timestamp: Tue Oct 20 2026 09:05:41 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 2741099ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2742508ms] [LOG] [Fast Refresh] done in 1511ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2769648ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2769795ms] [LOG] [Fast Refresh] done in 251ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2770746ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2771986ms] [LOG] [Fast Refresh] done in 1345ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2814530ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2814534ms] [LOG] [Fast Refresh] done in 107ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2814679ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2815046ms] [LOG] [Fast Refresh] done in 472ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2820413ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 2821122ms] [LOG] [Fast Refresh] done in 813ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3480330ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3483256ms] [LOG] [Fast Refresh] done in 2683ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3517033ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3518764ms] [LOG] [Fast Refresh] done in 1704ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3771062ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3772659ms] [LOG] [Fast Refresh] done in 1701ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3773639ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3773699ms] [LOG] [Fast Refresh] done in 167ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3803750ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3805771ms] [LOG] [Fast Refresh] done in 2112ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3856897ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3856975ms] [LOG] [Fast Refresh] done in 187ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3857238ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3858415ms] [LOG] [Fast Refresh] done in 1283ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3862467ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 3862568ms] [LOG] [Fast Refresh] done in 203ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4211871ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4215856ms] [LOG] [Fast Refresh] done in 4090ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4215967ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4216358ms] [LOG] [Fast Refresh] done in 493ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4217501ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4220570ms] [LOG] [Fast Refresh] done in 3181ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4220706ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4221221ms] [LOG] [Fast Refresh] done in 633ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4222071ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4222442ms] [LOG] [Fast Refresh] done in 484ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4237277ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4237362ms] [LOG] [Fast Refresh] done in 190ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4244995ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4245019ms] [LOG] [Fast Refresh] done in 128ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0

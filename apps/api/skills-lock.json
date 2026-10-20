@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "converting-css-to-tailwind": {
+      "source": "spencerpauly/awesome-cursor-skills",
+      "sourceType": "github",
+      "skillPath": "resources/converting-css-to-tailwind/SKILL.md",
+      "computedHash": "cc5756690a7dddc400a68e645720925e0bbadbaf8872b9ececc7341860af7586"
+    }
+  }
+}
