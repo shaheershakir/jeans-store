@@ -453,11 +453,9 @@ function RegisterForm() {
   )
 }
 
-import { AuthSkeleton } from '@/components/skeletons'
-
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<AuthSkeleton mode="signup" />}>
+    <Suspense fallback={null}>
       <RegisterForm />
     </Suspense>
   )

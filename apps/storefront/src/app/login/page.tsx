@@ -432,11 +432,9 @@ function LoginForm() {
   )
 }
 
-import { AuthSkeleton } from '@/components/skeletons'
-
 export default function LoginPage() {
   return (
-    <Suspense fallback={<AuthSkeleton mode="signin" />}>
+    <Suspense fallback={null}>
       <LoginForm />
     </Suspense>
   )

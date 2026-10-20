@@ -4,12 +4,9 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  CreditCard,
   Heart,
-  LogOut,
   MapPin,
   Package,
-  Settings,
   Truck,
   User,
   Pencil,
@@ -18,17 +15,7 @@ import {
   X
 } from 'lucide-react'
 import { useCartStore, useUIStore, useAuthStore, useFavoriteStore } from '@/lib/store'
-
-// ─── Sidebar Navigation Links ────────────────────────────────────────────────
-
-const ACCOUNT_NAV_LINKS = [
-  { label: 'My Account', href: '/profile', Icon: User, id: 'account' },
-  { label: 'Orders', href: '/orders', Icon: Package, id: 'orders' },
-  { label: 'Wishlist', href: '/wishlist', Icon: Heart, id: 'wishlist' },
-  { label: 'Addresses', href: '/addresses', Icon: MapPin, id: 'addresses' },
-  { label: 'Payment Methods', href: '/profile?tab=payment', Icon: CreditCard, id: 'payment' },
-  { label: 'Account Settings', href: '/settings', Icon: Settings, id: 'settings' },
-]
+import AccountSidebar from '@/components/AccountSidebar'
 
 // ─── Mock Recent Orders for Profile Overview ─────────────────────────────────
 
@@ -186,39 +173,7 @@ export default function ProfilePage() {
       <div className="mx-auto max-w-[1240px] px-6 lg:px-8 py-10 max-[768px]:py-6">
         <div className="flex gap-10 lg:gap-14 max-[860px]:flex-col">
           {/* ── Left Sidebar Navigation ─────────────────────────────── */}
-          <aside className="w-[220px] shrink-0 max-[860px]:w-full" aria-label="Account Navigation">
-            <nav className="flex flex-col gap-1 sticky top-[96px] max-[860px]:static max-[860px]:flex-row max-[860px]:overflow-x-auto max-[860px]:pb-3 max-[860px]:border-b max-[860px]:border-black/8 scrollbar-none">
-              {ACCOUNT_NAV_LINKS.map(({ label, href, Icon, id }) => {
-                const isActive = id === 'account'
-                return (
-                  <Link
-                    key={label}
-                    href={href}
-                    className={`flex items-center gap-3.5 px-4 py-3 rounded-[12px] text-[13.5px] transition-colors whitespace-nowrap ${
-                      isActive
-                        ? 'font-bold text-[#111111] bg-[#e8e6e1]'
-                        : 'font-medium text-[#555555] hover:text-[#111111] hover:bg-black/4'
-                    }`}
-                    aria-current={isActive ? 'page' : undefined}
-                  >
-                    <Icon className="w-[18px] h-[18px] shrink-0 stroke-[1.8]" aria-hidden="true" />
-                    <span>{label}</span>
-                  </Link>
-                )
-              })}
-
-              <div className="my-3.5 h-px bg-black/8 mx-2 max-[860px]:hidden" />
-
-              <button
-                type="button"
-                className="flex items-center gap-3.5 px-4 py-3 rounded-[12px] text-[13.5px] font-medium text-[#555555] hover:text-[#111111] hover:bg-black/4 transition-colors text-left cursor-pointer max-[860px]:whitespace-nowrap"
-                onClick={logout}
-              >
-                <LogOut className="w-[18px] h-[18px] shrink-0 stroke-[1.8]" aria-hidden="true" />
-                <span>Log Out</span>
-              </button>
-            </nav>
-          </aside>
+          <AccountSidebar activeTab="account" />
 
           {/* ── Right Content Area ─────────────────────────────────── */}
           <main className="flex-1 min-w-0">

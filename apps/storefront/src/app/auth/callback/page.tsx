@@ -138,11 +138,9 @@ function CallbackHandler() {
   )
 }
 
-import { AuthSkeleton } from '@/components/skeletons'
-
 export default function AuthCallbackPage() {
   return (
-    <Suspense fallback={<AuthSkeleton mode="signin" />}>
+    <Suspense fallback={null}>
       <CallbackHandler />
     </Suspense>
   )
