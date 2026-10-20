@@ -55,6 +55,12 @@
       "skillPath": "skills/cloud/cloud-run-basics/SKILL.md",
       "computedHash": "bf911e2a1ac860a5264d753ca01254e1186c7a33c1163263e6c0c2549dd0f9bd"
     },
+    "converting-css-to-tailwind": {
+      "source": "spencerpauly/awesome-cursor-skills",
+      "sourceType": "github",
+      "skillPath": "resources/converting-css-to-tailwind/SKILL.md",
+      "computedHash": "cc5756690a7dddc400a68e645720925e0bbadbaf8872b9ececc7341860af7586"
+    },
     "design-md": {
       "source": "google-labs-code/stitch-skills",
       "sourceType": "github",
@@ -144,6 +150,12 @@
       "sourceType": "github",
       "skillPath": "skills/engineering/setup-matt-pocock-skills/SKILL.md",
       "computedHash": "1114faf86d8658d6b3c729e7e604fbfecdee3fa112f23c4889463e87da662aec"
+    },
+    "tailwind-best-practices": {
+      "source": "ofershap/tailwind-best-practices",
+      "sourceType": "github",
+      "skillPath": "skills/tailwind-best-practices/SKILL.md",
+      "computedHash": "6ad7276b158b035149ea6825b1f2babeca7bbd06f5cd74eae35c5c92d50fe003"
     },
     "taste-design": {
       "source": "google-labs-code/stitch-skills",

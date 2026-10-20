@@ -7,7 +7,11 @@ import Skeleton from './Skeleton'
  */
 export default function CheckoutSkeleton() {
   return (
-    <div className="skeleton-checkout-wrap" aria-busy="true" aria-label="Loading Checkout Manifest">
+    <div
+      className="mx-auto max-w-[1200px] px-[4%] pb-[90px] pt-8"
+      aria-busy="true"
+      aria-label="Loading Checkout Manifest"
+    >
       {/* 1. Header & Breadcrumb */}
       <div style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
@@ -20,7 +24,7 @@ export default function CheckoutSkeleton() {
       </div>
 
       {/* 2. Checkout 2-Column Grid */}
-      <div className="checkout-grid">
+      <div className="grid grid-cols-[1.5fr_1fr] items-start gap-6 [@media(min-width:640px)]:gap-8 [@media(min-width:901px)]:gap-12 [@media(max-width:900px)]:grid-cols-1">
         {/* Left: Form Fields */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
           {/* Section 1: Contact Info */}
@@ -114,7 +118,15 @@ export default function CheckoutSkeleton() {
               ))}
             </div>
 
-            <div style={{ borderTop: '1px solid var(--line, rgba(12,14,18,0.09))', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div
+              style={{
+                borderTop: '1px solid var(--line, rgba(12,14,18,0.09))',
+                paddingTop: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Skeleton width={60} height={14} />
                 <Skeleton width={60} height={14} />
@@ -123,7 +135,14 @@ export default function CheckoutSkeleton() {
                 <Skeleton width={60} height={14} />
                 <Skeleton width={40} height={14} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--line, rgba(12,14,18,0.09))', paddingTop: 12 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  borderTop: '1px solid var(--line, rgba(12,14,18,0.09))',
+                  paddingTop: 12
+                }}
+              >
                 <Skeleton width={80} height={18} />
                 <Skeleton width={90} height={22} />
               </div>

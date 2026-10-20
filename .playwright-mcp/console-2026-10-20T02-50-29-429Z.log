@@ -95,3 +95,211 @@ You can disable this with `posthog.debug(false)`. @ http://localhost:3000/_next/
 [ 4237362ms] [LOG] [Fast Refresh] done in 190ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
 [ 4244995ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
 [ 4245019ms] [LOG] [Fast Refresh] done in 128ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4574279ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4574414ms] [LOG] [Fast Refresh] done in 486ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 4753812ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 4754211ms] [LOG] [Fast Refresh] done in 504ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 4758418ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 4758435ms] [LOG] [Fast Refresh] done in 122ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 4987039ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 4991809ms] [LOG] [Fast Refresh] done in 4867ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 5169423ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 5171709ms] [LOG] [Fast Refresh] done in 2326ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 5178956ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 5180199ms] [LOG] [Fast Refresh] done in 1230ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 5184052ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 5185689ms] ReferenceError: useUIStore is not defined
+    at Footer (http://localhost:3000/_next/static/chunks/apps_storefront_src_ec01cfe7._.js?id=%255Bproject%255D%252Fapps%252Fstorefront%252Fsrc%252Fcomponents%252FFooter.tsx+%255Bapp-client%255D+%2528ecmascript%2529:21:25)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:13072:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:4091:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:5523:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6111:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:886:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8298:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8190:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8173:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:7932:56)
+    at performSyncWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8890:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8809:316)
+    at flushSyncWork$1 (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8048:86)
+    at Object.scheduleRefresh (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:294:13)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:391:33
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:384:38)
+    at applyUpdate (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:878:31)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:886:13
+[ 5185536ms] [ERROR] Global application error: ReferenceError: useUIStore is not defined
+    at Footer (http://localhost:3000/_next/static/chunks/apps_storefront_src_ec01cfe7._.js?id=%255Bproject%255D%252Fapps%252Fstorefront%252Fsrc%252Fcomponents%252FFooter.tsx+%255Bapp-client%255D+%2528ecmascript%2529:21:25)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:13072:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:4091:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:5523:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6111:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:886:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8298:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8190:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8173:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:7932:56)
+    at performSyncWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8890:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8809:316)
+    at flushSyncWork$1 (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8048:86)
+    at Object.scheduleRefresh (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:294:13)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:391:33
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:384:38)
+    at applyUpdate (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:878:31)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:886:13 @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_b0daae9a._.js:2417
+[ 5185555ms] [ERROR] Global application error: ReferenceError: useUIStore is not defined
+    at Footer (http://localhost:3000/_next/static/chunks/apps_storefront_src_ec01cfe7._.js?id=%255Bproject%255D%252Fapps%252Fstorefront%252Fsrc%252Fcomponents%252FFooter.tsx+%255Bapp-client%255D+%2528ecmascript%2529:21:25)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:13072:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:4091:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:5523:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6111:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:886:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8298:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8190:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8173:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:7932:56)
+    at performSyncWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8890:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8809:316)
+    at flushSyncWork$1 (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8048:86)
+    at Object.scheduleRefresh (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:294:13)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:391:33
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:384:38)
+    at applyUpdate (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:878:31)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js:886:13 @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_b0daae9a._.js:2417
+[ 5185625ms] [LOG] [Fast Refresh] done in 1882ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5816
+[ 5187529ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5956
+[ 5189993ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:6289
+[ 5191223ms] [LOG] [PostHog.js] [SessionId] new session ID assigned {sessionId: 01a15786-e4e6-7e17-8716-20b30a78b675, windowId: 01a15786-e4e6-7e17-8716-20b455cea654, bootstrapped: false, changeReason: Object} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5192231ms] [LOG] [PostHog.js] send "$pageview" {uuid: 01a15786-e4a0-7133-81ab-dc83eb488627, event: $pageview, properties: Object, timestamp: Tue Oct 20 2026 09:47:00 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5192399ms] [LOG] [Fast Refresh] done in 2558ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5194113ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5194155ms] [LOG] [Fast Refresh] done in 186ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5194421ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15786-f167-723b-98fa-d1c431a3e418, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:47:03 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5196525ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15786-f9a0-7d6d-97ed-398409d0ca75, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:47:05 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5196914ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5200304ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:14537
+[ 5202065ms] [LOG] [PostHog.js] set_config {config: Object, oldConfig: Object, newConfig: Object} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5202079ms] [LOG] [PostHog.js] Persistence loaded localStorage+cookie {$device_id: 01a15737-dd5f-705b-847f-9675a3223e4f, distinct_id: 01a15737-dd5f-705b-847f-9675a3223e4f, $sesid: Array(3), $initial_person_info: Object, $user_state: anonymous} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5202103ms] [LOG] [PostHog.js] Persistence loaded sessionStorage {$sdk_debug_extensions_init_method: synchronous, $sdk_debug_extensions_init_time_ms: 16, $referrer: $direct, $referring_domain: $direct, $sdk_debug_replay_remote_trigger_matching_config: null} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5202113ms] [LOG] [PostHog.js] Initializing extensions synchronously @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5202122ms] [LOG] [PostHog.js] [Web Vitals] enabled, starting... @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5202132ms] [LOG] [PostHog.js] [SessionRecording] starting @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5202133ms] [LOG] [PostHog.js] [Heatmaps] starting... @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5202139ms] [LOG] [PostHog.js] Starting in debug mode {this: i, config: Object, thisC: Object, p: Object, s: Object} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5202143ms] [LOG] You're now in debug mode. All calls to PostHog will be logged in your console.
+You can disable this with `posthog.debug(false)`. @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:14792
+[ 5202171ms] [LOG] [PostHog.js] set_config {config: Object, oldConfig: Object, newConfig: Object} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5202175ms] [LOG] [PostHog.js] [SessionRecording] starting @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5203015ms] [LOG] [PostHog.js] [Dead Clicks] starting... @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5203243ms] [LOG] [PostHog.js] send "$pageview" {uuid: 01a15787-13cf-7cc3-b866-62a558971722, event: $pageview, properties: Object, timestamp: Tue Oct 20 2026 09:47:12 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5203529ms] [LOG] [PostHog.js] set_config {config: Object, oldConfig: Object, newConfig: Object} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5203531ms] [LOG] [PostHog.js] [Surveys] flags response received, isSurveysEnabled: false @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5203554ms] [LOG] [PostHog.js] [Surveys] Surveys loaded successfully @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5210656ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5211608ms] [LOG] [Fast Refresh] done in 1063ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5232174ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5236599ms] [LOG] [Fast Refresh] done in 4326ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5260726ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5264133ms] [LOG] [Fast Refresh] done in 3319ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5265073ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5267591ms] [LOG] [Fast Refresh] done in 2440ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5274573ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5276768ms] [LOG] [Fast Refresh] done in 2135ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5288898ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15788-6203-7e6c-a25b-615dfa74ffe9, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:48:38 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5291211ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5298129ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15788-8667-70ad-b346-b3514cf86fd7, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:48:47 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5337769ms] [LOG] [Fast Refresh] done in 26993ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5358606ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5365321ms] [LOG] [Fast Refresh] done in 9170ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5365552ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15789-8dce-759e-9d3d-00500f848ac8, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:49:54 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5367619ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15789-95ef-7100-8a35-8e24bcb10edb, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:49:57 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5379792ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15789-c583-70ad-90b3-591eb39501ca, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:50:09 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5391425ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15789-f2f3-7c4d-94e9-c4e09bcf5024, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:50:20 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5393658ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15789-fbad-7c88-a744-ac187f08337a, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:50:23 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5396843ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1578a-081e-7601-964e-6bfd0d4d5270, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:50:26 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5414039ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1578a-4b48-7b54-a85f-98529bafa7b3, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:50:43 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5453031ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1578a-e379-79ad-9f55-17b50669a42b, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:51:22 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5498726ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1578b-9616-7ab1-a8da-7b428f628355, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:52:08 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5498931ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5498944ms] [LOG] [Fast Refresh] done in 113ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5500851ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1578b-9e66-7182-9381-ea286f4356c2, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:52:10 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5505035ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1578b-aeb4-70ba-b230-1f982c8eff15, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:52:14 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5515692ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1578b-d85b-7434-9f2b-b420c78a3df3, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:52:25 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5518362ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1578b-e2ce-71bf-9d77-1b4384776caf, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:52:27 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5629722ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a1578d-95c9-75e8-852c-5bc12fdfedf8, event: $snapshot, properties: Object, timestamp: Tue Oct 20 2026 09:54:19 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_40a66ae8._.js:9241
+[ 5629780ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 5630584ms] [LOG] [Fast Refresh] done in 920ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6475860ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6479199ms] [LOG] [Fast Refresh] done in 3500ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6493762ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6498689ms] [LOG] [Fast Refresh] done in 2869ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6502218ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6504950ms] [LOG] [Fast Refresh] done in 2850ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6512374ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6513290ms] [LOG] [Fast Refresh] done in 1039ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6516813ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6517799ms] [LOG] [Fast Refresh] done in 1109ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6522056ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6522776ms] [LOG] [Fast Refresh] done in 935ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6527590ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6528501ms] [LOG] [Fast Refresh] done in 1024ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6535143ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6535787ms] [LOG] [Fast Refresh] done in 748ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6541066ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6546045ms] [LOG] [Fast Refresh] done in 3052ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6551684ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6588148ms] [LOG] [Fast Refresh] done in 31645ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6588304ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6589085ms] [LOG] [Fast Refresh] done in 889ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6589092ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/orders?_rsc=WOGG1CpKoC5t3_h4:0
+[ 6589370ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6589374ms] [LOG] [Fast Refresh] done in 110ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6590381ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/orders?_rsc=WOGG1CpKoC5t3_h4:0
+[ 6590580ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6590607ms] [LOG] [Fast Refresh] done in 136ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6590937ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/orders?_rsc=WOGG1CpKoC5t3_h4:0
+[ 6592052ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/orders?_rsc=WOGG1CpKoC5t3_h4:0
+[ 6592482ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6592525ms] [LOG] [Fast Refresh] done in 151ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[ 6593074ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/orders:0
+[ 6593537ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_react-dom_cjs_react-dom-client_development_cc3fa4bf.js:16702
+[ 6593985ms] Error: ENOENT: no such file or directory, open 'F:\jeans store\apps\storefront\.next\server\app\orders\page\app-build-manifest.json'
+    at async open (node:internal/fs/promises:697:25)
+    at async readFile (node:internal/fs/promises:1348:14)
+    at async readPartialManifest (file://F:\jeans store\node_modules\next\dist\shared\lib\turbopack\manifest-loader.js:47:23)
+    at async TurbopackManifestLoader.loadAppBuildManifest (file://F:\jeans store\node_modules\next\dist\shared\lib\turbopack\manifest-loader.js:111:91)
+    at async handleRouteType (file://F:\jeans store\node_modules\next\dist\server\dev\turbopack-utils.js:296:17)
+    at async (file://F:\jeans store\node_modules\next\dist\server\dev\hot-reloader-turbopack.js:889:21)
+    at async Span.traceAsyncFn (file://F:\jeans store\node_modules\next\dist\trace\trace.js:157:20)
+    at async DevBundlerService.ensurePage (file://F:\jeans store\node_modules\next\dist\server\lib\dev-bundler-service.js:20:20)
+    at async DevServer.ensurePage (file://F:\jeans store\node_modules\next\dist\server\dev\next-dev-server.js:686:9)
+    at async Object.ensure (file://F:\jeans store\node_modules\next\dist\server\dev\next-dev-server.js:201:17)
+    at async DevRouteMatcherManager.matchAll (file://F:\jeans store\node_modules\next\dist\server\route-matcher-managers\dev-route-matcher-manager.js:93:13)
+    at async DevRouteMatcherManager.match (file://F:\jeans store\node_modules\next\dist\server\route-matcher-managers\default-route-matcher-manager.js:163:26)
+    at async NextNodeServer.handleCatchallRenderRequest (file://F:\jeans store\node_modules\next\dist\server\next-server.js:340:31)
+    at async DevServer.handleRequestImpl (file://F:\jeans store\node_modules\next\dist\server\base-server.js:917:17)
+    at async (file://F:\jeans store\node_modules\next\dist\server\dev\next-dev-server.js:400:20)
+    at async Span.traceAsyncFn (file://F:\jeans store\node_modules\next\dist\trace\trace.js:157:20)
+    at async DevServer.handleRequest (file://F:\jeans store\node_modules\next\dist\server\dev\next-dev-server.js:396:24)
+    at async invokeRender (file://F:\jeans store\node_modules\next\dist\server\lib\router-server.js:240:21)
+    at async handleRequest (file://F:\jeans store\node_modules\next\dist\server\lib\router-server.js:437:24)
+    at async requestHandlerImpl (file://F:\jeans store\node_modules\next\dist\server\lib\router-server.js:485:13)
+    at async Server.requestListener (file://F:\jeans store\node_modules\next\dist\server\lib\start-server.js:226:13)
+[ 6593968ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2208
+[ 6594574ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2496
+[ 6599600ms] [LOG] [Fast Refresh] done in 5190ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2356
+[ 6599748ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2496
+[ 6600326ms] [LOG] [Fast Refresh] done in 683ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2356
+[ 6608863ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2496
+[ 6609271ms] [WARNING] The resource http://localhost:3000/_next/static/chunks/apps_storefront_src_app_globals_5b783691.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/orders:0
+[ 6611728ms] [LOG] [Fast Refresh] done in 2978ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2356
+[ 6623715ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2496
+[ 6625987ms] [LOG] [Fast Refresh] done in 2351ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2356
+[ 6632763ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2496
+[ 6634024ms] [LOG] [Fast Refresh] done in 1361ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2356
+[ 6797074ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2496
+[ 6799430ms] [LOG] [Fast Refresh] done in 2472ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2356
+[ 6829428ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2496
+[ 6829433ms] [LOG] [Fast Refresh] done in 113ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:2356
