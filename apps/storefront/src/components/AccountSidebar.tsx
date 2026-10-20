@@ -69,6 +69,8 @@ export default function AccountSidebar({ activeTab, className = '' }: AccountSid
             <Link
               key={id}
               href={href}
+              scroll={false}
+              prefetch={true}
               className={`group flex items-center gap-3.5 px-4 py-3 rounded-[14px] text-[13.5px] transition-colors whitespace-nowrap w-full max-[860px]:w-auto shrink-0 ${
                 isActive
                   ? 'font-bold text-[#111111] bg-[#e8e6e1]'

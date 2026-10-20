@@ -13,7 +13,6 @@ import {
   Check
 } from 'lucide-react'
 import { useCartStore, useUIStore, useAuthStore, useFavoriteStore } from '@/lib/store'
-import AccountSidebar from '@/components/AccountSidebar'
 
 // ─── Wishlist Items Matching Mockup 1:1 ───────────────────────────────────────
 
@@ -183,15 +182,8 @@ export default function WishlistContent() {
   })
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-[#111111] selection:bg-black selection:text-white">
-      <div className="mx-auto max-w-[1240px] px-6 lg:px-8 py-10 max-[768px]:py-6">
-        <div className="flex gap-10 lg:gap-14 max-[860px]:flex-col max-[860px]:gap-6">
-          {/* ── Left Sidebar Navigation ─────────────────────────────── */}
-          <AccountSidebar activeTab="wishlist" />
-
-          {/* ── Right Content Area ─────────────────────────────────── */}
-          <main className="flex-1 min-w-0">
-            {/* Header Row: Title, Item Count & Sort Dropdown */}
+    <>
+      {/* Header Row: Title, Item Count & Sort Dropdown */}
             <header className="mb-7 flex items-end justify-between gap-4 max-[640px]:flex-col max-[640px]:items-start">
               <div>
                 <h1 className="text-[32px] md:text-[36px] font-extrabold tracking-[-0.03em] text-[#111111] leading-tight">
@@ -355,9 +347,6 @@ export default function WishlistContent() {
                 )
               })}
             </div>
-          </main>
-        </div>
-      </div>
-    </div>
+    </>
   )
 }
