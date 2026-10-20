@@ -200,6 +200,153 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
   return (
     <>
+      <style jsx global>{`
+        .macy-header {
+          position: sticky;
+          top: 0;
+          z-index: 60;
+          background: rgba(250, 249, 246, 0.96);
+          border-bottom: 1px solid #e9e7e1;
+          box-shadow: none;
+          backdrop-filter: blur(18px);
+        }
+        .macy-header-main { min-height: 72px; }
+        .macy-header-main-inner {
+          position: relative;
+          display: grid;
+          grid-template-columns: minmax(150px, 1fr) auto minmax(150px, 1fr);
+          align-items: center;
+          max-width: 1480px;
+          min-height: 72px;
+          padding: 0 30px;
+        }
+        .macy-brand { justify-self: start; color: #111; text-decoration: none; }
+        .macy-brand-wordmark { display: block; font-size: 21px; font-weight: 750; letter-spacing: -.025em; line-height: 1; }
+        .macy-search-trigger {
+          grid-column: 3;
+          justify-self: end;
+          display: inline-flex;
+          width: 42px;
+          height: 42px;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          border: 0;
+          border-radius: 50%;
+          background: transparent;
+          color: #111;
+        }
+        .macy-search-trigger-icon { width: 22px; height: 22px; color: #111; stroke: #111; }
+        .macy-search-trigger-text, .macy-search-shortcut { display: none; }
+        .macy-actions-group {
+          grid-column: 3;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin-right: 0;
+        }
+        .macy-header-main-inner > .macy-search-trigger { position: absolute; right: 174px; }
+        .apple-user-name-label, .apple-chevron, .apple-header-account-btn span { display: none; }
+        .apple-header-user-btn, .apple-header-account-btn {
+          display: grid;
+          width: 42px;
+          height: 42px;
+          place-items: center;
+          padding: 0;
+          border: 0;
+          background: transparent;
+        }
+        .apple-user-avatar-circle {
+          display: grid;
+          width: 40px;
+          height: 40px;
+          place-items: center;
+          border-radius: 50%;
+          background: #e9e7e2;
+          color: #555;
+          font-size: 15px;
+          font-weight: 500;
+        }
+        .macy-bag-btn { width: 42px; height: 42px; color: #111; }
+        .macy-favorite-btn { display: grid; width: 42px; height: 42px; place-items: center; color: #111; text-decoration: none; }
+        .macy-favorite-btn:hover, .macy-bag-btn:hover, .macy-search-trigger:hover { background: #f0efeb; }
+        .macy-nav-bar {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          width: 100%;
+          height: 72px;
+          justify-content: center;
+          pointer-events: none;
+          border: 0;
+          background: transparent;
+        }
+        .macy-nav-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: auto;
+          max-width: none;
+          padding: 0;
+          pointer-events: auto;
+        }
+        .macy-shop-all-btn { display: none; }
+        .macy-nav-links-scroll { gap: 30px; overflow: visible; }
+        .macy-nav-link {
+          padding: 8px 0;
+          color: #242424;
+          font-size: 13px;
+          font-weight: 500;
+          white-space: nowrap;
+        }
+        .macy-nav-link::after { bottom: 1px; }
+        .apple-detail-card { border: 1px solid #ebe9e4; border-radius: 18px; background: rgba(255,255,255,.5); box-shadow: 0 7px 20px rgba(32,28,20,.025); }
+        .apple-card-title { color: #151515; letter-spacing: -.035em; }
+        .apple-card-subtitle { color: #72747a; }
+        .apple-profile-page { background: #faf9f6; }
+        .apple-profile-layout { gap: 46px; }
+        .apple-profile-sidebar { width: 220px; flex: 0 0 220px; }
+        .apple-profile-sidebar .apple-glass-card { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
+        .apple-profile-sidebar .apple-id-header { display: none; }
+        .apple-profile-sidebar .apple-sidebar-nav { gap: 4px; }
+        .apple-profile-sidebar .apple-nav-item { min-height: 48px; border: 0; border-radius: 12px; padding: 0 15px; color: #64666a; background: transparent; }
+        .apple-profile-sidebar .apple-nav-item.active { background: #efeeeb; color: #111; }
+        .apple-profile-sidebar .apple-nav-item.active :is(span, svg) { color: #111; }
+        .apple-profile-sidebar .apple-nav-item.active .apple-nav-chevron { opacity: 0; }
+        .apple-profile-sidebar .apple-sidebar-actions { margin-top: 18px; padding-top: 14px; border-top: 1px solid #e9e7e2; }
+        .wishlist-row { border-color: #ebe9e4; background: rgba(255,255,255,.45); }
+        @media (max-width: 1100px) {
+          .macy-header-main-inner { display: grid; grid-template-columns: 1fr auto; padding: 0 20px; }
+          .macy-search-trigger { right: 175px; }
+          .macy-actions-group { grid-column: 2; }
+          .macy-nav-bar { position: absolute; inset: 0; height: 72px; border: 0; }
+          .macy-nav-container { width: auto; justify-content: center; }
+          .macy-nav-links-scroll { gap: 14px; }
+        }
+        @media (max-width: 1000px) {
+          .macy-nav-bar { position: static; height: 42px; overflow: hidden; border-top: 1px solid #efeee9; }
+          .macy-nav-container { width: 100%; justify-content: flex-start; overflow: hidden; }
+          .macy-nav-links-scroll { width: 100%; justify-content: flex-start; gap: 22px; overflow-x: auto; padding: 0 20px; scrollbar-width: none; }
+          .macy-nav-links-scroll::-webkit-scrollbar { display: none; }
+          .macy-nav-link { font-size: 12px; }
+        }
+        @media (max-width: 700px) {
+          .macy-header-main, .macy-header-main-inner { min-height: 60px; }
+          .macy-header-main-inner { display: flex; justify-content: space-between; padding: 0 16px; }
+          .macy-brand-wordmark { font-size: 18px; }
+          .macy-search-trigger { display: none; }
+          .macy-actions-group { gap: 7px; }
+          .macy-favorite-btn, .macy-bag-btn, .apple-header-user-btn, .apple-header-account-btn { width: 38px; height: 38px; }
+          .macy-nav-bar { position: static; height: 42px; overflow: hidden; border-top: 1px solid #efeee9; }
+          .macy-nav-container { width: 100%; justify-content: flex-start; overflow: hidden; }
+          .macy-nav-links-scroll { width: 100%; justify-content: flex-start; gap: 22px; overflow-x: auto; padding: 0 16px; scrollbar-width: none; }
+          .macy-nav-links-scroll::-webkit-scrollbar { display: none; }
+          .macy-nav-link { font-size: 12px; }
+        }
+        @media (max-width: 1023px) {
+          .apple-profile-layout { gap: 24px; }
+        }
+      `}</style>
       <header className={`macy-header ${scrolled ? 'scrolled' : ''} ${userMenuOpen ? 'user-popover-open' : ''}`}>
         {/* Tier 1: Main Brand, Search Trigger & Customer Action Utilities */}
         <div className="macy-header-main">
@@ -217,14 +364,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
             {/* Brand Logo */}
             <Link className="macy-brand" href="/" aria-label="TEESGARAGE Homepage">
-              <Image
-                src="/teesgarage_logo.svg"
-                alt="TEESGARAGE"
-                width={140}
-                height={62}
-                priority
-                className="brand-logo-img"
-              />
+              <span className="macy-brand-wordmark">TEESGARAGE</span>
             </Link>
 
             {/* Desktop search trigger — opens shared SearchOverlay (same UI as mobile) */}
@@ -387,6 +527,14 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 </Link>
               )}
 
+              <Link
+                href="/favorites"
+                className="macy-favorite-btn"
+                aria-label={favorites.length ? `Wishlist with ${favorites.length} saved items` : 'Wishlist'}
+                title="Wishlist"
+              >
+                <Heart className="h-5 w-5" aria-hidden="true" />
+              </Link>
 
           
 
