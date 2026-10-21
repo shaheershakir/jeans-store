@@ -14,7 +14,14 @@ const footerColumn = 'min-w-0'
 
 export default function Footer() {
   const pathname = usePathname()
-  if (pathname === '/login' || pathname === '/register' || pathname === '/onboarding') {
+  if (
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/onboarding' ||
+    pathname === '/checkout' ||
+    pathname?.endsWith('/checkout') ||
+    pathname?.includes('/checkout/')
+  ) {
     return null
   }
 

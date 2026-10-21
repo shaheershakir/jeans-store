@@ -1,26 +1,34 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  type ReactNode,
+  type InputHTMLAttributes
+} from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { addDays, format } from 'date-fns'
 import {
-  ShieldCheck,
   AlertCircle,
-  Truck,
-  RotateCcw,
-  MapPin,
-  Lock,
+  ArrowLeft,
   ArrowRight,
   Check,
-  User,
-  ExternalLink
+  ChevronDown,
+  Loader2,
+  Lock,
+  Minus,
+  Plus,
+  Tag,
+  Trash2
 } from 'lucide-react'
 import { cartCount, cartSubtotal, useCartStore, useAuthStore, type UserAddress } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
 import type { Product } from '@/lib/constants'
-import { getProductSlug, getProductUrl, getAvailableProductSizes } from '@/lib/products'
+import { getProductUrl, getAvailableProductSizes } from '@/lib/products'
 import { trackEvent } from '@/lib/analytics'
 
 export type CheckoutMode =
@@ -49,10 +57,13 @@ interface CheckoutForm {
   phone: string
   address: string
   place: string
+  landmark: string
   district: string
   state: string
   pincode: string
 }
+
+type CheckoutErrors = Partial<Record<keyof CheckoutForm | 'email', string>>
 
 interface DeliveryEstimation {
   minDays: number
@@ -77,10 +88,52 @@ const INITIAL_FORM: CheckoutForm = {
   phone: '',
   address: '',
   place: '',
+  landmark: '',
   district: '',
   state: '',
   pincode: ''
 }
+
+const GUEST_CHECKOUT_KEY = 'teesgarage-guest-checkout'
+
+const INDIAN_STATES = [
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chhattisgarh',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+  'Andaman and Nicobar Islands',
+  'Chandigarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi',
+  'Jammu and Kashmir',
+  'Ladakh',
+  'Lakshadweep',
+  'Puducherry'
+]
 
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -109,8 +162,8 @@ function GooglePayIcon() {
     <svg
       className="inline-block shrink-0"
       viewBox="0 0 24 24"
-      width="18"
-      height="18"
+      width="16"
+      height="16"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -139,8 +192,8 @@ function PhonePeIcon() {
     <svg
       className="inline-block shrink-0"
       viewBox="0 0 24 24"
-      width="18"
-      height="18"
+      width="16"
+      height="16"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -158,8 +211,8 @@ function PaytmIcon() {
     <svg
       className="inline-block shrink-0"
       viewBox="0 0 36 14"
-      width="32"
-      height="13"
+      width="30"
+      height="12"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -194,8 +247,8 @@ function CardsIcon() {
     <svg
       className="inline-block shrink-0"
       viewBox="0 0 24 16"
-      width="22"
-      height="15"
+      width="20"
+      height="14"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -211,8 +264,8 @@ function NetBankingIcon() {
     <svg
       className="inline-block shrink-0"
       viewBox="0 0 24 24"
-      width="18"
-      height="18"
+      width="16"
+      height="16"
       fill="none"
       stroke="#2563EB"
       strokeWidth="2"
@@ -229,10 +282,157 @@ function NetBankingIcon() {
   )
 }
 
-export default function CheckoutClient({
-  mode = { type: 'bag' },
-  checkoutUrl
-}: CheckoutClientProps) {
+interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
+  label: string
+  error?: string
+  prefix?: string
+  trailing?: ReactNode
+}
+
+function Field({ label, error, prefix, trailing, id, className, ...props }: FieldProps) {
+  return (
+    <div className="min-w-0">
+      <label
+        htmlFor={id}
+        className={`flex cursor-text flex-col rounded-lg border bg-white px-3.5 pb-2 pt-1.5 transition-[border-color,box-shadow] duration-150 focus-within:shadow-[0_0_0_1px_rgba(0,0,0,0.06)] ${
+          error ? 'border-[#cf5b55]' : 'border-[#e4e3de] focus-within:border-black'
+        }`}
+      >
+        <span className="text-[11px] font-normal leading-tight text-[#71717A] select-none">{label}</span>
+        <div className="mt-0.5 flex items-center gap-1.5">
+          {prefix ? (
+            <span className="text-[13.5px] leading-normal text-[#18181B] font-normal">{prefix}</span>
+          ) : null}
+          <input
+            id={id}
+            {...props}
+            className={`min-w-0 flex-1 border-0 bg-transparent p-0 text-[13.5px] leading-normal text-[#18181B] outline-none placeholder:text-[#A1A1AA] font-normal ${className ?? ''}`}
+          />
+          {trailing}
+        </div>
+      </label>
+      {error ? <p className="mt-1 pl-1 text-[11px] font-medium text-[#cf5b55]">{error}</p> : null}
+    </div>
+  )
+}
+
+function CustomCheckbox({
+  checked,
+  onChange,
+  label,
+  id
+}: {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  label: string
+  id?: string
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className="inline-flex cursor-pointer items-center gap-2.5 select-none"
+    >
+      <span
+        className={`grid h-4 w-4 shrink-0 place-items-center rounded-[3px] border transition-colors ${
+          checked
+            ? 'border-black bg-black text-white'
+            : 'border-[#D1D0C9] bg-white hover:border-[#888]'
+        }`}
+      >
+        {checked && <Check className="h-3 w-3 stroke-[3]" />}
+      </span>
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only"
+      />
+      <span className="text-[12.5px] leading-normal text-[#27272A] font-normal">
+        {label}
+      </span>
+    </label>
+  )
+}
+
+function RadioDot({ selected }: { selected: boolean }) {
+  return (
+    <div
+      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+        selected ? 'border-black' : 'border-[#D1D0C9]'
+      }`}
+    >
+      {selected && <div className="h-2 w-2 rounded-full bg-black" />}
+    </div>
+  )
+}
+
+type StepState = 'upcoming' | 'active' | 'done'
+
+function StepMarker({ index, label, state }: { index: number; label: string; state: StepState }) {
+  const isCurrent = state === 'active'
+  const isComplete = state === 'done'
+  const isDone = isCurrent || isComplete
+
+  return (
+    <li className="relative flex w-7 flex-col items-center">
+      <span
+        aria-current={isCurrent ? 'step' : undefined}
+        className={`grid h-7 w-7 place-items-center rounded-full text-[11.5px] font-semibold leading-none tabular-nums transition-colors duration-300 ${
+          isDone ? 'bg-black text-white' : 'bg-[#EFEDE8] text-[#7C817F]'
+        }`}
+      >
+        {isComplete ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : index}
+      </span>
+      <span
+        className={`absolute left-1/2 top-[34px] -translate-x-1/2 whitespace-nowrap text-[12px] leading-none transition-colors duration-300 sm:text-[12.5px] ${
+          isDone ? 'font-semibold text-[#111]' : 'font-normal text-[#8A8F8D]'
+        }`}
+      >
+        {label}
+      </span>
+    </li>
+  )
+}
+
+function CheckoutStepper({
+  step,
+  shippingProgress
+}: {
+  step: 0 | 1 | 2
+  shippingProgress: number
+}) {
+  const steps: Array<{ label: string; state: StepState }> = [
+    { label: 'Shipping', state: step > 0 ? 'done' : 'active' },
+    { label: 'Payment', state: step > 1 ? 'done' : step === 1 ? 'active' : 'upcoming' },
+    { label: 'Review', state: step === 2 ? 'active' : 'upcoming' }
+  ]
+
+  // Shipping fills the first half of the rail as its fields are completed.
+  // The second half fills once the payment step is confirmed.
+  const progress =
+    step === 0 ? Math.min(Math.max(shippingProgress, 0), 1) * 0.5 : step === 1 ? 0.5 : 1
+
+  return (
+    <div className="w-full max-w-[520px]" role="group" aria-label="Checkout progress">
+      <div className="relative">
+        <div className="absolute left-3.5 right-3.5 top-[13px] h-0.5 overflow-hidden rounded-full bg-[#E4E2DC]">
+          <div
+            className="h-full rounded-full bg-black transition-[width] duration-500 ease-out"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
+        <ol className="relative flex items-start justify-between">
+          {steps.map((item, i) => (
+            <StepMarker key={item.label} index={i + 1} label={item.label} state={item.state} />
+          ))}
+        </ol>
+      </div>
+    </div>
+  )
+}
+
+export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClientProps) {
   const router = useRouter()
 
   const isProductMode = mode.type === 'product'
@@ -240,6 +440,8 @@ export default function CheckoutClient({
 
   const cartItems = useCartStore((state) => state.items)
   const clearCart = useCartStore((state) => state.clearCart)
+  const updateQty = useCartStore((state) => state.updateQty)
+  const removeItem = useCartStore((state) => state.removeItem)
 
   const [productSize, setProductSize] = useState<string>(() => {
     if (!product) return ''
@@ -295,30 +497,45 @@ export default function CheckoutClient({
   const addAddress = useAuthStore((state) => state.addAddress)
 
   const [form, setForm] = useState<CheckoutForm>(INITIAL_FORM)
-  const [errors, setErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({})
+  const [email, setEmail] = useState('')
+  const [emailUpdates, setEmailUpdates] = useState(true)
+  const [saveAddress, setSaveAddress] = useState(true)
+  const [errors, setErrors] = useState<CheckoutErrors>({})
+  const [step, setStep] = useState<0 | 1 | 2>(0)
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuote | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
-
-  // Profile Autofill State
-  const [isAutofilled, setIsAutofilled] = useState(false)
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
-  const [showAddressPicker, setShowAddressPicker] = useState(false)
-  const [saveToProfile, setSaveToProfile] = useState(true)
-  const [isManuallyEdited, setIsManuallyEdited] = useState(false)
   const [pincodeLoading, setPincodeLoading] = useState(false)
-  const [pincodeDetected, setPincodeDetected] = useState<string | null>(null)
+  const [couponInput, setCouponInput] = useState('')
+  const [couponMessage, setCouponMessage] = useState<string | null>(null)
 
-  // Target URL to return to if redirected to login
-  const targetRedirect =
-    checkoutUrl ||
-    (isProductMode && product ? `/${getProductSlug(product)}/checkout` : '/bag/checkout')
+  const backHref = isProductMode && product ? getProductUrl(product) : '/bag'
 
-  // Check if user has completed saved information (address, name, and phone number)
+  // Prefill contact details for signed-in customers.
+  useEffect(() => {
+    if (user?.email) setEmail((prev) => prev || user.email)
+  }, [user])
+
+  // Restore a guest's previous shipping details on this device.
+  useEffect(() => {
+    try {
+      if (useAuthStore.getState().isAuthenticated) return
+      const raw = window.localStorage.getItem(GUEST_CHECKOUT_KEY)
+      if (!raw) return
+      const saved = JSON.parse(raw) as { email?: string; form?: Partial<CheckoutForm> }
+      if (saved.email) setEmail((prev) => prev || saved.email || '')
+      if (saved.form) {
+        setForm((prev) => ({ ...prev, ...saved.form }))
+      }
+    } catch {
+      // Guest prefill is a convenience; ignore unavailable storage.
+    }
+  }, [])
+
   const completedSavedAddress = useMemo(() => {
-    if (!addresses || addresses.length === 0) return null
+    if (!isAuthenticated || !addresses || addresses.length === 0) return null
     return (
       addresses.find(
         (a) =>
@@ -328,17 +545,7 @@ export default function CheckoutClient({
           Boolean(a.phone?.trim() || user?.phone?.trim())
       ) || null
     )
-  }, [addresses, user])
-
-  const hasSavedInfo = Boolean(completedSavedAddress)
-  const [deliveryMode, setDeliveryMode] = useState<'saved' | 'new'>('saved')
-
-  const count = isProductMode ? productQty : cartCount(cartItems)
-  const subtotal =
-    deliveryQuote?.subtotal ??
-    (isProductMode ? (product?.priceNum ?? 0) * productQty : cartSubtotal(cartItems))
-  const shipping = deliveryQuote?.shipping ?? 0
-  const total = deliveryQuote?.total ?? subtotal
+  }, [isAuthenticated, addresses, user])
 
   const applySavedAddress = useCallback(
     (addr: UserAddress) => {
@@ -351,44 +558,18 @@ export default function CheckoutClient({
         phone: recipientPhone,
         address: addr.addressLine || '',
         place: placeVal,
+        landmark: '',
         district: districtVal,
         state: addr.state || '',
         pincode: (addr.pincode || '').replace(/\D/g, '').slice(0, 6)
       })
-      setSelectedAddressId(addr.id)
-      setIsAutofilled(true)
-      setIsManuallyEdited(false)
-      if (districtVal || addr.state) {
-        setPincodeDetected(districtVal ? `${districtVal}, ${addr.state}` : addr.state)
-      }
     },
     [user]
   )
 
-  function handleSelectDeliveryMode(mode: 'saved' | 'new') {
-    if (mode === deliveryMode) return
-    setDeliveryMode(mode)
-    setShowAddressPicker(false)
-
-    if (mode === 'saved') {
-      const targetAddr =
-        addresses?.find((a) => a.id === selectedAddressId) ||
-        completedSavedAddress ||
-        addresses?.find((a) => a.isDefault) ||
-        addresses?.[0]
-      if (targetAddr) {
-        applySavedAddress(targetAddr)
-      }
-    } else {
-      setForm(INITIAL_FORM)
-      setSelectedAddressId(null)
-      setPincodeDetected(null)
-      setErrors({})
-      setDeliveryQuote(null)
-      setIsAutofilled(false)
-      setIsManuallyEdited(true)
-    }
-  }
+  useEffect(() => {
+    if (completedSavedAddress) applySavedAddress(completedSavedAddress)
+  }, [completedSavedAddress, applySavedAddress])
 
   useEffect(() => {
     void useCartStore.persist.rehydrate()
@@ -396,12 +577,11 @@ export default function CheckoutClient({
     void loadRazorpayScript()
   }, [])
 
-  // Track checkout initiation
   useEffect(() => {
     if (items.length > 0) {
       trackEvent('checkout_started', {
         item_count: items.reduce((sum, item) => sum + item.qty, 0),
-        subtotal,
+        subtotal: cartSubtotal(items),
         currency: 'INR',
         direct_buy: isProductMode,
         items: items.map((item) => ({
@@ -416,24 +596,7 @@ export default function CheckoutClient({
     }
   }, [items.length, isProductMode])
 
-  // Auto-populate from profile if available on sign-in
-  useEffect(() => {
-    if (completedSavedAddress) {
-      applySavedAddress(completedSavedAddress)
-      setDeliveryMode('saved')
-    } else if (user) {
-      setForm((prev) => ({
-        ...prev,
-        name: user.name || prev.name,
-        phone: (user.phone || prev.phone).replace(/\D/g, '').slice(-10)
-      }))
-      setDeliveryMode('new')
-    } else {
-      setDeliveryMode('new')
-    }
-  }, [user, completedSavedAddress, applySavedAddress])
-
-  // Recalculate quote whenever pincode or state changes
+  // Recalculate the delivery quote whenever the destination or basket changes.
   useEffect(() => {
     const cleanPin = form.pincode.replace(/\D/g, '').slice(0, 6)
     const hasPin = cleanPin.length === 6
@@ -490,7 +653,6 @@ export default function CheckoutClient({
     }
   }, [form.pincode, form.state, items])
 
-  // Dynamic delivery date calculation using date-fns determined by PIN code
   const deliveryEstimationInfo = useMemo(() => {
     const cleanPin = form.pincode.replace(/\D/g, '').slice(0, 6)
     const hasValidPin = cleanPin.length === 6
@@ -501,8 +663,11 @@ export default function CheckoutClient({
     const estimation = deliveryQuote?.deliveryEstimation
 
     if (estimation?.exactDeliveryDate?.trim()) {
+      const raw = estimation.exactDeliveryDate.trim()
       return {
-        formattedRange: estimation.exactDeliveryDate.trim(),
+        formattedRange: raw,
+        deliveryOptionDate: raw,
+        arrivalDisplayDate: raw,
         hasPin: hasValidPin,
         isKerala
       }
@@ -511,147 +676,255 @@ export default function CheckoutClient({
     if (!hasValidPin && !form.state.trim()) {
       return {
         formattedRange: 'Enter PIN code to view delivery date',
+        deliveryOptionDate: 'Enter your PIN code for a delivery date',
+        arrivalDisplayDate: 'Add a PIN code',
         hasPin: false,
         isKerala: false
       }
     }
 
-    // Kerala: 2-5 days, Outside Kerala: 1-2 weeks (7-14 days)
-    const minDays = estimation?.minDays ?? (isKerala ? 2 : 7)
-    const maxDays = estimation?.maxDays ?? (isKerala ? 5 : 14)
+    const minDays = estimation?.minDays ?? (isKerala ? 2 : 4)
+    const maxDays = estimation?.maxDays ?? (isKerala ? 4 : 7)
 
     const now = new Date()
     const minDate = addDays(now, minDays)
     const maxDate = addDays(now, maxDays)
 
-    // Formatted example: 16 Oct 2026 – 21 Oct 2026
-    const formattedRange = `${format(minDate, 'd MMM yyyy')} – ${format(maxDate, 'd MMM yyyy')}`
-
     return {
-      formattedRange,
+      formattedRange: `${format(minDate, 'd MMM yyyy')} – ${format(maxDate, 'd MMM yyyy')}`,
+      deliveryOptionDate: format(minDate, 'EEE, d MMM'),
+      arrivalDisplayDate: format(minDate, 'EEE, MMM d'),
       hasPin: true,
       isKerala
     }
   }, [form.pincode, form.state, deliveryQuote?.deliveryEstimation])
 
+  const subtotal =
+    deliveryQuote?.subtotal ??
+    (isProductMode ? (product?.priceNum ?? 0) * productQty : cartSubtotal(cartItems))
+  const shipping = deliveryQuote?.shipping ?? 40
+  const total = deliveryQuote?.total ?? subtotal + shipping
+  const count = isProductMode ? productQty : cartCount(cartItems)
+
+  const itemsWithPricing = useMemo(() => {
+    return items.map((item) => {
+      const originalPrice = Math.round((item.priceNum * 1.285) / 10) * 10 - 1
+      const discountPercent = Math.max(
+        5,
+        Math.round(((originalPrice - item.priceNum) / originalPrice) * 100)
+      )
+      return {
+        ...item,
+        originalPrice,
+        discountPercent
+      }
+    })
+  }, [items])
+
+  const originalSubtotal = useMemo(() => {
+    return itemsWithPricing.reduce((sum, item) => sum + item.originalPrice * item.qty, 0)
+  }, [itemsWithPricing])
+
+  const totalSavings = useMemo(() => {
+    const rawSavings = originalSubtotal - subtotal
+    return rawSavings > 0 ? rawSavings : 0
+  }, [originalSubtotal, subtotal])
+
+  const userAvatarInitial = useMemo(() => {
+    if (user?.name?.trim()) {
+      const parts = user.name.trim().split(/\s+/)
+      return (parts[parts.length - 1]?.[0] || parts[0]?.[0] || 'S').toUpperCase()
+    }
+    if (user?.email?.trim()) {
+      return user.email.trim()[0].toUpperCase()
+    }
+    return 'S'
+  }, [user])
+
+  const cleanPin = form.pincode.replace(/\D/g, '').slice(0, 6)
+  const phoneDigits = form.phone.replace(/\D/g, '')
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+
+  const isShippingComplete = useMemo(() => {
+    return Boolean(
+      emailValid &&
+      form.name.trim().length >= 2 &&
+      phoneDigits.length === 10 &&
+      form.address.trim().length >= 5 &&
+      form.district.trim().length >= 2 &&
+      form.state.trim().length >= 2 &&
+      cleanPin.length === 6
+    )
+  }, [emailValid, form, phoneDigits, cleanPin])
+
+  const shippingProgress = useMemo(() => {
+    const checks = [
+      emailValid,
+      form.name.trim().length >= 2,
+      phoneDigits.length === 10,
+      cleanPin.length === 6,
+      form.address.trim().length >= 5,
+      form.district.trim().length >= 2,
+      form.state.trim().length >= 2
+    ]
+    return checks.filter(Boolean).length / checks.length
+  }, [emailValid, form.name, form.address, form.district, form.state, phoneDigits, cleanPin])
+
+  const canContinue = Boolean(isShippingComplete && !quoteLoading)
+  const canPay = Boolean(canContinue && !isProcessing && items.length > 0)
+  const shippingDisplay = deliveryQuote
+    ? shipping === 0
+      ? 'Free'
+      : formatPrice(shipping)
+    : quoteLoading
+      ? 'Calculating…'
+      : formatPrice(40)
+  const arrivalDisplay = deliveryEstimationInfo.hasPin
+    ? deliveryEstimationInfo.arrivalDisplayDate
+    : 'Add a PIN code'
+  const deliveryOptionSubtitle = deliveryEstimationInfo.hasPin
+    ? `Arrives by ${deliveryEstimationInfo.deliveryOptionDate}`
+    : 'Enter your PIN code for a delivery date'
+
   function handleFieldChange(field: keyof CheckoutForm, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
-    setIsManuallyEdited(true)
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
   }
 
-  async function handlePincodeLookup(pin: string) {
-    const cleanPin = pin.replace(/\D/g, '').slice(0, 6)
-    handleFieldChange('pincode', cleanPin)
-
-    if (cleanPin.length === 6) {
-      setPincodeLoading(true)
-      try {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${cleanPin}`)
-        const data = await res.json()
-        if (
-          Array.isArray(data) &&
-          data[0]?.Status === 'Success' &&
-          data[0]?.PostOffice?.length > 0
-        ) {
-          const po = data[0].PostOffice[0]
-          const district = po.District || po.Name || ''
-          const state = po.State || ''
-          const place = po.Name || ''
-          setForm((prev) => ({
-            ...prev,
-            pincode: cleanPin,
-            place: prev.place.trim() ? prev.place : place,
-            district: prev.district.trim() ? prev.district : district,
-            state: state || prev.state
-          }))
-          setPincodeDetected(district ? `${district}, ${state}` : state)
-          setErrors((prev) => ({
-            ...prev,
-            pincode: undefined,
-            state: undefined,
-            district: undefined
-          }))
-        } else {
-          setPincodeDetected(null)
-          setErrors((prev) => ({ ...prev, pincode: 'Invalid PIN code or location not found' }))
-        }
-      } catch {
-        setPincodeDetected(null)
-      } finally {
-        setPincodeLoading(false)
-      }
-    } else {
-      setPincodeDetected(null)
-    }
+  function handleEmailChange(value: string) {
+    setEmail(value)
+    if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }))
   }
 
-  const isFormComplete = useMemo(() => {
-    return Boolean(
-      form.name.trim().length >= 2 &&
-      form.phone.replace(/\D/g, '').length === 10 &&
-      form.address.trim().length >= 5 &&
-      form.place.trim().length >= 2 &&
-      form.district.trim().length >= 2 &&
-      form.state.trim().length >= 2 &&
-      form.pincode.replace(/\D/g, '').length === 6
-    )
-  }, [form])
+  async function handlePincodeLookup(pin: string) {
+    const nextPin = pin.replace(/\D/g, '').slice(0, 6)
+    handleFieldChange('pincode', nextPin)
 
-  const canSubmit = Boolean(
-    isFormComplete && deliveryQuote && !quoteLoading && !isProcessing && items.length > 0
-  )
+    if (nextPin.length !== 6) return
 
-  function handleClearForm() {
-    setForm(INITIAL_FORM)
-    setIsAutofilled(false)
-    setSelectedAddressId(null)
-    setShowAddressPicker(false)
-    setIsManuallyEdited(true)
-    setPincodeDetected(null)
-    setErrors({})
-    setDeliveryQuote(null)
-    setPaymentError(null)
-    setQuoteError(null)
+    setPincodeLoading(true)
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${nextPin}`)
+      const data = await res.json()
+      if (Array.isArray(data) && data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
+        const po = data[0].PostOffice[0]
+        const district = po.District || po.Name || ''
+        const state = po.State || ''
+        setForm((prev) => ({
+          ...prev,
+          pincode: nextPin,
+          district: prev.district.trim() ? prev.district : district,
+          state: state || prev.state
+        }))
+        setErrors((prev) => ({
+          ...prev,
+          pincode: undefined,
+          state: undefined,
+          district: undefined
+        }))
+      } else {
+        setErrors((prev) => ({ ...prev, pincode: 'Invalid PIN code or location not found' }))
+      }
+    } catch {
+      // The quote request still runs with the state the customer selects.
+    } finally {
+      setPincodeLoading(false)
+    }
   }
 
   function validate(): boolean {
-    const nextErrors: Partial<Record<keyof CheckoutForm, string>> = {}
+    const nextErrors: CheckoutErrors = {}
 
-    if (!form.name.trim()) nextErrors.name = 'Full name is required'
-    if (!form.phone.trim() || form.phone.replace(/\D/g, '').length < 10) {
-      nextErrors.phone = 'Valid 10-digit mobile number is required'
-    }
-    if (!form.address.trim()) nextErrors.address = 'Street / building address is required'
-    if (!form.place.trim()) nextErrors.place = 'Place / locality is required'
-    if (!form.district.trim()) nextErrors.district = 'District is required'
-    if (!form.state.trim()) nextErrors.state = 'State is required'
-    if (!form.pincode.trim() || form.pincode.replace(/\D/g, '').length !== 6) {
-      nextErrors.pincode = 'Valid 6-digit PIN code is required'
-    }
+    if (!emailValid) nextErrors.email = 'Enter a valid email address'
+    if (form.name.trim().length < 2) nextErrors.name = 'Full name is required'
+    if (phoneDigits.length !== 10) nextErrors.phone = 'Enter a valid 10-digit mobile number'
+    if (form.pincode.replace(/\D/g, '').length !== 6)
+      nextErrors.pincode = 'Enter a valid 6-digit PIN code'
+    if (form.address.trim().length < 5) nextErrors.address = 'Address line 1 is required'
+    if (form.district.trim().length < 2) nextErrors.district = 'City is required'
+    if (form.state.trim().length < 2) nextErrors.state = 'State is required'
 
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
   }
 
+  function goToStep(nextStep: 0 | 1 | 2) {
+    setStep(nextStep)
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  function handleApplyCoupon() {
+    const code = couponInput.trim()
+    if (!code) {
+      setCouponMessage('Enter a discount code.')
+      return
+    }
+    setCouponMessage('This code is not valid for your order.')
+  }
+
+  function handleIncrement(item: (typeof items)[number]) {
+    if (isProductMode) {
+      setProductQty((qty) => Math.min(qty + 1, 10))
+      return
+    }
+    updateQty(item.id, item.size, 1, item.variantId)
+  }
+
+  function handleDecrement(item: (typeof items)[number]) {
+    if (isProductMode) {
+      setProductQty((qty) => Math.max(1, qty - 1))
+      return
+    }
+    updateQty(item.id, item.size, -1, item.variantId)
+  }
+
+  function handleRemove(item: (typeof items)[number]) {
+    if (isProductMode && product) {
+      router.push(getProductUrl(product))
+      return
+    }
+    removeItem(item.id, item.size, item.variantId)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    // 1. Enforce Authentication Requirement
-    if (!isAuthenticated || !user || !authToken) {
-      router.push(`/login?redirect=${encodeURIComponent(targetRedirect)}`)
+    if (step === 0) {
+      if (!validate()) return
+      if (!deliveryQuote) {
+        setPaymentError(quoteError || 'Enter a valid PIN code and state to calculate delivery.')
+        return
+      }
+      setPaymentError(null)
+      goToStep(1)
       return
     }
 
-    // 2. Validate Form Fields
-    if (!validate()) return
+    if (step === 1) {
+      if (!validate()) {
+        goToStep(0)
+        return
+      }
+      setPaymentError(null)
+      goToStep(2)
+      return
+    }
+
+    await handlePayNow()
+  }
+
+  async function handlePayNow() {
+    if (!validate()) {
+      goToStep(0)
+      return
+    }
 
     if (!deliveryQuote) {
-      setPaymentError(
-        quoteError || 'Please enter a valid PIN code and state to calculate delivery.'
-      )
+      setPaymentError(quoteError || 'Enter a valid PIN code and state to calculate delivery.')
       return
     }
 
@@ -662,12 +935,15 @@ export default function CheckoutClient({
       store: 'teesgarage',
       customerName: form.name.trim(),
       customerPhone: form.phone.trim(),
-      customerEmail: user.email.trim(),
+      customerEmail: email.trim(),
       address: form.address.trim(),
-      apartment: form.place.trim() || undefined,
+      apartment: [form.place.trim(), form.landmark.trim()].filter(Boolean).join(', ') || undefined,
       city: form.district.trim(),
       state: form.state.trim(),
       pincode: form.pincode.trim(),
+      notes: emailUpdates
+        ? 'Customer opted in to order updates by email.'
+        : 'Customer opted out of email updates.',
       items: items.map((item) => ({
         id: item.id,
         variantId: item.variantId,
@@ -697,7 +973,7 @@ export default function CheckoutClient({
           pincode: form.pincode.trim(),
           items: orderPayload.items,
           customerName: form.name.trim(),
-          customerEmail: user.email.trim(),
+          customerEmail: email.trim(),
           customerPhone: form.phone.trim()
         })
       })
@@ -720,7 +996,7 @@ export default function CheckoutClient({
         order_id: rzpData.razorpayOrderId,
         prefill: {
           name: form.name.trim(),
-          email: user.email.trim(),
+          email: email.trim(),
           contact: form.phone.trim()
         },
         notes: {
@@ -737,12 +1013,14 @@ export default function CheckoutClient({
           razorpay_signature: string
         }) {
           try {
+            const verifyHeaders: Record<string, string> = {
+              'Content-Type': 'application/json'
+            }
+            if (authToken) verifyHeaders.Authorization = `Bearer ${authToken}`
+
             const verifyRes = await fetch(`${backendUrl}/api/orders/razorpay/verify`, {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${authToken}`
-              },
+              headers: verifyHeaders,
               body: JSON.stringify({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
@@ -761,18 +1039,29 @@ export default function CheckoutClient({
               throw new Error(verifyErr.error || 'Payment signature verification failed')
             }
 
-            if (saveToProfile) {
-              addAddress({
-                fullName: form.name.trim(),
-                phone: form.phone.trim(),
-                addressLine: form.address.trim(),
-                place: form.place.trim(),
-                district: form.district.trim(),
-                city: form.district.trim(),
-                state: form.state.trim(),
-                pincode: form.pincode.trim(),
-                isDefault: false
-              })
+            if (saveAddress) {
+              if (isAuthenticated) {
+                addAddress({
+                  fullName: form.name.trim(),
+                  phone: form.phone.trim(),
+                  addressLine: form.address.trim(),
+                  place: form.place.trim(),
+                  district: form.district.trim(),
+                  city: form.district.trim(),
+                  state: form.state.trim(),
+                  pincode: form.pincode.trim(),
+                  isDefault: false
+                })
+              } else {
+                try {
+                  window.localStorage.setItem(
+                    GUEST_CHECKOUT_KEY,
+                    JSON.stringify({ email: email.trim(), form })
+                  )
+                } catch {
+                  // Saving details is optional; never block a paid order.
+                }
+              }
             }
 
             const confirmedOrder = verifyData.order || {}
@@ -809,8 +1098,7 @@ export default function CheckoutClient({
                 })
               )
             } catch {
-              // The order is already verified. Do not turn a storage limitation
-              // into a payment failure; the receipt page can recover via orders.
+              // The order is verified; the receipt page can recover via the order number.
             }
 
             trackEvent('order_completed', {
@@ -821,7 +1109,7 @@ export default function CheckoutClient({
               shipping,
               currency: 'INR',
               item_count: items.reduce((sum, item) => sum + item.qty, 0),
-              customer_email: user?.email,
+              customer_email: email.trim(),
               payment_method: 'razorpay',
               items: items.map((item) => ({
                 product_id: item.id,
@@ -869,954 +1157,731 @@ export default function CheckoutClient({
     }
   }
 
-  // Empty Bag View
+  // Empty bag view
   if (!isProductMode && count === 0) {
     return (
-      <main className="checkout-page min-h-[calc(100dvh-120px)] bg-[#f8f7f3] px-[clamp(18px,4vw,56px)] pt-[clamp(28px,5vw,64px)] pb-20 font-ui text-[#172126] [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:pt-6 [@media(max-width:639px)]:pb-[calc(56px+env(safe-area-inset-bottom,0px))]">
-        <div className="mx-auto my-10 max-w-[640px] rounded-[2px] border border-[#dfded8] bg-white p-10 text-center">
-          <span>BAG EMPTY</span>
-          <h1 className="mb-2 font-brand text-[20px] font-semibold leading-[1.12] tracking-[-0.05em] text-[#172126]">
-            Your shopping bag is empty
-          </h1>
-          <p className="mb-5 text-[14px] leading-[21px] text-[#6b7280]">
-            Find a tee, Henley, or bottomwear style to start your order.
-          </p>
-          <div
-            style={{
-              display: 'flex',
-              gap: '12px',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              marginTop: '16px'
-            }}
-          >
-            <Link
-              href="/bag"
-              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-[6px] border-0 bg-transparent px-6 py-3 font-brand text-[13.5px] font-semibold tracking-[-0.01em] text-[#172126] no-underline transition-all duration-150 ease-[ease]"
-            >
-              View Shopping Bag
+      <main className="checkout-page min-h-screen bg-[#FBFBFA] pb-24 font-ui text-[#1C2022]">
+        <header className="w-full">
+          <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+            <Link href="/" className="inline-block transition-opacity hover:opacity-85" aria-label="TEESGARAGE Homepage">
+              <Image
+                src="/teesgarage-logo.svg"
+                alt="TEESGARAGE"
+                width={150}
+                height={42}
+                priority
+                className="h-[30px] sm:h-[34px] w-auto object-contain"
+              />
             </Link>
-            <Link
-              href="/shop"
-              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-ink bg-ink px-6 py-3 font-brand text-[13.5px] font-semibold tracking-[-0.01em] text-white no-underline transition-all duration-150 ease-[ease] hover:-translate-y-px hover:bg-[#1c2330] hover:shadow-[0_4px_14px_rgba(12,14,18,0.18)]"
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAE8E4] text-[13px] font-semibold text-[#1C2022] select-none"
+              title={user?.name || user?.email || 'Account'}
             >
-              Explore products <i>↗</i>
-            </Link>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
-  // 3. Unauthenticated Gate View - Restrict ordering without signing in
-  if (!isAuthenticated || !user) {
-    return (
-      <main className="checkout-page min-h-[calc(100dvh-120px)] bg-[#f8f7f3] px-[clamp(18px,4vw,56px)] pt-[clamp(28px,5vw,64px)] pb-20 font-ui text-[#172126] [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:pt-6 [@media(max-width:639px)]:pb-[calc(56px+env(safe-area-inset-bottom,0px))]">
-        <div className="mx-auto max-w-[1200px]">
-          <div className="mb-9">
-            <nav
-              className="mb-6 flex items-center gap-2 font-ui text-[11px] font-medium uppercase tracking-[0.025em] text-[#747d80]"
-              aria-label="Breadcrumb"
-            >
-              <Link href="/">Home</Link>
-              <span className="text-[#a1a1aa] opacity-40">/</span>
-              {isProductMode && product ? (
-                <>
-                  <Link href={getProductUrl(product)}>{product.name}</Link>
-                  <span className="text-[#a1a1aa] opacity-40">/</span>
-                  <span className="max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-[#172126]">
-                    Checkout
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Link href="/bag">Shopping Bag</Link>
-                  <span className="text-[#a1a1aa] opacity-40">/</span>
-                  <span className="max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-[#172126]">
-                    Checkout
-                  </span>
-                </>
-              )}
-            </nav>
-            <h1 className="my-2 font-brand text-[clamp(28px,3.5vw,36px)] font-semibold leading-[normal] tracking-[-0.05em] text-[#172126]">
-              {isProductMode && product
-                ? `Sign in to order ${product.name}`
-                : 'Sign in to complete your order'}
-            </h1>
-            <p className="max-w-[620px] text-[14px] leading-[21px] text-[#3f4753]">
-              {isProductMode && product
-                ? `An account is required to place your direct order for ${product.name}, calculate live courier delivery, and protect your purchase.`
-                : 'An account is required to place an order, view live delivery tracking, and protect your purchase.'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-[1.5fr_1fr] items-start gap-6 [@media(min-width:640px)]:gap-8 [@media(min-width:901px)]:gap-12 [@media(max-width:900px)]:grid-cols-1">
-            <div className="flex flex-col gap-6 rounded-[6px] border border-line bg-white p-8">
-              <div className="flex items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[3px] border border-line bg-bone">
-                  <Lock className="w-5 h-5 text-ink" />
-                </div>
-                <div>
-                  <h2 className="m-0 mb-1.5 font-brand text-[18px] font-semibold leading-[normal] tracking-[-0.01em] text-ink">
-                    Authentication Required
-                  </h2>
-                  <p className="m-0 text-[13.5px] leading-[1.5] text-ink-secondary">
-                    Sign in with your email or Google account to access your saved delivery address,
-                    or create a new account in under a minute.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href={`/login?redirect=${encodeURIComponent(targetRedirect)}`}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-[3px] border border-ink bg-ink px-[22px] py-[13px] font-brand text-[13px] font-semibold leading-[1.5] tracking-[-0.01em] text-white no-underline transition-all duration-150 ease-[ease]"
-                >
-                  <span>Sign in to your account</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href={`/register?redirect=${encodeURIComponent(targetRedirect)}`}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-[3px] border-0 bg-transparent px-[22px] py-[13px] font-brand text-[13px] font-semibold leading-[1.5] tracking-[-0.01em] text-[#172126] no-underline transition-all duration-150 ease-[ease]"
-                >
-                  <span>Create new account</span>
-                </Link>
-              </div>
-
-              <div className="flex flex-col gap-2.5 border-t border-line pt-5">
-                <div className="flex items-center gap-2.5 text-[13px] text-ink">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Saved addresses auto-fill instantly</span>
-                </div>
-                <div className="flex items-center gap-2.5 text-[13px] text-ink">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Live expected delivery calculation based on your PIN code</span>
-                </div>
-                <div className="flex items-center gap-2.5 text-[13px] text-ink">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Secure online payment via Razorpay (UPI, Cards &amp; NetBanking)</span>
-                </div>
-              </div>
+              {userAvatarInitial}
             </div>
+          </div>
+        </header>
 
-            {/* Bag Summary Sidebar for unauthenticated users */}
-            <aside className="sticky top-[90px] [@media(max-width:900px)]:static [@media(max-width:900px)]:-order-1">
-              <div className="rounded-[2px] border border-[#dfded8] bg-white p-6 [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:py-[18px]">
-                <div className="mb-5 border-b border-line pb-3">
-                  <span className="font-ui text-[10px] font-semibold leading-[normal] tracking-[0.08em] text-[#6b7280]">
-                    {isProductMode
-                      ? `DIRECT // 1 ITEM (${productQty} QTY)`
-                      : `MANIFEST // ${count} ITEMS`}
-                  </span>
-                  <h2 className="m-0 mt-1 font-brand text-[18px] font-semibold leading-[normal] tracking-[-0.05em] text-[#172126]">
-                    {isProductMode ? 'Product Summary' : 'Order Summary'}
-                  </h2>
-                </div>
-
-                <div className="mb-5 flex max-h-80 flex-col gap-3.5 overflow-y-auto">
-                  {items.map((item) => (
-                    <div
-                      key={`${item.id}-${item.variantId ?? item.size}`}
-                      className="flex items-center gap-3"
-                    >
-                      <Image
-                        src={item.img}
-                        alt={item.name}
-                        width={56}
-                        height={70}
-                        className="h-[70px] w-14 rounded-[3px] bg-white object-cover"
-                      />
-                      <div className="flex-1">
-                        <h3 className="m-0 mb-0.5 font-brand text-[13px] font-medium leading-[normal] tracking-[-0.025em] text-ink">
-                          {item.name}
-                        </h3>
-                        <p className="m-0 mb-1 font-ui text-[11px] leading-[normal] text-ink-secondary">
-                          {[
-                            item.color,
-                            item.fit ? `${item.fit} Fit` : null,
-                            `Size ${item.size}`,
-                            `Qty ${item.qty}`
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </p>
-                        <span className="font-ui text-[13px] font-semibold leading-[normal] text-ink [font-feature-settings:'tnum']">
-                          {formatPrice(item.priceNum * item.qty)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex flex-col gap-2 border-y border-line py-3.5">
-                  <div className="flex justify-between font-ui text-[13px] font-medium text-ink-secondary [font-feature-settings:'tnum'] leading-[normal]">
-                    <span>Subtotal</span>
-                    <span>{formatPrice(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between font-ui text-[13px] font-medium text-ink-secondary [font-feature-settings:'tnum'] leading-[normal]">
-                    <span>Delivery charge</span>
-                    <span>Calculated after sign-in</span>
-                  </div>
-                  <div className="flex justify-between border-t border-dashed border-line pt-1.5 font-ui text-[15px] font-semibold leading-[normal] text-ink [font-feature-settings:'tnum']">
-                    <span>Subtotal before delivery</span>
-                    <span>{formatPrice(subtotal)}</span>
-                  </div>
-                </div>
-
-                <div className="mt-[18px] flex flex-col gap-[5px] rounded-[3px] border border-[#bbf7d0] bg-[#f4fbf7] px-4 py-3.5">
-                  <div className="flex items-center gap-1.5">
-                    <Truck className="w-4 h-4 text-emerald-600" />
-                    <span className="text-[11px] font-bold uppercase tracking-[0.05em] text-[#166534]">
-                      Expected delivery
-                    </span>
-                  </div>
-                  <div className="text-[14px] font-bold tracking-[-0.01em] text-ink">
-                    {deliveryEstimationInfo.formattedRange}
-                  </div>
-                </div>
-              </div>
-            </aside>
+        <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 pt-8">
+          <div className="mx-auto mt-8 max-w-[560px] rounded-xl border border-[#E5E5DF] bg-white px-8 py-12 text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8b8f8e]">
+              Bag empty
+            </p>
+            <h1 className="mt-2 text-[22px] font-semibold tracking-[-0.02em] text-[#1c2022]">
+              Your shopping bag is empty
+            </h1>
+            <p className="mt-2 text-[13px] leading-[1.6] text-[#6f7473]">
+              Find a tee, Henley, or bottomwear style to start your order.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/bag"
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-[#e3e2dd] px-5 text-[12.5px] font-semibold text-[#1c2022] no-underline transition-colors hover:border-[#111315]"
+              >
+                View shopping bag
+              </Link>
+              <Link
+                href="/shop"
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-[#111315] px-5 text-[12.5px] font-semibold text-white no-underline transition-colors hover:bg-[#24272a]"
+              >
+                Explore products
+              </Link>
+            </div>
           </div>
         </div>
       </main>
     )
   }
 
-  // 4. Authenticated Checkout Flow
-  const activeAddrObj =
-    addresses?.find((a) => a.id === selectedAddressId) ||
-    addresses?.find((a) => a.isDefault) ||
-    addresses?.[0]
-
-  const renderFormFields = () => (
-    <>
-      {/* Row 1: Name and Mobile */}
-      <div className="mb-4 flex gap-4 last:mb-0 [@media(max-width:639px)]:flex-col [@media(max-width:639px)]:gap-3.5 [@media(max-width:900px)]:flex-col">
-        <div className="flex flex-1 flex-col gap-1.5">
-          <label
-            className="font-ui text-[11px] font-medium uppercase leading-[normal] tracking-[0.04em] text-ink-secondary"
-            htmlFor="name"
-          >
-            Name *
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={form.name}
-            onChange={(e) => handleFieldChange('name', e.target.value)}
-            placeholder="Full Name"
-            className={
-              errors.name
-                ? 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#dc2626]'
-                : 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#d6d7d3]'
-            }
-            autoComplete="name"
-          />
-          {errors.name && (
-            <span className="font-ui text-[11px] font-medium leading-[normal] text-[#dc2626]">
-              {errors.name}
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-1 flex-col gap-1.5">
-          <label
-            className="font-ui text-[11px] font-medium uppercase leading-[normal] tracking-[0.04em] text-ink-secondary"
-            htmlFor="phone"
-          >
-            Mobile *
-          </label>
-          <input
-            id="phone"
-            type="tel"
-            maxLength={10}
-            value={form.phone}
-            onChange={(e) => handleFieldChange('phone', e.target.value.replace(/\D/g, ''))}
-            placeholder="10-digit mobile number"
-            className={
-              errors.phone
-                ? 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#dc2626]'
-                : 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#d6d7d3]'
-            }
-            autoComplete="tel"
-          />
-          {errors.phone && (
-            <span className="font-ui text-[11px] font-medium leading-[normal] text-[#dc2626]">
-              {errors.phone}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Row 2: Address */}
-      <div className="mb-4 flex gap-4 last:mb-0 [@media(max-width:639px)]:flex-col [@media(max-width:639px)]:gap-3.5">
-        <div className="flex flex-1 flex-col gap-1.5">
-          <label
-            className="font-ui text-[11px] font-medium uppercase leading-[normal] tracking-[0.04em] text-ink-secondary"
-            htmlFor="address"
-          >
-            Address *
-          </label>
-          <input
-            id="address"
-            type="text"
-            value={form.address}
-            onChange={(e) => handleFieldChange('address', e.target.value)}
-            placeholder="House / Flat / Building / Street address"
-            className={
-              errors.address
-                ? 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#dc2626]'
-                : 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#d6d7d3]'
-            }
-            autoComplete="street-address"
-          />
-          {errors.address && (
-            <span className="font-ui text-[11px] font-medium leading-[normal] text-[#dc2626]">
-              {errors.address}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Row 3: Place and Pincode */}
-      <div className="mb-4 flex gap-4 last:mb-0 [@media(max-width:639px)]:flex-col [@media(max-width:639px)]:gap-3.5 [@media(max-width:900px)]:flex-col">
-        <div className="flex flex-1 flex-col gap-1.5">
-          <label
-            className="font-ui text-[11px] font-medium uppercase leading-[normal] tracking-[0.04em] text-ink-secondary"
-            htmlFor="place"
-          >
-            Place *
-          </label>
-          <input
-            id="place"
-            type="text"
-            value={form.place}
-            onChange={(e) => handleFieldChange('place', e.target.value)}
-            placeholder="Town / Locality / Landmark"
-            className={
-              errors.place
-                ? 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#dc2626]'
-                : 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#d6d7d3]'
-            }
-          />
-          {errors.place && (
-            <span className="font-ui text-[11px] font-medium leading-[normal] text-[#dc2626]">
-              {errors.place}
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-1 flex-col gap-1.5">
-          <label
-            className="font-ui text-[11px] font-medium uppercase leading-[normal] tracking-[0.04em] text-ink-secondary"
-            htmlFor="pincode"
-          >
-            Pincode *
-          </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              id="pincode"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={6}
-              value={form.pincode}
-              onChange={(e) => handlePincodeLookup(e.target.value)}
-              placeholder="6-digit PIN code"
-              className={
-                errors.pincode
-                  ? 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#dc2626]'
-                  : 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#d6d7d3]'
-              }
-              autoComplete="postal-code"
-            />
-            {pincodeLoading && (
-              <span
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  fontSize: '11px',
-                  color: 'var(--ink-secondary, #71717a)'
-                }}
-              >
-                Locating…
-              </span>
-            )}
-          </div>
-          {errors.pincode && (
-            <span className="font-ui text-[11px] font-medium leading-[normal] text-[#dc2626]">
-              {errors.pincode}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Row 4: District and State - Balanced & Aligned */}
-      <div className="mb-4 flex gap-4 last:mb-0 [@media(max-width:639px)]:flex-col [@media(max-width:639px)]:gap-3.5 [@media(max-width:900px)]:flex-col">
-        <div className="flex flex-1 flex-col gap-1.5">
-          <label
-            className="font-ui text-[11px] font-medium uppercase leading-[normal] tracking-[0.04em] text-ink-secondary"
-            htmlFor="district"
-          >
-            District *
-          </label>
-          <input
-            id="district"
-            type="text"
-            value={form.district}
-            onChange={(e) => handleFieldChange('district', e.target.value)}
-            placeholder="District"
-            className={
-              errors.district
-                ? 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#dc2626]'
-                : 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#d6d7d3]'
-            }
-          />
-          {errors.district && (
-            <span className="font-ui text-[11px] font-medium leading-[normal] text-[#dc2626]">
-              {errors.district}
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-1 flex-col gap-1.5">
-          <label
-            className="font-ui text-[11px] font-medium uppercase leading-[normal] tracking-[0.04em] text-ink-secondary"
-            htmlFor="state"
-          >
-            State *
-          </label>
-          <input
-            id="state"
-            type="text"
-            value={form.state}
-            onChange={(e) => handleFieldChange('state', e.target.value)}
-            placeholder="State (e.g. Kerala, Tamil Nadu, Karnataka)"
-            className={
-              errors.state
-                ? 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#dc2626]'
-                : 'min-h-[46px] rounded-[2px] border bg-white px-3.5 py-2.5 font-ui text-[16px] leading-[normal] text-[#172126] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#294455] focus:shadow-[0_0_0_2px_rgba(41,68,85,0.12)] border-[#d6d7d3]'
-            }
-          />
-          {errors.state && (
-            <span className="font-ui text-[11px] font-medium leading-[normal] text-[#dc2626]">
-              {errors.state}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {pincodeDetected && (
-        <div
-          style={{
-            margin: '-4px 0 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '12px',
-            color: '#047857'
-          }}
-        >
-          <span>✓</span>
-          <span>
-            Location detected: <strong>{pincodeDetected}</strong>
-          </span>
-        </div>
-      )}
-
-      {/* Option to Save Address to Profile */}
-      <label
-        className="mt-4 flex cursor-pointer items-center gap-2 text-[12.5px] text-ink"
-        style={{ marginTop: '16px' }}
-      >
-        <input
-          type="checkbox"
-          className="h-4 w-4 cursor-pointer accent-ink"
-          checked={saveToProfile}
-          onChange={(e) => setSaveToProfile(e.target.checked)}
-        />
-        <span>Save this address to my profile for future orders</span>
-      </label>
-    </>
+  const paymentMethods = (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      <span className="inline-flex items-center gap-1.5 rounded-[5px] border border-[#ecebe6] bg-white px-2 py-1 text-[10.5px] font-medium text-[#4d5352]">
+        <GooglePayIcon /> Google Pay
+      </span>
+      <span className="inline-flex items-center gap-1.5 rounded-[5px] border border-[#ecebe6] bg-white px-2 py-1 text-[10.5px] font-medium text-[#4d5352]">
+        <PhonePeIcon /> PhonePe
+      </span>
+      <span className="inline-flex items-center gap-1.5 rounded-[5px] border border-[#ecebe6] bg-white px-2 py-1 text-[10.5px] font-medium text-[#4d5352]">
+        <PaytmIcon />
+      </span>
+      <span className="inline-flex items-center gap-1.5 rounded-[5px] border border-[#ecebe6] bg-white px-2 py-1 text-[10.5px] font-medium text-[#4d5352]">
+        <CardsIcon /> Card
+      </span>
+      <span className="inline-flex items-center gap-1.5 rounded-[5px] border border-[#ecebe6] bg-white px-2 py-1 text-[10.5px] font-medium text-[#4d5352]">
+        <NetBankingIcon /> NetBanking
+      </span>
+    </div>
   )
 
   return (
-    <main className="checkout-page min-h-[calc(100dvh-120px)] bg-[#f8f7f3] px-[clamp(18px,4vw,56px)] pt-[clamp(28px,5vw,64px)] pb-20 font-ui text-[#172126] [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:pt-6 [@media(max-width:639px)]:pb-[calc(56px+env(safe-area-inset-bottom,0px))]">
-      <div className="mx-auto max-w-[1200px]">
-        <div className="mb-9">
-          <nav
-            className="mb-6 flex items-center gap-2 font-ui text-[11px] font-medium uppercase tracking-[0.025em] text-[#747d80]"
-            aria-label="Breadcrumb"
-          >
-            <Link href="/">Home</Link>
-            <span className="text-[#a1a1aa] opacity-40">/</span>
-            {isProductMode && product ? (
-              <>
-                <Link href={getProductUrl(product)}>{product.name}</Link>
-                <span className="text-[#a1a1aa] opacity-40">/</span>
-                <span className="max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-[#172126]">
-                  Checkout
-                </span>
-              </>
-            ) : (
-              <>
-                <Link href="/bag">Shopping Bag</Link>
-                <span className="text-[#a1a1aa] opacity-40">/</span>
-                <span className="max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-[#172126]">
-                  Checkout
-                </span>
-              </>
-            )}
-          </nav>
+    <main className="checkout-page min-h-screen bg-[#FBFBFA] pb-24 font-ui text-[#1C2022]">
+      {/* Top Header Bar */}
+      <header className="w-full">
+        <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+          <Link href="/" className="inline-block transition-opacity hover:opacity-85" aria-label="TEESGARAGE Homepage">
+            <Image
+              src="/teesgarage-logo.svg"
+              alt="TEESGARAGE"
+              width={150}
+              height={42}
+              priority
+              className="h-[30px] sm:h-[34px] w-auto object-contain"
+            />
+          </Link>
           <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '8px',
-              marginBottom: '8px'
-            }}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAE8E4] text-[13px] font-semibold text-[#1C2022] select-none"
+            title={user?.name || user?.email || 'Account'}
           >
-            <span>
-              {isProductMode
-                ? 'DIRECT PRODUCT ORDER // INSTANT CHECKOUT'
-                : 'BAG CHECKOUT // MULTI-ITEM ORDER'}
-            </span>
-            {isProductMode && product ? (
-              <Link
-                href={getProductUrl(product)}
-                style={{
-                  fontSize: '12px',
-                  color: 'var(--ink-secondary)',
-                  textDecoration: 'underline'
-                }}
-              >
-                ← Back to {product.name}
-              </Link>
-            ) : (
-              <Link
-                href="/bag"
-                style={{
-                  fontSize: '12px',
-                  color: 'var(--ink-secondary)',
-                  textDecoration: 'underline'
-                }}
-              >
-                ← Return to Shopping Bag
-              </Link>
-            )}
+            {userAvatarInitial}
           </div>
-          <h1 className="my-2 font-brand text-[clamp(28px,3.5vw,36px)] font-semibold leading-[normal] tracking-[-0.05em] text-[#172126]">
-            {isProductMode && product ? `Direct Checkout: ${product.name}` : 'Order Checkout'}
-          </h1>
-          <p className="max-w-[620px] text-[14px] leading-[21px] text-[#3f4753]">
-            {isProductMode
-              ? 'Complete your single-product order with verified delivery and payment.'
-              : 'Provide your delivery details. We will prepare your pieces for delivery and dispatch through verified courier partners.'}
-          </p>
+        </div>
+      </header>
+
+      <div className="mx-auto w-full max-w-[1240px] px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4">
+        {/* Progress stepper */}
+        <div className="flex items-start justify-between gap-6 pb-7 sm:pb-8">
+          <CheckoutStepper step={step} shippingProgress={shippingProgress} />
+          <div className="hidden h-7 shrink-0 items-center gap-1.5 text-[12px] font-normal text-[#555] select-none sm:flex">
+            <span>Secure checkout</span>
+            <Lock className="h-3.5 w-3.5 text-[#555]" strokeWidth={1.8} />
+          </div>
         </div>
 
-        <div className="grid grid-cols-[1.5fr_1fr] items-start gap-6 [@media(min-width:640px)]:gap-8 [@media(min-width:901px)]:gap-12 [@media(max-width:900px)]:grid-cols-1">
-          {/* Order Form */}
-          <form className="flex flex-col gap-8 ph-no-capture" onSubmit={handleSubmit} noValidate>
-            {/* If user has saved info in profile: render the 2 radio options with animated expansion */}
-            {hasSavedInfo ? (
-              <div className="flex flex-col">
-                <div
-                  className="flex flex-col gap-3"
-                  role="radiogroup"
-                  aria-label="Delivery destination options"
-                >
-                  {/* Option 1: Saved Address */}
-                  <div
-                    className={`flex cursor-pointer select-none items-start gap-3.5 rounded-[6px] border-[1.5px] border-line bg-white px-[18px] py-4 transition-[border-color,background-color,box-shadow] duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hover:border-[#a1a1aa] ${deliveryMode === 'saved' ? '!border-ink bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)]' : ''}`}
-                    onClick={() => handleSelectDeliveryMode('saved')}
-                    role="radio"
-                    aria-checked={deliveryMode === 'saved'}
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault()
-                        handleSelectDeliveryMode('saved')
-                      }
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      id="delivery-mode-saved"
-                      name="deliveryMode"
-                      value="saved"
-                      checked={deliveryMode === 'saved'}
-                      onChange={() => handleSelectDeliveryMode('saved')}
-                      className="mt-[3px] h-[17px] w-[17px] cursor-pointer accent-ink"
-                      tabIndex={-1}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2.5">
-                        <span className="font-brand text-[13px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-ink">
-                          Use saved information
-                        </span>
-                        {activeAddrObj?.isDefault && (
-                          <span className="rounded-full border border-[#a7f3d0] bg-[#ecfdf5] px-[7px] py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] text-[#047857]">
-                            Default Address
-                          </span>
-                        )}
-                      </div>
-                      <p className="mb-0 mt-[3px] font-ui text-[12.5px] leading-[1.45] text-ink-secondary">
-                        Use your saved address, recipient name, and phone number.
-                      </p>
-
-                      {/* Saved Address Preview Card */}
-                      {activeAddrObj && (
-                        <div className="mt-3 flex flex-col gap-1.5 rounded-[3px] border border-line bg-bone px-3.5 py-3">
-                          <div className="flex items-center gap-2 font-brand text-[13px] font-semibold leading-[normal] text-ink">
-                            <span>{activeAddrObj.fullName || user?.name}</span>
-                            <span
-                              style={{
-                                fontWeight: 400,
-                                color: 'var(--ink-secondary)',
-                                fontSize: '12px'
-                              }}
-                            >
-                              · {activeAddrObj.phone || user?.phone}
-                            </span>
-                          </div>
-                          <p className="m-0 font-ui text-[12.5px] leading-[1.5] text-ink-secondary">
-                            {activeAddrObj.addressLine},{' '}
-                            {activeAddrObj.place ? `${activeAddrObj.place}, ` : ''}
-                            {activeAddrObj.district || activeAddrObj.city}, {activeAddrObj.state} –{' '}
-                            <strong>{activeAddrObj.pincode}</strong>
-                          </p>
-
-                          {addresses && addresses.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setShowAddressPicker(!showAddressPicker)
-                              }}
-                              className="mt-1.5 cursor-pointer self-start border-0 bg-transparent p-0 font-brand text-[11px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-ink underline transition-colors duration-150 ease-[ease] hover:text-ink-secondary"
-                            >
-                              {showAddressPicker ? 'Hide Address List' : 'Switch Saved Address ▾'}
-                            </button>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Multiple Saved Addresses Picker */}
-                      {showAddressPicker && addresses && addresses.length > 1 && (
-                        <div
-                          className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3 border-t border-dashed border-[#e4e4e7] pt-2.5 [animation:fadeIn_0.2s_ease-out]"
-                          style={{ marginTop: '12px' }}
-                        >
-                          {addresses.map((addr) => (
-                            <div
-                              key={addr.id}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                applySavedAddress(addr)
-                                setShowAddressPicker(false)
-                              }}
-                              className={`relative cursor-pointer rounded-[6px] border border-[#e4e4e7] bg-white px-3.5 py-3 text-left transition-all duration-[180ms] ease-[ease] hover:-translate-y-px hover:border-ink hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] ${selectedAddressId === addr.id ? '!border-ink bg-[#fdfdfd] shadow-[0_0_0_1.5px_#0c0e12]' : ''}`}
-                            >
-                              <div className="mb-1 flex items-center justify-between gap-2">
-                                <span className="m-0 text-[13px] font-bold leading-[1.5] text-ink">
-                                  {addr.fullName || user?.name}
-                                </span>
-                                {addr.isDefault && (
-                                  <span className="rounded-full bg-[#090a0c] px-1.5 py-px text-[10px] font-bold uppercase text-white">
-                                    Default
-                                  </span>
-                                )}
-                              </div>
-                              <p className="m-0 mb-1 text-[11px] text-ink-secondary">
-                                {addr.phone || user?.phone}
-                              </p>
-                              <p className="m-0 text-[12px] leading-[1.4] text-[#6b7280]">
-                                {addr.addressLine}, {addr.place ? `${addr.place}, ` : ''}
-                                {addr.district || addr.city} · {addr.pincode}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Option 2: Enter New Details */}
-                  <div
-                    className={`flex cursor-pointer select-none items-start gap-3.5 rounded-[6px] border-[1.5px] border-line bg-white px-[18px] py-4 transition-[border-color,background-color,box-shadow] duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hover:border-[#a1a1aa] ${deliveryMode === 'new' ? '!border-ink bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)]' : ''}`}
-                    onClick={() => handleSelectDeliveryMode('new')}
-                    role="radio"
-                    aria-checked={deliveryMode === 'new'}
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault()
-                        handleSelectDeliveryMode('new')
-                      }
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      id="delivery-mode-new"
-                      name="deliveryMode"
-                      value="new"
-                      checked={deliveryMode === 'new'}
-                      onChange={() => handleSelectDeliveryMode('new')}
-                      className="mt-[3px] h-[17px] w-[17px] cursor-pointer accent-ink"
-                      tabIndex={-1}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2.5">
-                        <span className="font-brand text-[13px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-ink">
-                          Enter new name, phone and address
-                        </span>
-                      </div>
-                      <p className="mb-0 mt-[3px] font-ui text-[12.5px] leading-[1.45] text-ink-secondary">
-                        Enter a different recipient name, phone number, and delivery address.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Animated expansion for Option 2 */}
-                <div
-                  className={`grid overflow-hidden opacity-0 [grid-template-rows:0fr] [transition:grid-template-rows_260ms_cubic-bezier(0.23,1,0.32,1),opacity_200ms_cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none ${deliveryMode === 'new' ? '[grid-template-rows:1fr] opacity-100' : ''}`}
-                >
-                  <div className="min-h-0 overflow-hidden [&>div]:mt-4">
-                    <div className="rounded-[2px] border border-[#dfded8] bg-white p-6 [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:py-[18px]">
-                      <div className="mb-5 flex items-center justify-between gap-3 border-b border-line pb-2.5">
-                        <h2 className="mb-0 border-b-0 pb-0 font-brand text-[13px] font-semibold uppercase leading-[normal] tracking-[0.045em] text-[#172126]">
-                          Delivery Information
-                        </h2>
-                        <button
-                          type="button"
-                          onClick={handleClearForm}
-                          className="inline-flex cursor-pointer items-center gap-[5px] rounded-[3px] border border-[#fecaca] bg-[#fef2f2] px-3 py-[5px] font-brand text-[11px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-[#b91c1c] transition-all duration-150 ease-[ease] hover:border-[#f87171] hover:bg-[#fee2e2] hover:text-[#991b1b]"
-                          title="Clear all fields"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Clear</span>
-                        </button>
-                      </div>
-
-                      {renderFormFields()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* If no saved information exists: directly render the Delivery Information form */
-              <div className="rounded-[2px] border border-[#dfded8] bg-white p-6 [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:py-[18px]">
-                <div className="mb-5 flex items-center justify-between gap-3 border-b border-line pb-2.5">
-                  <h2 className="mb-0 border-b-0 pb-0 font-brand text-[13px] font-semibold uppercase leading-[normal] tracking-[0.045em] text-[#172126]">
-                    Delivery Information
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_430px] items-start">
+          {/* Left column */}
+          <form
+            className="flex flex-col gap-5"
+            onSubmit={handleSubmit}
+            noValidate
+          >
+            {step === 0 ? (
+              <>
+                {/* Contact information */}
+                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none">
+                  <h2 className="text-[16px] font-bold tracking-[-0.01em] text-[#111]">
+                    Contact information
                   </h2>
-                  <button
-                    type="button"
-                    onClick={handleClearForm}
-                    className="inline-flex cursor-pointer items-center gap-[5px] rounded-[3px] border border-[#fecaca] bg-[#fef2f2] px-3 py-[5px] font-brand text-[11px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-[#b91c1c] transition-all duration-150 ease-[ease] hover:border-[#f87171] hover:bg-[#fee2e2] hover:text-[#991b1b]"
-                    title="Clear all fields"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Clear</span>
-                  </button>
+                  <div className="mt-4 flex flex-col gap-3.5">
+                    <Field
+                      id="email"
+                      label="Email address"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      error={errors.email}
+                    />
+                    <CustomCheckbox
+                      id="email-updates"
+                      checked={emailUpdates}
+                      onChange={setEmailUpdates}
+                      label="Email me with updates about my order"
+                    />
+                  </div>
+                </section>
+
+                {/* Shipping address */}
+                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none">
+                  <h2 className="text-[16px] font-bold tracking-[-0.01em] text-[#111]">
+                    Shipping address
+                  </h2>
+                  <p className="mt-1 text-[12px] text-[#71717A]">
+                    Enter the address where you want your order to be delivered.
+                  </p>
+
+                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field
+                      id="name"
+                      label="Full name"
+                      autoComplete="name"
+                      placeholder="Your full name"
+                      value={form.name}
+                      onChange={(e) => handleFieldChange('name', e.target.value)}
+                      error={errors.name}
+                    />
+                    <Field
+                      id="phone"
+                      label="Phone number"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      maxLength={15}
+                      placeholder="+91 98765 43210"
+                      value={form.phone}
+                      onChange={(e) => handleFieldChange('phone', e.target.value)}
+                      error={errors.phone}
+                    />
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[160px_1fr]">
+                    <Field
+                      id="pincode"
+                      label="Pincode"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="postal-code"
+                      maxLength={6}
+                      placeholder="6-digit code"
+                      value={form.pincode}
+                      onChange={(e) => handlePincodeLookup(e.target.value)}
+                      error={errors.pincode}
+                      trailing={
+                        pincodeLoading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#8b8f8e]" />
+                        ) : cleanPin.length === 6 && !errors.pincode ? (
+                          <Check className="h-4 w-4 text-emerald-600" strokeWidth={2.5} />
+                        ) : null
+                      }
+                    />
+                    <Field
+                      id="address"
+                      label="Address line 1"
+                      autoComplete="address-line1"
+                      placeholder="House no., street, area"
+                      value={form.address}
+                      onChange={(e) => handleFieldChange('address', e.target.value)}
+                      error={errors.address}
+                    />
+                  </div>
+
+                  <div className="mt-3">
+                    <Field
+                      id="place"
+                      label="Address line 2 (Optional)"
+                      autoComplete="address-line2"
+                      placeholder="Apartment, suite, unit, etc."
+                      value={form.place}
+                      onChange={(e) => handleFieldChange('place', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <Field
+                      id="district"
+                      label="City"
+                      autoComplete="address-level2"
+                      placeholder="City"
+                      value={form.district}
+                      onChange={(e) => handleFieldChange('district', e.target.value)}
+                      error={errors.district}
+                    />
+                    <div className="min-w-0">
+                      <label
+                        htmlFor="state"
+                        className={`flex cursor-pointer flex-col rounded-lg border bg-white px-3.5 pb-2 pt-1.5 transition-[border-color,box-shadow] duration-150 focus-within:shadow-[0_0_0_1px_rgba(0,0,0,0.06)] ${
+                          errors.state
+                            ? 'border-[#cf5b55]'
+                            : 'border-[#e4e3de] focus-within:border-black'
+                        }`}
+                      >
+                        <span className="text-[11px] font-normal leading-tight text-[#71717A] select-none">
+                          State
+                        </span>
+                        <div className="relative mt-0.5">
+                          <select
+                            id="state"
+                            value={form.state}
+                            onChange={(e) => handleFieldChange('state', e.target.value)}
+                            className={`w-full appearance-none border-0 bg-transparent pr-6 text-[13.5px] leading-normal outline-none cursor-pointer ${
+                              form.state ? 'text-[#18181B]' : 'text-[#A1A1AA]'
+                            }`}
+                          >
+                            <option value="">Select state</option>
+                            {form.state && !INDIAN_STATES.includes(form.state) ? (
+                              <option value={form.state}>{form.state}</option>
+                            ) : null}
+                            {INDIAN_STATES.map((state) => (
+                              <option key={state} value={state}>
+                                {state}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#71717A]" />
+                        </div>
+                      </label>
+                      {errors.state ? (
+                        <p className="mt-1 pl-1 text-[11px] font-medium text-[#cf5b55]">
+                          {errors.state}
+                        </p>
+                      ) : null}
+                    </div>
+                    <Field
+                      id="landmark"
+                      label="Landmark (Optional)"
+                      placeholder="Near MG Road"
+                      value={form.landmark}
+                      onChange={(e) => handleFieldChange('landmark', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="mt-4">
+                    <CustomCheckbox
+                      id="save-address"
+                      checked={saveAddress}
+                      onChange={setSaveAddress}
+                      label="Save this address for next time"
+                    />
+                  </div>
+                </section>
+
+                {/* Delivery options */}
+                <div>
+                  <h3 className="text-[14px] font-semibold text-[#111] mb-2.5">
+                    Delivery options
+                  </h3>
+                  <div className="rounded-lg border border-[#E2E0D8] bg-[#FAF9F6]/50 p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3.5">
+                      <RadioDot selected={true} />
+                      <div>
+                        <span className="block text-[13.5px] font-medium leading-tight text-[#111]">
+                          Standard delivery
+                        </span>
+                        <span className="mt-0.5 block text-[12px] leading-tight text-[#71717A]">
+                          {deliveryOptionSubtitle}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[13.5px] font-medium text-[#111]">
+                      {shippingDisplay}
+                    </span>
+                  </div>
                 </div>
 
-                {renderFormFields()}
-              </div>
-            )}
+                {quoteError && !paymentError ? (
+                  <div
+                    className="flex items-start gap-2.5 rounded-lg border border-[#f2d3d0] bg-[#fdf4f3] px-3.5 py-3 text-[12px] leading-[1.5] text-[#9a3f3a]"
+                    role="alert"
+                  >
+                    <AlertCircle className="mt-px h-4 w-4 shrink-0" />
+                    <span>{quoteError}</span>
+                  </div>
+                ) : null}
 
-            {/* Error alerts */}
-            {paymentError && (
-              <div
-                className="mt-3.5 flex items-start gap-2.5 rounded-[3px] border border-[#fecaca] bg-[#fef2f2] px-3.5 py-3 text-[12.5px] leading-[1.4] text-[#991b1b] [&>svg]:mt-px [&>svg]:shrink-0"
-                role="alert"
-              >
-                <AlertCircle className="w-4 h-4" />
-                <span>{paymentError}</span>
-              </div>
-            )}
-            {quoteError && !paymentError && (
-              <div
-                className="mt-3.5 flex items-start gap-2.5 rounded-[3px] border border-[#fecaca] bg-[#fef2f2] px-3.5 py-3 text-[12.5px] leading-[1.4] text-[#991b1b] [&>svg]:mt-px [&>svg]:shrink-0"
-                role="alert"
-              >
-                <AlertCircle className="w-4 h-4" />
-                <span>{quoteError}</span>
-              </div>
-            )}
+                {paymentError ? (
+                  <div
+                    className="flex items-start gap-2.5 rounded-lg border border-[#f2d3d0] bg-[#fdf4f3] px-3.5 py-3 text-[12px] leading-[1.5] text-[#9a3f3a]"
+                    role="alert"
+                  >
+                    <AlertCircle className="mt-px h-4 w-4 shrink-0" />
+                    <span>{paymentError}</span>
+                  </div>
+                ) : null}
 
-            {/* Submit section: Razorpay Only */}
-            <div className="rounded-[2px] border border-[#dfded8] bg-white p-6 [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:py-[18px] flex flex-col gap-4">
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="flex min-h-12 w-full cursor-pointer items-center justify-between gap-2 rounded-[2px] border border-[#172126] bg-[#172126] px-6 py-4 font-brand text-[13px] font-bold uppercase leading-[normal] tracking-[0.06em] text-white shadow-none transition-all duration-[250ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-px hover:border-[#181c24] hover:bg-[#181c24] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] disabled:pointer-events-none disabled:cursor-not-allowed disabled:transform-none disabled:border-[#475569] disabled:bg-[#475569] disabled:text-[#cbd5e1] disabled:opacity-45 disabled:shadow-none disabled:blur-[0.4px] disabled:grayscale-[0.5]"
-                aria-label="Place your order"
-              >
-                <span>{isProcessing ? 'Connecting to Razorpay...' : 'Place your order'}</span>
-                {canSubmit && (
-                  <span className="font-bold tracking-[0.02em]">{formatPrice(total)} ↗</span>
-                )}
-              </button>
+                <button
+                  type="submit"
+                  disabled={!canContinue}
+                  className="mt-1 flex h-[48px] w-full items-center justify-center gap-2 rounded-lg bg-[#141414] hover:bg-black px-5 text-[13.5px] font-medium text-white transition-colors duration-200 cursor-pointer disabled:cursor-not-allowed disabled:bg-[#DCDAD4] disabled:text-[#8B8F8E]"
+                >
+                  <span>{quoteLoading ? 'Calculating delivery…' : 'Continue to payment'}</span>
+                  <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                </button>
+              </>
+            ) : null}
 
-              {/* Supported Payment Methods Badges */}
-              <div
-                className="flex flex-col gap-2.5 border-t border-dashed border-line pt-3.5"
-                aria-label="Accepted payment methods"
-              >
-                <span className="font-brand text-[10.5px] font-semibold uppercase leading-[normal] tracking-[0.06em] text-ink-secondary">
-                  Accepted Payment Options
-                </span>
-                <div className="flex flex-wrap items-center gap-2">
-                  <div
-                    className="inline-flex items-center gap-1.5 rounded-[3px] border border-line bg-white px-[11px] py-1.5 font-ui text-[11.5px] font-medium leading-[normal] text-ink shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-[border-color,background-color] duration-150 ease-[ease] hover:border-ink"
-                    title="Google Pay (UPI)"
-                  >
-                    <GooglePayIcon />
-                    <span>Google Pay</span>
+            {step === 1 ? (
+              <>
+                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-[16px] font-bold tracking-[-0.01em] text-[#111]">
+                      Payment
+                    </h2>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#71717A]">
+                      <Lock className="h-3 w-3" /> Secure
+                    </span>
                   </div>
-                  <div
-                    className="inline-flex items-center gap-1.5 rounded-[3px] border border-line bg-white px-[11px] py-1.5 font-ui text-[11.5px] font-medium leading-[normal] text-ink shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-[border-color,background-color] duration-150 ease-[ease] hover:border-ink"
-                    title="PhonePe (UPI)"
-                  >
-                    <PhonePeIcon />
-                    <span>PhonePe</span>
-                  </div>
-                  <div
-                    className="inline-flex items-center gap-1.5 rounded-[3px] border border-line bg-white px-[11px] py-1.5 font-ui text-[11.5px] font-medium leading-[normal] text-ink shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-[border-color,background-color] duration-150 ease-[ease] hover:border-ink"
-                    title="Paytm (UPI / Wallet)"
-                  >
-                    <PaytmIcon />
-                    <span>Paytm</span>
-                  </div>
-                  <div
-                    className="inline-flex items-center gap-1.5 rounded-[3px] border border-line bg-white px-[11px] py-1.5 font-ui text-[11.5px] font-medium leading-[normal] text-ink shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-[border-color,background-color] duration-150 ease-[ease] hover:border-ink"
-                    title="Credit / Debit Card (Visa, Mastercard, RuPay)"
-                  >
-                    <CardsIcon />
-                    <span>Credit / Debit Card</span>
-                  </div>
-                  <div
-                    className="inline-flex items-center gap-1.5 rounded-[3px] border border-line bg-white px-[11px] py-1.5 font-ui text-[11.5px] font-medium leading-[normal] text-ink shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-[border-color,background-color] duration-150 ease-[ease] hover:border-ink"
-                    title="NetBanking (All major Indian banks)"
-                  >
-                    <NetBankingIcon />
-                    <span>NetBanking</span>
-                  </div>
-                </div>
-              </div>
+                  <p className="mt-1 text-[12px] text-[#71717A]">
+                    All transactions are secure and encrypted.
+                  </p>
 
-              <p className="m-0 text-[12px] leading-[1.5] text-ink-secondary">
-                Secure 256-bit encrypted checkout via Razorpay. Supports UPI, Cards, and NetBanking.
-              </p>
-            </div>
+                  <div className="mt-4 rounded-lg border border-black p-4 bg-[#FAF9F6]/40">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <RadioDot selected={true} />
+                      <div className="min-w-0 flex-1">
+                        <span className="block text-[13.5px] font-medium leading-tight text-[#111]">
+                          Pay online via Razorpay
+                        </span>
+                        <span className="mt-1 block text-[12px] leading-normal text-[#71717A]">
+                          UPI, credit / debit cards, net banking and wallets
+                        </span>
+                        {paymentMethods}
+                      </div>
+                    </label>
+                  </div>
+
+                  <p className="mt-3.5 flex items-center gap-1.5 text-[11.5px] text-[#71717A]">
+                    <Lock className="h-3 w-3 shrink-0" />
+                    256-bit encrypted payment. Your card details never touch our servers.
+                  </p>
+                </section>
+
+                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10.5px] font-medium uppercase tracking-[0.06em] text-[#71717A]">
+                        Shipping to
+                      </p>
+                      <p className="mt-1.5 text-[13.5px] font-medium text-[#111]">
+                        {form.name}
+                      </p>
+                      <p className="text-[12px] text-[#52525B] leading-relaxed">
+                        {[form.address, form.place, form.landmark, form.district, form.state]
+                          .filter(Boolean)
+                          .join(', ')}{' '}
+                        – {form.pincode}
+                      </p>
+                      <p className="mt-1 text-[12px] text-[#71717A]">
+                        {form.phone} · {email}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => goToStep(0)}
+                      className="shrink-0 text-[12px] font-medium text-[#52525B] underline underline-offset-2 transition-colors hover:text-black cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </section>
+
+                {paymentError ? (
+                  <div
+                    className="flex items-start gap-2.5 rounded-lg border border-[#f2d3d0] bg-[#fdf4f3] px-3.5 py-3 text-[12px] leading-[1.5] text-[#9a3f3a]"
+                    role="alert"
+                  >
+                    <AlertCircle className="mt-px h-4 w-4 shrink-0" />
+                    <span>{paymentError}</span>
+                  </div>
+                ) : null}
+
+                <button
+                  type="submit"
+                  className="flex h-[48px] w-full items-center justify-center gap-2 rounded-lg bg-[#141414] hover:bg-black px-5 text-[13.5px] font-medium text-white transition-colors cursor-pointer"
+                >
+                  <span>Continue to review</span>
+                  <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => goToStep(0)}
+                  className="flex h-10 w-full items-center justify-center gap-2 rounded-lg text-[12px] font-medium text-[#52525B] transition-colors hover:text-black cursor-pointer"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back to shipping
+                </button>
+              </>
+            ) : null}
+
+            {step === 2 ? (
+              <>
+                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none">
+                  <h2 className="text-[16px] font-bold tracking-[-0.01em] text-[#111]">
+                    Review order
+                  </h2>
+                  <p className="mt-1 text-[12px] text-[#71717A]">
+                    Confirm your details before completing payment.
+                  </p>
+
+                  <div className="mt-4 divide-y divide-[#F0EFEA]">
+                    <div className="flex items-start justify-between gap-4 pb-3.5">
+                      <div className="min-w-0">
+                        <p className="text-[10.5px] font-medium uppercase tracking-[0.06em] text-[#71717A]">
+                          Contact
+                        </p>
+                        <p className="mt-1 truncate text-[13px] text-[#111]">
+                          {email}
+                        </p>
+                        <p className="text-[12px] text-[#71717A]">{form.phone}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => goToStep(0)}
+                        className="shrink-0 text-[12px] font-medium text-[#52525B] underline underline-offset-2 hover:text-black cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-4 py-3.5">
+                      <div className="min-w-0">
+                        <p className="text-[10.5px] font-medium uppercase tracking-[0.06em] text-[#71717A]">
+                          Shipping address
+                        </p>
+                        <p className="mt-1 text-[13px] font-medium text-[#111]">
+                          {form.name}
+                        </p>
+                        <p className="text-[12px] text-[#52525B] leading-relaxed">
+                          {[form.address, form.place, form.landmark, form.district, form.state]
+                            .filter(Boolean)
+                            .join(', ')}{' '}
+                          – {form.pincode}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => goToStep(0)}
+                        className="shrink-0 text-[12px] font-medium text-[#52525B] underline underline-offset-2 hover:text-black cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-4 py-3.5">
+                      <div className="min-w-0">
+                        <p className="text-[10.5px] font-medium uppercase tracking-[0.06em] text-[#71717A]">
+                          Delivery
+                        </p>
+                        <p className="mt-1 text-[13px] font-medium text-[#111]">
+                          Standard delivery · {shippingDisplay}
+                        </p>
+                        <p className="text-[12px] text-[#71717A]">
+                          {deliveryOptionSubtitle}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => goToStep(0)}
+                        className="shrink-0 text-[12px] font-medium text-[#52525B] underline underline-offset-2 hover:text-black cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-4 pt-3.5">
+                      <div className="min-w-0">
+                        <p className="text-[10.5px] font-medium uppercase tracking-[0.06em] text-[#71717A]">
+                          Payment
+                        </p>
+                        <p className="mt-1 text-[13px] font-medium text-[#111]">
+                          Razorpay secure checkout
+                        </p>
+                        <p className="text-[12px] text-[#71717A]">
+                          UPI, cards, net banking and wallets
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => goToStep(1)}
+                        className="shrink-0 text-[12px] font-medium text-[#52525B] underline underline-offset-2 hover:text-black cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                {paymentError ? (
+                  <div
+                    className="flex items-start gap-2.5 rounded-lg border border-[#f2d3d0] bg-[#fdf4f3] px-3.5 py-3 text-[12px] leading-[1.5] text-[#9a3f3a]"
+                    role="alert"
+                  >
+                    <AlertCircle className="mt-px h-4 w-4 shrink-0" />
+                    <span>{paymentError}</span>
+                  </div>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={!canPay}
+                  className="flex h-[48px] w-full items-center justify-center gap-2 rounded-lg bg-[#141414] hover:bg-black px-5 text-[13.5px] font-medium text-white transition-colors duration-200 cursor-pointer disabled:cursor-not-allowed disabled:bg-[#DCDAD4] disabled:text-[#8B8F8E]"
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>
+                    {isProcessing
+                      ? 'Connecting to Razorpay…'
+                      : `Pay ${formatPrice(total)} securely`}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => goToStep(1)}
+                  className="flex h-10 w-full items-center justify-center gap-2 rounded-lg text-[12px] font-medium text-[#52525B] transition-colors hover:text-black cursor-pointer"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back to payment
+                </button>
+              </>
+            ) : null}
           </form>
 
-          {/* Order Summary Sidebar */}
-          <aside className="sticky top-[90px] [@media(max-width:900px)]:static [@media(max-width:900px)]:-order-1">
-            <div className="rounded-[2px] border border-[#dfded8] bg-white p-6 [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:py-[18px]">
-              <div className="mb-5 border-b border-line pb-3">
-                <span className="font-ui text-[10px] font-semibold leading-[normal] tracking-[0.08em] text-[#6b7280]">
-                  {isProductMode
-                    ? `DIRECT // 1 PRODUCT (${productQty} QTY)`
-                    : `MANIFEST // ${count} ITEMS`}
-                </span>
-                <h2 className="m-0 mt-1 font-brand text-[18px] font-semibold leading-[normal] tracking-[-0.05em] text-[#172126]">
-                  {isProductMode ? 'Product Summary' : 'Bag Summary'}
+          {/* Order summary */}
+          <aside className="lg:sticky lg:top-6 self-start">
+            <div className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-[16px] font-bold tracking-[-0.01em] text-[#111]">
+                  Order summary
                 </h2>
+                <Link
+                  href={backHref}
+                  className="text-[12px] font-medium text-[#52525B] underline underline-offset-2 transition-colors hover:text-black"
+                >
+                  {isProductMode ? 'Back to product' : 'Back to cart'}
+                </Link>
               </div>
 
-              <div className="mb-5 flex max-h-80 flex-col gap-3.5 overflow-y-auto">
-                {items.map((item) => (
-                  <div
-                    key={`${item.id}-${item.variantId ?? item.size}`}
-                    className="flex items-center gap-3"
-                  >
-                    <Image
-                      src={item.img}
-                      alt={item.name}
-                      width={56}
-                      height={70}
-                      className="h-[70px] w-14 rounded-[3px] bg-white object-cover"
-                    />
-                    <div className="flex-1">
-                      <h3 className="m-0 mb-0.5 font-brand text-[13px] font-medium leading-[normal] tracking-[-0.025em] text-ink">
-                        {item.name}
-                      </h3>
-                      <p className="m-0 mb-1 font-ui text-[11px] leading-[normal] text-ink-secondary">
-                        {[
-                          item.color,
-                          item.fit ? `${item.fit} Fit` : null,
-                          `Size ${item.size}`,
-                          `Qty ${item.qty}`
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </p>
-                      <span className="font-ui text-[13px] font-semibold leading-[normal] text-ink [font-feature-settings:'tnum']">
-                        {formatPrice(item.priceNum * item.qty)}
-                      </span>
+              <div className="mt-5 flex max-h-[380px] flex-col gap-5 overflow-y-auto pr-0.5">
+                {itemsWithPricing.map((item) => (
+                  <div key={`${item.id}-${item.variantId ?? item.size}`} className="flex gap-3.5 items-start">
+                    <div className="relative h-[82px] w-[82px] shrink-0 overflow-hidden rounded-lg border border-[#eeece7] bg-[#f6f5f1]">
+                      <Image
+                        src={item.img}
+                        alt={item.name}
+                        width={82}
+                        height={82}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[13.5px] font-semibold leading-tight text-[#111]">
+                            {item.name}
+                          </p>
+                          <p className="mt-1 text-[12px] text-[#71717A]">
+                            {[item.color, item.size].filter(Boolean).join(' / ')}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <span className="block text-[14px] font-bold text-[#111]">
+                            {formatPrice(item.priceNum * item.qty)}
+                          </span>
+                          <span className="block text-[11.5px] text-[#A1A1AA] line-through mt-0.5">
+                            {formatPrice(item.originalPrice * item.qty)}
+                          </span>
+                          <span className="inline-block mt-0.5 rounded bg-[#DCFCE7] px-1.5 py-0.5 text-[10px] font-bold text-[#15803D]">
+                            {item.discountPercent}% OFF
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-2.5 flex items-center justify-between">
+                        <div className="inline-flex items-center rounded-md border border-[#E0DED7] bg-white h-7">
+                          <button
+                            type="button"
+                            onClick={() => handleDecrement(item)}
+                            aria-label={`Decrease quantity of ${item.name}`}
+                            className="grid h-7 w-7 cursor-pointer place-items-center text-[#52525B] transition-colors hover:text-black disabled:cursor-not-allowed disabled:text-[#D1D0C9]"
+                            disabled={item.qty <= 1}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="w-7 select-none text-center text-[12px] font-medium text-[#111]">
+                            {item.qty}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleIncrement(item)}
+                            aria-label={`Increase quantity of ${item.name}`}
+                            className="grid h-7 w-7 cursor-pointer place-items-center text-[#52525B] transition-colors hover:text-black"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemove(item)}
+                          aria-label={`Remove ${item.name}`}
+                          className="p-1 text-[#A1A1AA] transition-colors hover:text-[#DC2626] cursor-pointer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex flex-col gap-2 border-y border-line py-3.5">
-                <div className="flex justify-between font-ui text-[13px] font-medium text-ink-secondary [font-feature-settings:'tnum'] leading-[normal]">
-                  <span>Subtotal</span>
-                  <span>{formatPrice(subtotal)}</span>
-                </div>
-                <div className="flex justify-between font-ui text-[13px] font-medium text-ink-secondary [font-feature-settings:'tnum'] leading-[normal]">
-                  <span>Delivery charge</span>
-                  <span>
-                    {deliveryQuote
-                      ? formatPrice(shipping)
-                      : quoteLoading
-                        ? 'Calculating…'
-                        : 'Enter Pincode'}
-                  </span>
-                </div>
-                <div
-                  className="flex justify-between font-ui text-[13px] font-medium text-ink-secondary [font-feature-settings:'tnum'] leading-[normal]"
-                  style={{ borderTop: '1px dashed var(--line)', paddingTop: '8px' }}
-                >
-                  <span
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      fontSize: '12px',
-                      color: 'var(--ink-secondary)'
+              <div className="mt-5 flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Tag className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#71717A]" />
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => {
+                      setCouponInput(e.target.value)
+                      if (couponMessage) setCouponMessage(null)
                     }}
-                  >
-                    <Truck className="w-3.5 h-3.5" /> Expected delivery
-                  </span>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#15803d' }}>
-                    {deliveryEstimationInfo.formattedRange}
-                  </span>
+                    placeholder="Discount code or gift card"
+                    aria-label="Discount code or gift card"
+                    className="h-[38px] w-full rounded-lg border border-[#E2E0D8] bg-white pl-9 pr-3 text-[12px] text-[#111] placeholder:text-[#A1A1AA] outline-none transition-[border-color,box-shadow] focus:border-black"
+                  />
                 </div>
-                <div className="flex justify-between border-t border-dashed border-line pt-1.5 font-ui text-[15px] font-semibold leading-[normal] text-ink [font-feature-settings:'tnum']">
-                  <span>{deliveryQuote ? 'Order total' : 'Estimated subtotal'}</span>
-                  <span>{formatPrice(total)}</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleApplyCoupon}
+                  className="h-[38px] shrink-0 cursor-pointer rounded-lg bg-[#F0EFEA] hover:bg-[#E6E5DF] px-4 text-[12px] font-medium text-[#18181B] transition-colors"
+                >
+                  Apply
+                </button>
+              </div>
+              {couponMessage ? (
+                <p className="mt-1.5 text-[11px] leading-[1.4] text-[#cf5b55]">{couponMessage}</p>
+              ) : null}
+
+              <div className="mt-5 border-t border-[#F0EFEA] pt-4">
+                <p className="text-[12px] text-[#71717A]">Estimated arrival</p>
+                <p className="mt-1 text-[15px] font-bold text-[#111]">
+                  {arrivalDisplay}
+                </p>
               </div>
 
-              <div className="mt-[18px] flex flex-col gap-[5px] rounded-[3px] border border-[#bbf7d0] bg-[#f4fbf7] px-4 py-3.5">
-                <div className="flex items-center gap-1.5">
-                  <Truck className="w-4 h-4 text-emerald-600" />
-                  <span className="text-[11px] font-bold uppercase tracking-[0.05em] text-[#166534]">
-                    Expected delivery
+              <div className="mt-4 flex flex-col gap-2 border-t border-[#F0EFEA] pt-4 text-[13px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#52525B]">Subtotal</span>
+                  <span className="font-medium text-[#111]">{formatPrice(subtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#52525B]">Shipping charges</span>
+                  <span className="font-medium text-[#111]">{shippingDisplay}</span>
+                </div>
+                {totalSavings > 0 ? (
+                  <div className="mt-1 flex justify-end">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-[#E8F8EE] px-3 py-1.5 text-[11.5px] font-medium text-[#15803D] shadow-xs">
+                      <span>🎉</span>
+                      <span>You saved {formatPrice(totalSavings)} on this purchase!</span>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {deliveryQuote && shipping === 0 ? (
+                <div className="mt-3.5 rounded-lg bg-[#E8F8EE] px-3 py-2 text-[11px] font-medium leading-normal text-[#15803D]">
+                  Free standard delivery applied to this order
+                </div>
+              ) : null}
+
+              <div className="mt-4 border-t border-[#F0EFEA] pt-4">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[18px] font-bold text-[#111]">Total</span>
+                  <span className="text-[24px] font-bold tracking-tight text-[#111]">
+                    {formatPrice(total)}
                   </span>
                 </div>
-                <div className="text-[14px] font-bold tracking-[-0.01em] text-ink">
-                  {deliveryEstimationInfo.formattedRange}
-                </div>
+                <p className="mt-1 text-right text-[11px] text-[#71717A]">
+                  Inclusive of all taxes
+                </p>
               </div>
             </div>
           </aside>

@@ -1,0 +1,58 @@
+[  609264ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15f83-4b86-7ba6-9067-160f4fe97b72, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:00:02 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  612272ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/ingest/s/:0
+[  612273ms] [WARNING] [PostHog.js] TypeError: Failed to fetch
+    at Su (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11854:163)
+    at h (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11966:17)
+    at http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11976:13 @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  612273ms] [WARNING] [PostHog.js] Enqueued failed request for retry in 3112 @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  618295ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/ingest/s/?retry_count=1:0
+[  618295ms] [WARNING] [PostHog.js] TypeError: Failed to fetch
+    at Su (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11854:163)
+    at h (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11966:17)
+    at http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11976:13 @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  618295ms] [WARNING] [PostHog.js] Enqueued failed request for retry in 5723 @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  624316ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/ingest/s/?retry_count=2:0
+[  624316ms] [WARNING] [PostHog.js] TypeError: Failed to fetch
+    at Su (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11854:163)
+    at h (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11966:17)
+    at http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11976:13 @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  624316ms] [WARNING] [PostHog.js] Enqueued failed request for retry in 10025 @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  636352ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/ingest/s/?retry_count=3:0
+[  636352ms] [WARNING] [PostHog.js] TypeError: Failed to fetch
+    at Su (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11854:163)
+    at h (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11966:17)
+    at http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11976:13 @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  636352ms] [WARNING] [PostHog.js] Request failed before receiving an HTTP response; this can happen due to network issues, CORS, browser blocking, or ad blockers. Stopped retrying after 3 retries. @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  909151ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/ingest/flags/?v=2:0
+[  909152ms] [WARNING] [PostHog.js] TypeError: Failed to fetch
+    at Su (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11854:163)
+    at h (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11966:17)
+    at http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11976:13 @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2109176ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/ingest/flags/?v=2:0
+[ 2109176ms] [WARNING] [PostHog.js] TypeError: Failed to fetch
+    at Su (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11854:163)
+    at h (http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11966:17)
+    at http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:11976:13 @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2109179ms] [WARNING] [PostHog.js] [FeatureFlags] Feature flag requests are failing before receiving an HTTP response; this can happen due to network issues, CORS, browser blocking, or ad blockers. Stopped refreshing feature flags; will try again when connectivity changes. @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2849120ms] [LOG] [PostHog.js] [SessionId] new session ID assigned {sessionId: 01a15fa5-78f5-7a1d-919a-433a7028dba4, windowId: 01a15fa5-78f5-7a1d-919a-433b5005aab3, bootstrapped: false, changeReason: Object} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2849294ms] [LOG] [PostHog.js] send "$$heatmap" {uuid: 01a15fa5-78de-7e8d-9726-7206e41400c2, event: $$heatmap, properties: Object, timestamp: Wed Oct 21 2026 23:37:22 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2851327ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa5-8195-73b4-a961-b8ec0b3b0c7a, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:37:24 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2853692ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa5-8ad2-77d7-8c35-cd489773ca7d, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:37:26 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2854074ms] [LOG] [PostHog.js] send "$$heatmap" {uuid: 01a15fa5-8c4f-7d81-8230-484af6a8def4, event: $$heatmap, properties: Object, timestamp: Wed Oct 21 2026 23:37:27 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2855722ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa5-92c0-7841-90c3-dc7d185cde31, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:37:28 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2856108ms] [LOG] [PostHog.js] send "$web_vitals" {uuid: 01a15fa5-9441-7f79-b170-1a168f8f636f, event: $web_vitals, properties: Object, timestamp: Wed Oct 21 2026 23:37:29 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2858425ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa5-9d4e-7782-9133-80cdc9700589, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:37:31 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2859075ms] [LOG] [PostHog.js] send "$$heatmap" {uuid: 01a15fa5-9fd7-7edb-a84c-70253ad9a9c2, event: $$heatmap, properties: Object, timestamp: Wed Oct 21 2026 23:37:32 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2860475ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa5-a550-71c6-9fad-1711745b8cdb, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:37:33 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2862548ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa5-ad6a-7bbd-aff5-602a73f39a72, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:37:35 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2864557ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa5-b543-748e-94f4-437e9ec3b729, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:37:37 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2866640ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa5-bd67-7e66-92ec-3693001963cf, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:37:39 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2868702ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa5-c574-705a-a46c-ec84ec2edbe4, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:37:41 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2869082ms] [LOG] [PostHog.js] send "$$heatmap" {uuid: 01a15fa5-c6ee-77dd-ba63-7b6989eac142, event: $$heatmap, properties: Object, timestamp: Wed Oct 21 2026 23:37:42 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2871625ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa5-d0df-71a1-95cf-33773f57d567, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:37:44 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2874076ms] [LOG] [PostHog.js] send "$$heatmap" {uuid: 01a15fa5-da71-79a6-9044-cb11a806ae72, event: $$heatmap, properties: Object, timestamp: Wed Oct 21 2026 23:37:47 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2994092ms] [LOG] [PostHog.js] send "$$heatmap" {uuid: 01a15fa7-af3f-7ad2-b413-3d1b6b41e9fd, event: $$heatmap, properties: Object, timestamp: Wed Oct 21 2026 23:39:47 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2994237ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa7-afd3-7c07-9638-edd2af71d38e, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:39:47 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2995956ms] [LOG] [PostHog.js] send "$$heatmap" {uuid: 01a15fa7-b68a-7f34-b250-473b355df894, event: $$heatmap, properties: Object, timestamp: Wed Oct 21 2026 23:39:49 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2995959ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fa7-b68d-73fa-8846-248f5c112d18, event: $snapshot, properties: Object, timestamp: Wed Oct 21 2026 23:39:49 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[ 2995966ms] [LOG] [PostHog.js] send "$pageleave" {uuid: 01a15fa7-b693-71ce-8815-9b2e952044c9, event: $pageleave, properties: Object, timestamp: Wed Oct 21 2026 23:39:49 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729

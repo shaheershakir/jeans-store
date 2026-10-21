@@ -1,0 +1,27 @@
+[  251087ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15ff9-cfb7-7a63-b07a-359f300c3e94, event: $snapshot, properties: Object, timestamp: Thu Oct 22 2026 01:09:29 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  257744ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15ff9-e9b9-71b3-81a1-7f0c63f521d2, event: $snapshot, properties: Object, timestamp: Thu Oct 22 2026 01:09:36 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  305264ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15ffa-a358-76a8-be13-324fcd3302a0, event: $snapshot, properties: Object, timestamp: Thu Oct 22 2026 01:10:23 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  323718ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  323755ms] [LOG] [Fast Refresh] done in 141ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  323902ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  323928ms] [LOG] [Fast Refresh] done in 127ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  325363ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15ffa-f1db-724d-a1ca-b477ae222dcf, event: $snapshot, properties: Object, timestamp: Thu Oct 22 2026 01:10:43 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  326368ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  326436ms] [LOG] [Fast Refresh] done in 172ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  326734ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  326746ms] [LOG] [Fast Refresh] done in 115ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  328170ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15ffa-fcd3-7b50-8858-34d01db18c62, event: $snapshot, properties: Object, timestamp: Thu Oct 22 2026 01:10:46 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  603345ms] [LOG] [PostHog.js] send "$snapshot" {uuid: 01a15fff-2fb8-7338-8a36-4262ac6b9d14, event: $snapshot, properties: Object, timestamp: Thu Oct 22 2026 01:15:21 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
+[  648336ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  648391ms] [LOG] [Fast Refresh] done in 160ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  650587ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  650611ms] [LOG] [Fast Refresh] done in 125ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  654294ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  654300ms] [LOG] [Fast Refresh] done in 110ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  734135ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  734144ms] [LOG] [Fast Refresh] done in 117ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  736726ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  736736ms] [LOG] [Fast Refresh] done in 114ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  736859ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  736860ms] [LOG] [Fast Refresh] done in 105ms @ http://localhost:3000/ingest/static/1.438.12/posthog-recorder.js:0
+[  760455ms] [LOG] [PostHog.js] send "$pageleave" {uuid: 01a16001-955c-72b3-8700-60f205d7c328, event: $pageleave, properties: Object, timestamp: Thu Oct 22 2026 01:17:58 GMT+0530 (India Standard Time)} @ http://localhost:3000/_next/static/chunks/node_modules_cf12140a._.js:8729
