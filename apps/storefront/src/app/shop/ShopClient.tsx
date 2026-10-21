@@ -9,6 +9,8 @@ import {
   X,
   Check,
   Star,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import type { Product, Fit } from '@/lib/constants'
 import { FITS } from '@/lib/constants'
@@ -32,9 +34,9 @@ const SORT_OPTIONS: { mode: SortMode; label: string }[] = [
 ]
 
 const SIZE_PILL_INACTIVE =
-  'flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[2px] border border-[#d2d3ce] bg-white font-ui text-[11.5px] font-semibold leading-[17.25px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#ff3f6c]'
+  'flex h-9 w-full cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white font-ui text-xs font-semibold text-gray-800 transition-colors duration-150 hover:border-gray-400'
 const SIZE_PILL_ACTIVE =
-  'flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[2px] border border-store-ink bg-store-ink font-ui text-[11.5px] font-semibold leading-[17.25px] text-white transition-all duration-150'
+  'flex h-9 w-full cursor-pointer items-center justify-center rounded-lg border border-black bg-black font-ui text-xs font-semibold text-white shadow-xs transition-colors duration-150'
 
 const SHOP_CATEGORIES = [
   { id: 'all', slug: 'all', href: '/shop', label: 'All Garments' },
@@ -53,13 +55,13 @@ const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 const ALL_WAIST_SIZES = ['30', '32', '34', '36', '38']
 
 const COLOR_PALETTE: { name: string; hex: string }[] = [
-  { name: 'Black', hex: '#09090b' },
-  { name: 'White', hex: '#f8fafc' },
-  { name: 'Navy', hex: '#1e3a8a' },
-  { name: 'Grey', hex: '#64748b' },
-  { name: 'Beige', hex: '#d6c7b2' },
-  { name: 'Green', hex: '#166534' },
-  { name: 'Red', hex: '#831843' },
+  { name: 'Black', hex: '#000000' },
+  { name: 'White', hex: '#ffffff' },
+  { name: 'Navy', hex: '#1b2b48' },
+  { name: 'Grey', hex: '#6b7280' },
+  { name: 'Beige', hex: '#c9b89d' },
+  { name: 'Green', hex: '#3a6946' },
+  { name: 'Red', hex: '#8b1e2d' },
 ]
 
 export type FacetKey =
@@ -113,6 +115,33 @@ const FACET_TITLES: Record<FacetKey, string> = {
   discount: 'DISCOUNT RANGE',
   rating: 'RATING',
   collection: 'COLLECTION',
+}
+
+const FACET_DISPLAY_NAMES: Record<FacetKey, string> = {
+  categories: 'Categories',
+  size: 'Size',
+  waistSize: 'Waist Size',
+  color: 'Color',
+  price: 'Price',
+  fit: 'Fit',
+  fabric: 'Fabric',
+  material: 'Material',
+  sleeveLength: 'Sleeve Length',
+  neckType: 'Neck Type',
+  pattern: 'Pattern',
+  printStyle: 'Print Style',
+  trimColor: 'Collar / Trim Color',
+  buttons: 'Buttons',
+  length: 'Length',
+  closure: 'Closure',
+  pockets: 'Pockets',
+  use: 'Use / Occasion',
+  legStyle: 'Leg Style',
+  rise: 'Rise',
+  availability: 'Availability',
+  discount: 'Discount range',
+  rating: 'Customer rating',
+  collection: 'Collection',
 }
 
 const CATEGORY_FACETS: Record<string, FacetKey[]> = {
@@ -291,6 +320,41 @@ export default function ShopClient({
   const [selectedDiscount, setSelectedDiscount] = useState<number | null>(null)
   const [selectedRating, setSelectedRating] = useState<number | null>(null)
   const [selectedCollections, setSelectedCollections] = useState<string[]>([])
+
+  // Collapsible accordion state for facets (Size and Color open by default)
+  const [openFacets, setOpenFacets] = useState<Record<string, boolean>>({
+    size: true,
+    color: true,
+    waistSize: true,
+    categories: true,
+    price: false,
+    availability: false,
+    discount: false,
+    rating: false,
+    fit: false,
+    fabric: false,
+    material: false,
+    sleeveLength: false,
+    neckType: false,
+    pattern: false,
+    printStyle: false,
+    trimColor: false,
+    buttons: false,
+    length: false,
+    closure: false,
+    pockets: false,
+    use: false,
+    legStyle: false,
+    rise: false,
+    collection: false,
+  })
+
+  const toggleFacet = (key: string) => {
+    setOpenFacets((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }))
+  }
 
   // Active category facets
   const activeFacets = useMemo(() => {
@@ -753,230 +817,200 @@ export default function ShopClient({
 
   // Render individual facet block
   const renderFacetBlock = (key: FacetKey, isDrawer = false) => {
-    const facetBlockClass = isDrawer
-      ? 'border-b-0 pb-4 pt-1'
-      : 'border-b border-store-line py-4 first:pt-0 last:border-b-0'
-    const facetTitleClass = isDrawer
-      ? 'hidden'
-      : 'mb-3 font-brand text-[12.5px] font-bold uppercase leading-[16.25px] tracking-[0.04em] text-[#59666c]'
     // CATEGORIES: Shown ONLY on /shop route (routeCategory === 'all')
+    if (key === 'categories' && routeCategory !== 'all') return null
+
+    const isOpen = isDrawer ? true : (openFacets[key] ?? false)
+    const titleText = FACET_DISPLAY_NAMES[key] || key
+
+    let content: React.ReactNode = null
+
     if (key === 'categories') {
-      if (routeCategory !== 'all') return null
       const isAllChecked = filterCategories.length === 0
+      content = (
+        <div className="flex flex-col gap-2.5">
+          <label className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+            <input
+              className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+              type="checkbox"
+              checked={isAllChecked}
+              onChange={() => setCategories([])}
+            />
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+              {isAllChecked && <Check className="h-3 w-3 stroke-[3]" />}
+            </span>
+            <span className="font-ui text-[13px] font-normal text-gray-900">All Garments</span>
+            <span className="ml-0.5 font-ui text-[12px] text-gray-400">({initialProducts.length})</span>
+          </label>
 
-      return (
-        <div key="facet-categories" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>CATEGORIES</h3>
-          <div className="flex flex-col gap-[9px]">
-            <label className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-              <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                type="checkbox"
-                checked={isAllChecked}
-                onChange={() => setCategories([])}
-              />
-              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                {isAllChecked && <Check className="h-3 w-3 stroke-[3]" />}
-              </span>
-              <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">All Garments</span>
-              <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({initialProducts.length})</span>
-            </label>
-
-            {SHOP_CATEGORIES.filter((cat) => cat.slug !== 'all').map((cat) => {
-              const isChecked = filterCategories.includes(cat.slug)
-              const count = counts[`cat-${cat.slug}`] ?? 0
-              return (
-                <label key={cat.slug} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleCategory(cat.slug)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{cat.label}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+          {SHOP_CATEGORIES.filter((cat) => cat.slug !== 'all').map((cat) => {
+            const isChecked = filterCategories.includes(cat.slug)
+            const count = counts[`cat-${cat.slug}`] ?? 0
+            return (
+              <label key={cat.slug} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleCategory(cat.slug)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{cat.label}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'size') {
-      return (
-        <div key="facet-size" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>SIZE</h3>
-          <div className="flex flex-wrap gap-[7px]">
-            {ALL_SIZES.map((sz) => {
-              const isChecked = selectedSizes.includes(sz)
-              const count = counts[`size-${sz}`] ?? 0
-              return (
-                <button
-                  key={sz}
-                  type="button"
-                  className={isChecked ? SIZE_PILL_ACTIVE : SIZE_PILL_INACTIVE}
-                  onClick={() => toggleStringItem(setSelectedSizes, sz)}
-                  title={`${sz} (${count} available)`}
-                >
-                  {sz}
-                </button>
-              )
-            })}
-          </div>
+    } else if (key === 'size') {
+      content = (
+        <div className="grid grid-cols-5 gap-2">
+          {ALL_SIZES.map((sz) => {
+            const isChecked = selectedSizes.includes(sz)
+            const count = counts[`size-${sz}`] ?? 0
+            return (
+              <button
+                key={sz}
+                type="button"
+                className={isChecked ? SIZE_PILL_ACTIVE : SIZE_PILL_INACTIVE}
+                onClick={() => toggleStringItem(setSelectedSizes, sz)}
+                title={`${sz} (${count} available)`}
+              >
+                {sz}
+              </button>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'waistSize') {
-      return (
-        <div key="facet-waist" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>WAIST SIZE</h3>
-          <div className="flex flex-wrap gap-[7px]">
-            {ALL_WAIST_SIZES.map((ws) => {
-              const isChecked = selectedWaistSizes.includes(ws)
-              const count = counts[`waist-${ws}`] ?? 0
-              return (
-                <button
-                  key={ws}
-                  type="button"
-                  className={isChecked ? SIZE_PILL_ACTIVE : SIZE_PILL_INACTIVE}
-                  onClick={() => toggleStringItem(setSelectedWaistSizes, ws)}
-                  title={`Waist ${ws}" (${count} available)`}
-                >
-                  {ws}
-                </button>
-              )
-            })}
-          </div>
+    } else if (key === 'waistSize') {
+      content = (
+        <div className="grid grid-cols-5 gap-2">
+          {ALL_WAIST_SIZES.map((ws) => {
+            const isChecked = selectedWaistSizes.includes(ws)
+            const count = counts[`waist-${ws}`] ?? 0
+            return (
+              <button
+                key={ws}
+                type="button"
+                className={isChecked ? SIZE_PILL_ACTIVE : SIZE_PILL_INACTIVE}
+                onClick={() => toggleStringItem(setSelectedWaistSizes, ws)}
+                title={`Waist ${ws}" (${count} available)`}
+              >
+                {ws}
+              </button>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'color') {
-      return (
-        <div key="facet-color" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>COLOR</h3>
-          <div className="flex flex-col gap-[9px]">
-            {COLOR_PALETTE.map(({ name, hex }) => {
-              const isChecked = selectedColors.includes(name)
-              const count = counts[`color-${name}`] ?? 0
-              return (
-                <label key={name} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedColors, name)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span
-                    className="h-[13px] w-[13px] shrink-0 rounded-full border border-black/[0.12]"
-                    style={{ backgroundColor: hex }}
-                    aria-hidden="true"
-                  />
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{name}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+    } else if (key === 'color') {
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {COLOR_PALETTE.map(({ name, hex }) => {
+            const isChecked = selectedColors.includes(name)
+            const count = counts[`color-${name}`] ?? 0
+            return (
+              <label key={name} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedColors, name)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span
+                  className="h-3.5 w-3.5 shrink-0 rounded-full border border-black/10"
+                  style={{ backgroundColor: hex }}
+                  aria-hidden="true"
+                />
+                <span className="font-ui text-[13px] font-normal text-gray-900">{name}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'price') {
-      return (
-        <div key="facet-price" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>PRICE</h3>
-          <div className="flex flex-col gap-[9px]">
-            {(Object.keys(PRICE_LABELS) as PriceRange[]).map((range) => {
-              const isChecked = prices.includes(range)
-              const count = counts[`price-${range}`] ?? 0
-              return (
-                <label key={range} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => togglePrice(range)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{PRICE_LABELS[range]}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+    } else if (key === 'price') {
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {(Object.keys(PRICE_LABELS) as PriceRange[]).map((range) => {
+            const isChecked = prices.includes(range)
+            const count = counts[`price-${range}`] ?? 0
+            return (
+              <label key={range} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => togglePrice(range)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{PRICE_LABELS[range]}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'fit') {
+    } else if (key === 'fit') {
       const fitOptions = ['Slim', 'Regular', 'Relaxed', 'Oversized', 'Boxy', 'Baggy']
-      return (
-        <div key="facet-fit" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>FIT</h3>
-          <div className="flex flex-col gap-[9px]">
-            {fitOptions.map((f) => {
-              const isChecked = selectedFits.includes(f) || filterFit === f
-              const count = counts[`fit-${f}`] ?? 0
-              return (
-                <label key={f} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => {
-                      if (filterFit === f) setFit('all')
-                      toggleStringItem(setSelectedFits, f)
-                    }}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{f}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {fitOptions.map((f) => {
+            const isChecked = selectedFits.includes(f) || filterFit === f
+            const count = counts[`fit-${f}`] ?? 0
+            return (
+              <label key={f} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => {
+                    if (filterFit === f) setFit('all')
+                    toggleStringItem(setSelectedFits, f)
+                  }}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{f}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'fabric') {
+    } else if (key === 'fabric') {
       const fabricOptions = ['Cotton', 'Cotton blend', 'Polyester', 'French terry', 'Fleece']
-      return (
-        <div key="facet-fabric" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>FABRIC</h3>
-          <div className="flex flex-col gap-[9px]">
-            {fabricOptions.map((fb) => {
-              const isChecked = selectedFabrics.includes(fb)
-              const count = counts[`fabric-${fb}`] ?? 0
-              return (
-                <label key={fb} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedFabrics, fb)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{fb}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {fabricOptions.map((fb) => {
+            const isChecked = selectedFabrics.includes(fb)
+            const count = counts[`fabric-${fb}`] ?? 0
+            return (
+              <label key={fb} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedFabrics, fb)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{fb}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'material') {
+    } else if (key === 'material') {
       const materialOptions = [
         'Nylon-Cotton',
         'Poly-Tricot',
@@ -985,531 +1019,492 @@ export default function ShopClient({
         'French terry',
         'Fleece',
       ]
-      return (
-        <div key="facet-material" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>MATERIAL</h3>
-          <div className="flex flex-col gap-[9px]">
-            {materialOptions.map((mat) => {
-              const isChecked = selectedMaterials.includes(mat)
-              const count = counts[`mat-${mat}`] ?? 0
-              return (
-                <label key={mat} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedMaterials, mat)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{mat}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {materialOptions.map((mat) => {
+            const isChecked = selectedMaterials.includes(mat)
+            const count = counts[`mat-${mat}`] ?? 0
+            return (
+              <label key={mat} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedMaterials, mat)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{mat}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'sleeveLength') {
+    } else if (key === 'sleeveLength') {
       const sleeveOptions = ['Short Sleeve', 'Full Sleeve', '3/4 Sleeve']
-      return (
-        <div key="facet-sleeve" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>SLEEVE LENGTH</h3>
-          <div className="flex flex-col gap-[9px]">
-            {sleeveOptions.map((sl) => {
-              const isChecked = selectedSleeveLengths.includes(sl)
-              const count = counts[`sleeve-${sl}`] ?? 0
-              return (
-                <label key={sl} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedSleeveLengths, sl)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{sl}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {sleeveOptions.map((sl) => {
+            const isChecked = selectedSleeveLengths.includes(sl)
+            const count = counts[`sleeve-${sl}`] ?? 0
+            return (
+              <label key={sl} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedSleeveLengths, sl)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{sl}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'neckType') {
-      const neckOptions = ['Crew neck', 'V-neck']
-      return (
-        <div key="facet-neck" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>NECK TYPE</h3>
-          <div className="flex flex-col gap-[9px]">
-            {neckOptions.map((nk) => {
-              const isChecked = selectedNeckTypes.includes(nk)
-              const count = counts[`neck-${nk}`] ?? 0
-              return (
-                <label key={nk} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedNeckTypes, nk)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{nk}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+    } else if (key === 'neckType') {
+      const neckOptions = ['Round neck / Crewneck', 'High neck', 'Polo collar', 'Henley']
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {neckOptions.map((nk) => {
+            const isChecked = selectedNeckTypes.includes(nk)
+            const count = counts[`neck-${nk}`] ?? 0
+            return (
+              <label key={nk} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedNeckTypes, nk)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{nk}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'pattern') {
-      const patternOptions = ['Solid', 'Striped', 'Printed', 'Color-block']
-      return (
-        <div key="facet-pattern" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>PATTERN</h3>
-          <div className="flex flex-col gap-[9px]">
-            {patternOptions.map((pt) => {
-              const isChecked = selectedPatterns.includes(pt)
-              const count = counts[`pattern-${pt}`] ?? 0
-              return (
-                <label key={pt} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedPatterns, pt)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{pt}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+    } else if (key === 'pattern') {
+      const patternOptions = ['Striped', 'Solid', 'Printed']
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {patternOptions.map((pt) => {
+            const isChecked = selectedPatterns.includes(pt)
+            const count = counts[`pat-${pt}`] ?? 0
+            return (
+              <label key={pt} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedPatterns, pt)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{pt}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'printStyle') {
-      const printOptions = ['Graphic', 'Typography', 'Abstract', 'Minimal']
-      return (
-        <div key="facet-print" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>PRINT STYLE</h3>
-          <div className="flex flex-col gap-[9px]">
-            {printOptions.map((ps) => {
-              const isChecked = selectedPrintStyles.includes(ps)
-              const count = counts[`print-${ps}`] ?? 0
-              return (
-                <label key={ps} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedPrintStyles, ps)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{ps}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+    } else if (key === 'printStyle') {
+      const printOptions = ['Back print', 'Chest print', 'Subtle typography']
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {printOptions.map((ps) => {
+            const isChecked = selectedPrintStyles.includes(ps)
+            const count = counts[`print-${ps}`] ?? 0
+            return (
+              <label key={ps} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedPrintStyles, ps)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{ps}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'trimColor') {
-      const trimOptions = ['Cobalt', 'Forest Green', 'Chocolate', 'Navy']
-      return (
-        <div key="facet-trim" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>COLLAR / TRIM COLOR</h3>
-          <div className="flex flex-col gap-[9px]">
-            {trimOptions.map((tc) => {
-              const isChecked = selectedTrimColors.includes(tc)
-              const count = counts[`trim-${tc}`] ?? 0
-              return (
-                <label key={tc} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedTrimColors, tc)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{tc}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+    } else if (key === 'trimColor') {
+      const trimOptions = ['White / Cream', 'Black', 'Contrast rib']
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {trimOptions.map((tc) => {
+            const isChecked = selectedTrimColors.includes(tc)
+            const count = counts[`trim-${tc}`] ?? 0
+            return (
+              <label key={tc} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedTrimColors, tc)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{tc}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'buttons') {
-      const buttonOptions = ['2-button', '3-button', '4-button']
-      return (
-        <div key="facet-buttons" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>BUTTONS</h3>
-          <div className="flex flex-col gap-[9px]">
-            {buttonOptions.map((btn) => {
-              const isChecked = selectedButtons.includes(btn)
-              const count = counts[`btn-${btn}`] ?? 0
-              return (
-                <label key={btn} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedButtons, btn)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{btn}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+    } else if (key === 'buttons') {
+      const buttonOptions = ['2-button placket', '3-button placket']
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {buttonOptions.map((btn) => {
+            const isChecked = selectedButtons.includes(btn)
+            const count = counts[`btn-${btn}`] ?? 0
+            return (
+              <label key={btn} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedButtons, btn)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{btn}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'length') {
-      const lengthOptions = ['Full Length', 'Ankle Length']
-      return (
-        <div key="facet-length" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>LENGTH</h3>
-          <div className="flex flex-col gap-[9px]">
-            {lengthOptions.map((len) => {
-              const isChecked = selectedLengths.includes(len)
-              const count = counts[`len-${len}`] ?? 0
-              return (
-                <label key={len} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedLengths, len)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{len}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+    } else if (key === 'length') {
+      const lengthOptions = ['Full length', 'Cropped / Ankle']
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {lengthOptions.map((len) => {
+            const isChecked = selectedLengths.includes(len)
+            const count = counts[`len-${len}`] ?? 0
+            return (
+              <label key={len} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedLengths, len)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{len}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'closure') {
-      const closureOptions = ['Drawstring', 'Elastic waist']
-      return (
-        <div key="facet-closure" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>CLOSURE</h3>
-          <div className="flex flex-col gap-[9px]">
-            {closureOptions.map((cl) => {
-              const isChecked = selectedClosures.includes(cl)
-              const count = counts[`closure-${cl}`] ?? 0
-              return (
-                <label key={cl} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedClosures, cl)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{cl}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+    } else if (key === 'closure') {
+      const closureOptions = ['Drawstring elastic', 'Internal drawstring']
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {closureOptions.map((cl) => {
+            const isChecked = selectedClosures.includes(cl)
+            const count = counts[`cl-${cl}`] ?? 0
+            return (
+              <label key={cl} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedClosures, cl)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{cl}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'pockets') {
-      const pocketOptions = ['Cargo Pockets', 'Zippered Pockets', 'Slash Pockets']
-      return (
-        <div key="facet-pockets" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>POCKETS</h3>
-          <div className="flex flex-col gap-[9px]">
-            {pocketOptions.map((pk) => {
-              const isChecked = selectedPockets.includes(pk)
-              const count = counts[`pocket-${pk}`] ?? 0
-              return (
-                <label key={pk} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedPockets, pk)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{pk}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+    } else if (key === 'pockets') {
+      const pocketOptions = ['Zipper pockets', 'Deep side pockets', 'Cargo pockets']
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {pocketOptions.map((pk) => {
+            const isChecked = selectedPockets.includes(pk)
+            const count = counts[`pk-${pk}`] ?? 0
+            return (
+              <label key={pk} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedPockets, pk)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{pk}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'use') {
-      const useOptions = ['Sports', 'Casual', 'Training']
-      return (
-        <div key="facet-use" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>USE / OCCASION</h3>
-          <div className="flex flex-col gap-[9px]">
-            {useOptions.map((u) => {
-              const isChecked = selectedUses.includes(u)
-              const count = counts[`use-${u}`] ?? 0
-              return (
-                <label key={u} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedUses, u)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{u}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+    } else if (key === 'use') {
+      const useOptions = ['Athletic / Training', 'Casual streetwear', 'Loungewear']
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {useOptions.map((u) => {
+            const isChecked = selectedUses.includes(u)
+            const count = counts[`use-${u}`] ?? 0
+            return (
+              <label key={u} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedUses, u)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{u}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'legStyle') {
+    } else if (key === 'legStyle') {
       const legOptions = ['Cuffed', 'Open hem']
-      return (
-        <div key="facet-leg" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>LEG STYLE</h3>
-          <div className="flex flex-col gap-[9px]">
-            {legOptions.map((ls) => {
-              const isChecked = selectedLegStyles.includes(ls)
-              const count = counts[`leg-${ls}`] ?? 0
-              return (
-                <label key={ls} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedLegStyles, ls)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{ls}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {legOptions.map((ls) => {
+            const isChecked = selectedLegStyles.includes(ls)
+            const count = counts[`leg-${ls}`] ?? 0
+            return (
+              <label key={ls} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedLegStyles, ls)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{ls}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'rise') {
+    } else if (key === 'rise') {
       const riseOptions = ['Mid-rise', 'High-rise']
-      return (
-        <div key="facet-rise" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>RISE</h3>
-          <div className="flex flex-col gap-[9px]">
-            {riseOptions.map((rs) => {
-              const isChecked = selectedRises.includes(rs)
-              const count = counts[`rise-${rs}`] ?? 0
-              return (
-                <label key={rs} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedRises, rs)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{rs}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {riseOptions.map((rs) => {
+            const isChecked = selectedRises.includes(rs)
+            const count = counts[`rise-${rs}`] ?? 0
+            return (
+              <label key={rs} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedRises, rs)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{rs}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'availability') {
+    } else if (key === 'availability') {
       const availOptions = [
         { id: 'in-stock', label: 'In stock', count: counts['avail-in-stock'] ?? 0 },
         { id: 'out-of-stock', label: 'Out of stock', count: counts['avail-out-of-stock'] ?? 0 },
       ]
-      return (
-        <div key="facet-avail" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>AVAILABILITY</h3>
-          <div className="flex flex-col gap-[9px]">
-            {availOptions.map(({ id, label, count }) => {
-              const isChecked = selectedAvailability === id
-              return (
-                <label key={id} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="radio"
-                    name={isDrawer ? 'drawer-avail' : 'sidebar-avail'}
-                    checked={isChecked}
-                    onChange={() => setSelectedAvailability(isChecked ? null : id)}
-                    onClick={() => {
-                      if (isChecked) setSelectedAvailability(null)
-                    }}
-                  />
-                  <span className="relative h-4 w-4 shrink-0 rounded-[2px] border-[1.5px] border-[#c8cbc7] transition-[border-color] duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink peer-checked:after:absolute peer-checked:after:inset-[3px] peer-checked:after:rounded-full peer-checked:after:bg-[#ff3f6c] peer-checked:after:content-['']" />
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{label}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {availOptions.map(({ id, label, count }) => {
+            const isChecked = selectedAvailability === id
+            return (
+              <label key={id} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => setSelectedAvailability(isChecked ? null : id)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{label}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'discount') {
+    } else if (key === 'discount') {
       const discounts = [10, 20, 30, 40, 50]
-      return (
-        <div key="facet-discount" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>DISCOUNT RANGE</h3>
-          <div className="flex flex-col gap-[9px]">
-            {discounts.map((pct) => {
-              const isChecked = selectedDiscount === pct
-              const count = counts[`disc-${pct}`] ?? 0
-              return (
-                <label key={pct} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => setSelectedDiscount(isChecked ? null : pct)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{pct}% and above</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {discounts.map((pct) => {
+            const isChecked = selectedDiscount === pct
+            const count = counts[`disc-${pct}`] ?? 0
+            return (
+              <label key={pct} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => setSelectedDiscount(isChecked ? null : pct)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{pct}% and above</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'rating') {
+    } else if (key === 'rating') {
       const ratingOptions = [
         { val: 4, label: '4★ and above', count: counts['rate-4'] ?? 0 },
         { val: 3, label: '3★ and above', count: counts['rate-3'] ?? 0 },
       ]
-      return (
-        <div key="facet-rating" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>CUSTOMER RATING</h3>
-          <div className="flex flex-col gap-[9px]">
-            {ratingOptions.map(({ val, label, count }) => {
-              const isChecked = selectedRating === val
-              return (
-                <label key={val} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => setSelectedRating(isChecked ? null : val)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{label}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {ratingOptions.map(({ val, label, count }) => {
+            const isChecked = selectedRating === val
+            return (
+              <label key={val} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => setSelectedRating(isChecked ? null : val)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{label}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
-    }
-
-    if (key === 'collection') {
+    } else if (key === 'collection') {
       const collectionOptions = ['New arrivals', 'Bestsellers', 'Featured']
-      return (
-        <div key="facet-collection" className={facetBlockClass}>
-          <h3 className={facetTitleClass}>COLLECTION</h3>
-          <div className="flex flex-col gap-[9px]">
-            {collectionOptions.map((col) => {
-              const isChecked = selectedCollections.includes(col)
-              const count = counts[`col-${col}`] ?? 0
-              return (
-                <label key={col} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13.5px] leading-[20.25px]">
-                  <input className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleStringItem(setSelectedCollections, col)}
-                  />
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-[1.5px] border-[#c8cbc7] bg-white text-white transition-all duration-[120ms] peer-checked:border-store-ink peer-checked:bg-store-ink">
-                    {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                  </span>
-                  <span className="font-ui text-[13px] font-normal leading-[19.5px] text-[#282c3f]">{col}</span>
-                  <span className="ml-0.5 font-ui text-[11px] leading-[16.5px] text-[#94969f]">({count})</span>
-                </label>
-              )
-            })}
-          </div>
+      content = (
+        <div className="flex flex-col gap-2.5">
+          {collectionOptions.map((col) => {
+            const isChecked = selectedCollections.includes(col)
+            const count = counts[`col-${col}`] ?? 0
+            return (
+              <label key={col} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+                <input
+                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleStringItem(setSelectedCollections, col)}
+                />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
+                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
+                </span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">{col}</span>
+                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
+              </label>
+            )
+          })}
         </div>
       )
     }
 
-    return null
+    if (!content) return null
+
+    if (isDrawer) {
+      return (
+        <div key={`drawer-facet-${key}`} className="border-b-0 pb-4 pt-1">
+          {content}
+        </div>
+      )
+    }
+
+    return (
+      <div key={`facet-${key}`} className="py-3.5">
+        <button
+          type="button"
+          onClick={() => toggleFacet(key)}
+          className="flex w-full cursor-pointer select-none items-center justify-between py-1 text-left"
+          aria-expanded={isOpen}
+        >
+          <span className="font-brand text-[13px] font-bold text-gray-900">
+            {titleText}
+          </span>
+          {isOpen ? (
+            <ChevronUp className="h-4 w-4 text-gray-700" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-gray-700" />
+          )}
+        </button>
+        {isOpen && <div className="pt-3 pb-1">{content}</div>}
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-dvh bg-store-paper pb-10 font-ui text-store-ink [@media(max-width:768px)]:pb-[70px] [&_:is(a,button,input,select,textarea):focus-visible]:outline-2 [&_:is(a,button,input,select,textarea):focus-visible]:outline-[#31586f] [&_:is(a,button,input,select,textarea):focus-visible]:outline-offset-[3px]">
+    <div className="min-h-dvh bg-white pb-16 font-ui text-gray-900 [@media(max-width:768px)]:pb-[70px]">
       {/* 1. Breadcrumbs */}
-      <nav className="pt-3.5 pb-2.5" aria-label="Breadcrumb navigation">
-        <div className="mx-auto max-w-[1440px] px-[3%] [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:pb-[calc(68px+env(safe-area-inset-bottom,0px))]">
-          <ol className="flex list-none items-center gap-1.5 font-ui text-[12px] leading-[18px] text-store-muted">
+      <nav className="pt-4 pb-2" aria-label="Breadcrumb navigation">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6">
+          <ol className="flex list-none items-center gap-2 font-ui text-xs text-gray-500">
             <li>
-              <Link href="/" className="text-store-muted no-underline [transition:color_0.15s_ease] hover:text-[#ff3f6c]">
+              <Link href="/" className="hover:text-black transition-colors">
                 Home
               </Link>
             </li>
-            <li className="text-[11px] leading-[16.5px] text-[#878b94]" aria-hidden="true">
+            <li className="text-gray-400 select-none" aria-hidden="true">
               /
             </li>
             <li>
-              <Link href="/shop" className="text-store-muted no-underline [transition:color_0.15s_ease] hover:text-[#ff3f6c]">
+              <Link href="/shop" className="hover:text-black transition-colors">
                 Shop
               </Link>
             </li>
             {routeCategory !== 'all' && (
               <>
-                <li className="text-[11px] leading-[16.5px] text-[#878b94]" aria-hidden="true">
+                <li className="text-gray-400 select-none" aria-hidden="true">
                   /
                 </li>
-                <li className="font-semibold text-store-muted" aria-current="page">
+                <li className="text-gray-800 font-medium" aria-current="page">
                   {title}
                 </li>
               </>
@@ -1519,407 +1514,103 @@ export default function ShopClient({
       </nav>
 
       {/* 2. Top Title and Item Count */}
-      <div className="pt-1 pb-3.5">
-        <div className="mx-auto max-w-[1440px] px-[3%] [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:pb-[calc(68px+env(safe-area-inset-bottom,0px))]">
-          <div className="flex items-baseline gap-2">
-            <h1 className="font-brand text-[clamp(16px,2vw,19px)] font-bold tracking-[-0.055em] text-store-ink">{title}</h1>
-            <span className="font-ui text-[13.5px] font-normal leading-[20.25px] text-store-muted">
-              - {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'}
+      <div className="pt-1 pb-4">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6">
+          <div className="flex items-baseline gap-2.5">
+            <h1 className="font-brand text-2xl sm:text-[28px] font-bold tracking-tight text-gray-950">
+              {title}
+            </h1>
+            <span className="font-ui text-base sm:text-lg font-normal text-gray-500">
+              &middot; {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* 3. Top Toolbar Strip */}
-      <div className="border-y border-store-line bg-store-paper [@media(max-width:768px)]:hidden">
-        <div className="mx-auto max-w-[1440px] px-[3%] [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:pb-[calc(68px+env(safe-area-inset-bottom,0px))]">
-          <div className="flex h-[50px] items-center justify-between">
-            <div className="flex h-full w-[250px] shrink-0 items-center justify-between border-r border-line pr-5 text-[#59666c]">
-              <span className="font-brand text-[13.5px] font-bold uppercase leading-[20.25px] tracking-[0.04em] text-[#59666c]">FILTERS</span>
-              {activeFilterCount > 0 && (
+      {/* 3. Main Catalog Section with Unified Sidebar & Content */}
+      <div className="border-t border-gray-200">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6">
+          <div className="flex items-start">
+            {/* Left Column: Fixed/Sticky Desktop Sidebar */}
+            <aside
+              className="w-[240px] lg:w-[250px] shrink-0 sticky top-[80px] max-h-[calc(100vh-90px)] overflow-y-auto border-r border-gray-200 pr-6 pt-5 pb-12 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [@media(max-width:768px)]:hidden"
+              aria-label="Catalog filters sidebar"
+            >
+              {/* Header: FILTERS and Clear all */}
+              <div className="flex items-center justify-between pb-4">
+                <span className="font-brand text-[13px] font-bold uppercase tracking-[0.06em] text-gray-900">
+                  FILTERS
+                </span>
                 <button
                   type="button"
-                  className="cursor-pointer border-0 bg-transparent font-ui text-[11px] font-bold uppercase leading-[16.5px] tracking-[0.02em] text-[#ff3f6c]"
+                  className="cursor-pointer border-0 bg-transparent font-ui text-xs font-normal text-gray-500 transition-colors hover:text-black"
                   onClick={clearAllFilters}
                 >
-                  CLEAR ALL
+                  Clear all
                 </button>
+              </div>
+
+              {/* Accordion Facet Blocks */}
+              <div className="divide-y divide-gray-200 border-t border-gray-200">
+                {activeFacets.map((facetKey) => renderFacetBlock(facetKey, false))}
+              </div>
+            </aside>
+
+            {/* Right Column: Catalog Content */}
+            <main className="flex-1 min-w-0 pl-0 md:pl-6 lg:pl-8 pt-4 pb-12">
+              {/* Sort Dropdown Row */}
+              <div className="flex items-center justify-end pb-5">
+                <span className="whitespace-nowrap font-ui text-[13px] font-normal text-gray-500 mr-2">
+                  Sort by :
+                </span>
+                <div className="relative inline-block">
+                  <select
+                    id="shop-sort-select"
+                    className="appearance-none cursor-pointer rounded-lg border border-gray-200 bg-white py-1.5 pl-3.5 pr-8 font-ui text-xs font-semibold text-gray-900 shadow-xs hover:border-gray-300 focus:outline-none"
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as SortMode)}
+                    aria-label="Sort products"
+                  >
+                    {SORT_OPTIONS.map((opt) => (
+                      <option key={opt.mode} value={opt.mode}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
+                </div>
+              </div>
+
+              {/* Products Grid */}
+              {filteredProducts.length === 0 ? (
+                <div className="mx-auto my-12 max-w-[500px] rounded-2xl border border-dashed border-gray-300 bg-gray-50/60 p-12 text-center">
+                  <h2 className="mb-2 font-brand text-lg font-bold text-gray-900">
+                    We couldn&apos;t find any matches
+                  </h2>
+                  <p className="mb-6 font-ui text-sm text-gray-500">
+                    Try clearing some of your filters or searching for another silhouette or color.
+                  </p>
+                  <button
+                    type="button"
+                    className="cursor-pointer rounded-xl bg-black px-6 py-3 font-brand text-xs font-bold uppercase tracking-wider text-white shadow-xs transition-opacity hover:opacity-90"
+                    onClick={clearAllFilters}
+                  >
+                    Clear all filters
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-4 xl:gap-5">
+                  {filteredProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      selectedSize={selectedSizes[0] || 'L'}
+                    />
+                  ))}
+                </div>
               )}
-            </div>
-
-            {/* Middle: Active filter chips */}
-            <div className="flex flex-1 items-center gap-2 overflow-x-auto pl-[18px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {routeCategory === 'all' &&
-                filterCategories.map((catSlug) => {
-                  const catLabel =
-                    SHOP_CATEGORIES.find((c) => c.slug === catSlug)?.label || catSlug
-                  return (
-                    <button
-                      key={`chip-cat-${catSlug}`}
-                      type="button"
-                      className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                      onClick={() => toggleCategory(catSlug)}
-                      title={`Remove ${catLabel} filter`}
-                    >
-                      Category: {catLabel}
-                      <X className="h-3 w-3 ml-1" />
-                    </button>
-                  )
-                })}
-
-              {filterFit !== 'all' && (
-                <button
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => setFit('all')}
-                  title="Remove fit filter"
-                >
-                  Fit: {filterFit}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              )}
-
-              {selectedFits.map((f) => (
-                <button
-                  key={`chip-fit-${f}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedFits, f)}
-                >
-                  Fit: {f}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {prices.map((range) => (
-                <button
-                  key={`chip-p-${range}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => togglePrice(range)}
-                >
-                  {PRICE_LABELS[range]}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedSizes.map((sz) => (
-                <button
-                  key={`chip-sz-${sz}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedSizes, sz)}
-                >
-                  Size: {sz}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedWaistSizes.map((ws) => (
-                <button
-                  key={`chip-ws-${ws}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedWaistSizes, ws)}
-                >
-                  Waist: {ws}&quot;
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedColors.map((col) => (
-                <button
-                  key={`chip-c-${col}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedColors, col)}
-                >
-                  Color: {col}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedFabrics.map((fb) => (
-                <button
-                  key={`chip-fb-${fb}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedFabrics, fb)}
-                >
-                  Fabric: {fb}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedMaterials.map((mat) => (
-                <button
-                  key={`chip-mat-${mat}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedMaterials, mat)}
-                >
-                  Material: {mat}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedSleeveLengths.map((sl) => (
-                <button
-                  key={`chip-sl-${sl}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedSleeveLengths, sl)}
-                >
-                  Sleeve: {sl}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedNeckTypes.map((nk) => (
-                <button
-                  key={`chip-nk-${nk}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedNeckTypes, nk)}
-                >
-                  Neck: {nk}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedPatterns.map((pt) => (
-                <button
-                  key={`chip-pt-${pt}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedPatterns, pt)}
-                >
-                  Pattern: {pt}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedPrintStyles.map((ps) => (
-                <button
-                  key={`chip-ps-${ps}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedPrintStyles, ps)}
-                >
-                  Print: {ps}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedTrimColors.map((tc) => (
-                <button
-                  key={`chip-tc-${tc}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedTrimColors, tc)}
-                >
-                  Trim: {tc}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedButtons.map((btn) => (
-                <button
-                  key={`chip-btn-${btn}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedButtons, btn)}
-                >
-                  Buttons: {btn}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedLengths.map((len) => (
-                <button
-                  key={`chip-len-${len}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedLengths, len)}
-                >
-                  Length: {len}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedClosures.map((cl) => (
-                <button
-                  key={`chip-cl-${cl}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedClosures, cl)}
-                >
-                  Closure: {cl}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedPockets.map((pk) => (
-                <button
-                  key={`chip-pk-${pk}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedPockets, pk)}
-                >
-                  Pockets: {pk}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedUses.map((u) => (
-                <button
-                  key={`chip-u-${u}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedUses, u)}
-                >
-                  Use: {u}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedLegStyles.map((ls) => (
-                <button
-                  key={`chip-ls-${ls}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedLegStyles, ls)}
-                >
-                  Leg: {ls}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedRises.map((rs) => (
-                <button
-                  key={`chip-rs-${rs}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedRises, rs)}
-                >
-                  Rise: {rs}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {selectedAvailability && (
-                <button
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => setSelectedAvailability(null)}
-                >
-                  Availability: {selectedAvailability === 'in-stock' ? 'In stock' : 'Out of stock'}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              )}
-
-              {selectedDiscount !== null && (
-                <button
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => setSelectedDiscount(null)}
-                >
-                  {selectedDiscount}%+ Off
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              )}
-
-              {selectedRating !== null && (
-                <button
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => setSelectedRating(null)}
-                >
-                  {selectedRating}★ & above
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              )}
-
-              {selectedCollections.map((col) => (
-                <button
-                  key={`chip-col-${col}`}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => toggleStringItem(setSelectedCollections, col)}
-                >
-                  {col}
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              ))}
-
-              {searchQuery.trim() && (
-                <button
-                  type="button"
-                  className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-[2px] border border-[#d2d3ce] bg-white px-2.5 py-1 font-ui text-[12px] leading-[18px] text-store-ink transition-all duration-150 hover:border-[#8f9da0] hover:bg-[#f2f1ed] hover:text-[#991b1b]"
-                  onClick={() => setSearchQuery('')}
-                  title="Clear search query"
-                >
-                  &ldquo;{searchQuery}&rdquo;
-                  <X className="h-3 w-3 ml-1" />
-                </button>
-              )}
-            </div>
-
-            {/* Right: Sort Dropdown */}
-            <div className="flex shrink-0 items-center gap-2 pl-3">
-              <span className="whitespace-nowrap font-ui text-[13px] font-normal leading-[19.5px] text-[#7e818c]">Sort by :</span>
-              <select
-                id="shop-sort-select"
-                className="h-[34px] cursor-pointer rounded-[2px] border border-[#c8cbc7] bg-white px-2.5 font-brand text-[13px] font-semibold text-[#282c3f] outline-none"
-                value={sort}
-                onChange={(e) => setSort(e.target.value as SortMode)}
-                aria-label="Sort products"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.mode} value={opt.mode}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            </main>
           </div>
-        </div>
-      </div>
-
-      {/* 4. Main 2-Column Layout */}
-      <div className="mx-auto max-w-[1440px] px-[3%] [@media(max-width:639px)]:px-4 [@media(max-width:639px)]:pb-[calc(68px+env(safe-area-inset-bottom,0px))]">
-        <div className="mt-3.5 grid grid-cols-[250px_1fr] items-start gap-8 [@media(max-width:768px)]:mt-1.5 [@media(max-width:768px)]:block [@media(max-width:768px)]:pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
-          {/* Left Column: Fixed/Sticky Desktop Sidebar */}
-          <aside className="sticky top-[90px] max-h-[calc(100vh-105px)] overflow-y-auto border-r border-store-line bg-store-paper pr-[18px] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-[2px] [&::-webkit-scrollbar-thumb]:bg-[#d4d5d9] [@media(max-width:768px)]:hidden" aria-label="Catalog filters sidebar">
-            <div>
-              {activeFacets.map((facetKey) => renderFacetBlock(facetKey, false))}
-            </div>
-          </aside>
-
-          {/* Right Column: Catalog Grid */}
-          <main className="min-w-0">
-            {filteredProducts.length === 0 ? (
-              <div className="mx-auto my-10 max-w-[500px] rounded-[8px] border border-dashed border-[#d4d5d9] bg-[#fafafb] px-5 py-16 text-center">
-                <h2 className="mb-1.5 font-brand text-[18px] font-bold leading-[21.6px] text-[#282c3f]">We couldn&apos;t find any matches</h2>
-                <p className="mb-5 font-ui text-[13.5px] leading-[1.5] text-[#7e818c]">
-                  Try clearing some of your filters or searching for another silhouette or color.
-                </p>
-                <button
-                  type="button"
-                  className="cursor-pointer rounded-[2px] border-0 bg-store-ink px-5 py-2.5 font-brand text-[12.5px] font-bold leading-[18.75px] tracking-[0.03em] text-white transition-opacity duration-150 hover:opacity-[0.92]"
-                  onClick={clearAllFilters}
-                >
-                  CLEAR ALL FILTERS
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-4 gap-x-4 gap-y-6 [@media(max-width:1200px)]:grid-cols-3 [@media(max-width:768px)]:grid-cols-2 [@media(max-width:768px)]:gap-x-2.5 [@media(max-width:768px)]:gap-y-4">
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )}
-          </main>
         </div>
       </div>
 

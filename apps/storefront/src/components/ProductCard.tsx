@@ -29,7 +29,7 @@ const COLOR_HEX: Record<string, string> = {
 }
 
 const cardClass =
-  'group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-black/5 bg-[#fbfbfa] p-2 pb-3.5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-[box-shadow,border-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/[0.08] hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]'
+  'group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white p-2 sm:p-2.5 pb-2.5 sm:pb-3 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-gray-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]'
 
 const cardImageClass =
   'absolute inset-0 h-full w-full object-cover transition-opacity duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-[1.03]'
@@ -40,9 +40,14 @@ const dotClass = (active: boolean) =>
   }`
 
 const swatchClass =
-  'h-3.5 w-3.5 cursor-pointer rounded-full border-0 p-0 outline-none transition-[transform,box-shadow] duration-150 hover:scale-[1.15]'
+  'h-4 w-4 sm:h-5 sm:w-5 cursor-pointer rounded-full border border-black/10 p-0 outline-none transition-transform duration-150 hover:scale-110'
 
-export default function ProductCard({ product }: { product: Product }) {
+interface ProductCardProps {
+  product: Product
+  selectedSize?: string
+}
+
+export default function ProductCard({ product, selectedSize }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem)
   const openOverlay = useUIStore((state) => state.openOverlay)
   const showToast = useUIStore((state) => state.showToast)
@@ -93,10 +98,10 @@ export default function ProductCard({ product }: { product: Product }) {
             : COLOR_HEX[name.toLowerCase()] || '#85878b'
       }))
     }
-    const mainCol = product.color || 'Washed Black'
+    const mainCol = product.color || 'Black'
     const altCol =
       mainCol.toLowerCase().includes('black') || mainCol.toLowerCase().includes('charcoal')
-        ? 'Ash'
+        ? 'Grey'
         : 'Black'
     return [
       { name: mainCol, hex: COLOR_HEX[mainCol.toLowerCase()] || '#171717' },
@@ -109,7 +114,11 @@ export default function ProductCard({ product }: { product: Product }) {
     product.wash ||
     (swatches.length > 1
       ? `${swatches[0].name} / ${swatches[1].name}`
-      : product.color || 'Washed Black / Ash')
+      : product.color || 'Pitch Black')
+
+  const displaySize =
+    selectedSize ||
+    (availableSizes.includes('L') ? 'L' : availableSizes[0] || 'L')
 
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
@@ -144,7 +153,7 @@ export default function ProductCard({ product }: { product: Product }) {
       return
     }
 
-    // Multiple sizes: prompt user in the toast to choose their size!
+    // Multiple sizes: prompt user to choose their size
     openSizePrompt({
       product,
       selectedColor: activeColor,
@@ -191,8 +200,7 @@ export default function ProductCard({ product }: { product: Product }) {
     })
   }
 
-  const badgeText = product.badge || 'NEW'
-  const fitText = product.fit ? `${product.fit.toUpperCase()} FIT` : 'RELAXED FIT'
+  const badgeText = product.badge
 
   return (
     <article
@@ -200,12 +208,12 @@ export default function ProductCard({ product }: { product: Product }) {
       onMouseEnter={() => secondaryImg && setActiveImageIdx(1)}
       onMouseLeave={() => setActiveImageIdx(0)}
     >
-      {/* ── 1. Image Container with Badge, Heart & Dots ── */}
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-[#eeede7]">
+      {/* ── 1. Image Container with Badge, Heart & Indicator ── */}
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-neutral-100">
         {/* Top-Left Circular Favorite Button */}
         <button
           type="button"
-          className={`absolute left-2.5 top-2.5 z-10 flex h-9 w-9 cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-white p-0 text-[#18181b] shadow-[0_2px_10px_rgba(0,0,0,0.12)] transition-[transform,background] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.08] hover:bg-white active:scale-[0.92] ${
+          className={`absolute left-2 top-2 sm:left-2.5 sm:top-2.5 z-10 flex h-7.5 w-7.5 sm:h-9 sm:w-9 cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-white p-0 text-black shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition-transform duration-200 hover:scale-105 active:scale-95 ${
             favAnimate ? 'animate-heart-pop' : ''
           }`}
           onClick={handleFavoriteClick}
@@ -217,19 +225,19 @@ export default function ProductCard({ product }: { product: Product }) {
           title={mounted && isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         >
           <Heart
-            className={`h-[17px] w-[17px] transition-[transform,stroke,fill] duration-200 ${
+            className={`h-3.5 w-3.5 sm:h-4 sm:w-4 transition-[transform,stroke,fill] duration-200 ${
               favAnimate ? 'animate-heart-pop-icon' : ''
             }`}
-            fill={mounted && isFavorite ? '#e11d48' : 'none'}
-            stroke={mounted && isFavorite ? '#e11d48' : '#18181b'}
+            fill={mounted && isFavorite ? '#ef4444' : 'none'}
+            stroke={mounted && isFavorite ? '#ef4444' : '#111827'}
             strokeWidth={mounted && isFavorite ? 2 : 1.75}
           />
         </button>
 
-        {/* Top-Right Bold Black Badge */}
+        {/* Top-Right Black Pill Badge */}
         {badgeText && (
           <span
-            className="absolute right-2.5 top-2.5 z-10 rounded-md bg-[#09090b] px-[9px] py-1 font-brand text-[10.5px] font-bold uppercase tracking-[0.08em] text-white shadow-[0_2px_6px_rgba(0,0,0,0.15)]"
+            className="absolute right-2 top-2 sm:right-2.5 sm:top-2.5 z-10 rounded-full bg-black px-2 py-0.5 sm:px-3 sm:py-1 font-brand text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white shadow-xs"
             aria-label={`Badge: ${badgeText}`}
           >
             {badgeText}
@@ -280,13 +288,8 @@ export default function ProductCard({ product }: { product: Product }) {
         )}
       </div>
 
-      {/* ── 2. Product Information Section ── */}
-      <div className="flex flex-1 flex-col px-1.5 pb-0.5 pt-3.5 max-[640px]:px-1 max-[640px]:pb-0.5 max-[640px]:pt-2.5">
-        {/* Overline / Fit Tag */}
-        <div className="mb-1 font-ui text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8e8e93]">
-          {fitText}
-        </div>
-
+      {/* ── 2. Product Information Section (No Fit Overline) ── */}
+      <div className="flex flex-1 flex-col pt-2.5 sm:pt-3">
         {/* Product Title */}
         <Link
           href={getProductUrl(product)}
@@ -294,27 +297,32 @@ export default function ProductCard({ product }: { product: Product }) {
           onClick={handleCardClick}
         >
           <h3
-            className="mb-2 line-clamp-2 min-h-[2.5em] overflow-hidden text-ellipsis whitespace-nowrap font-brand text-[17px] font-bold leading-[1.28] tracking-[-0.015em] text-[#111827] transition-colors duration-150 hover:text-black max-[640px]:mb-1 max-[640px]:text-[14.5px]"
+            className="line-clamp-1 font-brand text-[13px] sm:text-[14px] lg:text-[15px] font-bold text-gray-900 transition-colors duration-150 hover:text-black"
             title={product.name}
           >
             {product.name}
           </h3>
         </Link>
 
+        {/* Subtitle: Color/Wash · Size */}
+        <p className="mt-0.5 sm:mt-1 truncate font-ui text-[11px] sm:text-xs font-normal text-gray-500">
+          {colorWashLabel} &middot; {displaySize}
+        </p>
+
         {/* Price & Color Swatches Row */}
-        <div className="mb-0.5 flex items-center justify-between">
-          <span className="font-brand text-[21px] font-bold leading-none tracking-[-0.02em] text-[#111827] tabular-nums max-[640px]:text-[17px]">
+        <div className="mt-2 sm:mt-3 flex items-center justify-between gap-1">
+          <span className="font-brand text-sm sm:text-base lg:text-[17px] font-bold text-gray-900 tabular-nums">
             {product.price}
           </span>
 
-          {/* Interactive Swatches on the Right */}
-          <div className="flex items-center gap-[7px]" role="group" aria-label="Color choices">
+          {/* Swatches on the Right */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0" role="group" aria-label="Color choices">
             {swatches.map((swatch, idx) => (
               <button
                 key={swatch.name}
                 type="button"
                 className={`${swatchClass} ${
-                  activeColorIdx === idx ? 'shadow-[0_0_0_1.5px_#fff,0_0_0_3px_#111]' : ''
+                  activeColorIdx === idx ? 'ring-2 ring-black ring-offset-1' : ''
                 }`}
                 style={{ backgroundColor: swatch.hex }}
                 onClick={(e) => {
@@ -329,16 +337,11 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         </div>
 
-        {/* Color / Wash Label */}
-        <p className="mb-3.5 truncate font-ui text-[12.5px] font-medium text-[#71717a] max-[640px]:mb-2.5 max-[640px]:text-[11.5px]">
-          {colorWashLabel}
-        </p>
-
         {/* ── 3. Full-Width "ADD TO BAG →" Action Button ── */}
         <button
           type="button"
-          className={`group/btn relative mt-auto flex h-11 w-full cursor-pointer touch-manipulation items-center justify-center rounded-[10px] border-0 px-4 font-brand text-[12.5px] font-semibold uppercase tracking-[0.02em] text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] enabled:hover:-translate-y-px enabled:hover:bg-[#27272a] enabled:hover:shadow-[0_4px_14px_rgba(0,0,0,0.16)] enabled:active:scale-[0.97] enabled:active:translate-y-0 enabled:active:bg-black disabled:cursor-not-allowed disabled:bg-[#e4e4e7] disabled:text-[#a1a1aa] disabled:shadow-none max-[640px]:h-10 max-[640px]:px-3 ${
-            isAdded ? 'bg-[#166534]' : 'bg-[#111]'
+          className={`group/btn relative mt-2.5 sm:mt-3.5 flex h-9 sm:h-10 lg:h-11 w-full cursor-pointer touch-manipulation items-center justify-center rounded-xl border-0 px-2 sm:px-3 lg:px-4 font-brand text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white shadow-xs transition-all duration-200 hover:bg-neutral-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 ${
+            isAdded ? 'bg-emerald-700' : 'bg-black'
           }`}
           onClick={handleAddToCart}
           disabled={availableSizes.length === 0}
@@ -352,20 +355,18 @@ export default function ProductCard({ product }: { product: Product }) {
             <span>Out of stock</span>
           ) : isAdded ? (
             <div className="relative flex w-full items-center justify-center">
-              <Check className="h-4 w-4 stroke-[2.5]" />
-              <span className="font-brand text-[12.5px] font-bold uppercase tracking-[0.08em] text-white max-[640px]:text-[11px] max-[640px]:tracking-[0.05em]">
-                ADDED
-              </span>
+              <div className="inline-flex items-center gap-1.5 sm:gap-2">
+                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[2.5]" />
+                <span>ADDED</span>
+              </div>
             </div>
           ) : (
             <div className="relative flex w-full items-center justify-center">
-              <div className="inline-flex items-center gap-2">
-                <ShoppingBag className="h-4 w-4 stroke-[2]" />
-                <span className="font-brand text-[12.5px] font-bold uppercase tracking-[0.08em] text-white max-[640px]:text-[11px] max-[640px]:tracking-[0.05em]">
-                  ADD TO BAG
-                </span>
+              <div className="inline-flex items-center gap-1.5 sm:gap-2">
+                <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[2]" />
+                <span>ADD TO BAG</span>
               </div>
-              <ArrowRight className="absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 stroke-[2] transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/btn:translate-x-[3px]" />
+              <ArrowRight className="absolute right-0 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 stroke-[2] transition-transform duration-200 group-hover/btn:translate-x-0.5" />
             </div>
           )}
         </button>
