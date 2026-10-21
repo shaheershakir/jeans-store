@@ -102,7 +102,10 @@ export async function getProductBySlug(slug: string): Promise<Product | undefine
   const products = await getProducts()
   const cleanSlug = slug.toLowerCase().trim()
   return products.find(
-    (p) => slugify(p.name) === cleanSlug || String(p.id) === cleanSlug
+    (p) =>
+      slugify(p.name) === cleanSlug ||
+      String(p.id) === cleanSlug ||
+      (p.id === 3 && (cleanSlug === 'thermal-waffle-knit-tee' || cleanSlug === 'thermal-waffle-knit-fullsleeve-tee'))
   )
 }
 

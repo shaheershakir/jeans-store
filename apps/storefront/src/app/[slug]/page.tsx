@@ -57,7 +57,10 @@ export default async function ProductPage({
     notFound()
   }
 
-  const product = await getProductBySlug(slug)
+  let product = await getProductBySlug(slug)
+  if (!product && (slug === 'thermal-waffle-knit-tee' || slug === 'thermal-waffle-knit-fullsleeve-tee')) {
+    product = await getProductBySlug('thermal-waffle-knit-fullsleeve')
+  }
   if (!product) {
     notFound()
   }
