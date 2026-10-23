@@ -34,6 +34,8 @@ interface TopBanner {
   subtitle: string
   ctaText: string
   ctaLink: string
+  align?: 'left' | 'right'
+  imagePositionClass?: string
 }
 
 const TOP_BANNERS: TopBanner[] = [
@@ -44,7 +46,9 @@ const TOP_BANNERS: TopBanner[] = [
     title: 'Graphic Tees\nfor Real Life',
     subtitle: 'Clean designs. Better fits. Made for\neveryday escapes.',
     ctaText: 'Shop Printed Tees',
-    ctaLink: '/shop/printed-tees'
+    ctaLink: '/shop/printed-tees',
+    align: 'left',
+    imagePositionClass: 'object-[78%_20%] md:object-[70%_25%]'
   },
   {
     image: '/tessgarage-banner-assets/338e5bf0-2823-44cd-96f2-dcf461e28d65.webp',
@@ -53,7 +57,9 @@ const TOP_BANNERS: TopBanner[] = [
     title: 'Structured Cuts\nThat Last',
     subtitle: '260+ GSM combed cotton. Engineered for\nall-day comfort & clean drape.',
     ctaText: 'Explore Collection',
-    ctaLink: '/shop'
+    ctaLink: '/shop',
+    align: 'left',
+    imagePositionClass: 'object-[85%_12%] md:object-[75%_25%]'
   },
   {
     image: '/tessgarage-banner-assets/f20a9215-9f17-44e8-97d3-77cd271b72e8.webp',
@@ -62,7 +68,9 @@ const TOP_BANNERS: TopBanner[] = [
     title: 'Timeless Basics\nModern Silhouettes',
     subtitle: 'Micro-stripes, henleys & engineered pants.\nCuts that hold shape wash after wear.',
     ctaText: 'Shop All Styles',
-    ctaLink: '/shop'
+    ctaLink: '/shop',
+    align: 'right',
+    imagePositionClass: 'object-center md:object-[25%_center]'
   }
 ]
 
@@ -176,8 +184,8 @@ export default function HomepageClient({ products }: HomepageClientProps) {
     <div className="min-h-screen bg-[#FAF9F6] text-[#111111] selection:bg-black selection:text-white">
       {/* ── 1. Hero Section ────────────────────────────────────────── */}
       <section className="pt-3 pb-6 max-[768px]:pt-2 max-[768px]:pb-4" aria-label="Hero Banner">
-        <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
-          <div className="group relative flex min-h-[500px] md:min-h-[540px] lg:min-h-[570px] w-full items-center overflow-hidden rounded-[26px] bg-[#e6a49b] shadow-[0_4px_24px_rgba(0,0,0,0.03)] max-[768px]:min-h-[380px] max-[768px]:rounded-[18px]">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+          <div className="group relative flex h-[480px] sm:h-[500px] md:h-[540px] lg:h-[570px] w-full items-end md:items-center overflow-hidden rounded-[20px] md:rounded-[26px] bg-[#111111] shadow-[0_12px_36px_rgba(0,0,0,0.18)]">
             {/* Background Carousel Images */}
             {TOP_BANNERS.map((banner, idx) => (
               <div
@@ -191,51 +199,66 @@ export default function HomepageClient({ products }: HomepageClientProps) {
                   alt={banner.alt}
                   fill
                   priority={idx === 0}
-                  className="h-full w-full object-cover object-[70%_25%] max-[768px]:object-center"
+                  className={`h-full w-full object-cover ${banner.imagePositionClass || 'object-center'}`}
                   sizes="(max-width: 1440px) 100vw, 1400px"
                 />
               </div>
             ))}
 
-            {/* Gradient Overlay for Text Contrast */}
+            {/* Deep Black Gradient Overlay: from bottom on mobile, from left or right on desktop */}
             <div
-              className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/40 to-transparent pointer-events-none z-[1] max-[768px]:from-white/90 max-[768px]:via-white/70 max-[768px]:to-white/30"
+              className={`absolute inset-0 bg-linear-to-t from-black/95 via-black/60 to-black/10 pointer-events-none z-[1] transition-all duration-700 ${
+                TOP_BANNERS[currentSlide].align === 'right'
+                  ? 'md:bg-linear-to-l md:from-black/85 md:via-black/50 md:to-transparent'
+                  : 'md:bg-linear-to-r md:from-black/85 md:via-black/50 md:to-transparent'
+              }`}
               aria-hidden="true"
             />
 
-            {/* Stamp Logo top-right */}
+            {/* Stamp Logo: moves to top-left if text is on right */}
             <Image
               src="/mock-assets/good-tees-stamp.png"
               alt="Good Tees Better Days"
               width={130}
               height={130}
               priority
-              className="pointer-events-none absolute right-8 lg:right-11 top-7 lg:top-9 z-10 w-28 lg:w-32 h-auto opacity-90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.06)] max-[768px]:right-4 max-[768px]:top-4 max-[768px]:w-[72px]"
+              className={`pointer-events-none absolute top-4 md:top-7 lg:top-9 z-10 w-16 sm:w-20 md:w-28 lg:w-32 h-auto opacity-80 invert brightness-0 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-all duration-500 ${
+                TOP_BANNERS[currentSlide].align === 'right'
+                  ? 'left-4 md:left-8 lg:left-11'
+                  : 'right-4 md:right-8 lg:right-11'
+              }`}
             />
 
-            {/* Content Left */}
-            <div className="relative z-10 max-w-[560px] p-10 md:p-14 lg:p-16 max-[768px]:p-6 max-[768px]:max-w-full">
-              <span className="mb-3.5 block text-[13px] font-bold uppercase tracking-[0.14em] text-[#1a1a1a]">
+            {/* Content: lower end on mobile, left or right on desktop */}
+            <div
+              className={`relative z-10 flex w-full max-w-[620px] flex-col justify-end px-5 py-6 sm:px-8 sm:py-8 md:p-14 lg:p-16 transition-all duration-500 ${
+                TOP_BANNERS[currentSlide].align === 'right'
+                  ? 'md:ml-auto md:items-start'
+                  : 'md:mr-auto md:items-start'
+              }`}
+            >
+              <span className="mb-2 sm:mb-3 md:mb-3.5 block text-[11.5px] sm:text-[12.5px] md:text-[13px] font-bold uppercase tracking-[0.18em] text-white/80">
                 {TOP_BANNERS[currentSlide].eyebrow}
               </span>
-              <h1 className="mb-4 text-[clamp(36px,4.5vw,60px)] font-extrabold leading-[1.04] tracking-[-0.035em] text-[#111111] whitespace-pre-line">
+              <h1 className="mb-3 sm:mb-4 md:mb-4.5 text-[32px] sm:text-[36px] md:text-[44px] lg:text-[54px] font-extrabold leading-[1.12] sm:leading-[1.14] md:leading-[1.12] tracking-[-0.025em] text-white whitespace-pre-line">
                 {TOP_BANNERS[currentSlide].title}
               </h1>
-              <p className="mb-7 max-w-[370px] text-[clamp(14.5px,1.35vw,17px)] leading-[1.46] text-[#333333] whitespace-pre-line">
+              <p className="mb-5 sm:mb-6 md:mb-7 max-w-[340px] sm:max-w-[380px] md:max-w-[420px] text-[14.5px] sm:text-[15.5px] md:text-[16px] leading-[1.5] text-white/90 whitespace-pre-line">
                 {TOP_BANNERS[currentSlide].subtitle}
               </p>
+              
               <Link
                 href={TOP_BANNERS[currentSlide].ctaLink}
-                className="inline-flex items-center gap-2.5 rounded-[13px] bg-[#141414] px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,0.14)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#262626] hover:shadow-[0_6px_18px_rgba(0,0,0,0.2)] active:scale-[0.98]"
+                className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-2.5 sm:px-6 sm:py-3.5 text-[13.5px] sm:text-[14.5px] font-bold text-[#111111] shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-neutral-100 hover:shadow-[0_6px_20px_rgba(0,0,0,0.45)] active:scale-[0.98]"
               >
                 <span>{TOP_BANNERS[currentSlide].ctaText}</span>
                 <svg
-                  width="16"
-                  height="16"
+                  width="14"
+                  height="14"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2.2"
+                  strokeWidth="2.4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   aria-hidden="true"
@@ -243,44 +266,30 @@ export default function HomepageClient({ products }: HomepageClientProps) {
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </Link>
-
-              {/* Bottom Carousel Dots */}
-              <div className="flex items-center gap-2 mt-7 lg:mt-9" role="tablist" aria-label="Hero carousel pagination">
-                {TOP_BANNERS.map((banner, idx) => (
-                  <button
-                    key={banner.image}
-                    type="button"
-                    role="tab"
-                    aria-selected={idx === currentSlide}
-                    aria-label={`Go to slide ${idx + 1}`}
-                    onClick={() => setCurrentSlide(idx)}
-                    className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      idx === currentSlide
-                        ? 'w-7 bg-[#111111]'
-                        : 'w-2.5 bg-[#111111]/30 hover:bg-[#111111]/60'
-                    }`}
-                  />
-                ))}
-              </div>
             </div>
 
-            {/* Prev / Next Arrows */}
-            <button
-              type="button"
-              onClick={() => setCurrentSlide((prev) => (prev - 1 + TOP_BANNERS.length) % TOP_BANNERS.length)}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-md backdrop-blur-xs border border-black/5 text-[#111111] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white hover:scale-105 cursor-pointer"
-              aria-label="Previous slide"
+            {/* Carousel Dots: positioned consistently at the lower-right of the banner for both Mobile and Desktop */}
+            <div
+              className="absolute bottom-5 right-5 sm:bottom-6 sm:right-6 md:bottom-10 md:right-10 z-20 flex items-center gap-1.5 sm:gap-2 rounded-full bg-black/45 px-3 py-1.5 sm:px-3.5 sm:py-2 backdrop-blur-md border border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
+              role="tablist"
+              aria-label="Hero carousel pagination"
             >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentSlide((prev) => (prev + 1) % TOP_BANNERS.length)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-md backdrop-blur-xs border border-black/5 text-[#111111] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white hover:scale-105 cursor-pointer"
-              aria-label="Next slide"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
+              {TOP_BANNERS.map((banner, idx) => (
+                <button
+                  key={banner.image}
+                  type="button"
+                  role="tab"
+                  aria-selected={idx === currentSlide}
+                  aria-label={`Go to slide ${idx + 1}`}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                    idx === currentSlide
+                      ? 'w-5 sm:w-7 bg-white'
+                      : 'w-2 sm:w-2.5 bg-white/45 hover:bg-white/75'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </section>
