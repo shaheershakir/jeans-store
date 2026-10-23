@@ -6,13 +6,19 @@ import { config } from 'dotenv'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 config({ path: path.resolve(__dirname, '../../apps/api/.env') })
 
+const databaseUrl = process.env.DATABASE_URL
+
+if (!databaseUrl) {
+  throw new Error(
+    'DATABASE_URL is not set. Add it to apps/api/.env (see apps/api/.env.example) before running drizzle-kit.'
+  )
+}
+
 export default defineConfig({
   schema: './src/schema.ts',
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
-    url:
-      process.env.DATABASE_URL ||
-      'postgresql://neondb_owner:npg_SjvrTG1FI6ep@ep-muddy-mode-b3mdvd86-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
+    url: databaseUrl
   }
 })

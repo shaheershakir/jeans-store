@@ -5,13 +5,13 @@ services:
     ports:
       - '5432:5432'
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=jeans_store
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-jeans_store}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres}']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,7 +29,10 @@ services:
       - HOST=0.0.0.0
       - NODE_ENV=development
       - CORS_ORIGIN=*
-      - DATABASE_URL=${DATABASE_URL:-postgresql://neondb_owner:npg_SjvrTG1FI6ep@ep-muddy-mode-b3mdvd86-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require}
+      # Local Postgres default. To use a remote database (Neon, RDS, etc.),
+      # set DATABASE_URL in the repo-root .env file, which is gitignored.
+      # Never commit real connection strings to this file.
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/jeans_store}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@localhost}
       - ADMIN_NAME=${ADMIN_NAME:-Local Administrator}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-local-dev-only-password}

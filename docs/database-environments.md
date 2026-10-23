@@ -28,6 +28,7 @@ Neon provides copy-on-write storage branching, allowing complete physical data a
 > [!IMPORTANT]
 > - Never reset, delete, or recreate the `main` production branch.
 > - Schema changes are **always** applied and tested on `test` first.
+> - Credentials live only in gitignored `.env` files or a secret manager. Never hardcode a `DATABASE_URL`, password, or API key in `docker-compose.yml`, `drizzle.config.ts`, or any source file.
 > - Test operations and automated scripts connect exclusively to the `test` branch endpoint and cannot write to or mutate `main`.
 
 ---
