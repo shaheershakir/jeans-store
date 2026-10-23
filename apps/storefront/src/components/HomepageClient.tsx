@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Heart } from 'lucide-react'
+import { Heart, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Product, HomepageConfig } from '@/lib/constants'
 import { useCartStore, useFilterStore, useFavoriteStore } from '@/lib/store'
 
-// ─── Data Definitions matching Mockup ───────────────────────────────────────
+// ─── Data Definitions matching Storefront Assets ───────────────────────────
 
 interface QuickCategory {
   name: string
@@ -16,14 +16,54 @@ interface QuickCategory {
 }
 
 const QUICK_CATEGORIES: QuickCategory[] = [
-  { name: 'Stripes', href: '/shop/stripes', image: '/mock-assets/quick-cat-stripes.jpg' },
-  { name: 'Fullsleeve', href: '/shop/fullsleeve', image: '/mock-assets/quick-cat-fullsleeve.jpg' },
-  { name: 'Drsleeve', href: '/shop/drsleeve', image: '/mock-assets/quick-cat-drsleeve.jpg' },
-  { name: 'Printed tees', href: '/shop/printed-tees', image: '/mock-assets/quick-cat-printed-tees.jpg' },
-  { name: 'Ringer tees', href: '/shop/ringer-tees', image: '/mock-assets/quick-cat-ringer-tees.jpg' },
-  { name: 'Henley', href: '/shop/henley', image: '/mock-assets/quick-cat-henley.jpg' },
-  { name: 'Trackpants', href: '/shop/trackpants', image: '/mock-assets/quick-cat-trackpants.jpg' },
-  { name: 'Sweatpants', href: '/shop/sweatpants', image: '/mock-assets/quick-cat-sweatpants.jpg' },
+  { name: 'Stripes', href: '/shop/stripes', image: '/teesgarage-category-assets/category-stripes.webp' },
+  { name: 'Fullsleeve', href: '/shop/fullsleeve', image: '/teesgarage-category-assets/category-fullsleeve.webp' },
+  { name: 'Drsleeve', href: '/shop/drsleeve', image: '/teesgarage-category-assets/category-drsleeve.webp' },
+  { name: 'Printed tees', href: '/shop/printed-tees', image: '/teesgarage-category-assets/category-printed-tees.webp' },
+  { name: 'Ringer tees', href: '/shop/ringer-tees', image: '/teesgarage-category-assets/category-ringer-tees.webp' },
+  { name: 'Henley', href: '/shop/henley', image: '/teesgarage-category-assets/category-henley.webp' },
+  { name: 'Trackpants', href: '/shop/trackpants', image: '/teesgarage-category-assets/category-trackpants.webp' },
+  { name: 'Sweatpants', href: '/shop/sweatpants', image: '/teesgarage-category-assets/category-sweatpants.webp' },
+]
+
+interface TopBanner {
+  image: string
+  alt: string
+  eyebrow: string
+  title: string
+  subtitle: string
+  ctaText: string
+  ctaLink: string
+}
+
+const TOP_BANNERS: TopBanner[] = [
+  {
+    image: '/tessgarage-banner-assets/wide_horizontal_photo_of_a_young_woman_against_a_t.webp',
+    alt: 'TEESGARAGE Streetwear - Graphic Tees for Real Life',
+    eyebrow: 'NEW SEASON',
+    title: 'Graphic Tees\nfor Real Life',
+    subtitle: 'Clean designs. Better fits. Made for\neveryday escapes.',
+    ctaText: 'Shop Printed Tees',
+    ctaLink: '/shop/printed-tees'
+  },
+  {
+    image: '/tessgarage-banner-assets/338e5bf0-2823-44cd-96f2-dcf461e28d65.webp',
+    alt: 'TEESGARAGE Heavyweight Cotton Collection',
+    eyebrow: 'HEAVYWEIGHT DROPS',
+    title: 'Structured Cuts\nThat Last',
+    subtitle: '260+ GSM combed cotton. Engineered for\nall-day comfort & clean drape.',
+    ctaText: 'Explore Collection',
+    ctaLink: '/shop'
+  },
+  {
+    image: '/tessgarage-banner-assets/f20a9215-9f17-44e8-97d3-77cd271b72e8.webp',
+    alt: 'TEESGARAGE Timeless Basics',
+    eyebrow: 'EVERYDAY ROTATION',
+    title: 'Timeless Basics\nModern Silhouettes',
+    subtitle: 'Micro-stripes, henleys & engineered pants.\nCuts that hold shape wash after wear.',
+    ctaText: 'Shop All Styles',
+    ctaLink: '/shop'
+  }
 ]
 
 interface MockArrival {
@@ -82,14 +122,14 @@ interface ShopCategory {
 }
 
 const SHOP_CATEGORIES: ShopCategory[] = [
-  { name: 'Stripes', href: '/shop/stripes', image: '/mock-assets/shop-cat-stripes-clean.jpg' },
-  { name: 'Fullsleeve', href: '/shop/fullsleeve', image: '/mock-assets/shop-cat-fullsleeve-clean.jpg' },
-  { name: 'Drsleeve', href: '/shop/drsleeve', image: '/mock-assets/shop-cat-drsleeve-clean.jpg' },
-  { name: 'Printed tees', href: '/shop/printed-tees', image: '/mock-assets/shop-cat-printed-tees-clean.jpg' },
-  { name: 'Ringer tees', href: '/shop/ringer-tees', image: '/mock-assets/shop-cat-ringer-tees-clean.jpg' },
-  { name: 'Henley', href: '/shop/henley', image: '/mock-assets/shop-cat-henley-clean.jpg' },
-  { name: 'Trackpants', href: '/shop/trackpants', image: '/mock-assets/shop-cat-trackpants-clean.jpg' },
-  { name: 'Sweatpants', href: '/shop/sweatpants', image: '/mock-assets/shop-cat-sweatpants-clean.jpg' },
+  { name: 'Stripes', href: '/shop/stripes', image: '/teesgarage-category-assets/category-stripes.webp' },
+  { name: 'Fullsleeve', href: '/shop/fullsleeve', image: '/teesgarage-category-assets/category-fullsleeve.webp' },
+  { name: 'Drsleeve', href: '/shop/drsleeve', image: '/teesgarage-category-assets/category-drsleeve.webp' },
+  { name: 'Printed tees', href: '/shop/printed-tees', image: '/teesgarage-category-assets/category-printed-tees.webp' },
+  { name: 'Ringer tees', href: '/shop/ringer-tees', image: '/teesgarage-category-assets/category-ringer-tees.webp' },
+  { name: 'Henley', href: '/shop/henley', image: '/teesgarage-category-assets/category-henley.webp' },
+  { name: 'Trackpants', href: '/shop/trackpants', image: '/teesgarage-category-assets/category-trackpants.webp' },
+  { name: 'Sweatpants', href: '/shop/sweatpants', image: '/teesgarage-category-assets/category-sweatpants.webp' },
 ]
 
 // ─── Main Homepage Component ────────────────────────────────────────────────
@@ -102,11 +142,20 @@ interface HomepageClientProps {
 export default function HomepageClient({ products }: HomepageClientProps) {
   const isFavorite = useFavoriteStore((s) => s.isFavorite)
   const toggleFavorite = useFavoriteStore((s) => s.toggleFavorite)
+  const [currentSlide, setCurrentSlide] = useState(0)
 
   useEffect(() => {
     void useCartStore.persist.rehydrate()
     void useFilterStore.persist.rehydrate()
     void useFavoriteStore.persist.rehydrate()
+  }, [])
+
+  // Auto-change top banner image every 5 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % TOP_BANNERS.length)
+    }, 5000)
+    return () => clearInterval(timer)
   }, [])
 
   // Resolve product links to existing DB products where matching, or fallback to search
@@ -128,15 +177,30 @@ export default function HomepageClient({ products }: HomepageClientProps) {
       {/* ── 1. Hero Section ────────────────────────────────────────── */}
       <section className="pt-3 pb-6 max-[768px]:pt-2 max-[768px]:pb-4" aria-label="Hero Banner">
         <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
-          <div className="relative flex min-h-[500px] md:min-h-[540px] lg:min-h-[570px] w-full items-center overflow-hidden rounded-[26px] bg-[#e6a49b] shadow-[0_4px_24px_rgba(0,0,0,0.03)] max-[768px]:min-h-[360px] max-[768px]:rounded-[18px]">
-            {/* Background Model Image */}
-            <Image
-              src="/test-hero-model.jpg"
-              alt="Graphic Tees for Real Life - New Season"
-              fill
-              priority
-              className="absolute inset-0 h-full w-full object-cover object-[70%_25%] z-0"
-              sizes="(max-width: 1440px) 100vw, 1400px"
+          <div className="group relative flex min-h-[500px] md:min-h-[540px] lg:min-h-[570px] w-full items-center overflow-hidden rounded-[26px] bg-[#e6a49b] shadow-[0_4px_24px_rgba(0,0,0,0.03)] max-[768px]:min-h-[380px] max-[768px]:rounded-[18px]">
+            {/* Background Carousel Images */}
+            {TOP_BANNERS.map((banner, idx) => (
+              <div
+                key={banner.image}
+                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                  idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none z-0'
+                }`}
+              >
+                <Image
+                  src={banner.image}
+                  alt={banner.alt}
+                  fill
+                  priority={idx === 0}
+                  className="h-full w-full object-cover object-[70%_25%] max-[768px]:object-center"
+                  sizes="(max-width: 1440px) 100vw, 1400px"
+                />
+              </div>
+            ))}
+
+            {/* Gradient Overlay for Text Contrast */}
+            <div
+              className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/40 to-transparent pointer-events-none z-[1] max-[768px]:from-white/90 max-[768px]:via-white/70 max-[768px]:to-white/30"
+              aria-hidden="true"
             />
 
             {/* Stamp Logo top-right */}
@@ -152,19 +216,19 @@ export default function HomepageClient({ products }: HomepageClientProps) {
             {/* Content Left */}
             <div className="relative z-10 max-w-[560px] p-10 md:p-14 lg:p-16 max-[768px]:p-6 max-[768px]:max-w-full">
               <span className="mb-3.5 block text-[13px] font-bold uppercase tracking-[0.14em] text-[#1a1a1a]">
-                NEW SEASON
+                {TOP_BANNERS[currentSlide].eyebrow}
               </span>
-              <h1 className="mb-4 text-[clamp(36px,4.5vw,60px)] font-extrabold leading-[1.04] tracking-[-0.035em] text-[#111111]">
-                Graphic Tees<br />for Real Life
+              <h1 className="mb-4 text-[clamp(36px,4.5vw,60px)] font-extrabold leading-[1.04] tracking-[-0.035em] text-[#111111] whitespace-pre-line">
+                {TOP_BANNERS[currentSlide].title}
               </h1>
-              <p className="mb-7 max-w-[370px] text-[clamp(14.5px,1.35vw,17px)] leading-[1.46] text-[#333333]">
-                Clean designs. Better fits. Made for<br />everyday escapes.
+              <p className="mb-7 max-w-[370px] text-[clamp(14.5px,1.35vw,17px)] leading-[1.46] text-[#333333] whitespace-pre-line">
+                {TOP_BANNERS[currentSlide].subtitle}
               </p>
               <Link
-                href="/shop/printed-tees"
+                href={TOP_BANNERS[currentSlide].ctaLink}
                 className="inline-flex items-center gap-2.5 rounded-[13px] bg-[#141414] px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,0.14)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#262626] hover:shadow-[0_6px_18px_rgba(0,0,0,0.2)] active:scale-[0.98]"
               >
-                <span>Shop Printed Tees</span>
+                <span>{TOP_BANNERS[currentSlide].ctaText}</span>
                 <svg
                   width="16"
                   height="16"
@@ -181,12 +245,42 @@ export default function HomepageClient({ products }: HomepageClientProps) {
               </Link>
 
               {/* Bottom Carousel Dots */}
-              <div className="flex items-center gap-2 mt-7 lg:mt-9" aria-hidden="true">
-                <span className="h-2 w-2 rounded-full bg-white shadow-xs" />
-                <span className="h-2 w-2 rounded-full bg-white/50" />
-                <span className="h-2 w-2 rounded-full bg-white/50" />
+              <div className="flex items-center gap-2 mt-7 lg:mt-9" role="tablist" aria-label="Hero carousel pagination">
+                {TOP_BANNERS.map((banner, idx) => (
+                  <button
+                    key={banner.image}
+                    type="button"
+                    role="tab"
+                    aria-selected={idx === currentSlide}
+                    aria-label={`Go to slide ${idx + 1}`}
+                    onClick={() => setCurrentSlide(idx)}
+                    className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                      idx === currentSlide
+                        ? 'w-7 bg-[#111111]'
+                        : 'w-2.5 bg-[#111111]/30 hover:bg-[#111111]/60'
+                    }`}
+                  />
+                ))}
               </div>
             </div>
+
+            {/* Prev / Next Arrows */}
+            <button
+              type="button"
+              onClick={() => setCurrentSlide((prev) => (prev - 1 + TOP_BANNERS.length) % TOP_BANNERS.length)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-md backdrop-blur-xs border border-black/5 text-[#111111] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white hover:scale-105 cursor-pointer"
+              aria-label="Previous slide"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentSlide((prev) => (prev + 1) % TOP_BANNERS.length)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-md backdrop-blur-xs border border-black/5 text-[#111111] opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white hover:scale-105 cursor-pointer"
+              aria-label="Next slide"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </section>
@@ -333,11 +427,16 @@ export default function HomepageClient({ products }: HomepageClientProps) {
         <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
           <div className="relative flex min-h-[350px] lg:min-h-[390px] w-full items-center overflow-hidden rounded-[26px] bg-[#8f796c] shadow-[0_4px_20px_rgba(0,0,0,0.04)] max-[768px]:min-h-[300px] max-[768px]:rounded-[18px] max-[640px]:min-h-[280px]">
             <Image
-              src="/mock-assets/editorial-banner-clean.jpg"
+              src="/tessgarage-banner-assets/middle-banner/wide_cinematic_coastal_scene_a_photorealistic_sh.webp"
               alt="Everyday Essentials - Oversized Fits Minimal Effort"
               fill
               sizes="(max-width: 1440px) 100vw, 1400px"
               className="absolute inset-0 h-full w-full object-cover object-center z-0"
+            />
+            {/* Contrast Overlay for Right-Aligned Text */}
+            <div
+              className="absolute inset-0 bg-gradient-to-l from-white/85 via-white/45 to-transparent pointer-events-none z-[1] max-[768px]:from-white/90 max-[768px]:via-white/70 max-[768px]:to-white/40"
+              aria-hidden="true"
             />
             <div className="relative z-10 ml-auto mr-[clamp(40px,7vw,100px)] max-w-[440px] py-11 text-left max-[900px]:mr-6 max-[900px]:max-w-[320px] max-[900px]:py-8 max-[640px]:mr-4 max-[640px]:max-w-[260px]">
               <span className="mb-2.5 block text-[12.5px] font-bold uppercase tracking-[0.14em] text-black/70">

@@ -675,6 +675,9 @@ export default function ProductDetail({ product }: { product: Product }) {
         added={added}
         onAddToCart={() => handleAddToCart('sticky_bar')}
         onBuyNow={() => handleBuyNow('sticky_bar')}
+        selectedColor={selectedColor}
+        productImage={images[activeImageIdx] || product.img}
+        onSizeChange={handleSelectSize}
       />
 
       {/* ── Size & Fit Guide Modal ── */}

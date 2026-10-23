@@ -973,56 +973,56 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
         id: 'stripes',
         label: 'Stripes',
         icon: '',
-        img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80',
+        img: '/teesgarage-category-assets/category-stripes.webp',
         count: '3 styles'
       },
       {
         id: 'fullsleeve',
         label: 'Fullsleeve',
         icon: '',
-        img: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=600&q=80',
+        img: '/teesgarage-category-assets/category-fullsleeve.webp',
         count: '3 styles'
       },
       {
         id: 'drsleeve',
         label: 'Drsleeve',
         icon: '',
-        img: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=600&q=80',
+        img: '/teesgarage-category-assets/category-drsleeve.webp',
         count: '3 styles'
       },
       {
         id: 'printed-tees',
         label: 'Printed Tees',
         icon: '',
-        img: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
+        img: '/teesgarage-category-assets/category-printed-tees.webp',
         count: '3 styles'
       },
       {
         id: 'ringer-tees',
         label: 'Ringer Tees',
         icon: '',
-        img: 'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=600&q=80',
+        img: '/teesgarage-category-assets/category-ringer-tees.webp',
         count: '3 styles'
       },
       {
         id: 'henley',
         label: 'Henley',
         icon: '',
-        img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=600&q=80',
+        img: '/teesgarage-category-assets/category-henley.webp',
         count: '3 styles'
       },
       {
         id: 'trackpants',
         label: 'Trackpants',
         icon: '',
-        img: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=600&q=80',
+        img: '/teesgarage-category-assets/category-trackpants.webp',
         count: '3 styles'
       },
       {
         id: 'sweatpants',
         label: 'Sweatpants',
         icon: '',
-        img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80',
+        img: '/teesgarage-category-assets/category-sweatpants.webp',
         count: '3 styles'
       }
     ]
