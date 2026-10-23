@@ -145,7 +145,7 @@ export default function StickyPdpBar({
 
   return createPortal(
     <aside
-      className={`fixed inset-x-0 bottom-0 z-[90] border-t border-black/[0.08] bg-white/[0.98] px-4 sm:px-6 lg:px-8 py-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-md transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+      className={`hidden md:block fixed inset-x-0 bottom-0 z-[90] border-t border-black/[0.08] bg-white/[0.98] px-4 sm:px-6 lg:px-8 py-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-md transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         visible
           ? 'translate-y-0 opacity-100 pointer-events-auto'
           : 'translate-y-[120%] opacity-0 pointer-events-none'

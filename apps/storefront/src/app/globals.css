@@ -105,6 +105,8 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
     overscroll-behavior-x: auto;
     overscroll-behavior-y: none;
   }
@@ -119,6 +121,21 @@
     overflow-x: clip;
     overscroll-behavior-x: auto;
     overscroll-behavior-y: none;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  button,
+  a,
+  [role='button'],
+  .tab {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   button:not(:disabled),
@@ -194,6 +211,28 @@
 }
 
 @keyframes authEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes navPanelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mobileSearchSlideIn {
   from {
     opacity: 0;
     transform: translateY(12px);

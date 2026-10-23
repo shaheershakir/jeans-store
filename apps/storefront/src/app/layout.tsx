@@ -56,7 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body suppressHydrationWarning>
         <PostHogProvider>
-          <main className="site-shell">
+          <main className="site-shell pb-[calc(60px+env(safe-area-inset-bottom,0px))] md:pb-0">
             <Header initialNavItems={navItems} />
             {children}
             <Footer />

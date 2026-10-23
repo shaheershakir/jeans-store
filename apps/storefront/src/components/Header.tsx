@@ -27,6 +27,7 @@ import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore, useF
 import { DEFAULT_NAV_LINKS, type NavigationItem, type Fit, PRODUCTS } from '@/lib/constants'
 import { searchProducts } from '@/lib/utils'
 import UserOrdersModal from '@/components/UserOrdersModal'
+import MobileTabBar from '@/components/MobileTabBar'
 
 const TRENDING_SEARCHES = ['Stripes', 'Printed Tees', 'Henley', 'Trackpants', 'Oversized', 'Sweatpants']
 
@@ -217,11 +218,11 @@ export default function Header({ initialNavItems }: HeaderProps) {
       >
         {/* Main Navigation Bar: Single row, perfectly vertically centered */}
         <div className="h-[76px] min-h-[76px] bg-transparent pt-[env(safe-area-inset-top)] max-[700px]:h-[60px] max-[700px]:min-h-[60px]">
-          <div className="mx-auto flex h-full max-w-[1400px] items-center justify-between gap-4 px-6 lg:px-8">
+          <div className="mx-auto flex h-full max-w-[1400px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
             {/* Left: Mobile Hamburger + Brand Logo */}
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <button
-                className="hidden h-[42px] w-[42px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] max-[1024px]:flex max-[640px]:w-10 max-[640px]:shrink-0"
+                className="flex lg:hidden h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] transition-colors hover:bg-black/5 active:scale-95 [-webkit-tap-highlight-color:transparent] touch-manipulation"
                 type="button"
                 aria-label={menuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={menuOpen}
@@ -278,41 +279,38 @@ export default function Header({ initialNavItems }: HeaderProps) {
               })}
             </nav>
 
-            {/* Right: Action Utilities (Search, Wishlist, Bag, Sign In / User Popover) */}
+            {/* Right: Action Utilities */}
             <div className="flex shrink-0 items-center gap-2 md:gap-3">
-              {/* Mobile search icon */}
+              {/* Desktop Search Trigger (Hidden on mobile; Search is in MobileTabBar) */}
               <button
                 type="button"
-                className="hidden h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] max-[1024px]:inline-flex"
-                aria-label="Search products"
-                onClick={openMobileSearch}
-              >
-                <Search className="h-5 w-5" aria-hidden="true" />
-              </button>
-
-              {/* Desktop Search Trigger */}
-              <button
-                type="button"
-                className={HEADER_ACTION_BTN}
+                className={`hidden md:grid ${HEADER_ACTION_BTN}`}
                 aria-label="Search products (press / to open)"
                 onClick={() => openOverlay('search')}
               >
                 <Search className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
               </button>
 
-              {/* Wishlist */}
+              {/* Wishlist (Visible on mobile & desktop) */}
               <Link
                 href="/wishlist"
                 className={HEADER_ACTION_BTN}
                 aria-label={favorites.length ? `Wishlist with ${favorites.length} saved items` : 'Wishlist'}
                 title="Wishlist"
               >
-                <Heart className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+                <div className="relative inline-flex items-center justify-center">
+                  <Heart className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+                  {mounted && favorites.length > 0 && (
+                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#0c0e12] px-1 text-[9px] font-bold leading-none text-white tabular-nums shadow-xs">
+                      {favorites.length}
+                    </span>
+                  )}
+                </div>
               </Link>
 
-              {/* Shopping Bag Button with Badge */}
+              {/* Shopping Bag Button with Badge (Desktop only; on mobile it is in MobileTabBar) */}
               <button
-                className={`${HEADER_ACTION_BTN} min-h-[42px] min-w-[42px] max-[640px]:min-h-10 max-[640px]:min-w-10`}
+                className={`hidden md:grid ${HEADER_ACTION_BTN} min-h-[42px] min-w-[42px]`}
                 type="button"
                 aria-label={`Shopping bag with ${count} items`}
                 title="View shopping bag"
@@ -456,10 +454,13 @@ export default function Header({ initialNavItems }: HeaderProps) {
                   )}
                 </div>
               ) : (
-                <Link href="/login" className={HEADER_ACTION_BTN} aria-label="Sign in to your account">
-                  <div className="grid h-[32px] w-[32px] place-items-center justify-center rounded-full border-[1.5px] border-[#1c1c1c] bg-transparent text-[13px] font-semibold leading-none text-[#111]">
-                    S
-                  </div>
+                <Link
+                  href="/login"
+                  className="inline-flex h-[34px] items-center gap-1.5 rounded-full border border-[#182126]/20 bg-transparent px-3 text-[12px] font-semibold uppercase tracking-wider text-[#182126] transition-[background,transform] duration-150 hover:bg-black/5 active:scale-95 [-webkit-tap-highlight-color:transparent] touch-manipulation"
+                  aria-label="Sign in to your account"
+                >
+                  <User className="h-3.5 w-3.5" strokeWidth={2} />
+                  <span>Login</span>
                 </Link>
               )}
             </div>
@@ -579,6 +580,9 @@ export default function Header({ initialNavItems }: HeaderProps) {
           userEmail={user?.email}
         />
       </header>
+
+      {/* Mobile Bottom Tab Bar Navigation */}
+      <MobileTabBar onOpenSearch={openMobileSearch} isSearchOpen={mobileSearchOpen} />
 
       {/* ============================================================
           MOBILE FULL-SCREEN SEARCH OVERLAY (Flipkart-style)
