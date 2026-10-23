@@ -23,6 +23,7 @@ interface ConfirmationItem {
 interface OrderConfirmation {
   orderNumber: string
   paymentId: string
+  paymentMethod?: 'cod' | 'online'
   total: number
   subtotal: number
   shipping: number
@@ -107,6 +108,8 @@ export default function OrderConfirmationPage() {
     ? ''
     : format(new Date(order.createdAt), 'dd MMM yyyy')
 
+  const isCod = order.paymentMethod === 'cod'
+
   return (
     <main className="order-confirmation-page">
       <div className="order-confirmation-wrap">
@@ -114,9 +117,13 @@ export default function OrderConfirmationPage() {
           <span className="order-confirmation-overline">ORDER RECEIPT / {dateLabel}</span>
           <div className="order-confirmation-title-row">
             <div>
-              <div className="order-confirmation-paid"><Check size={14} strokeWidth={3} /> PAYMENT CAPTURED</div>
+              <div className="order-confirmation-paid"><Check size={14} strokeWidth={3} /> {isCod ? 'ORDER PLACED' : 'PAYMENT CAPTURED'}</div>
               <h1>It’s yours, {order.customerName.split(' ')[0]}.</h1>
-              <p>We’ve received your order and payment. A dispatch update will follow by SMS.</p>
+              <p>
+                {isCod
+                  ? 'We’ve received your order. Pay in cash when it arrives.'
+                  : 'We’ve received your order and payment. A dispatch update will follow by SMS.'}
+              </p>
             </div>
             <PackageCheck className="order-confirmation-mark" size={50} strokeWidth={1.2} aria-hidden="true" />
           </div>
@@ -141,7 +148,7 @@ export default function OrderConfirmationPage() {
             <div className="order-confirmation-totals">
               <div><span>Subtotal</span><span>{formatPrice(order.subtotal)}</span></div>
               <div><span>Delivery</span><span>{order.shipping ? formatPrice(order.shipping) : 'Free'}</span></div>
-              <div className="order-confirmation-total"><strong>Paid via Razorpay</strong><strong>{formatPrice(order.total)}</strong></div>
+              <div className="order-confirmation-total"><strong>{isCod ? 'Pay on delivery' : 'Paid via Razorpay'}</strong><strong>{formatPrice(order.total)}</strong></div>
             </div>
           </section>
 
@@ -162,7 +169,7 @@ export default function OrderConfirmationPage() {
             <section className="order-confirmation-payment">
               <span className="order-confirmation-overline">PAYMENT REFERENCE</span>
               <strong>{order.paymentId}</strong>
-              <span>Verified and captured</span>
+              <span>{isCod ? 'Payment due on delivery' : 'Verified and captured'}</span>
             </section>
           </aside>
         </div>

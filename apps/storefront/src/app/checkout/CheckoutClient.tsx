@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  useEffect,
-  useState,
-  useCallback,
-  useMemo,
-  type ReactNode,
-  type InputHTMLAttributes
-} from 'react'
+import { useEffect, useState, useCallback, useMemo, type ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -16,20 +9,25 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
+  Banknote,
   Check,
-  ChevronDown,
+  ChevronRight,
+  CreditCard,
+  Landmark,
   Loader2,
   Lock,
   Minus,
   Plus,
   Tag,
-  Trash2
+  Trash2,
+  Wallet
 } from 'lucide-react'
 import { cartCount, cartSubtotal, useCartStore, useAuthStore, type UserAddress } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
 import type { Product } from '@/lib/constants'
 import { getProductUrl, getAvailableProductSizes } from '@/lib/products'
 import { trackEvent } from '@/lib/analytics'
+import { FloatingInput, FloatingSelect } from '@/components/ui/FloatingInput'
 
 export type CheckoutMode =
   | { type: 'bag' }
@@ -65,6 +63,21 @@ interface CheckoutForm {
 
 type CheckoutErrors = Partial<Record<keyof CheckoutForm | 'email', string>>
 
+interface CheckoutOrderPayload {
+  orderNumber: string
+  store: string
+  customerName: string
+  customerPhone: string
+  customerEmail: string
+  address: string
+  apartment?: string
+  city: string
+  state: string
+  pincode: string
+  notes: string
+  items: Array<{ id: number; variantId?: number; size: string; quantity: number }>
+}
+
 interface DeliveryEstimation {
   minDays: number
   maxDays: number
@@ -95,6 +108,8 @@ const INITIAL_FORM: CheckoutForm = {
 }
 
 const GUEST_CHECKOUT_KEY = 'teesgarage-guest-checkout'
+
+const UPI_ID_PATTERN = /^[\w.-]{2,256}@[a-zA-Z]{2,64}$/
 
 const INDIAN_STATES = [
   'Andhra Pradesh',
@@ -242,77 +257,116 @@ function PaytmIcon() {
   )
 }
 
-function CardsIcon() {
-  return (
-    <svg
-      className="inline-block shrink-0"
-      viewBox="0 0 24 16"
-      width="20"
-      height="14"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect width="24" height="16" rx="3" fill="#0F172A" />
-      <circle cx="9" cy="8" r="4" fill="#EB001B" fillOpacity="0.95" />
-      <circle cx="15" cy="8" r="4" fill="#F79E1B" fillOpacity="0.9" />
-    </svg>
-  )
-}
-
-function NetBankingIcon() {
+function UpiIcon() {
   return (
     <svg
       className="inline-block shrink-0"
       viewBox="0 0 24 24"
-      width="16"
-      height="16"
+      width="22"
+      height="22"
       fill="none"
-      stroke="#2563EB"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
     >
-      <polygon points="12 2 2 7 22 7 12 2" fill="#DBEAFE" />
-      <rect x="4" y="10" width="2.5" height="7" fill="#2563EB" />
-      <rect x="9.5" y="10" width="2.5" height="7" fill="#2563EB" />
-      <rect x="15" y="10" width="2.5" height="7" fill="#2563EB" />
-      <line x1="2" y1="20" x2="22" y2="20" />
+      <path d="M5 3h5l7 9-7 9H5l7-9-7-9Z" fill="#171717" />
+      <path d="M11 3h5l7 9-7 9h-5l7-9-7-9Z" fill="#F5A623" />
     </svg>
   )
 }
 
-interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
-  label: string
-  error?: string
-  prefix?: string
-  trailing?: ReactNode
+function VisaLogo() {
+  return (
+    <svg
+      viewBox="0 0 36 12"
+      width="34"
+      height="12"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="Visa"
+    >
+      <text
+        x="0"
+        y="10.5"
+        fill="#1A1F71"
+        fontSize="11"
+        fontWeight="800"
+        fontStyle="italic"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        letterSpacing="0.2"
+      >
+        VISA
+      </text>
+    </svg>
+  )
 }
 
-function Field({ label, error, prefix, trailing, id, className, ...props }: FieldProps) {
+function MastercardLogo() {
   return (
-    <div className="min-w-0">
-      <label
-        htmlFor={id}
-        className={`flex cursor-text flex-col rounded-lg border bg-white px-3.5 pb-2 pt-1.5 transition-[border-color,box-shadow] duration-150 focus-within:shadow-[0_0_0_1px_rgba(0,0,0,0.06)] ${
-          error ? 'border-[#cf5b55]' : 'border-[#e4e3de] focus-within:border-black'
-        }`}
+    <svg
+      viewBox="0 0 26 16"
+      width="26"
+      height="16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="Mastercard"
+    >
+      <circle cx="9" cy="8" r="7" fill="#EB001B" />
+      <circle cx="17" cy="8" r="7" fill="#F79E1B" />
+      <path d="M13 3.1a7 7 0 0 0 0 9.8 7 7 0 0 0 0-9.8Z" fill="#FF5F00" />
+    </svg>
+  )
+}
+
+function RuPayLogo() {
+  return (
+    <svg
+      viewBox="0 0 42 14"
+      width="40"
+      height="14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="RuPay"
+    >
+      <text
+        x="0"
+        y="11"
+        fill="#0B2E68"
+        fontSize="11"
+        fontWeight="700"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        letterSpacing="-0.2"
       >
-        <span className="text-[11px] font-normal leading-tight text-[#71717A] select-none">{label}</span>
-        <div className="mt-0.5 flex items-center gap-1.5">
-          {prefix ? (
-            <span className="text-[13.5px] leading-normal text-[#18181B] font-normal">{prefix}</span>
-          ) : null}
-          <input
-            id={id}
-            {...props}
-            className={`min-w-0 flex-1 border-0 bg-transparent p-0 text-[13.5px] leading-normal text-[#18181B] outline-none placeholder:text-[#A1A1AA] font-normal ${className ?? ''}`}
-          />
-          {trailing}
-        </div>
-      </label>
-      {error ? <p className="mt-1 pl-1 text-[11px] font-medium text-[#cf5b55]">{error}</p> : null}
-    </div>
+        RuPay
+      </text>
+      <path d="M34 3.5 40 7l-6 3.5V3.5Z" fill="#F58220" />
+    </svg>
+  )
+}
+
+function BhimLogo() {
+  return (
+    <svg
+      viewBox="0 0 38 14"
+      width="36"
+      height="14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="BHIM"
+    >
+      <text
+        x="0"
+        y="11"
+        fill="#0B2E68"
+        fontSize="11"
+        fontWeight="800"
+        fontStyle="italic"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        letterSpacing="-0.3"
+      >
+        BHIM
+      </text>
+      <path d="M30 3.5 36 7l-6 3.5V3.5Z" fill="#F58220" />
+    </svg>
   )
 }
 
@@ -367,12 +421,96 @@ function RadioDot({ selected }: { selected: boolean }) {
   )
 }
 
+type PaymentMethod = 'upi' | 'card' | 'netbanking' | 'wallet' | 'cod'
+
+function PaymentOption({
+  id,
+  title,
+  description,
+  icon,
+  selected,
+  onSelect,
+  badges,
+  showChevron
+}: {
+  id: string
+  title: string
+  description: string
+  icon: ReactNode
+  selected: boolean
+  onSelect: () => void
+  badges?: ReactNode
+  showChevron?: boolean
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className={`flex cursor-pointer items-center gap-3.5 rounded-xl border bg-white px-4 py-3.5 transition-[border-color,box-shadow] duration-150 sm:gap-4 ${
+        selected
+          ? 'border-black shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
+          : 'border-[#E7E5DF] hover:border-[#CFCDC6]'
+      }`}
+    >
+      <input
+        id={id}
+        type="radio"
+        name="payment-method"
+        checked={selected}
+        onChange={onSelect}
+        className="peer sr-only"
+      />
+      <span
+        className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-black/20 peer-focus-visible:ring-offset-2 ${
+          selected ? 'border-black' : 'border-[#C9C7C0]'
+        }`}
+      >
+        <span
+          className={`h-2 w-2 rounded-full bg-black transition-transform duration-150 ${
+            selected ? 'scale-100' : 'scale-0'
+          }`}
+        />
+      </span>
+      <span className="shrink-0 text-[#111]" aria-hidden="true">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14px] font-semibold leading-tight text-[#111]">{title}</span>
+        <span className="mt-1 block text-[12.5px] leading-tight text-[#71717A]">{description}</span>
+      </span>
+      {badges ? (
+        <span className="hidden shrink-0 items-center gap-2.5 sm:flex" aria-hidden="true">
+          {badges}
+        </span>
+      ) : null}
+      {showChevron ? (
+        <ChevronRight
+          className="h-4 w-4 shrink-0 text-[#71717A]"
+          strokeWidth={2}
+          aria-hidden="true"
+        />
+      ) : null}
+    </label>
+  )
+}
+
 type StepState = 'upcoming' | 'active' | 'done'
 
-function StepMarker({ index, label, state }: { index: number; label: string; state: StepState }) {
+function StepMarker({
+  index,
+  label,
+  state,
+  align = 'center'
+}: {
+  index: number
+  label: string
+  state: StepState
+  align?: 'start' | 'center' | 'end'
+}) {
   const isCurrent = state === 'active'
   const isComplete = state === 'done'
   const isDone = isCurrent || isComplete
+  const labelAlignment =
+    align === 'start' ? 'left-0' : align === 'end' ? 'right-0' : 'left-1/2 -translate-x-1/2'
 
   return (
     <li className="relative flex w-7 flex-col items-center">
@@ -385,7 +523,7 @@ function StepMarker({ index, label, state }: { index: number; label: string; sta
         {isComplete ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : index}
       </span>
       <span
-        className={`absolute left-1/2 top-[34px] -translate-x-1/2 whitespace-nowrap text-[12px] leading-none transition-colors duration-300 sm:text-[12.5px] ${
+        className={`absolute top-[34px] whitespace-nowrap text-[12px] leading-none transition-colors duration-300 sm:text-[12.5px] ${labelAlignment} ${
           isDone ? 'font-semibold text-[#111]' : 'font-normal text-[#8A8F8D]'
         }`}
       >
@@ -424,7 +562,13 @@ function CheckoutStepper({
         </div>
         <ol className="relative flex items-start justify-between">
           {steps.map((item, i) => (
-            <StepMarker key={item.label} index={i + 1} label={item.label} state={item.state} />
+            <StepMarker
+              key={item.label}
+              index={i + 1}
+              label={item.label}
+              state={item.state}
+              align={i === 0 ? 'start' : i === steps.length - 1 ? 'end' : 'center'}
+            />
           ))}
         </ol>
       </div>
@@ -510,6 +654,9 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
   const [pincodeLoading, setPincodeLoading] = useState(false)
   const [couponInput, setCouponInput] = useState('')
   const [couponMessage, setCouponMessage] = useState<string | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi')
+  const [upiId, setUpiId] = useState('')
+  const [upiError, setUpiError] = useState<string | null>(null)
 
   const backHref = isProductMode && product ? getProductUrl(product) : '/bag'
 
@@ -850,6 +997,32 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     return Object.keys(nextErrors).length === 0
   }
 
+  function handlePaymentMethodChange(method: PaymentMethod) {
+    setPaymentMethod(method)
+    setPaymentError(null)
+    setUpiError(null)
+  }
+
+  function validatePayment(): boolean {
+    if (paymentMethod !== 'upi') {
+      setUpiError(null)
+      return true
+    }
+
+    const value = upiId.trim()
+    if (!value) {
+      setUpiError(null)
+      return true
+    }
+    if (!UPI_ID_PATTERN.test(value)) {
+      setUpiError('Enter a valid UPI ID, for example yourname@bank')
+      return false
+    }
+
+    setUpiError(null)
+    return true
+  }
+
   function goToStep(nextStep: 0 | 1 | 2) {
     setStep(nextStep)
     if (typeof window !== 'undefined') {
@@ -890,6 +1063,34 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     removeItem(item.id, item.size, item.variantId)
   }
 
+  function saveCheckoutAddress() {
+    if (!saveAddress) return
+
+    if (isAuthenticated) {
+      addAddress({
+        fullName: form.name.trim(),
+        phone: form.phone.trim(),
+        addressLine: form.address.trim(),
+        place: form.place.trim(),
+        district: form.district.trim(),
+        city: form.district.trim(),
+        state: form.state.trim(),
+        pincode: form.pincode.trim(),
+        isDefault: false
+      })
+      return
+    }
+
+    try {
+      window.localStorage.setItem(
+        GUEST_CHECKOUT_KEY,
+        JSON.stringify({ email: email.trim(), form })
+      )
+    } catch {
+      // Saving details is optional; never block a paid order.
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
@@ -909,6 +1110,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         goToStep(0)
         return
       }
+      if (!validatePayment()) return
       setPaymentError(null)
       goToStep(2)
       return
@@ -930,7 +1132,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
     const orderId = `TGE-${Date.now().toString().slice(-6)}`
 
-    const orderPayload = {
+    const orderPayload: CheckoutOrderPayload = {
       orderNumber: orderId,
       store: 'teesgarage',
       customerName: form.name.trim(),
@@ -950,6 +1152,11 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         size: String(item.size),
         quantity: item.qty
       }))
+    }
+
+    if (paymentMethod === 'cod') {
+      await placeCashOnDeliveryOrder(orderPayload, orderId)
+      return
     }
 
     setIsProcessing(true)
@@ -997,7 +1204,10 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         prefill: {
           name: form.name.trim(),
           email: email.trim(),
-          contact: form.phone.trim()
+          contact: form.phone.trim(),
+          ...(paymentMethod === 'upi'
+            ? { method: 'upi', ...(upiId.trim() ? { vpa: upiId.trim() } : {}) }
+            : { method: paymentMethod })
         },
         notes: {
           orderNumber: orderId,
@@ -1039,30 +1249,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
               throw new Error(verifyErr.error || 'Payment signature verification failed')
             }
 
-            if (saveAddress) {
-              if (isAuthenticated) {
-                addAddress({
-                  fullName: form.name.trim(),
-                  phone: form.phone.trim(),
-                  addressLine: form.address.trim(),
-                  place: form.place.trim(),
-                  district: form.district.trim(),
-                  city: form.district.trim(),
-                  state: form.state.trim(),
-                  pincode: form.pincode.trim(),
-                  isDefault: false
-                })
-              } else {
-                try {
-                  window.localStorage.setItem(
-                    GUEST_CHECKOUT_KEY,
-                    JSON.stringify({ email: email.trim(), form })
-                  )
-                } catch {
-                  // Saving details is optional; never block a paid order.
-                }
-              }
-            }
+            saveCheckoutAddress()
 
             const confirmedOrder = verifyData.order || {}
             try {
@@ -1071,6 +1258,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                 JSON.stringify({
                   orderNumber: confirmedOrder.orderNumber || orderId,
                   paymentId: response.razorpay_payment_id,
+                  paymentMethod: 'online',
                   total: Number(confirmedOrder.total ?? rzpData.total ?? total),
                   subtotal: Number(confirmedOrder.subtotal ?? rzpData.subtotal ?? subtotal),
                   shipping: Number(confirmedOrder.shipping ?? rzpData.shipping ?? shipping),
@@ -1157,6 +1345,101 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     }
   }
 
+  async function placeCashOnDeliveryOrder(orderPayload: CheckoutOrderPayload, orderId: string) {
+    setIsProcessing(true)
+    setPaymentError(null)
+
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (authToken) headers.Authorization = `Bearer ${authToken}`
+
+      const res = await fetch(`${backendUrl}/api/orders`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...orderPayload,
+          handoffType: 'cod',
+          paymentMethod: 'COD',
+          notes: `${orderPayload.notes} Payment method: Cash on delivery.`
+        })
+      })
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Could not place your order. Please try again.')
+
+      saveCheckoutAddress()
+
+      const confirmedOrder = (data.order || {}) as Record<string, any>
+      try {
+        window.sessionStorage.setItem(
+          'teesgarage-order-confirmation',
+          JSON.stringify({
+            orderNumber: confirmedOrder.orderNumber || orderId,
+            paymentId: 'Cash on delivery',
+            paymentMethod: 'cod',
+            total: Number(confirmedOrder.total ?? total),
+            subtotal: Number(confirmedOrder.subtotal ?? subtotal),
+            shipping: Number(confirmedOrder.shipping ?? shipping),
+            createdAt: confirmedOrder.createdAt || new Date().toISOString(),
+            customerName: confirmedOrder.customerName || form.name.trim(),
+            address: confirmedOrder.address || form.address.trim(),
+            apartment: confirmedOrder.apartment || form.place.trim(),
+            city: confirmedOrder.city || form.district.trim(),
+            state: confirmedOrder.state || form.state.trim(),
+            pincode: confirmedOrder.pincode || form.pincode.trim(),
+            items: Array.isArray(confirmedOrder.items)
+              ? confirmedOrder.items
+              : items.map((item) => ({
+                  id: item.id,
+                  name: item.name,
+                  fit: item.fit,
+                  size: item.size,
+                  quantity: item.qty,
+                  price: item.price,
+                  priceNum: item.priceNum,
+                  img: item.img,
+                  color: item.color,
+                  wash: item.wash
+                }))
+          })
+        )
+      } catch {
+        // The order is recorded; the receipt page can recover via the order number.
+      }
+
+      trackEvent('order_completed', {
+        order_id: orderId,
+        order_number: orderId,
+        total: Number(confirmedOrder.total ?? total),
+        subtotal,
+        shipping,
+        currency: 'INR',
+        item_count: items.reduce((sum, item) => sum + item.qty, 0),
+        customer_email: email.trim(),
+        payment_method: 'cod',
+        items: items.map((item) => ({
+          product_id: item.id,
+          product_name: item.name,
+          size: item.size,
+          color: item.color,
+          price: item.priceNum,
+          quantity: item.qty
+        }))
+      })
+
+      if (!isProductMode) {
+        clearCart()
+      }
+      router.replace('/order-confirmation')
+    } catch (err) {
+      setPaymentError(
+        err instanceof Error ? err.message : 'Could not place your order. Please try again.'
+      )
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   // Empty bag view
   if (!isProductMode && count === 0) {
     return (
@@ -1213,25 +1496,13 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     )
   }
 
-  const paymentMethods = (
-    <div className="mt-3 flex flex-wrap items-center gap-1.5">
-      <span className="inline-flex items-center gap-1.5 rounded-[5px] border border-[#ecebe6] bg-white px-2 py-1 text-[10.5px] font-medium text-[#4d5352]">
-        <GooglePayIcon /> Google Pay
-      </span>
-      <span className="inline-flex items-center gap-1.5 rounded-[5px] border border-[#ecebe6] bg-white px-2 py-1 text-[10.5px] font-medium text-[#4d5352]">
-        <PhonePeIcon /> PhonePe
-      </span>
-      <span className="inline-flex items-center gap-1.5 rounded-[5px] border border-[#ecebe6] bg-white px-2 py-1 text-[10.5px] font-medium text-[#4d5352]">
-        <PaytmIcon />
-      </span>
-      <span className="inline-flex items-center gap-1.5 rounded-[5px] border border-[#ecebe6] bg-white px-2 py-1 text-[10.5px] font-medium text-[#4d5352]">
-        <CardsIcon /> Card
-      </span>
-      <span className="inline-flex items-center gap-1.5 rounded-[5px] border border-[#ecebe6] bg-white px-2 py-1 text-[10.5px] font-medium text-[#4d5352]">
-        <NetBankingIcon /> NetBanking
-      </span>
-    </div>
-  )
+  const paymentMethodLabel: Record<PaymentMethod, string> = {
+    upi: 'UPI',
+    card: 'Credit or debit card',
+    netbanking: 'Net banking',
+    wallet: 'Wallet',
+    cod: 'Cash on delivery'
+  }
 
   return (
     <main className="checkout-page min-h-screen bg-[#FBFBFA] pb-24 font-ui text-[#1C2022]">
@@ -1282,13 +1553,12 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                     Contact information
                   </h2>
                   <div className="mt-4 flex flex-col gap-3.5">
-                    <Field
+                    <FloatingInput
                       id="email"
-                      label="Email address"
+                      label="Email"
                       type="email"
                       inputMode="email"
                       autoComplete="email"
-                      placeholder="you@example.com"
                       value={email}
                       onChange={(e) => handleEmailChange(e.target.value)}
                       error={errors.email}
@@ -1312,23 +1582,21 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                   </p>
 
                   <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Field
+                    <FloatingInput
                       id="name"
                       label="Full name"
                       autoComplete="name"
-                      placeholder="Your full name"
                       value={form.name}
                       onChange={(e) => handleFieldChange('name', e.target.value)}
                       error={errors.name}
                     />
-                    <Field
+                    <FloatingInput
                       id="phone"
-                      label="Phone number"
+                      label="Phone"
                       type="tel"
                       inputMode="numeric"
                       autoComplete="tel"
                       maxLength={15}
-                      placeholder="+91 98765 43210"
                       value={form.phone}
                       onChange={(e) => handleFieldChange('phone', e.target.value)}
                       error={errors.phone}
@@ -1336,14 +1604,13 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                   </div>
 
                   <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[160px_1fr]">
-                    <Field
+                    <FloatingInput
                       id="pincode"
                       label="Pincode"
                       inputMode="numeric"
                       pattern="[0-9]*"
                       autoComplete="postal-code"
                       maxLength={6}
-                      placeholder="6-digit code"
                       value={form.pincode}
                       onChange={(e) => handlePincodeLookup(e.target.value)}
                       error={errors.pincode}
@@ -1355,11 +1622,10 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                         ) : null
                       }
                     />
-                    <Field
+                    <FloatingInput
                       id="address"
                       label="Address line 1"
                       autoComplete="address-line1"
-                      placeholder="House no., street, area"
                       value={form.address}
                       onChange={(e) => handleFieldChange('address', e.target.value)}
                       error={errors.address}
@@ -1367,70 +1633,47 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                   </div>
 
                   <div className="mt-3">
-                    <Field
+                    <FloatingInput
                       id="place"
-                      label="Address line 2 (Optional)"
+                      label="Address line 2"
+                      optional
                       autoComplete="address-line2"
-                      placeholder="Apartment, suite, unit, etc."
                       value={form.place}
                       onChange={(e) => handleFieldChange('place', e.target.value)}
                     />
                   </div>
 
                   <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <Field
+                    <FloatingInput
                       id="district"
                       label="City"
                       autoComplete="address-level2"
-                      placeholder="City"
                       value={form.district}
                       onChange={(e) => handleFieldChange('district', e.target.value)}
                       error={errors.district}
                     />
-                    <div className="min-w-0">
-                      <label
-                        htmlFor="state"
-                        className={`flex cursor-pointer flex-col rounded-lg border bg-white px-3.5 pb-2 pt-1.5 transition-[border-color,box-shadow] duration-150 focus-within:shadow-[0_0_0_1px_rgba(0,0,0,0.06)] ${
-                          errors.state
-                            ? 'border-[#cf5b55]'
-                            : 'border-[#e4e3de] focus-within:border-black'
-                        }`}
-                      >
-                        <span className="text-[11px] font-normal leading-tight text-[#71717A] select-none">
-                          State
-                        </span>
-                        <div className="relative mt-0.5">
-                          <select
-                            id="state"
-                            value={form.state}
-                            onChange={(e) => handleFieldChange('state', e.target.value)}
-                            className={`w-full appearance-none border-0 bg-transparent pr-6 text-[13.5px] leading-normal outline-none cursor-pointer ${
-                              form.state ? 'text-[#18181B]' : 'text-[#A1A1AA]'
-                            }`}
-                          >
-                            <option value="">Select state</option>
-                            {form.state && !INDIAN_STATES.includes(form.state) ? (
-                              <option value={form.state}>{form.state}</option>
-                            ) : null}
-                            {INDIAN_STATES.map((state) => (
-                              <option key={state} value={state}>
-                                {state}
-                              </option>
-                            ))}
-                          </select>
-                          <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#71717A]" />
-                        </div>
-                      </label>
-                      {errors.state ? (
-                        <p className="mt-1 pl-1 text-[11px] font-medium text-[#cf5b55]">
-                          {errors.state}
-                        </p>
+                    <FloatingSelect
+                      id="state"
+                      label="State"
+                      value={form.state}
+                      onChange={(e) => handleFieldChange('state', e.target.value)}
+                      error={errors.state}
+                      className={form.state ? undefined : 'text-neutral-400'}
+                    >
+                      <option value="">Select state</option>
+                      {form.state && !INDIAN_STATES.includes(form.state) ? (
+                        <option value={form.state}>{form.state}</option>
                       ) : null}
-                    </div>
-                    <Field
+                      {INDIAN_STATES.map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </FloatingSelect>
+                    <FloatingInput
                       id="landmark"
-                      label="Landmark (Optional)"
-                      placeholder="Near MG Road"
+                      label="Landmark"
+                      optional
                       value={form.landmark}
                       onChange={(e) => handleFieldChange('landmark', e.target.value)}
                     />
@@ -1503,66 +1746,125 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
             {step === 1 ? (
               <>
                 <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none">
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 className="text-[16px] font-bold tracking-[-0.01em] text-[#111]">
-                      Payment
-                    </h2>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#71717A]">
-                      <Lock className="h-3 w-3" /> Secure
-                    </span>
+                  <h2 className="text-[16px] font-bold tracking-[-0.01em] text-[#111]">
+                    Payment method
+                  </h2>
+                  <p className="mt-1 text-[12px] text-[#71717A]">Choose how you’d like to pay.</p>
+
+                  <div
+                    className="mt-4 flex flex-col gap-2.5"
+                    role="radiogroup"
+                    aria-label="Payment method"
+                  >
+                    <PaymentOption
+                      id="payment-upi"
+                      title="UPI"
+                      description="Pay using any UPI app"
+                      icon={<UpiIcon />}
+                      selected={paymentMethod === 'upi'}
+                      onSelect={() => handlePaymentMethodChange('upi')}
+                      badges={
+                        <>
+                          <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-[#3C4043]">
+                            <GooglePayIcon /> Pay
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[#5F259F]">
+                            <PhonePeIcon /> PhonePe
+                          </span>
+                          <PaytmIcon />
+                          <BhimLogo />
+                        </>
+                      }
+                    />
+                    <PaymentOption
+                      id="payment-card"
+                      title="Credit or debit card"
+                      description="Visa, Mastercard, RuPay"
+                      icon={<CreditCard className="h-[22px] w-[22px]" strokeWidth={1.7} />}
+                      selected={paymentMethod === 'card'}
+                      onSelect={() => handlePaymentMethodChange('card')}
+                      badges={
+                        <>
+                          <VisaLogo />
+                          <MastercardLogo />
+                          <RuPayLogo />
+                        </>
+                      }
+                    />
+                    <PaymentOption
+                      id="payment-netbanking"
+                      title="Net banking"
+                      description="All major Indian banks"
+                      icon={<Landmark className="h-[22px] w-[22px]" strokeWidth={1.7} />}
+                      selected={paymentMethod === 'netbanking'}
+                      onSelect={() => handlePaymentMethodChange('netbanking')}
+                      showChevron
+                    />
+                    <PaymentOption
+                      id="payment-wallet"
+                      title="Wallets"
+                      description="Pay with supported wallets"
+                      icon={<Wallet className="h-[22px] w-[22px]" strokeWidth={1.7} />}
+                      selected={paymentMethod === 'wallet'}
+                      onSelect={() => handlePaymentMethodChange('wallet')}
+                      showChevron
+                    />
+                    <PaymentOption
+                      id="payment-cod"
+                      title="Cash on delivery"
+                      description="Pay when your order arrives"
+                      icon={<Banknote className="h-[22px] w-[22px]" strokeWidth={1.7} />}
+                      selected={paymentMethod === 'cod'}
+                      onSelect={() => handlePaymentMethodChange('cod')}
+                      showChevron
+                    />
                   </div>
-                  <p className="mt-1 text-[12px] text-[#71717A]">
-                    All transactions are secure and encrypted.
-                  </p>
 
-                  <div className="mt-4 rounded-lg border border-black p-4 bg-[#FAF9F6]/40">
-                    <label className="flex cursor-pointer items-start gap-3">
-                      <RadioDot selected={true} />
-                      <div className="min-w-0 flex-1">
-                        <span className="block text-[13.5px] font-medium leading-tight text-[#111]">
-                          Pay online via Razorpay
-                        </span>
-                        <span className="mt-1 block text-[12px] leading-normal text-[#71717A]">
-                          UPI, credit / debit cards, net banking and wallets
-                        </span>
-                        {paymentMethods}
-                      </div>
-                    </label>
-                  </div>
-
-                  <p className="mt-3.5 flex items-center gap-1.5 text-[11.5px] text-[#71717A]">
-                    <Lock className="h-3 w-3 shrink-0" />
-                    256-bit encrypted payment. Your card details never touch our servers.
-                  </p>
-                </section>
-
-                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[10.5px] font-medium uppercase tracking-[0.06em] text-[#71717A]">
-                        Shipping to
+                  {paymentMethod === 'upi' ? (
+                    <div className="mt-4 rounded-xl border border-[#E7E5DF] p-4">
+                      <label
+                        htmlFor="upi-id"
+                        className="block text-[12px] font-medium text-[#3F4442]"
+                      >
+                        UPI ID
+                      </label>
+                      <input
+                        id="upi-id"
+                        type="text"
+                        inputMode="email"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={upiId}
+                        onChange={(e) => {
+                          setUpiId(e.target.value)
+                          if (upiError) setUpiError(null)
+                        }}
+                        placeholder="yourname@bank"
+                        aria-invalid={Boolean(upiError)}
+                        aria-describedby="upi-id-help"
+                        className={`mt-1.5 h-11 w-full rounded-lg border bg-white px-3.5 text-[13.5px] text-[#111] outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-[#A1A1AA] focus:border-black ${
+                          upiError ? 'border-[#cf5b55]' : 'border-[#E4E3DE]'
+                        }`}
+                      />
+                      <p
+                        id="upi-id-help"
+                        className={`mt-1.5 text-[11.5px] ${
+                          upiError ? 'font-medium text-[#cf5b55]' : 'text-[#8A8F8D]'
+                        }`}
+                      >
+                        {upiError || 'Enter your UPI ID to receive a payment request.'}
                       </p>
-                      <p className="mt-1.5 text-[13.5px] font-medium text-[#111]">
-                        {form.name}
-                      </p>
-                      <p className="text-[12px] text-[#52525B] leading-relaxed">
-                        {[form.address, form.place, form.landmark, form.district, form.state]
-                          .filter(Boolean)
-                          .join(', ')}{' '}
-                        – {form.pincode}
-                      </p>
-                      <p className="mt-1 text-[12px] text-[#71717A]">
-                        {form.phone} · {email}
+                      <p className="mt-3 flex items-center gap-1.5 text-[11.5px] text-[#8A8F8D]">
+                        <Lock className="h-3.5 w-3.5 shrink-0" />
+                        Your payment details are secure and encrypted.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => goToStep(0)}
-                      className="shrink-0 text-[12px] font-medium text-[#52525B] underline underline-offset-2 transition-colors hover:text-black cursor-pointer"
-                    >
-                      Edit
-                    </button>
-                  </div>
+                  ) : (
+                    <p className="mt-4 flex items-center gap-1.5 text-[11.5px] text-[#8A8F8D]">
+                      <Lock className="h-3.5 w-3.5 shrink-0" />
+                      Your payment details are secure and encrypted.
+                    </p>
+                  )}
                 </section>
 
                 {paymentError ? (
@@ -1575,22 +1877,24 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                   </div>
                 ) : null}
 
-                <button
-                  type="submit"
-                  className="flex h-[48px] w-full items-center justify-center gap-2 rounded-lg bg-[#141414] hover:bg-black px-5 text-[13.5px] font-medium text-white transition-colors cursor-pointer"
-                >
-                  <span>Continue to review</span>
-                  <ArrowRight className="h-4 w-4" strokeWidth={2} />
-                </button>
+                <div className="grid gap-3 sm:grid-cols-[1fr_2fr] sm:items-center sm:gap-5">
+                  <button
+                    type="submit"
+                    className="order-1 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#141414] px-5 text-[13.5px] font-medium text-white transition-colors duration-200 hover:bg-black cursor-pointer sm:order-2"
+                  >
+                    <span>Continue to review</span>
+                    <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => goToStep(0)}
-                  className="flex h-10 w-full items-center justify-center gap-2 rounded-lg text-[12px] font-medium text-[#52525B] transition-colors hover:text-black cursor-pointer"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  Back to shipping
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => goToStep(0)}
+                    className="order-2 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg px-1 text-[13px] font-medium text-[#52525B] underline underline-offset-2 transition-colors hover:text-black cursor-pointer sm:order-1 sm:justify-start"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to shipping
+                  </button>
+                </div>
               </>
             ) : null}
 
@@ -1601,7 +1905,9 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                     Review order
                   </h2>
                   <p className="mt-1 text-[12px] text-[#71717A]">
-                    Confirm your details before completing payment.
+                    {paymentMethod === 'cod'
+                      ? 'Confirm your details before placing your order.'
+                      : 'Confirm your details before completing payment.'}
                   </p>
 
                   <div className="mt-4 divide-y divide-[#F0EFEA]">
@@ -1675,10 +1981,16 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                           Payment
                         </p>
                         <p className="mt-1 text-[13px] font-medium text-[#111]">
-                          Razorpay secure checkout
+                          {paymentMethod === 'cod'
+                            ? 'Cash on delivery'
+                            : `Razorpay · ${paymentMethodLabel[paymentMethod]}`}
                         </p>
                         <p className="text-[12px] text-[#71717A]">
-                          UPI, cards, net banking and wallets
+                          {paymentMethod === 'cod'
+                            ? 'Pay in cash when your order arrives'
+                            : paymentMethod === 'upi' && upiId.trim()
+                              ? upiId.trim()
+                              : 'Secure online payment'}
                         </p>
                       </div>
                       <button
@@ -1707,11 +2019,19 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                   disabled={!canPay}
                   className="flex h-[48px] w-full items-center justify-center gap-2 rounded-lg bg-[#141414] hover:bg-black px-5 text-[13.5px] font-medium text-white transition-colors duration-200 cursor-pointer disabled:cursor-not-allowed disabled:bg-[#DCDAD4] disabled:text-[#8B8F8E]"
                 >
-                  <Lock className="h-3.5 w-3.5" />
+                  {paymentMethod === 'cod' ? (
+                    <Banknote className="h-4 w-4" />
+                  ) : (
+                    <Lock className="h-3.5 w-3.5" />
+                  )}
                   <span>
                     {isProcessing
-                      ? 'Connecting to Razorpay…'
-                      : `Pay ${formatPrice(total)} securely`}
+                      ? paymentMethod === 'cod'
+                        ? 'Placing your order…'
+                        : 'Connecting to Razorpay…'
+                      : paymentMethod === 'cod'
+                        ? `Place order · ${formatPrice(total)}`
+                        : `Pay ${formatPrice(total)} securely`}
                   </span>
                 </button>
 
