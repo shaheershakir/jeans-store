@@ -91,6 +91,12 @@ export interface OrderItem {
   quantity: number
   weightGrams?: number
   img?: string
+  lineTotal?: number
+  discountAmount?: number
+  taxRate?: number
+  taxAmount?: number
+  taxableAmount?: number
+  variantLabel?: string
 }
 
 export interface Order {

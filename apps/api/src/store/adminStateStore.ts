@@ -492,22 +492,34 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
 
     for (const coupon of arrays('coupons')) {
       const couponId = numberOrZero(coupon.id)
-      const code = stringOrEmpty(coupon.code)
+      const code = stringOrEmpty(coupon.code).trim().toLowerCase()
       if (!code) continue
+
+      const rawType = coupon.type === 'fixed' ? ('fixed' as const) : ('percentage' as const)
+      const rawValue = Math.round(numberOrZero(coupon.value))
+      const value = rawType === 'percentage' ? Math.min(100, rawValue) : rawValue
+      if (value <= 0) continue
+
+      const rawMaxDiscount =
+        coupon.maxDiscount === null || coupon.maxDiscount === undefined ? null : Math.round(numberOrZero(coupon.maxDiscount))
+      const rawUsageLimit =
+        coupon.usageLimit === null || coupon.usageLimit === undefined ? null : Math.floor(numberOrZero(coupon.usageLimit))
+      const startsAt = dateOrNull(coupon.startsAt)
+      let endsAt = dateOrNull(coupon.endsAt)
+      if (startsAt && endsAt && endsAt <= startsAt) endsAt = null
 
       const couponData = {
         code,
-        type: coupon.type === 'fixed' ? ('fixed' as const) : ('percentage' as const),
-        value: numberOrZero(coupon.value),
-        minOrderValue: numberOrZero(coupon.minOrderValue),
-        maxDiscount: coupon.maxDiscount === null || coupon.maxDiscount === undefined ? null : numberOrZero(coupon.maxDiscount),
-        startsAt: dateOrNull(coupon.startsAt),
-        endsAt: dateOrNull(coupon.endsAt),
-        usageLimit: coupon.usageLimit === null || coupon.usageLimit === undefined ? null : numberOrZero(coupon.usageLimit),
-        perCustomerLimit: numberOrZero(coupon.perCustomerLimit) || 1,
+        type: rawType,
+        value,
+        minOrderValue: Math.max(0, Math.round(numberOrZero(coupon.minOrderValue))),
+        maxDiscount: rawMaxDiscount !== null && rawMaxDiscount > 0 ? rawMaxDiscount : null,
+        startsAt,
+        endsAt,
+        usageLimit: rawUsageLimit !== null && rawUsageLimit > 0 ? rawUsageLimit : null,
+        perCustomerLimit: Math.max(1, Math.floor(numberOrZero(coupon.perCustomerLimit)) || 1),
         isActive: coupon.isActive !== false
       }
-      if (couponData.value <= 0) continue
 
       let effectiveCouponId = couponId
       if (couponId > 0) {
@@ -577,14 +589,22 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
       const promoId = numberOrZero(promotion.id)
       const title = stringOrEmpty(promotion.title)
       if (!title) continue
+      const discountType = promotion.discountType === 'fixed' ? ('fixed' as const) : ('percentage' as const)
+      const rawDiscountValue = Math.round(numberOrZero(promotion.discountValue))
+      const discountValue = discountType === 'percentage' ? Math.min(100, rawDiscountValue) : rawDiscountValue
+      if (discountValue <= 0) continue
+      const startsAt = dateOrNull(promotion.startsAt)
+      let endsAt = dateOrNull(promotion.endsAt)
+      if (startsAt && endsAt && endsAt <= startsAt) endsAt = null
+
       const promoData = {
         title,
         target: stringOrEmpty(promotion.target) || 'Product',
         targetId: promotion.targetId === null || promotion.targetId === undefined ? null : String(promotion.targetId),
-        discountType: promotion.discountType === 'fixed' ? ('fixed' as const) : ('percentage' as const),
-        discountValue: numberOrZero(promotion.discountValue),
-        startsAt: dateOrNull(promotion.startsAt),
-        endsAt: dateOrNull(promotion.endsAt),
+        discountType,
+        discountValue,
+        startsAt,
+        endsAt,
         status: stringOrEmpty(promotion.status) || 'Scheduled'
       }
       if (promoId > 0) {
@@ -607,16 +627,19 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
       const bannerId = numberOrZero(banner.id)
       const title = stringOrEmpty(banner.title)
       if (!title) continue
+      const startsAt = dateOrNull(banner.startsAt)
+      let endsAt = dateOrNull(banner.endsAt)
+      if (startsAt && endsAt && endsAt <= startsAt) endsAt = null
       const bannerData = {
         title,
         subtitle: stringOrEmpty(banner.subtitle) || null,
         ctaLabel: stringOrEmpty(banner.ctaLabel) || null,
         link: stringOrEmpty(banner.link) || null,
         imageUrl: stringOrEmpty(banner.image) || null,
-        startsAt: dateOrNull(banner.startsAt),
-        endsAt: dateOrNull(banner.endsAt),
+        startsAt,
+        endsAt,
         status: stringOrEmpty(banner.status) || 'Scheduled',
-        sortOrder: numberOrZero(banner.order)
+        sortOrder: Math.max(0, Math.floor(numberOrZero(banner.order)))
       }
       if (bannerId > 0) {
         await tx
@@ -738,6 +761,13 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
       const productId =
         productIdFromVariant ?? (productIds.has(requestedProductId) ? requestedProductId : null)
 
+      const delta = Math.round(numberOrZero(movement.delta))
+      const before = Math.max(0, Math.round(numberOrZero(movement.before)))
+      const after = before + delta
+      // The balance check requires after = before + delta. A movement that would
+      // drive stock negative is not a valid ledger entry.
+      if (after < 0) continue
+
       const movData = {
         productId,
         variantId,
@@ -745,9 +775,9 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         type: ['PURCHASE', 'SALE', 'ADJUSTMENT', 'RETURN', 'RESERVATION', 'RELEASE'].includes(movement.type)
           ? movement.type
           : 'ADJUSTMENT',
-        delta: numberOrZero(movement.delta),
-        before: numberOrZero(movement.before),
-        after: numberOrZero(movement.after),
+        delta,
+        before,
+        after,
         reason: stringOrEmpty(movement.reason) || null,
         reference: stringOrEmpty(movement.reference) || null,
         actorAdminId: adminUserIds.has(Number(movement.userId)) ? Number(movement.userId) : null,

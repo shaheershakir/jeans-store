@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express'
+import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { orderStore } from '../store/orderStore.js'
 import { createOrderSchema } from '../schemas/order.js'
@@ -10,6 +11,16 @@ import { calculateShipping, getShippingRates, getDeliveryEstimation } from '../s
 import { verifyCloudIamToken } from '../services/cloudIam.js'
 import { trackServerEvent } from '../services/posthog.js'
 import { userStore } from '../store/userStore.js'
+import { db, isDatabaseConfigured } from '../db/index.js'
+import { calculatePricing, type PricedLineInput } from '../services/pricing.js'
+import { CouponError, normalizeCouponCode, resolveCoupon } from '../services/coupon.js'
+import {
+  ReservationUnavailableError,
+  confirmReservations,
+  expireReservations,
+  reserveInventory
+} from '../services/inventory.js'
+import { PaymentError, createPaymentAttempt, findAttemptByGatewayOrderId } from '../services/payments.js'
 import type { CalculatedOrder, CreateOrder } from '../schemas/order.js'
 
 export const orderRouter = Router()
@@ -38,20 +49,26 @@ const createRazorpayOrderSchema = z.object({
   orderNumber: z.string().min(1),
   state: z.string().default(''),
   pincode: z.string().optional(),
-  items: z.array(z.object({ id: z.number(), variantId: z.number().int().positive().optional(), size: z.string(), quantity: z.number().int().positive() })).min(1),
+  items: z.array(z.object({ id: z.number(), variantId: z.number().int().positive().optional(), size: z.string(), quantity: z.number().int().positive().max(50) })).min(1),
   customerName: z.string().optional(),
   customerEmail: z.string().optional(),
-  customerPhone: z.string().optional()
+  customerPhone: z.string().optional(),
+  couponCode: z.string().trim().min(1).max(60).optional()
 })
 
 async function calculateCheckout(
   itemsRequest: CreateOrder['items'],
   state: string,
-  pincode?: string
-): Promise<Pick<CalculatedOrder, 'items' | 'subtotal' | 'shipping' | 'total'> & { weightGrams: number; deliveryEstimation: ReturnType<typeof getDeliveryEstimation> }> {
-  let subtotal = 0
-  let weightGrams = 0
-  const items: CalculatedOrder['items'] = []
+  pincode?: string,
+  couponCode?: string,
+  options: { skipStockCheck?: boolean; customerId?: number | null } = {}
+): Promise<
+  Pick<CalculatedOrder, 'items' | 'subtotal' | 'discountTotal' | 'shipping' | 'taxTotal' | 'total'> & {
+    weightGrams: number
+    deliveryEstimation: ReturnType<typeof getDeliveryEstimation>
+  }
+> {
+  const pricedInputs: PricedLineInput[] = []
   const freeSizeRequested = new Map<number, { quantity: number; available: number; name: string }>()
 
   for (const requested of itemsRequest) {
@@ -65,7 +82,7 @@ async function calculateCheckout(
     if (!variant || String(variant.size) !== requested.size || variant.status !== 'Active') {
       throw new Error(`Size ${requested.size} for ${product.name} is no longer available.`)
     }
-    if (variant.stock - variant.reserved < requested.quantity) {
+    if (!options.skipStockCheck && variant.stock - variant.reserved < requested.quantity) {
       throw new Error(`${product.name} (${requested.size}) does not have enough stock.`)
     }
     if (product.isFreeSize) {
@@ -77,36 +94,102 @@ async function calculateCheckout(
       })
     }
     const unitPrice = typeof variant.price === 'number' && variant.price > 0 ? variant.price : product.priceNum
-    const lineTotal = unitPrice * requested.quantity
-    subtotal += lineTotal
-    weightGrams += variant.weight * requested.quantity
-    items.push({
-      id: product.id,
+    pricedInputs.push({
+      productId: product.id,
       variantId: variant.id!,
       name: product.name,
       size: String(variant.size),
-      price: `₹${unitPrice.toLocaleString('en-IN')}`,
-      priceNum: unitPrice,
+      color: variant.color,
       sku: variant.sku,
       quantity: requested.quantity,
+      unitPrice,
       weightGrams: variant.weight,
-      img: product.img
+      img: product.img,
+      categoryId: product.categoryId,
+      isFreeSize: Boolean(product.isFreeSize),
+      taxRate: product.taxRate ?? 0,
+      variantLabel: [variant.color, variant.size].filter(Boolean).join(' / ')
     })
   }
 
-  for (const shared of freeSizeRequested.values()) {
-    if (shared.quantity > shared.available) throw new Error(`${shared.name} does not have enough shared stock.`)
+  if (!options.skipStockCheck) {
+    for (const shared of freeSizeRequested.values()) {
+      if (shared.quantity > shared.available) throw new Error(`${shared.name} does not have enough shared stock.`)
+    }
   }
 
+  const weightGrams = pricedInputs.reduce((sum, line) => sum + line.weightGrams * line.quantity, 0)
   const rates = await getShippingRates()
   const shipping = calculateShipping(weightGrams, state, rates, pincode)
   const deliveryEstimation = getDeliveryEstimation(state, rates, pincode)
-  return { items, subtotal, shipping, total: subtotal + shipping, weightGrams, deliveryEstimation }
+
+  let discount = 0
+  if (couponCode) {
+    if (!isDatabaseConfigured() || !db) throw new CouponError('Discount codes are temporarily unavailable.', 503)
+    const resolved = await resolveCoupon(db, {
+      code: normalizeCouponCode(couponCode),
+      customerId: options.customerId ?? null,
+      items: pricedInputs.map((line) => ({
+        productId: line.productId,
+        categoryId: line.categoryId,
+        lineTotal: line.unitPrice * line.quantity
+      })),
+      subtotal: pricedInputs.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0),
+      forUpdate: false
+    })
+    discount = resolved.discount
+  }
+
+  const pricing = calculatePricing(pricedInputs, { discount, shipping })
+  const items: CalculatedOrder['items'] = pricing.lines.map((line) => ({
+    id: line.productId,
+    variantId: line.variantId,
+    name: line.name,
+    size: line.size,
+    price: line.price,
+    priceNum: line.unitPrice,
+    sku: line.sku,
+    quantity: line.quantity,
+    weightGrams: line.weightGrams,
+    img: line.img,
+    lineTotal: line.lineTotal,
+    taxRate: line.taxRate,
+    taxAmount: line.taxAmount,
+    discountAmount: line.discountAmount,
+    taxableAmount: line.taxableAmount,
+    variantLabel: line.variantLabel,
+    categoryId: line.categoryId,
+    isFreeSize: Boolean(line.isFreeSize)
+  }))
+
+  return {
+    items,
+    subtotal: pricing.subtotal,
+    discountTotal: pricing.discountTotal,
+    shipping: pricing.shipping,
+    taxTotal: pricing.taxTotal,
+    total: pricing.total,
+    weightGrams: pricing.weightGrams,
+    deliveryEstimation
+  }
 }
 
-async function calculateOrder(input: CreateOrder): Promise<CalculatedOrder> {
-  const calculated = await calculateCheckout(input.items, input.state, (input as { pincode?: string }).pincode)
-  return { ...input, ...calculated }
+async function calculateOrder(
+  input: CreateOrder,
+  options: { skipStockCheck?: boolean; couponCode?: string } = {}
+): Promise<CalculatedOrder> {
+  const calculated = await calculateCheckout(
+    input.items,
+    input.state,
+    (input as { pincode?: string }).pincode,
+    options.couponCode ?? input.couponCode,
+    { skipStockCheck: options.skipStockCheck }
+  )
+  return {
+    ...input,
+    ...calculated,
+    couponCode: input.couponCode ? normalizeCouponCode(input.couponCode) : undefined
+  }
 }
 
 const quoteSchema = z.object({
@@ -117,7 +200,8 @@ const quoteSchema = z.object({
     variantId: z.number().int().positive().optional(),
     size: z.string().min(1),
     quantity: z.number().int().positive().max(50)
-  })).min(1)
+  })).min(1),
+  couponCode: z.string().trim().min(1).max(60).optional()
 }).refine((data) => data.state.length > 0 || data.pincode.replace(/\D/g, '').length === 6, {
   message: 'A delivery state or 6-digit PIN code is required.'
 })
@@ -129,16 +213,67 @@ orderRouter.post('/api/orders/quote', async (req: Request, res: Response) => {
     return
   }
   try {
-    const quote = await calculateCheckout(parsed.data.items, parsed.data.state, parsed.data.pincode)
+    const quote = await calculateCheckout(
+      parsed.data.items,
+      parsed.data.state,
+      parsed.data.pincode,
+      parsed.data.couponCode
+    )
     res.json({
       subtotal: quote.subtotal,
+      discountTotal: quote.discountTotal,
       shipping: quote.shipping,
+      taxTotal: quote.taxTotal,
       total: quote.total,
       weightGrams: quote.weightGrams,
       deliveryEstimation: quote.deliveryEstimation
     })
   } catch (err) {
-    res.status(400).json({ error: err instanceof Error ? err.message : 'Unable to quote this cart.' })
+    res.status(err instanceof CouponError ? err.statusCode : 400).json({
+      error: err instanceof Error ? err.message : 'Unable to quote this cart.'
+    })
+  }
+})
+
+// Public: Validate a coupon against the server-calculated cart. The discount is
+// recalculated again, under a row lock, when the order is created.
+const couponQuoteSchema = z.object({
+  code: z.string().trim().min(1).max(60),
+  state: z.string().trim().max(100).optional().default(''),
+  pincode: z.string().trim().max(10).optional().default(''),
+  items: z.array(z.object({
+    id: z.number().int().positive(),
+    variantId: z.number().int().positive().optional(),
+    size: z.string().min(1),
+    quantity: z.number().int().positive().max(50)
+  })).min(1)
+})
+
+orderRouter.post('/api/orders/coupon/validate', async (req: Request, res: Response) => {
+  const parsed = couponQuoteSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Enter a valid discount code and cart.' })
+    return
+  }
+  try {
+    const quote = await calculateCheckout(
+      parsed.data.items,
+      parsed.data.state,
+      parsed.data.pincode,
+      parsed.data.code
+    )
+    res.json({
+      code: normalizeCouponCode(parsed.data.code),
+      discountTotal: quote.discountTotal,
+      subtotal: quote.subtotal,
+      shipping: quote.shipping,
+      taxTotal: quote.taxTotal,
+      total: quote.total
+    })
+  } catch (err) {
+    res.status(err instanceof CouponError ? err.statusCode : 400).json({
+      error: err instanceof Error ? err.message : 'This discount code is not valid.'
+    })
   }
 })
 
@@ -153,8 +288,8 @@ orderRouter.post('/api/orders/razorpay/create-order', async (req: Request, res: 
   }
 
   try {
-    const { currency, orderNumber, customerName, customerEmail, customerPhone, state, pincode, items } = parsed.data
-    const quote = await calculateCheckout(items, state, pincode)
+    const { currency, orderNumber, customerName, customerEmail, customerPhone, state, pincode, items, couponCode } = parsed.data
+    const quote = await calculateCheckout(items, state, pincode, couponCode)
     const amountInPaise = Math.round(quote.total * 100)
 
     const rzpOrder = await razorpayService.createOrder({
@@ -164,12 +299,57 @@ orderRouter.post('/api/orders/razorpay/create-order', async (req: Request, res: 
       notes: {
         orderNumber,
         shipping: String(quote.shipping),
+        taxTotal: String(quote.taxTotal),
+        discountTotal: String(quote.discountTotal),
         weightGrams: String(quote.weightGrams),
         customerName: customerName || '',
         customerEmail: customerEmail || '',
         customerPhone: customerPhone || ''
       }
     })
+
+    if (isDatabaseConfigured() && db) {
+      try {
+        await db.transaction(async (tx) => {
+          const executor = tx as unknown as import('../db/types.js').DbExecutor
+          await expireReservations(executor, 50)
+          await reserveInventory(executor, {
+            gatewayOrderId: rzpOrder.id,
+            reservationKeyPrefix: `razorpay:${rzpOrder.id}`,
+            items: quote.items.map((item) => ({
+              productId: item.id,
+              variantId: item.variantId,
+              quantity: item.quantity,
+              isFreeSize: Boolean(item.isFreeSize),
+              sku: item.sku
+            })),
+            ttlSeconds: 20 * 60,
+            reason: 'Razorpay checkout inventory held'
+          })
+        })
+      } catch (error) {
+        if (error instanceof ReservationUnavailableError) {
+          res.status(409).json({
+            error: 'Stock changed while starting checkout. Please review your cart and try again.'
+          })
+          return
+        }
+        throw error
+      }
+
+      try {
+        await createPaymentAttempt({
+          orderNumber,
+          amount: quote.total,
+          currency,
+          gatewayOrderId: rzpOrder.id
+        })
+      } catch (error) {
+        // The verification route can create the attempt if this write fails;
+        // the reservation still protects stock until it expires.
+        logger.error({ err: error, razorpayOrderId: rzpOrder.id }, 'Failed to record Razorpay payment attempt')
+      }
+    }
 
     res.status(201).json({
       razorpayOrderId: rzpOrder.id,
@@ -178,12 +358,16 @@ orderRouter.post('/api/orders/razorpay/create-order', async (req: Request, res: 
       keyId: razorpayService.getKeyId(),
       orderNumber,
       subtotal: quote.subtotal,
+      discountTotal: quote.discountTotal,
       shipping: quote.shipping,
+      taxTotal: quote.taxTotal,
       total: quote.total
     })
   } catch (err: any) {
     logger.error({ err }, 'Failed to create Razorpay order')
-    res.status(500).json({ error: err.message || 'Failed to initiate Razorpay transaction' })
+    res.status(err instanceof CouponError ? err.statusCode : 500).json({
+      error: err.message || 'Failed to initiate Razorpay transaction'
+    })
   }
 })
 
@@ -262,8 +446,30 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
     )
   }
 
+  // A payment attempt created by /razorpay/create-order may already be linked
+  // to an order even if the browser lost the first response.
+  if (isDatabaseConfigured() && db) {
+    const attempt = await findAttemptByGatewayOrderId(db, razorpay_order_id)
+    if (attempt?.orderId) {
+      const existing = await orderStore.getById(attempt.orderId)
+      if (existing) {
+        res.status(200).json({
+          success: true,
+          order: existing,
+          paymentId: razorpay_payment_id,
+          idempotent: true
+        })
+        return
+      }
+    }
+    if (attempt?.orderNumber && attempt.orderNumber !== order.orderNumber) {
+      res.status(409).json({ error: 'This payment was started for a different order number.' })
+      return
+    }
+  }
+
   try {
-    const calculatedOrder = await calculateOrder(order)
+    const calculatedOrder = await calculateOrder(order, { skipStockCheck: true })
     const razorpayOrder = await razorpayService.fetchOrder(razorpay_order_id)
     const payment = await razorpayService.fetchPayment(razorpay_payment_id)
     if (
@@ -274,6 +480,19 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
       payment.amount !== razorpayOrder.amount ||
       payment.status !== 'captured'
     ) {
+      if (isDatabaseConfigured() && db) {
+        await db
+          .execute(sql`
+            UPDATE payments
+            SET status = 'Paid', gateway_payment_id = ${razorpay_payment_id},
+                verified_at = now(), settled_at = COALESCE(settled_at, now()),
+                failure_reason = 'Gateway verification mismatch; order not committed',
+                updated_at = now()
+            WHERE gateway = 'razorpay' AND gateway_order_id = ${razorpay_order_id}
+              AND order_id IS NULL AND status IN ('Pending', 'Authorized', 'Paid')
+          `)
+          .catch(() => {})
+      }
       res.status(400).json({ error: 'Payment amount or status could not be verified.' })
       return
     }
@@ -306,18 +525,30 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
     }
 
     const paymentNote = `Razorpay Payment ID: ${razorpay_payment_id} | Order ID: ${razorpay_order_id}`
-    const finalOrder = await orderStore.create({
-      ...calculatedOrder,
-      userId,
-      status: 'paid',
-      handoffType: 'razorpay',
-      paymentMethod: 'razorpay',
-      paymentId: razorpay_payment_id,
-      razorpayOrderId: razorpay_order_id,
-      razorpayPaymentId: razorpay_payment_id,
-      razorpaySignature: razorpay_signature,
-      notes: order.notes ? `${order.notes} | ${paymentNote}` : paymentNote
-    })
+    const finalOrder = await orderStore.create(
+      {
+        ...calculatedOrder,
+        userId,
+        status: 'paid',
+        handoffType: 'razorpay',
+        paymentMethod: 'razorpay',
+        paymentId: razorpay_payment_id,
+        razorpayOrderId: razorpay_order_id,
+        razorpayPaymentId: razorpay_payment_id,
+        razorpaySignature: razorpay_signature,
+        notes: order.notes ? `${order.notes} | ${paymentNote}` : paymentNote
+      },
+      {
+        payment: {
+          gateway: 'razorpay',
+          gatewayOrderId: razorpay_order_id,
+          gatewayPaymentId: razorpay_payment_id,
+          method: 'Razorpay',
+          status: 'Paid',
+          expectedAmount: calculatedOrder.total
+        }
+      }
+    )
 
     trackServerEvent(finalOrder.customerEmail || finalOrder.orderNumber, 'order_completed', {
       order_id: finalOrder.id || finalOrder.orderNumber,
@@ -356,6 +587,46 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
       },
       'Failed to save confirmed order'
     )
+
+    // Verification only reaches this catch after the signature, gateway order,
+    // payment status and amount have been checked, so the money has been
+    // captured. Always retain the captured payment for reconciliation even if
+    // the order could not be committed.
+    if (isDatabaseConfigured() && db) {
+      await db
+        .execute(sql`
+          UPDATE payments
+          SET status = 'Paid', gateway_payment_id = ${razorpay_payment_id},
+              verified_at = now(), settled_at = COALESCE(settled_at, now()),
+              failure_reason = ${err instanceof Error ? err.message : 'Order commit failed after capture'},
+              updated_at = now()
+          WHERE gateway = 'razorpay' AND gateway_order_id = ${razorpay_order_id}
+            AND order_id IS NULL AND status IN ('Pending', 'Authorized', 'Paid')
+        `)
+        .catch(() => {})
+      await db
+        .execute(sql`
+          UPDATE payment_events
+          SET status = 'Unmatched',
+              last_error = ${err instanceof Error ? err.message : 'Order commit failed after capture'}
+          WHERE gateway_order_id = ${razorpay_order_id} AND status = 'Received'
+        `)
+        .catch(() => {})
+    }
+
+    if (err instanceof ReservationUnavailableError) {
+      res.status(409).json({
+        error: 'Payment was captured but the items are no longer in stock. Contact support with your payment id.'
+      })
+      return
+    }
+
+    if (err instanceof CouponError) {
+      res.status(409).json({
+        error: 'Payment was captured but the discount code is no longer valid. Contact support with your payment id.'
+      })
+      return
+    }
 
     // The order may have been committed by a concurrent retry between our
     // idempotency check and the insert (for example a duplicate checkout
@@ -447,6 +718,14 @@ orderRouter.post('/api/orders', async (req: Request, res: Response) => {
     res.status(201).json({ order })
   } catch (err) {
     logger.error({ err }, 'Failed to save order')
+    if (err instanceof CouponError) {
+      res.status(err.statusCode).json({ error: err.message })
+      return
+    }
+    if (err instanceof ReservationUnavailableError) {
+      res.status(409).json({ error: 'One or more items are no longer available in the requested quantity.' })
+      return
+    }
     res.status(500).json({ error: 'Failed to process order' })
   }
 })

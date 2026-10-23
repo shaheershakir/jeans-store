@@ -270,6 +270,7 @@ export class ProductStore {
   private memoryVariants: Variant[]
   private memoryProductImages: DbProductImage[]
   private nextMemoryProductId: number
+  private nextMemoryVariantId = 0
   private memoryClaimedSkus = new Map<string, number>()
   private createLock: Promise<void> = Promise.resolve()
 
@@ -314,7 +315,7 @@ export class ProductStore {
 
       const variants: Variant[] =
         p.variants && p.variants.length > 0
-          ? p.variants.map((v) => ({ ...v, productId: p.id }))
+          ? p.variants.map((v) => ({ ...v, id: v.id ?? variantCounter++, productId: p.id }))
           : rawSizes.map((sz) => {
               const sku = generateBaseSku({
                 category: p.category || 'printed-tees',
@@ -343,6 +344,7 @@ export class ProductStore {
     })
 
     this.nextMemoryProductId = Math.max(...this.memoryProducts.map((p) => p.id), 0)
+    this.nextMemoryVariantId = Math.max(...this.memoryVariants.map((variant) => variant.id ?? 0), 0)
     for (const v of this.memoryVariants) {
       if (v.sku && v.productId !== undefined) {
         this.memoryClaimedSkus.set(v.sku.toUpperCase(), v.productId)
@@ -702,12 +704,20 @@ export class ProductStore {
 
   private productColumns(input: CreateProduct, _attributes: Record<string, unknown>, weightGrams: number) {
     const adminData = (input.adminData ?? {}) as Record<string, any>
+    const rawTaxRate = Number(input.taxRate ?? adminData.taxRate ?? 0)
+    const taxRate = Number.isFinite(rawTaxRate)
+      ? Math.min(1, Math.max(0, rawTaxRate > 1 ? rawTaxRate / 100 : rawTaxRate))
+      : 0
+    const optionalMoney = (value: unknown): number | null => {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed) : null
+    }
     return {
       ...(input.collectionId !== undefined ? { collectionId: input.collectionId } : {}),
-      price: input.priceNum,
-      compareAtPrice: input.compareAtPrice ?? adminData.compareAtPrice ?? null,
-      costPrice: input.costPrice ?? adminData.costPrice ?? null,
-      taxRate: input.taxRate ?? adminData.taxRate ?? 0,
+      price: Math.max(0, Math.round(Number(input.priceNum) || 0)),
+      compareAtPrice: optionalMoney(input.compareAtPrice ?? adminData.compareAtPrice ?? null),
+      costPrice: optionalMoney(input.costPrice ?? adminData.costPrice ?? null),
+      taxRate,
       hsnCode: input.hsnCode ?? adminData.hsnCode ?? null,
       badge: input.badge ?? null,
       isFeatured: input.isFeatured ?? Boolean(adminData.featured) ?? false,
@@ -871,16 +881,20 @@ export class ProductStore {
         this.memoryClaimedSkus.set(sku, productId)
       }
 
+      const stock = Math.max(0, Math.round(sharedStock ?? variant.stock ?? 20))
+      const reserved = Math.min(stock, Math.max(0, Math.round(variant.reserved ?? 0)))
+      const price = Math.max(0, Math.round(variant.price ?? input.priceNum))
+      const useDatabase = isDatabaseConfigured() && Boolean(db)
       variantsToInsert.push({
-        id: variant.id,
+        id: variant.id ?? (useDatabase ? undefined : ++this.nextMemoryVariantId),
         productId,
         sku,
         size,
         color,
-        price: variant.price ?? input.priceNum,
-        stock: sharedStock ?? variant.stock ?? 20,
-        reserved: variant.reserved ?? 0,
-        reorderPoint: variant.reorderPoint ?? 5,
+        price,
+        stock,
+        reserved,
+        reorderPoint: Math.max(0, Math.round(variant.reorderPoint ?? 5)),
         weight: variant.weight ?? productWeight,
         barcode:
           variant.barcode ||
@@ -963,9 +977,18 @@ export class ProductStore {
       if (patch.name !== undefined) updateData.name = patch.name
       if (patch.desc !== undefined) updateData.description = patch.desc
       if (patch.badge !== undefined) updateData.badge = patch.badge
-      if (patch.compareAtPrice !== undefined) updateData.compareAtPrice = patch.compareAtPrice
-      if (patch.costPrice !== undefined) updateData.costPrice = patch.costPrice
-      if (patch.taxRate !== undefined) updateData.taxRate = patch.taxRate
+      const moneyOrNull = (value: unknown): number | null => {
+        const parsed = Number(value)
+        return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed) : null
+      }
+      if (patch.compareAtPrice !== undefined) updateData.compareAtPrice = moneyOrNull(patch.compareAtPrice)
+      if (patch.costPrice !== undefined) updateData.costPrice = moneyOrNull(patch.costPrice)
+      if (patch.taxRate !== undefined) {
+        const parsed = Number(patch.taxRate)
+        updateData.taxRate = Number.isFinite(parsed)
+          ? Math.min(1, Math.max(0, parsed > 1 ? parsed / 100 : parsed))
+          : 0
+      }
       if (patch.hsnCode !== undefined) updateData.hsnCode = patch.hsnCode
       if (patch.isFeatured !== undefined) updateData.isFeatured = patch.isFeatured
       if (patch.isFreeSize !== undefined) updateData.isFreeSize = patch.isFreeSize
@@ -1060,7 +1083,7 @@ export class ProductStore {
             productId: id
           })
           newVariants.push({
-            id: this.memoryVariants.length + newVariants.length + 1,
+            id: ++this.nextMemoryVariantId,
             productId: id,
             sku,
             size,
@@ -1154,15 +1177,19 @@ export class ProductStore {
                 size,
                 productId: id
               })
+        const nextStock = Math.max(
+          current.reserved,
+          Math.max(0, Math.round(sharedStock ?? variant.stock ?? current.stock))
+        )
         await db!
           .update(productVariantsTable)
           .set({
             sku,
             size,
             color,
-            price: price !== newProductPrice ? price : null,
-            stock: sharedStock ?? variant.stock ?? current.stock,
-            reorderPoint: variant.reorderPoint ?? current.reorderPoint,
+            price: Math.max(0, Math.round(price)) !== newProductPrice ? Math.max(0, Math.round(price)) : null,
+            stock: nextStock,
+            reorderPoint: Math.max(0, Math.round(variant.reorderPoint ?? current.reorderPoint)),
             weightGrams: weight !== productWeight ? weight : null,
             barcode: variant.barcode ?? current.barcode,
             status: variant.status ?? current.status,
@@ -1184,10 +1211,10 @@ export class ProductStore {
             sku,
             size,
             color,
-            price: price !== newProductPrice ? price : null,
-            stock: sharedStock ?? variant.stock ?? 20,
+            price: Math.max(0, Math.round(price)) !== newProductPrice ? Math.max(0, Math.round(price)) : null,
+            stock: Math.max(0, Math.round(sharedStock ?? variant.stock ?? 20)),
             reserved: 0,
-            reorderPoint: variant.reorderPoint ?? 5,
+            reorderPoint: Math.max(0, Math.round(variant.reorderPoint ?? 5)),
             weightGrams: weight !== productWeight ? weight : null,
             barcode: variant.barcode || null,
             status: variant.status || 'Active'

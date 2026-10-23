@@ -134,12 +134,15 @@ export class RazorpayService {
    * Verifies a Razorpay Webhook signature against raw body payload.
    */
   public verifyWebhookSignature(body: string, receivedSignature: string, webhookSecret: string): boolean {
+    if (!webhookSecret || !receivedSignature) return false
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
       .update(body)
       .digest('hex')
 
-    return expectedSignature === receivedSignature
+    const received = Buffer.from(receivedSignature)
+    const expected = Buffer.from(expectedSignature)
+    return received.length === expected.length && crypto.timingSafeEqual(received, expected)
   }
 }
 

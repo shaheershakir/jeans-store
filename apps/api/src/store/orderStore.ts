@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../db/index.js'
 import {
   customers as customersTable,
@@ -19,7 +19,28 @@ import {
   type DbShipment
 } from '@jeans-store/db'
 import type { CalculatedOrder, Order } from '../schemas/order.js'
-import { assetUrl, keyFromUrl } from '@jeans-store/shared'
+import type { DbExecutor } from '../db/types.js'
+import { assetUrl } from '@jeans-store/shared'
+import { resolveCoupon, recordCouponRedemption, CouponError } from '../services/coupon.js'
+import {
+  confirmReservations,
+  expireReservations,
+  releaseReservations,
+  reserveInventory,
+  restockOrder,
+  type ReservationItem
+} from '../services/inventory.js'
+import { logger } from '../lib/logger.js'
+import { calculatePricing, type PricedLine } from '../services/pricing.js'
+
+export interface CreateOrderPaymentOptions {
+  gateway: 'razorpay' | 'manual'
+  gatewayOrderId?: string | null
+  gatewayPaymentId?: string | null
+  method?: string
+  status?: 'Pending' | 'Paid' | 'Failed'
+  expectedAmount?: number
+}
 
 export type OrderAdminPatch = Partial<Pick<Order, 'status' | 'paymentStatus' | 'carrier' | 'trackingNumber'>>
 
@@ -39,9 +60,10 @@ function toOrder(
   const items: Order['items'] = itemsRows.map((item) => {
     let img: string | undefined = undefined
     if (item.imageKey) {
-      img = item.imageKey.startsWith('http://') || item.imageKey.startsWith('https://') || item.imageKey.startsWith('/')
-        ? item.imageKey
-        : assetUrl(item.imageKey)
+      img =
+        item.imageKey.startsWith('http://') || item.imageKey.startsWith('https://') || item.imageKey.startsWith('/')
+          ? item.imageKey
+          : assetUrl(item.imageKey)
     }
     if (!img && item.productId && productImageMap) {
       img = productImageMap.get(item.productId)
@@ -60,7 +82,13 @@ function toOrder(
       sku: item.sku ?? undefined,
       quantity: item.quantity,
       weightGrams: item.weightGrams,
-      img
+      img,
+      lineTotal: item.lineTotal,
+      discountAmount: item.discountAmount,
+      taxRate: item.taxRate,
+      taxAmount: item.taxAmount,
+      taxableAmount: item.taxableAmount,
+      variantLabel: item.variantLabel ?? undefined
     }
   })
 
@@ -105,7 +133,7 @@ function toOrder(
     taxTotal: row.taxTotal,
     total: row.total,
     weightGrams: row.weightGrams,
-    couponCode: (row as any).couponCode ?? undefined,
+    couponCode: row.couponCode ?? undefined,
     status: row.status,
     paymentStatus: row.paymentStatus as Order['paymentStatus'],
     handoffType: row.handoffType as Order['handoffType'],
@@ -133,11 +161,7 @@ class OrderStore {
     const customerIds = [...new Set(orderRows.map((row) => row.customerId))]
 
     const [allItems, allEvents, allShipments, allPayments, allCustomers] = await Promise.all([
-      db!
-        .select()
-        .from(orderItemsTable)
-        .where(inArray(orderItemsTable.orderId, orderIds))
-        .orderBy(orderItemsTable.id),
+      db!.select().from(orderItemsTable).where(inArray(orderItemsTable.orderId, orderIds)).orderBy(orderItemsTable.id),
       db!
         .select()
         .from(orderEventsTable)
@@ -174,7 +198,18 @@ class OrderStore {
     }
     const paymentByOrder = new Map<number, DbPayment>()
     for (const payment of allPayments) {
-      if (!paymentByOrder.has(payment.orderId)) paymentByOrder.set(payment.orderId, payment)
+      if (payment.orderId === null) continue
+      const current = paymentByOrder.get(payment.orderId)
+      // Prefer the settled attempt; payment attempts are ordered newest first,
+      // so the first settled row wins without hiding a later retry failure.
+      if (!current) paymentByOrder.set(payment.orderId, payment)
+      else if (
+        current.status !== 'Paid' &&
+        current.status !== 'Refunded' &&
+        (payment.status === 'Paid' || payment.status === 'Refunded')
+      ) {
+        paymentByOrder.set(payment.orderId, payment)
+      }
     }
     const customerById = new Map<number, DbCustomer>(allCustomers.map((customer) => [customer.id, customer]))
     const productIdsWithMissingImages = allItems
@@ -182,13 +217,14 @@ class OrderStore {
       .map((item) => item.productId!)
     const uniqueProductIds = [...new Set(productIdsWithMissingImages)]
 
-    const productImages = uniqueProductIds.length > 0
-      ? await db!
-          .select()
-          .from(productImagesTable)
-          .where(inArray(productImagesTable.productId, uniqueProductIds))
-          .orderBy(productImagesTable.position)
-      : []
+    const productImages =
+      uniqueProductIds.length > 0
+        ? await db!
+            .select()
+            .from(productImagesTable)
+            .where(inArray(productImagesTable.productId, uniqueProductIds))
+            .orderBy(productImagesTable.position)
+        : []
 
     const productImageMap = new Map<number, string>()
     for (const img of productImages) {
@@ -236,17 +272,11 @@ class OrderStore {
             )
           : sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail}`
 
-      const rows = await db
-        .select()
-        .from(ordersTable)
-        .where(condition)
-        .orderBy(desc(ordersTable.createdAt))
+      const rows = await db.select().from(ordersTable).where(condition).orderBy(desc(ordersTable.createdAt))
       return this.hydrateOrders(rows)
     }
     if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
-    return this.memoryOrders
-      .filter((order) => order.customerEmail.trim().toLowerCase() === normalizedEmail)
-      .reverse()
+    return this.memoryOrders.filter((order) => order.customerEmail.trim().toLowerCase() === normalizedEmail).reverse()
   }
 
   async listByUserId(userId: number, fallbackEmail?: string): Promise<Order[]> {
@@ -261,25 +291,21 @@ class OrderStore {
             : eq(customersTable.userId, userId)
         )
       const customerIds = customerRows.map((row) => row.id)
-      const condition = customerIds.length > 0
-        ? or(
-            inArray(ordersTable.customerId, customerIds),
-            normalizedEmail ? sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail}` : sql`1=0`
-          )
-        : sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail ?? ''}`
-      const rows = await db
-        .select()
-        .from(ordersTable)
-        .where(condition)
-        .orderBy(desc(ordersTable.createdAt))
+      const condition =
+        customerIds.length > 0
+          ? or(
+              inArray(ordersTable.customerId, customerIds),
+              normalizedEmail ? sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail}` : sql`1=0`
+            )
+          : sql`lower(${ordersTable.customerEmail}) = ${normalizedEmail ?? ''}`
+      const rows = await db.select().from(ordersTable).where(condition).orderBy(desc(ordersTable.createdAt))
       return this.hydrateOrders(rows)
     }
     if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
     return this.memoryOrders
       .filter(
         (order) =>
-          order.userId === userId ||
-          (normalizedEmail && order.customerEmail.trim().toLowerCase() === normalizedEmail)
+          order.userId === userId || (normalizedEmail && order.customerEmail.trim().toLowerCase() === normalizedEmail)
       )
       .reverse()
   }
@@ -317,26 +343,23 @@ class OrderStore {
         .select({ orderId: paymentsTable.orderId })
         .from(paymentsTable)
         .where(eq(paymentsTable.gatewayPaymentId, gatewayPaymentId))
-      if (!payment) return undefined
+      if (!payment || payment.orderId === null) return undefined
       return this.getById(payment.orderId)
     }
     if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
     return this.memoryOrders.find((order) => order.razorpayPaymentId === gatewayPaymentId)
   }
 
-  private async upsertCustomer(input: CalculatedOrder & { userId?: number }): Promise<number> {
+  private async upsertCustomer(executor: DbExecutor, input: CalculatedOrder & { userId?: number }): Promise<number> {
     const email = input.customerEmail.trim().toLowerCase()
     let existing: typeof customersTable.$inferSelect | undefined
 
     if (input.userId) {
-      ;[existing] = await db!
-        .select()
-        .from(customersTable)
-        .where(eq(customersTable.userId, input.userId))
+      ;[existing] = await executor.select().from(customersTable).where(eq(customersTable.userId, input.userId))
     }
 
     if (!existing) {
-      const [byEmail] = await db!
+      const [byEmail] = await executor
         .select()
         .from(customersTable)
         .where(sql`lower(${customersTable.email}) = ${email}`)
@@ -351,7 +374,7 @@ class OrderStore {
     let customerId: number
     if (existing) {
       customerId = existing.id
-      await db!
+      await executor
         .update(customersTable)
         .set({
           name: input.customerName,
@@ -361,7 +384,7 @@ class OrderStore {
         })
         .where(eq(customersTable.id, existing.id))
     } else {
-      const [created] = await db!
+      const [created] = await executor
         .insert(customersTable)
         .values({
           userId: input.userId ?? null,
@@ -373,13 +396,13 @@ class OrderStore {
       customerId = created.id
     }
 
-    const [existingAddress] = await db!
+    const [existingAddress] = await executor
       .select({ id: customerAddressesTable.id })
       .from(customerAddressesTable)
       .where(eq(customerAddressesTable.customerId, customerId))
 
     if (!existingAddress) {
-      await db!.insert(customerAddressesTable).values({
+      await executor.insert(customerAddressesTable).values({
         customerId,
         label: 'Home',
         line1: input.address,
@@ -395,77 +418,163 @@ class OrderStore {
     return customerId
   }
 
-  async create(input: CalculatedOrder & { userId?: number }): Promise<Order> {
+  /**
+   * Re-reads every purchased variant from the database. Prices, tax rates,
+   * names, sizes and images from the browser are never trusted for
+   * persistence; only the variant id and quantity are accepted.
+   */
+  private async loadCatalogLines(
+    executor: DbExecutor,
+    items: CalculatedOrder['items']
+  ): Promise<Array<import('../services/pricing.js').PricedLineInput & { lineTotal: number }>> {
+    const variantIds = [...new Set(items.map((item) => item.variantId))]
+    if (variantIds.length === 0) throw new Error('An order needs at least one saved product variant.')
+
+    const variantRows = await executor.execute(sql`
+      SELECT v.id AS variant_id, v.product_id, v.sku, v.size, v.color, v.price AS variant_price,
+             v.weight_grams AS variant_weight, v.status AS variant_status,
+             p.name AS product_name, p.price AS product_price, p.tax_rate, p.weight_grams AS product_weight,
+             p.is_free_size, p.category_id, p.status AS product_status
+      FROM product_variants v
+      INNER JOIN products p ON p.id = v.product_id
+      WHERE v.id IN (${sql.join(
+        variantIds.map((id) => sql`${id}`),
+        sql`, `
+      )})
+    `)
+    const byVariant = new Map<number, Record<string, unknown>>()
+    for (const row of variantRows.rows) {
+      const record = row as Record<string, unknown>
+      byVariant.set(Number(record.variant_id), record)
+    }
+
+    const productIds = [...new Set([...byVariant.values()].map((row) => Number(row.product_id)))]
+    const imageRows = productIds.length
+      ? await executor.execute(sql`
+          SELECT product_id, storage_key, external_url
+          FROM product_images
+          WHERE product_id IN (${sql.join(
+            productIds.map((id) => sql`${id}`),
+            sql`, `
+          )})
+          ORDER BY product_id, position
+        `)
+      : { rows: [] as Record<string, unknown>[] }
+    const imageByProduct = new Map<number, string>()
+    for (const raw of imageRows.rows) {
+      const row = raw as Record<string, unknown>
+      const productId = Number(row.product_id)
+      if (imageByProduct.has(productId)) continue
+      const image = row.external_url
+        ? String(row.external_url)
+        : row.storage_key
+          ? assetUrl(String(row.storage_key))
+          : ''
+      if (image) imageByProduct.set(productId, image)
+    }
+
+    return items.map((item) => {
+      const row = byVariant.get(item.variantId)
+      if (!row) throw new Error(`Variant ${item.variantId} is no longer available.`)
+      if (String(row.product_status) !== 'active') {
+        throw new Error(`${String(row.product_name)} is not available for purchase.`)
+      }
+      if (String(row.variant_status) !== 'Active') {
+        throw new Error(`Size ${String(row.size)} for ${String(row.product_name)} is no longer available.`)
+      }
+      const productId = Number(row.product_id)
+      if (item.id && item.id !== productId) {
+        throw new Error('A cart item does not belong to the selected product.')
+      }
+      const variantPrice = Number(row.variant_price)
+      const unitPrice = Number.isFinite(variantPrice) && variantPrice > 0 ? variantPrice : Number(row.product_price)
+      const weight = Number(row.variant_weight ?? row.product_weight ?? 0)
+      const quantity = Math.max(1, Math.min(50, Math.round(item.quantity)))
+      return {
+        productId,
+        variantId: item.variantId,
+        name: String(row.product_name),
+        size: String(row.size),
+        color: row.color ? String(row.color) : undefined,
+        sku: row.sku ? String(row.sku) : undefined,
+        quantity,
+        unitPrice,
+        lineTotal: unitPrice * quantity,
+        weightGrams: weight,
+        img: imageByProduct.get(productId),
+        categoryId: Number(row.category_id),
+        isFreeSize: Boolean(row.is_free_size),
+        taxRate: Number(row.tax_rate ?? 0),
+        variantLabel: [row.color, row.size].filter(Boolean).join(' / ')
+      }
+    })
+  }
+
+  async create(
+    input: CalculatedOrder & { userId?: number },
+    options: { payment?: CreateOrderPaymentOptions } = {}
+  ): Promise<Order> {
     const createdAt = new Date()
-    const status = input.handoffType === 'razorpay' ? 'Confirmed' : 'Pending'
-    const paymentStatus = input.handoffType === 'razorpay' ? 'Paid' : 'Pending'
-    const orderWeight = Number((input as { weightGrams?: number }).weightGrams ?? 0)
+    const paymentPaid = options.payment?.status === 'Paid'
+    const status = paymentPaid ? 'Confirmed' : 'Pending'
+    const paymentStatus = paymentPaid ? 'Paid' : 'Pending'
 
     if (isDatabaseConfigured() && db) {
-      const decremented: Array<{ variantId: number; quantity: number }> = []
-      const freeSizeQuantities = new Map<number, { quantity: number; name: string; size: string }>()
-      let createdOrderId: number | null = null
+      const orderId = await db.transaction(async (tx) => {
+        const executor = tx as unknown as DbExecutor
+        const customerId = await this.upsertCustomer(executor, input)
+        const catalogLines = await this.loadCatalogLines(executor, input.items)
 
-      try {
-        for (const item of input.items) {
-          if (!item.variantId) throw new Error(`A saved product variant is required for ${item.name}.`)
-          const [product] = await db
-            .select({ isFreeSize: productsTable.isFreeSize })
-            .from(productsTable)
-            .where(eq(productsTable.id, item.id))
-          if (product?.isFreeSize) {
-            const current = freeSizeQuantities.get(item.id)
-            freeSizeQuantities.set(item.id, {
-              quantity: (current?.quantity ?? 0) + item.quantity,
-              name: item.name,
-              size: item.size
+        let couponId: number | null = null
+        let couponCode: string | null = null
+        let discount = 0
+        if (input.couponCode) {
+          try {
+            const resolved = await resolveCoupon(executor, {
+              code: input.couponCode,
+              customerId,
+              items: catalogLines.map((line) => ({
+                productId: line.productId,
+                categoryId: line.categoryId,
+                lineTotal: line.lineTotal
+              })),
+              subtotal: catalogLines.reduce((sum, line) => sum + line.lineTotal, 0),
+              forUpdate: true
             })
-            continue
+            couponId = resolved.coupon.id
+            couponCode = resolved.code
+            discount = resolved.discount
+          } catch (error) {
+            if (error instanceof CouponError) throw error
+            throw new Error(error instanceof Error ? error.message : 'Unable to validate the discount code.')
           }
-
-          const [variant] = await db
-            .update(productVariants)
-            .set({ stock: sql`${productVariants.stock} - ${item.quantity}`, updatedAt: createdAt })
-            .where(
-              and(
-                eq(productVariants.id, item.variantId),
-                sql`${productVariants.stock} - ${productVariants.reserved} >= ${item.quantity}`
-              )
-            )
-            .returning({ id: productVariants.id })
-          if (!variant) throw new Error(`Insufficient stock for ${item.name} (${item.size}).`)
-          decremented.push({ variantId: item.variantId, quantity: item.quantity })
         }
 
-        for (const [productId, shared] of freeSizeQuantities) {
-          const updatedVariants = await db.transaction(async (tx) => {
-            const variantRows = await tx
-              .select({ id: productVariants.id })
-              .from(productVariants)
-              .where(eq(productVariants.productId, productId))
-            if (variantRows.length === 0) throw new Error(`${shared.name} has no available size variants.`)
+        const pricing = calculatePricing(
+          catalogLines.map((line) => ({
+            productId: line.productId,
+            variantId: line.variantId,
+            name: line.name,
+            size: line.size,
+            color: line.color,
+            sku: line.sku,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            weightGrams: line.weightGrams,
+            img: line.img,
+            categoryId: line.categoryId,
+            isFreeSize: line.isFreeSize,
+            taxRate: line.taxRate,
+            variantLabel: line.variantLabel
+          })),
+          { discount, shipping: input.shipping }
+        )
 
-            const updated = await tx
-              .update(productVariants)
-              .set({ stock: sql`${productVariants.stock} - ${shared.quantity}`, updatedAt: createdAt })
-              .where(
-                and(
-                  eq(productVariants.productId, productId),
-                  sql`${productVariants.stock} - ${productVariants.reserved} >= ${shared.quantity}`
-                )
-              )
-              .returning({ id: productVariants.id })
-            if (updated.length !== variantRows.length) {
-              throw new Error(`${shared.name} (${shared.size}) does not have enough shared stock.`)
-            }
-            return updated
-          })
-          decremented.push(...updatedVariants.map((variant) => ({ variantId: variant.id, quantity: shared.quantity })))
+        if (options.payment?.expectedAmount !== undefined && options.payment.expectedAmount !== pricing.total) {
+          throw new Error('The captured payment amount no longer matches the server-calculated order total.')
         }
 
-        const customerId = await this.upsertCustomer(input)
-
-        const [row] = await db
+        const [row] = await executor
           .insert(ordersTable)
           .values({
             orderNumber: input.orderNumber,
@@ -479,38 +588,78 @@ class OrderStore {
             state: input.state,
             pincode: input.pincode,
             notes: input.notes ?? null,
-            subtotal: input.subtotal,
-            discountTotal: (input as { discountTotal?: number }).discountTotal ?? 0,
-            shipping: input.shipping,
-            taxTotal: (input as { taxTotal?: number }).taxTotal ?? 0,
-            total: input.total,
-            weightGrams: orderWeight,
+            subtotal: pricing.subtotal,
+            discountTotal: pricing.discountTotal,
+            shipping: pricing.shipping,
+            taxTotal: pricing.taxTotal,
+            total: pricing.total,
+            weightGrams: pricing.weightGrams,
+            couponId,
+            couponCode,
             status,
             paymentStatus,
             handoffType: input.handoffType
           })
           .returning()
 
-        createdOrderId = row.id
-
-        for (const item of input.items) {
-          const imageKey = item.img ? (keyFromUrl(item.img) || item.img) : null
-          await db.insert(orderItemsTable).values({
+        for (const line of pricing.lines) {
+          await executor.insert(orderItemsTable).values({
             orderId: row.id,
-            productId: item.id || null,
-            variantId: item.variantId || null,
-            sku: item.sku ?? null,
-            name: item.name,
-            size: item.size,
-            unitPrice: item.priceNum,
-            quantity: item.quantity,
-            lineTotal: item.priceNum * item.quantity,
-            weightGrams: item.weightGrams ?? 0,
-            imageKey
+            productId: line.productId,
+            variantId: line.variantId,
+            sku: line.sku ?? null,
+            name: line.name,
+            size: line.size,
+            color: line.color ?? null,
+            unitPrice: line.unitPrice,
+            quantity: line.quantity,
+            lineTotal: line.lineTotal,
+            discountAmount: line.discountAmount,
+            taxableAmount: line.taxableAmount,
+            taxRate: line.taxRate,
+            taxAmount: line.taxAmount,
+            variantLabel: line.variantLabel || null,
+            weightGrams: line.weightGrams,
+            imageKey: line.img ?? null
           })
         }
 
-        await db.insert(orderEventsTable).values({
+        const reservationItems: ReservationItem[] = pricing.lines.map((line) => ({
+          productId: line.productId,
+          variantId: line.variantId,
+          quantity: line.quantity,
+          isFreeSize: Boolean(line.isFreeSize),
+          sku: line.sku
+        }))
+
+        await expireReservations(executor, 50)
+
+        const gatewayOrderId = options.payment?.gatewayOrderId ?? null
+        let confirmed = 0
+        if (gatewayOrderId) {
+          confirmed = await confirmReservations(executor, {
+            gatewayOrderId,
+            orderId: row.id,
+            expectedItems: reservationItems
+          })
+        }
+        if (confirmed === 0) {
+          await reserveInventory(executor, {
+            orderId: row.id,
+            reservationKeyPrefix: `order:${row.id}`,
+            items: reservationItems,
+            ttlSeconds: paymentPaid ? 15 * 60 : 20 * 60,
+            reason: paymentPaid ? 'Order inventory reserved' : 'Checkout inventory reserved'
+          })
+          // Manual, WhatsApp, email and COD orders are final at creation time.
+          // Online payments without a gateway reference are treated the same way.
+          // Only a Razorpay hold stays reserved until verification confirms it.
+          if (paymentPaid || !gatewayOrderId) {
+            await confirmReservations(executor, { orderId: row.id })
+          }
+        }
+
+        await executor.insert(orderEventsTable).values({
           orderId: row.id,
           kind: 'status',
           status,
@@ -520,39 +669,120 @@ class OrderStore {
           createdAt
         })
 
-        const method = input.paymentMethod ?? (input.handoffType === 'cod' ? 'COD' : input.handoffType === 'razorpay' ? 'Razorpay' : 'Manual')
-        await db.insert(paymentsTable).values({
-          orderId: row.id,
-          method,
-          amount: input.total,
-          status: paymentStatus,
-          gateway: input.handoffType === 'razorpay' ? 'razorpay' : 'manual',
-          gatewayOrderId: input.razorpayOrderId ?? null,
-          gatewayPaymentId: input.razorpayPaymentId ?? input.paymentId ?? null,
-          settledAt: paymentStatus === 'Paid' ? createdAt : null
-        })
+        if (options.payment?.gateway === 'razorpay') {
+          const attached = await executor
+            .update(paymentsTable)
+            .set({
+              orderId: row.id,
+              orderNumber: row.orderNumber,
+              gatewayPaymentId: options.payment.gatewayPaymentId ?? null,
+              status: paymentStatus,
+              settledAt: paymentPaid ? createdAt : null,
+              verifiedAt: paymentPaid ? createdAt : null,
+              failureReason: null,
+              updatedAt: createdAt
+            })
+            .where(
+              and(
+                eq(paymentsTable.gateway, 'razorpay'),
+                eq(paymentsTable.gatewayOrderId, gatewayOrderId ?? ''),
+                or(isNull(paymentsTable.orderId), eq(paymentsTable.orderId, row.id))
+              )
+            )
+            .returning({ id: paymentsTable.id })
 
-        return (await this.getById(row.id))!
-      } catch (error) {
-        if (createdOrderId) {
-          await db.delete(ordersTable).where(eq(ordersTable.id, createdOrderId)).catch(() => {})
+          if (attached.length === 0) {
+            await executor.insert(paymentsTable).values({
+              orderId: row.id,
+              orderNumber: row.orderNumber,
+              method: options.payment.method ?? 'Razorpay',
+              amount: pricing.total,
+              status: paymentStatus,
+              gateway: 'razorpay',
+              gatewayOrderId,
+              gatewayPaymentId: options.payment.gatewayPaymentId ?? null,
+              settledAt: paymentPaid ? createdAt : null,
+              verifiedAt: paymentPaid ? createdAt : null
+            })
+          }
+        } else {
+          await executor.insert(paymentsTable).values({
+            orderId: row.id,
+            orderNumber: row.orderNumber,
+            method: input.paymentMethod ?? (input.handoffType === 'cod' ? 'COD' : 'Manual'),
+            amount: pricing.total,
+            status: paymentStatus,
+            gateway: 'manual',
+            gatewayPaymentId: input.paymentId ?? null,
+            settledAt: paymentPaid ? createdAt : null
+          })
         }
-        for (const reserved of decremented.reverse()) {
-          await db
-            .update(productVariants)
-            .set({ stock: sql`${productVariants.stock} + ${reserved.quantity}`, updatedAt: new Date() })
-            .where(eq(productVariants.id, reserved.variantId))
+
+        if (couponId) {
+          await recordCouponRedemption(executor, {
+            couponId,
+            orderId: row.id,
+            customerId,
+            amount: pricing.discountTotal
+          })
         }
-        throw error
-      }
+
+        return row.id
+      })
+
+      const created = await this.getById(orderId)
+      if (!created) throw new Error('Order could not be loaded after creation.')
+      return created
     }
 
     if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
     const orderId = this.memoryOrders.length + 1
+    const priced = calculatePricing(
+      input.items.map((item) => ({
+        productId: item.id,
+        variantId: item.variantId,
+        name: item.name,
+        size: item.size,
+        color: (item as { color?: string }).color,
+        sku: item.sku,
+        quantity: item.quantity,
+        unitPrice: item.priceNum,
+        weightGrams: item.weightGrams ?? 0,
+        img: item.img,
+        taxRate: item.taxRate,
+        variantLabel: item.variantLabel
+      })),
+      { shipping: input.shipping }
+    )
+    const items: Order['items'] = priced.lines.map((line) => ({
+      id: line.productId,
+      variantId: line.variantId,
+      name: line.name,
+      size: line.size,
+      price: line.price,
+      priceNum: line.unitPrice,
+      sku: line.sku,
+      quantity: line.quantity,
+      weightGrams: line.weightGrams,
+      img: line.img,
+      lineTotal: line.lineTotal,
+      discountAmount: line.discountAmount,
+      taxRate: line.taxRate,
+      taxAmount: line.taxAmount,
+      taxableAmount: line.taxableAmount,
+      variantLabel: line.variantLabel
+    }))
     const order: Order = {
       id: orderId,
       userId: input.userId ?? undefined,
       ...input,
+      items,
+      subtotal: priced.subtotal,
+      discountTotal: priced.discountTotal,
+      shipping: priced.shipping,
+      taxTotal: priced.taxTotal,
+      total: priced.total,
+      weightGrams: priced.weightGrams,
       store: input.store || 'teesgarage',
       status,
       paymentStatus,
@@ -585,6 +815,20 @@ class OrderStore {
     const statusChanged = patch.status !== undefined && patch.status !== current.status
 
     if (isDatabaseConfigured() && db) {
+      // Restore inventory before recording a terminal status. If this fails, the
+      // order stays in its previous state and the admin can retry; doing it the
+      // other way round would leave a cancelled order with unreserved stock.
+      if (statusChanged && (patch.status === 'Cancelled' || patch.status === 'Returned')) {
+        await db.transaction(async (tx) => {
+          const executor = tx as unknown as DbExecutor
+          await releaseReservations(executor, {
+            orderId: id,
+            reason: `Order ${patch.status?.toLowerCase()}`
+          })
+          await restockOrder(executor, id, `Order ${patch.status?.toLowerCase()}`)
+        })
+      }
+
       if (statusChanged) {
         await db.insert(orderEventsTable).values({
           orderId: id,
@@ -613,7 +857,7 @@ class OrderStore {
             .update(paymentsTable)
             .set({
               status: patch.paymentStatus,
-              settledAt: patch.paymentStatus === 'Paid' ? latestPayment.settledAt ?? now : null
+              settledAt: patch.paymentStatus === 'Paid' ? (latestPayment.settledAt ?? now) : null
             })
             .where(eq(paymentsTable.id, latestPayment.id))
         } else {
@@ -647,16 +891,22 @@ class OrderStore {
             ? 'Delivered'
             : patch.status === 'Shipped'
               ? 'In Transit'
-              : existingShipment?.status ?? 'Booked'
+              : (existingShipment?.status ?? 'Booked')
         const shippedAt =
-          existingShipment?.shippedAt ??
-          (patch.status === 'Shipped' || patch.status === 'Delivered' ? now : null)
-        const deliveredAt = patch.status === 'Delivered' ? now : existingShipment?.deliveredAt ?? null
+          existingShipment?.shippedAt ?? (patch.status === 'Shipped' || patch.status === 'Delivered' ? now : null)
+        const deliveredAt = patch.status === 'Delivered' ? now : (existingShipment?.deliveredAt ?? null)
 
         if (existingShipment) {
           await db
             .update(shipmentsTable)
-            .set({ carrier, trackingNumber, status: shipmentStatus, shippedAt, deliveredAt, updatedAt: now })
+            .set({
+              carrier,
+              trackingNumber,
+              status: shipmentStatus,
+              shippedAt,
+              deliveredAt,
+              updatedAt: now
+            })
             .where(eq(shipmentsTable.id, existingShipment.id))
         } else {
           const [byTracking] = await db
@@ -666,7 +916,14 @@ class OrderStore {
           if (byTracking) {
             await db
               .update(shipmentsTable)
-              .set({ orderId: id, carrier, status: shipmentStatus, shippedAt, deliveredAt, updatedAt: now })
+              .set({
+                orderId: id,
+                carrier,
+                status: shipmentStatus,
+                shippedAt,
+                deliveredAt,
+                updatedAt: now
+              })
               .where(eq(shipmentsTable.id, byTracking.id))
           } else {
             await db.insert(shipmentsTable).values({
@@ -732,7 +989,13 @@ class OrderStore {
     if (process.env.NODE_ENV === 'production') throw new Error('Order database is not configured.')
     const adminNotes = [
       ...current.adminNotes,
-      { id: `note-${now.getTime()}`, text, at: now.toISOString(), by: author, internal: true }
+      {
+        id: `note-${now.getTime()}`,
+        text,
+        at: now.toISOString(),
+        by: author,
+        internal: true
+      }
     ]
     const updated = { ...current, adminNotes, updatedAt: now }
     this.memoryOrders = this.memoryOrders.map((order) => (order.id === id ? updated : order))

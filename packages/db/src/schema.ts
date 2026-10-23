@@ -89,7 +89,11 @@ export const categories = pgTable(
     isActive: boolean('is_active').notNull().default(true),
     ...timestamps
   },
-  (t) => [index('categories_parent_sort_idx').on(t.parentId, t.sortOrder)]
+  (t) => [
+    index('categories_parent_sort_idx').on(t.parentId, t.sortOrder),
+    uniqueIndex('categories_slug_lower_idx').on(sql`lower(${t.slug})`),
+    check('categories_sort_order_check', sql.raw('sort_order >= 0'))
+  ]
 )
 
 export const collections = pgTable(
@@ -104,7 +108,11 @@ export const collections = pgTable(
     sortOrder: integer('sort_order').notNull().default(0),
     ...timestamps
   },
-  (t) => [check('collections_status_check', sql.raw("status IN ('Active', 'Inactive')"))]
+  (t) => [
+    uniqueIndex('collections_slug_lower_idx').on(sql`lower(${t.slug})`),
+    check('collections_status_check', sql.raw("status IN ('Active', 'Inactive')")),
+    check('collections_sort_order_check', sql.raw('sort_order >= 0'))
+  ]
 )
 
 export const products = pgTable(
@@ -137,8 +145,13 @@ export const products = pgTable(
     index('products_category_status_idx').on(t.categoryId, t.status),
     index('products_collection_idx').on(t.collectionId),
     index('products_status_created_idx').on(t.status, t.createdAt),
+    uniqueIndex('products_slug_lower_idx').on(sql`lower(${t.slug})`),
     check('products_status_check', sql.raw("status IN ('draft', 'active', 'archived')")),
     check('products_price_check', sql.raw('price >= 0')),
+    check('products_compare_at_price_check', sql.raw('compare_at_price IS NULL OR compare_at_price >= 0')),
+    check('products_cost_price_check', sql.raw('cost_price IS NULL OR cost_price >= 0')),
+    check('products_tax_rate_check', sql.raw('tax_rate >= 0 AND tax_rate <= 1')),
+    check('products_review_count_check', sql.raw('review_count >= 0')),
     check('products_weight_check', sql.raw('weight_grams > 0')),
     check('products_rating_check', sql.raw('rating_average >= 0 AND rating_average <= 5'))
   ]
@@ -189,12 +202,14 @@ export const productVariants = pgTable(
   },
   (t) => [
     uniqueIndex('product_variants_product_color_size_idx').on(t.productId, t.color, t.size),
+    uniqueIndex('product_variants_sku_lower_idx').on(sql`lower(${t.sku})`),
     uniqueIndex('product_variants_barcode_idx').on(t.barcode),
     index('product_variants_product_idx').on(t.productId),
     check('product_variants_stock_check', sql.raw('stock >= 0')),
     check('product_variants_reserved_check', sql.raw('reserved >= 0')),
     check('product_variants_reserved_lte_stock_check', sql.raw('reserved <= stock')),
     check('product_variants_price_check', sql.raw('price IS NULL OR price >= 0')),
+    check('product_variants_reorder_point_check', sql.raw('reorder_point >= 0')),
     check('product_variants_weight_check', sql.raw('weight_grams IS NULL OR weight_grams > 0')),
     check('product_variants_status_check', sql.raw("status IN ('Active', 'Inactive')"))
   ]
@@ -297,8 +312,18 @@ export const coupons = pgTable(
   },
   (t) => [
     uniqueIndex('coupons_code_lower_idx').on(sql`lower(${t.code})`),
+    index('coupons_active_window_idx').on(t.isActive, t.startsAt, t.endsAt),
+    check('coupons_code_normalized_check', sql.raw('code = lower(code)')),
     check('coupons_type_check', sql.raw("type IN ('percentage', 'fixed')")),
-    check('coupons_value_check', sql.raw('value > 0'))
+    check(
+      'coupons_value_check',
+      sql.raw("(type = 'percentage' AND value > 0 AND value <= 100) OR (type = 'fixed' AND value > 0)")
+    ),
+    check('coupons_min_order_value_check', sql.raw('min_order_value >= 0')),
+    check('coupons_max_discount_check', sql.raw('max_discount IS NULL OR max_discount > 0')),
+    check('coupons_usage_limit_check', sql.raw('usage_limit IS NULL OR usage_limit > 0')),
+    check('coupons_per_customer_limit_check', sql.raw('per_customer_limit > 0')),
+    check('coupons_window_check', sql.raw('starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at'))
   ]
 )
 
@@ -345,6 +370,11 @@ export const promotions = pgTable(
   (t) => [
     check('promotions_target_check', sql.raw("target IN ('Product', 'Category', 'Collection', 'Color')")),
     check('promotions_discount_type_check', sql.raw("discount_type IN ('percentage', 'fixed')")),
+    check(
+      'promotions_discount_value_check',
+      sql.raw("discount_value > 0 AND (discount_type <> 'percentage' OR discount_value <= 100)")
+    ),
+    check('promotions_window_check', sql.raw('starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at')),
     check('promotions_status_check', sql.raw("status IN ('Scheduled', 'Active', 'Ended')"))
   ]
 )
@@ -364,7 +394,11 @@ export const banners = pgTable(
     sortOrder: integer('sort_order').default(0).notNull(),
     ...timestamps
   },
-  (t) => [check('banners_status_check', sql.raw("status IN ('Active', 'Scheduled', 'Ended')"))]
+  (t) => [
+    check('banners_status_check', sql.raw("status IN ('Active', 'Scheduled', 'Ended')")),
+    check('banners_window_check', sql.raw('starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at')),
+    check('banners_sort_order_check', sql.raw('sort_order >= 0'))
+  ]
 )
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -399,12 +433,14 @@ export const orders = pgTable(
     currency: varchar('currency', { length: 3 }).default('INR').notNull(),
     weightGrams: integer('weight_grams').default(0).notNull(),
     couponId: integer('coupon_id').references(() => coupons.id, { onDelete: 'set null' }),
+    couponCode: varchar('coupon_code', { length: 60 }),
     ...timestamps
   },
   (t) => [
     index('orders_customer_created_idx').on(t.customerId, t.createdAt),
     index('orders_lower_email_idx').on(sql`lower(${t.customerEmail})`),
     index('orders_status_created_idx').on(t.status, t.createdAt),
+    index('orders_payment_status_created_idx').on(t.paymentStatus, t.createdAt),
     check(
       'orders_status_check',
       sql.raw(
@@ -417,6 +453,11 @@ export const orders = pgTable(
     ),
     check('orders_handoff_type_check', sql.raw("handoff_type IN ('whatsapp', 'email', 'razorpay', 'cod')")),
     check('orders_totals_check', sql.raw('subtotal >= 0 AND discount_total >= 0 AND shipping >= 0 AND tax_total >= 0 AND total >= 0')),
+    check('orders_discount_lte_subtotal_check', sql.raw('discount_total <= subtotal')),
+    check(
+      'orders_total_reconciliation_check',
+      sql.raw('total = subtotal - discount_total + shipping + tax_total')
+    ),
     check('orders_weight_check', sql.raw('weight_grams >= 0'))
   ]
 )
@@ -437,6 +478,11 @@ export const orderItems = pgTable(
     unitPrice: integer('unit_price').notNull(),
     quantity: integer('quantity').notNull(),
     lineTotal: integer('line_total').notNull(),
+    discountAmount: integer('discount_amount').default(0).notNull(),
+    taxableAmount: integer('taxable_amount').default(0).notNull(),
+    taxRate: real('tax_rate').default(0).notNull(),
+    taxAmount: integer('tax_amount').default(0).notNull(),
+    variantLabel: varchar('variant_label', { length: 120 }),
     weightGrams: integer('weight_grams').default(0).notNull(),
     imageKey: text('image_key'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
@@ -447,7 +493,13 @@ export const orderItems = pgTable(
     index('order_items_product_idx').on(t.productId),
     check('order_items_quantity_check', sql.raw('quantity > 0')),
     check('order_items_unit_price_check', sql.raw('unit_price >= 0')),
-    check('order_items_line_total_check', sql.raw('line_total >= 0'))
+    check('order_items_line_total_check', sql.raw('line_total >= 0')),
+    check('order_items_line_total_reconciliation_check', sql.raw('line_total = unit_price * quantity')),
+    check('order_items_discount_amount_check', sql.raw('discount_amount >= 0 AND discount_amount <= line_total')),
+    check('order_items_taxable_amount_check', sql.raw('taxable_amount >= 0 AND taxable_amount = line_total - discount_amount')),
+    check('order_items_tax_rate_check', sql.raw('tax_rate >= 0 AND tax_rate <= 1')),
+    check('order_items_tax_amount_check', sql.raw('tax_amount >= 0')),
+    check('order_items_weight_check', sql.raw('weight_grams >= 0'))
   ]
 )
 
@@ -476,22 +528,67 @@ export const payments = pgTable(
   'payments',
   {
     id: serial('id').primaryKey(),
-    orderId: integer('order_id')
-      .notNull()
-      .references(() => orders.id, { onDelete: 'cascade' }),
+    // Payment attempts may exist before an order is created (for example while
+    // Razorpay checkout is open). They are attached to the order once verified.
+    orderId: integer('order_id').references(() => orders.id, { onDelete: 'cascade' }),
+    orderNumber: varchar('order_number', { length: 50 }),
     method: varchar('method', { length: 40 }).notNull(),
     amount: integer('amount').notNull(),
+    amountRefunded: integer('amount_refunded').default(0).notNull(),
+    currency: varchar('currency', { length: 3 }).default('INR').notNull(),
     status: varchar('status', { length: 20 }).default('Pending').notNull(),
     gateway: varchar('gateway', { length: 40 }).default('razorpay').notNull(),
     gatewayOrderId: varchar('gateway_order_id', { length: 100 }),
-    gatewayPaymentId: varchar('gateway_payment_id', { length: 100 }).unique(),
+    gatewayPaymentId: varchar('gateway_payment_id', { length: 100 }),
+    idempotencyKey: varchar('idempotency_key', { length: 160 }),
+    failureReason: text('failure_reason'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    verifiedAt: timestamp('verified_at', { withTimezone: true }),
     settledAt: timestamp('settled_at', { withTimezone: true })
   },
   (t) => [
     index('payments_order_idx').on(t.orderId),
+    index('payments_status_created_idx').on(t.status, t.createdAt),
+    index('payments_order_number_idx').on(t.orderNumber),
+    uniqueIndex('payments_gateway_order_idx')
+      .on(t.gateway, t.gatewayOrderId)
+      .where(sql`gateway_order_id IS NOT NULL`),
+    uniqueIndex('payments_gateway_payment_idx')
+      .on(t.gateway, t.gatewayPaymentId)
+      .where(sql`gateway_payment_id IS NOT NULL`),
+    uniqueIndex('payments_idempotency_key_idx')
+      .on(t.idempotencyKey)
+      .where(sql`idempotency_key IS NOT NULL`),
     check('payments_amount_check', sql.raw('amount >= 0')),
-    check('payments_status_check', sql.raw("status IN ('Pending', 'Paid', 'Failed', 'Refunded')"))
+    check('payments_amount_refunded_check', sql.raw('amount_refunded >= 0 AND amount_refunded <= amount')),
+    check('payments_status_check', sql.raw("status IN ('Pending', 'Authorized', 'Paid', 'Failed', 'Cancelled', 'Refunded')"))
+  ]
+)
+
+export const paymentEvents = pgTable(
+  'payment_events',
+  {
+    id: serial('id').primaryKey(),
+    provider: varchar('provider', { length: 40 }).default('razorpay').notNull(),
+    eventId: varchar('event_id', { length: 160 }).notNull(),
+    eventType: varchar('event_type', { length: 80 }).notNull(),
+    gatewayOrderId: varchar('gateway_order_id', { length: 100 }),
+    gatewayPaymentId: varchar('gateway_payment_id', { length: 100 }),
+    payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
+    status: varchar('status', { length: 20 }).default('Received').notNull(),
+    attempts: integer('attempts').default(0).notNull(),
+    lastError: text('last_error'),
+    receivedAt: timestamp('received_at', { withTimezone: true }).defaultNow().notNull(),
+    processedAt: timestamp('processed_at', { withTimezone: true })
+  },
+  (t) => [
+    uniqueIndex('payment_events_provider_event_idx').on(t.provider, t.eventId),
+    index('payment_events_status_received_idx').on(t.status, t.receivedAt),
+    index('payment_events_gateway_order_idx').on(t.gatewayOrderId),
+    index('payment_events_gateway_payment_idx').on(t.gatewayPaymentId),
+    check('payment_events_status_check', sql.raw("status IN ('Received', 'Processed', 'Failed', 'Ignored', 'Unmatched')")),
+    check('payment_events_attempts_check', sql.raw('attempts >= 0'))
   ]
 )
 
@@ -512,9 +609,14 @@ export const shipments = pgTable(
   },
   (t) => [
     index('shipments_order_idx').on(t.orderId),
+    index('shipments_status_created_idx').on(t.status, t.createdAt),
     check(
       'shipments_status_check',
       sql.raw("status IN ('Pending', 'Booked', 'In Transit', 'Delivered', 'Failed', 'RTO')")
+    ),
+    check(
+      'shipments_delivery_window_check',
+      sql.raw('delivered_at IS NULL OR shipped_at IS NULL OR delivered_at >= shipped_at')
     )
   ]
 )
@@ -546,7 +648,8 @@ export const returnRequests = pgTable(
         "status IN ('Requested', 'Approved', 'Rejected', 'Pickup Scheduled', 'Received', 'Refunded', 'Completed')"
       )
     ),
-    check('return_requests_amount_check', sql.raw('amount >= 0'))
+    check('return_requests_amount_check', sql.raw('amount >= 0')),
+    check('return_requests_details_check', sql.raw('length(btrim(reason)) > 0'))
   ]
 )
 
@@ -571,7 +674,10 @@ export const returnItems = pgTable(
   },
   (t) => [
     index('return_items_return_idx').on(t.returnId),
-    check('return_items_quantity_check', sql.raw('quantity > 0'))
+    index('return_items_order_item_idx').on(t.orderItemId),
+    check('return_items_quantity_check', sql.raw('quantity > 0')),
+    check('return_items_unit_price_check', sql.raw('unit_price >= 0')),
+    check('return_items_line_total_check', sql.raw('line_total >= 0'))
   ]
 )
 
@@ -585,16 +691,30 @@ export const refunds = pgTable(
       .references(() => orders.id, { onDelete: 'cascade' }),
     returnId: integer('return_id').references(() => returnRequests.id, { onDelete: 'set null' }),
     customerId: integer('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+    paymentId: integer('payment_id').references(() => payments.id, { onDelete: 'set null' }),
     amount: integer('amount').notNull(),
     reason: text('reason'),
     method: varchar('method', { length: 40 }).notNull(),
     status: varchar('status', { length: 20 }).default('Pending').notNull(),
     transactionId: varchar('transaction_id', { length: 120 }),
+    gatewayRefundId: varchar('gateway_refund_id', { length: 120 }),
+    idempotencyKey: varchar('idempotency_key', { length: 160 }),
+    failureReason: text('failure_reason'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
     processedAt: timestamp('processed_at', { withTimezone: true })
   },
   (t) => [
     index('refunds_order_idx').on(t.orderId),
+    index('refunds_order_status_idx').on(t.orderId, t.status),
+    index('refunds_status_created_idx').on(t.status, t.createdAt),
+    index('refunds_payment_idx').on(t.paymentId),
+    uniqueIndex('refunds_gateway_refund_idx')
+      .on(t.method, t.gatewayRefundId)
+      .where(sql`gateway_refund_id IS NOT NULL`),
+    uniqueIndex('refunds_idempotency_key_idx')
+      .on(t.idempotencyKey)
+      .where(sql`idempotency_key IS NOT NULL`),
     check('refunds_status_check', sql.raw("status IN ('Pending', 'Processed', 'Failed')")),
     check('refunds_amount_check', sql.raw('amount >= 0'))
   ]
@@ -612,9 +732,17 @@ export const couponRedemptions = pgTable(
       .references(() => orders.id, { onDelete: 'cascade' }),
     customerId: integer('customer_id').references(() => customers.id, { onDelete: 'set null' }),
     amount: integer('amount').default(0).notNull(),
+    status: varchar('status', { length: 20 }).default('Redeemed').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
   },
-  (t) => [uniqueIndex('coupon_redemptions_coupon_order_idx').on(t.couponId, t.orderId)]
+  (t) => [
+    uniqueIndex('coupon_redemptions_coupon_order_idx').on(t.couponId, t.orderId),
+    index('coupon_redemptions_coupon_status_idx').on(t.couponId, t.status),
+    index('coupon_redemptions_coupon_customer_idx').on(t.couponId, t.customerId),
+    index('coupon_redemptions_order_idx').on(t.orderId),
+    check('coupon_redemptions_amount_check', sql.raw('amount >= 0')),
+    check('coupon_redemptions_status_check', sql.raw("status IN ('Pending', 'Redeemed', 'Released')"))
+  ]
 )
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -682,12 +810,48 @@ export const reviewImages = pgTable(
  * Operations & configuration
  * ──────────────────────────────────────────────────────────────────────────── */
 
+export const inventoryReservations = pgTable(
+  'inventory_reservations',
+  {
+    id: serial('id').primaryKey(),
+    orderId: integer('order_id').references(() => orders.id, { onDelete: 'cascade' }),
+    gatewayOrderId: varchar('gateway_order_id', { length: 100 }),
+    reservationKey: varchar('reservation_key', { length: 200 }).notNull().unique(),
+    productId: integer('product_id').references(() => products.id, { onDelete: 'set null' }),
+    variantId: integer('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
+    quantity: integer('quantity').notNull(),
+    status: varchar('status', { length: 20 }).default('active').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+    releasedAt: timestamp('released_at', { withTimezone: true }),
+    releaseReason: text('release_reason'),
+    ...timestamps
+  },
+  (t) => [
+    index('inventory_reservations_order_idx').on(t.orderId),
+    index('inventory_reservations_gateway_status_idx').on(t.gatewayOrderId, t.status),
+    index('inventory_reservations_status_expiry_idx').on(t.status, t.expiresAt),
+    index('inventory_reservations_variant_idx').on(t.variantId),
+    check('inventory_reservations_quantity_check', sql.raw('quantity > 0')),
+    check(
+      'inventory_reservations_status_check',
+      sql.raw("status IN ('active', 'confirmed', 'released', 'expired')")
+    ),
+    check(
+      'inventory_reservations_reference_check',
+      sql.raw('order_id IS NOT NULL OR gateway_order_id IS NOT NULL')
+    )
+  ]
+)
+
 export const inventoryMovements = pgTable(
   'inventory_movements',
   {
     id: serial('id').primaryKey(),
     productId: integer('product_id').references(() => products.id, { onDelete: 'set null' }),
     variantId: integer('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
+    orderId: integer('order_id').references(() => orders.id, { onDelete: 'set null' }),
+    reservationId: integer('reservation_id').references(() => inventoryReservations.id, { onDelete: 'set null' }),
     sku: varchar('sku', { length: 100 }),
     type: varchar('type', { length: 20 }).notNull(),
     delta: integer('delta').notNull(),
@@ -695,6 +859,7 @@ export const inventoryMovements = pgTable(
     after: integer('after').notNull(),
     reason: text('reason'),
     reference: varchar('reference', { length: 120 }),
+    dedupeKey: varchar('dedupe_key', { length: 200 }),
     actorAdminId: integer('actor_admin_id').references(() => adminUsers.id, { onDelete: 'set null' }),
     actorName: varchar('actor_name', { length: 255 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
@@ -702,9 +867,18 @@ export const inventoryMovements = pgTable(
   (t) => [
     index('inventory_movements_variant_created_idx').on(t.variantId, t.createdAt),
     index('inventory_movements_product_created_idx').on(t.productId, t.createdAt),
+    index('inventory_movements_order_idx').on(t.orderId),
+    index('inventory_movements_reference_idx').on(t.reference),
+    uniqueIndex('inventory_movements_dedupe_key_idx')
+      .on(t.dedupeKey)
+      .where(sql`dedupe_key IS NOT NULL`),
     check(
       'inventory_movements_type_check',
       sql.raw("type IN ('PURCHASE', 'SALE', 'ADJUSTMENT', 'RETURN', 'RESERVATION', 'RELEASE')")
+    ),
+    check(
+      'inventory_movements_balance_check',
+      sql.raw('before >= 0 AND after >= 0 AND after = before + delta')
     )
   ]
 )
@@ -761,7 +935,10 @@ export const storeSettings = pgTable('store_settings', {
   notifyInventoryAlerts: boolean('notify_inventory_alerts').default(true).notNull(),
   notifyReviewAlerts: boolean('notify_review_alerts').default(true).notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
-})
+}, (t) => [
+  check('store_settings_tax_rate_check', sql.raw('tax_rate >= 0 AND tax_rate <= 100')),
+  check('store_settings_return_window_check', sql.raw('return_window_days >= 0'))
+])
 
 export const homepageSections = pgTable(
   'homepage_sections',
@@ -779,7 +956,8 @@ export const homepageSections = pgTable(
       sql.raw(
         "type IN ('announcement', 'hero', 'categories', 'new_arrivals', 'featured_collection', 'best_sellers', 'brand_story', 'looks', 'instagram', 'reviews', 'trust_bar', 'catalog')"
       )
-    )
+    ),
+    check('homepage_sections_sort_order_check', sql.raw('sort_order >= 0'))
   ]
 )
 
@@ -797,7 +975,10 @@ export const navigationItems = pgTable(
     openInNewTab: boolean('open_in_new_tab').default(false).notNull(),
     ...timestamps
   },
-  (t) => [check('navigation_items_type_check', sql.raw("type IN ('category', 'collection', 'custom')"))]
+  (t) => [
+    check('navigation_items_type_check', sql.raw("type IN ('category', 'collection', 'custom')")),
+    check('navigation_items_sort_order_check', sql.raw('sort_order >= 0'))
+  ]
 )
 
 export const shippingZones = pgTable('shipping_zones', {
@@ -806,7 +987,11 @@ export const shippingZones = pgTable('shipping_zones', {
   isDefault: boolean('is_default').default(false).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   ...timestamps
-})
+}, (t) => [
+  uniqueIndex('shipping_zones_one_default_idx')
+    .on(t.isDefault)
+    .where(sql`is_default = true`)
+])
 
 export const shippingZoneRegions = pgTable(
   'shipping_zone_regions',
@@ -843,6 +1028,18 @@ export const shippingMethods = pgTable(
     check(
       'shipping_methods_weights_check',
       sql.raw('base_weight_grams > 0 AND base_charge >= 0 AND additional_weight_grams > 0 AND additional_charge >= 0')
+    ),
+    check(
+      'shipping_methods_estimate_check',
+      sql.raw(
+        'estimated_days_min IS NULL OR estimated_days_min >= 0'
+      )
+    ),
+    check(
+      'shipping_methods_estimate_range_check',
+      sql.raw(
+        'estimated_days_max IS NULL OR (estimated_days_max >= 0 AND (estimated_days_min IS NULL OR estimated_days_max >= estimated_days_min))'
+      )
     )
   ]
 )
@@ -883,6 +1080,8 @@ export type DbOrderEvent = typeof orderEvents.$inferSelect
 export type DbNewOrderEvent = typeof orderEvents.$inferInsert
 export type DbPayment = typeof payments.$inferSelect
 export type DbNewPayment = typeof payments.$inferInsert
+export type DbPaymentEvent = typeof paymentEvents.$inferSelect
+export type DbNewPaymentEvent = typeof paymentEvents.$inferInsert
 export type DbShipment = typeof shipments.$inferSelect
 export type DbNewShipment = typeof shipments.$inferInsert
 export type DbReturnRequest = typeof returnRequests.$inferSelect
@@ -899,6 +1098,8 @@ export type DbBanner = typeof banners.$inferSelect
 export type DbNewBanner = typeof banners.$inferInsert
 export type DbInventoryMovement = typeof inventoryMovements.$inferSelect
 export type DbNewInventoryMovement = typeof inventoryMovements.$inferInsert
+export type DbInventoryReservation = typeof inventoryReservations.$inferSelect
+export type DbNewInventoryReservation = typeof inventoryReservations.$inferInsert
 export type DbAuditLogEntry = typeof auditLog.$inferSelect
 export type DbNewAuditLogEntry = typeof auditLog.$inferInsert
 export type DbNotification = typeof notifications.$inferSelect

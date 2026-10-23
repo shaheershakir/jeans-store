@@ -64,6 +64,13 @@
       "when": 1792596400000,
       "tag": "0008_free_size_shared_stock",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792781537691,
+      "tag": "0009_material_shen",
+      "breakpoints": true
     }
   ]
 }

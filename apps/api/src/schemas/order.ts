@@ -11,7 +11,15 @@ export const orderItemSchema = z.object({
   sku: z.string().optional(),
   quantity: z.number().int().positive().max(50),
   weightGrams: z.number().int().nonnegative().optional(),
-  img: z.string().optional()
+  img: z.string().optional(),
+  lineTotal: z.number().int().nonnegative().optional(),
+  taxRate: z.number().min(0).max(1).optional(),
+  taxAmount: z.number().int().nonnegative().optional(),
+  discountAmount: z.number().int().nonnegative().optional(),
+  taxableAmount: z.number().int().nonnegative().optional(),
+  variantLabel: z.string().optional(),
+  categoryId: z.number().int().positive().optional(),
+  isFreeSize: z.boolean().optional()
 })
 
 export const createOrderSchema = z.object({
@@ -28,13 +36,15 @@ export const createOrderSchema = z.object({
   pincode: z.string().min(5),
   notes: z.string().optional(),
   items: z.array(orderItemSchema).min(1),
+  // Browser values are accepted for compatibility but are always replaced by
+  // the server-side pricing calculation before persistence.
   subtotal: z.number().nonnegative().optional(),
   discountTotal: z.number().nonnegative().optional(),
   shipping: z.number().nonnegative().optional(),
   taxTotal: z.number().nonnegative().optional(),
-  total: z.number().positive().optional(),
+  total: z.number().nonnegative().optional(),
   weightGrams: z.number().nonnegative().optional(),
-  couponCode: z.string().optional(),
+  couponCode: z.string().trim().min(1).max(60).optional(),
   handoffType: z.enum(['whatsapp', 'email', 'razorpay', 'cod']).default('whatsapp'),
   status: z.string().optional(),
   paymentMethod: z.string().optional(),
@@ -46,11 +56,31 @@ export const createOrderSchema = z.object({
 
 export type CreateOrder = z.infer<typeof createOrderSchema>
 
-export type CalculatedOrder = Omit<CreateOrder, 'items' | 'subtotal' | 'shipping' | 'total'> & {
+export type CalculatedOrder = Omit<
+  CreateOrder,
+  'items' | 'subtotal' | 'discountTotal' | 'shipping' | 'taxTotal' | 'total'
+> & {
   userId?: number | null
-  items: Array<z.infer<typeof orderItemSchema> & { variantId: number; name: string; price: string; priceNum: number; img?: string }>
+  items: Array<
+    z.infer<typeof orderItemSchema> & {
+      variantId: number
+      name: string
+      price: string
+      priceNum: number
+      img?: string
+      lineTotal: number
+      taxRate: number
+      taxAmount: number
+      discountAmount: number
+      taxableAmount: number
+      variantLabel: string
+      isFreeSize: boolean
+    }
+  >
   subtotal: number
+  discountTotal: number
   shipping: number
+  taxTotal: number
   total: number
   weightGrams?: number
 }

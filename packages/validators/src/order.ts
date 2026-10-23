@@ -9,9 +9,15 @@ export const orderItemSchema = z.object({
   price: z.string(),
   priceNum: z.number(),
   sku: z.string().optional(),
-  quantity: z.number().int().positive(),
+  quantity: z.number().int().positive().max(50),
   weightGrams: z.number().int().nonnegative().optional(),
-  img: z.string().optional()
+  img: z.string().optional(),
+  lineTotal: z.number().int().nonnegative().optional(),
+  taxRate: z.number().min(0).max(1).optional(),
+  taxAmount: z.number().int().nonnegative().optional(),
+  discountAmount: z.number().int().nonnegative().optional(),
+  taxableAmount: z.number().int().nonnegative().optional(),
+  variantLabel: z.string().optional()
 })
 
 export const createOrderSchema = z.object({
@@ -31,9 +37,9 @@ export const createOrderSchema = z.object({
   discountTotal: z.number().nonnegative().optional(),
   shipping: z.number().nonnegative(),
   taxTotal: z.number().nonnegative().optional(),
-  total: z.number().positive(),
+  total: z.number().nonnegative(),
   weightGrams: z.number().int().nonnegative().optional(),
-  couponCode: z.string().optional(),
+  couponCode: z.string().trim().min(1).max(60).optional(),
   handoffType: z.enum(['whatsapp', 'email', 'razorpay', 'cod']).default('whatsapp'),
   status: z.string().optional(),
   paymentMethod: z.string().optional(),

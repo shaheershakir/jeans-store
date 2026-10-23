@@ -15,6 +15,7 @@ import { adminAuthRouter } from './routes/adminAuth.js'
 import { uploadRouter } from './routes/uploads.js'
 import { shippingRouter } from './routes/shipping.js'
 import { adminStateRouter } from './routes/adminState.js'
+import { paymentsRouter } from './routes/payments.js'
 
 export interface BuildAppOptions {
   corsOrigin?: string | string[] | boolean
@@ -87,8 +88,16 @@ export function buildApp(options: BuildAppOptions = {}): Application {
     })
   )
 
-  // Body Parsing
-  app.use(express.json({ limit: '2mb' }))
+  // Body Parsing. The raw body is retained for gateway webhook signature
+  // verification; only that route reads it.
+  app.use(
+    express.json({
+      limit: '2mb',
+      verify: (req, _res, buffer) => {
+        ;(req as Request & { rawBody?: Buffer }).rawBody = Buffer.from(buffer)
+      }
+    })
+  )
   app.use(express.urlencoded({ extended: true }))
 
   // HTTP Request Logging
@@ -127,6 +136,7 @@ export function buildApp(options: BuildAppOptions = {}): Application {
   app.use(uploadRouter)
   app.use(shippingRouter)
   app.use(adminStateRouter)
+  app.use(paymentsRouter)
   app.use(navigationRouter)
   app.use(homepageRouter)
 

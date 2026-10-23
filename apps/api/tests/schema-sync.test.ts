@@ -21,7 +21,10 @@ import {
   notifications,
   shipments,
   returnRequests,
-  refunds
+  refunds,
+  payments,
+  paymentEvents,
+  inventoryReservations
 } from '@jeans-store/db'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -47,7 +50,13 @@ test('Single source of truth in @jeans-store/db (Phase 5)', async (t) => {
       '0000_baseline.sql',
       '0001_slim_products.sql',
       '0002_drop_unused.sql',
-      '0003_drop_redundant.sql'
+      '0003_drop_redundant.sql',
+      '0004_drop_unused_image_metadata.sql',
+      '0005_drop_unused_user_fields.sql',
+      '0006_dashing_the_executioner.sql',
+      '0007_product_tax_rate_fraction.sql',
+      '0008_free_size_shared_stock.sql',
+      '0009_material_shen.sql'
     ]
 
     const sqlFiles = fs.readdirSync(pkgDrizzle).filter((f) => f.endsWith('.sql'))
@@ -78,5 +87,25 @@ test('Single source of truth in @jeans-store/db (Phase 5)', async (t) => {
     assert.ok(shipments, 'shipments table exported')
     assert.ok(returnRequests, 'returnRequests table exported')
     assert.ok(refunds, 'refunds table exported')
+    assert.ok(payments, 'payments table exported')
+    assert.ok(paymentEvents, 'paymentEvents table exported')
+    assert.ok(inventoryReservations, 'inventoryReservations table exported')
+  })
+
+  await t.test('migration journal lists every SQL migration in order', () => {
+    const journalPath = path.join(rootDir, 'packages/db/drizzle/meta/_journal.json')
+    const journal = JSON.parse(fs.readFileSync(journalPath, 'utf8')) as {
+      entries: Array<{ idx: number; tag: string }>
+    }
+    const sqlFiles = fs
+      .readdirSync(path.join(rootDir, 'packages/db/drizzle'))
+      .filter((file) => file.endsWith('.sql'))
+      .sort()
+
+    assert.deepEqual(
+      journal.entries.map((entry) => `${String(entry.idx).padStart(4, '0')}_${entry.tag.split('_').slice(1).join('_')}.sql`),
+      sqlFiles,
+      'journal entries must match the SQL files exactly and stay ordered'
+    )
   })
 })
