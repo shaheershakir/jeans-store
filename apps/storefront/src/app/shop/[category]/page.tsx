@@ -46,6 +46,11 @@ const SLUG_TO_CONFIG: Record<
     title: 'Henley Tees',
     desc: 'Multi-button plackets, textured slub cotton, and mineral washed rugged thermal henleys.',
   },
+  waffle: {
+    category: 'waffle',
+    title: 'Waffle Collection',
+    desc: 'Thermal honeycomb waffle knits, textured micro-weave long sleeves, and breathable layering tees.',
+  },
   trackpants: {
     category: 'trackpants',
     title: 'Trackpants',

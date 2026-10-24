@@ -62,7 +62,8 @@ export default function Footer() {
                 ['Drsleeve', 'drsleeve'],
                 ['Printed tees', 'printed-tees'],
                 ['Ringer tees', 'ringer-tees'],
-                ['Henley', 'henley']
+                ['Henley', 'henley'],
+                ['Waffle', 'waffle']
               ].map(([label, slug]) => (
                 <li key={slug} className="m-0">
                   <Link href={`/shop/${slug}`} className={footerLink}>

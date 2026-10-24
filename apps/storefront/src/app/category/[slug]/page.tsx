@@ -12,6 +12,7 @@ const SLUGS = [
   'printed-tees',
   'ringer-tees',
   'henley',
+  'waffle',
   'trackpants',
   'sweatpants',
   'sale',

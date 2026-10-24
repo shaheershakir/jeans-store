@@ -23,6 +23,7 @@ const QUICK_CATEGORIES: QuickCategory[] = [
   { name: 'Printed tees', href: '/shop/printed-tees', image: '/teesgarage-category-assets/category-printed-tees.webp' },
   { name: 'Ringer tees', href: '/shop/ringer-tees', image: '/teesgarage-category-assets/category-ringer-tees.webp' },
   { name: 'Henley', href: '/shop/henley', image: '/teesgarage-category-assets/category-henley.webp' },
+  { name: 'Waffle', href: '/shop/waffle', image: '/teesgarage-category-assets/category-fullsleeve.webp' },
   { name: 'Trackpants', href: '/shop/trackpants', image: '/teesgarage-category-assets/category-trackpants.webp' },
   { name: 'Sweatpants', href: '/shop/sweatpants', image: '/teesgarage-category-assets/category-sweatpants.webp' },
 ]
@@ -76,40 +77,43 @@ const TOP_BANNERS: TopBanner[] = [
 ]
 
 function getProductSwatches(product: Product): string[] {
+  const colorMap: Record<string, string> = {
+    black: '#141414',
+    white: '#f5f5f5',
+    grey: '#9e9e9e',
+    gray: '#9e9e9e',
+    ash: '#9e9e9e',
+    navy: '#1b2b48',
+    blue: '#2563eb',
+    green: '#1e3a2b',
+    forest: '#1e3a2b',
+    beige: '#d6c8b2',
+    cream: '#ede6d8',
+    olive: '#556b2f',
+    brown: '#5c4033',
+    red: '#991b1b',
+    charcoal: '#222222',
+    washed: '#333333',
+    waffle: '#d9cdbe'
+  }
+
   if (product.variants && product.variants.length > 0) {
-    const colorMap: Record<string, string> = {
-      black: '#141414',
-      white: '#f5f5f5',
-      grey: '#9e9e9e',
-      gray: '#9e9e9e',
-      navy: '#1b2b48',
-      blue: '#2563eb',
-      green: '#1e3a2b',
-      forest: '#1e3a2b',
-      beige: '#d6c8b2',
-      cream: '#ede6d8',
-      olive: '#556b2f',
-      brown: '#5c4033',
-      red: '#991b1b',
-      charcoal: '#222222',
-      washed: '#333333'
+    const colors = Array.from(new Set(product.variants.map((v) => v.color.toLowerCase()).filter(Boolean)))
+    if (colors.length > 1) {
+      return colors.slice(0, 4).map((c) => colorMap[c] || '#444444')
     }
-    const colors = Array.from(new Set(product.variants.map((v) => v.color.toLowerCase())))
-    return colors.slice(0, 4).map((c) => colorMap[c] || '#444444')
+    if (colors.length === 1) {
+      return [colorMap[colors[0]] || '#333333']
+    }
   }
   if (product.color) {
-    const colorMap: Record<string, string> = {
-      black: '#141414',
-      white: '#f5f5f5',
-      grey: '#9e9e9e',
-      navy: '#1b2b48',
-      green: '#1e3a2b',
-      beige: '#d6c8b2',
-      charcoal: '#222222'
+    if (product.color.includes('/')) {
+      const parts = product.color.split('/').map((s) => s.trim().toLowerCase())
+      return parts.map((c) => colorMap[c] || '#333333')
     }
     return [colorMap[product.color.toLowerCase()] || '#333333']
   }
-  return ['#1c1c1c', '#9e9e9e']
+  return ['#141414']
 }
 
 interface ShopCategory {
@@ -125,6 +129,7 @@ const SHOP_CATEGORIES: ShopCategory[] = [
   { name: 'Printed tees', href: '/shop/printed-tees', image: '/teesgarage-category-assets/category-printed-tees.webp' },
   { name: 'Ringer tees', href: '/shop/ringer-tees', image: '/teesgarage-category-assets/category-ringer-tees.webp' },
   { name: 'Henley', href: '/shop/henley', image: '/teesgarage-category-assets/category-henley.webp' },
+  { name: 'Waffle', href: '/shop/waffle', image: '/teesgarage-category-assets/category-fullsleeve.webp' },
   { name: 'Trackpants', href: '/shop/trackpants', image: '/teesgarage-category-assets/category-trackpants.webp' },
   { name: 'Sweatpants', href: '/shop/sweatpants', image: '/teesgarage-category-assets/category-sweatpants.webp' },
 ]

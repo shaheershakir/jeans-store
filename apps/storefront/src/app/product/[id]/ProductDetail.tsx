@@ -32,6 +32,7 @@ const CATEGORY_META: Record<string, { label: string; href: string }> = {
   'printed-tees': { label: 'Printed Tees', href: '/shop/printed-tees' },
   'ringer-tees': { label: 'Ringer Tees', href: '/shop/ringer-tees' },
   henley: { label: 'Henley Tees', href: '/shop/henley' },
+  waffle: { label: 'Waffle Knit', href: '/shop/waffle' },
   trackpants: { label: 'Trackpants', href: '/shop/trackpants' },
   sweatpants: { label: 'Sweatpants', href: '/shop/sweatpants' },
   tops: { label: 'T-Shirts', href: '/shop' },

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import * as React from 'react'
 import {
@@ -47,6 +47,7 @@ const CATEGORY_OPTIONS = [
   { value: 'printed-tees', label: 'Printed tees' },
   { value: 'ringer-tees', label: 'Ringer tees' },
   { value: 'henley', label: 'Henley' },
+  { value: 'waffle', label: 'Waffle' },
   { value: 'trackpants', label: 'Trackpants' },
   { value: 'sweatpants', label: 'Sweatpants' },
 ]

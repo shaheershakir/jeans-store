@@ -45,7 +45,8 @@ export const INITIAL_CATEGORIES = [
   { id: 10, slug: 'shirts', name: 'Shirts', sortOrder: 10, isActive: true },
   { id: 11, slug: 'hoodies', name: 'Hoodies', sortOrder: 11, isActive: true },
   { id: 12, slug: 'accessories', name: 'Accessories', sortOrder: 12, isActive: true },
-  { id: 13, slug: 'jeans', name: 'Jeans', sortOrder: 13, isActive: true }
+  { id: 13, slug: 'jeans', name: 'Jeans', sortOrder: 13, isActive: true },
+  { id: 14, slug: 'waffle', name: 'Waffle', sortOrder: 14, isActive: true }
 ]
 
 export const ATTRIBUTE_SPEC_KEYS = [

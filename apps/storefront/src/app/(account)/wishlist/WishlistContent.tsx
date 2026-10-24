@@ -34,6 +34,39 @@ function productToWishlistItem(p: Product, inWishlist: boolean = true): Wishlist
   const color = p.color || p.variants?.[0]?.color || 'Standard'
   const size = p.sizes?.[0] || 'L'
   const image = p.img || p.images?.[0] || '/mock-assets/prod-1-clean.jpg'
+  const COLOR_HEX: Record<string, string> = {
+    black: '#141414',
+    white: '#f5f5f5',
+    grey: '#9e9e9e',
+    gray: '#9e9e9e',
+    ash: '#9e9e9e',
+    navy: '#1b2b48',
+    blue: '#2563eb',
+    green: '#1e3a2b',
+    forest: '#1e3a2b',
+    beige: '#d6c8b2',
+    cream: '#ede6d8',
+    olive: '#556b2f',
+    brown: '#5c4033',
+    red: '#991b1b',
+    charcoal: '#222222',
+    waffle: '#d9cdbe'
+  }
+  let swatches = ['#141414']
+  if (p.variants && p.variants.length > 0) {
+    const colors = Array.from(new Set(p.variants.map((v) => v.color.toLowerCase()).filter(Boolean)))
+    if (colors.length > 1) {
+      swatches = colors.slice(0, 4).map((c) => COLOR_HEX[c] || '#333333')
+    } else if (colors.length === 1) {
+      swatches = [COLOR_HEX[colors[0]] || '#333333']
+    }
+  } else if (p.color) {
+    if (p.color.includes('/')) {
+      swatches = p.color.split('/').map((s) => COLOR_HEX[s.trim().toLowerCase()] || '#333333')
+    } else {
+      swatches = [COLOR_HEX[p.color.toLowerCase()] || '#333333']
+    }
+  }
   return {
     id: p.id,
     name: p.name,
@@ -41,7 +74,7 @@ function productToWishlistItem(p: Product, inWishlist: boolean = true): Wishlist
     price: p.price,
     priceNum: p.priceNum,
     image,
-    swatches: ['#1c1c1c', '#c4c4c4'],
+    swatches,
     href: getProductUrl(p),
     category: p.category ? p.category.charAt(0).toUpperCase() + p.category.slice(1) : 'Apparel',
     inWishlist

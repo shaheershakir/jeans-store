@@ -46,6 +46,7 @@ const SHOP_CATEGORIES = [
   { id: 'printed-tees', slug: 'printed-tees', href: '/shop/printed-tees', label: 'Printed Tees' },
   { id: 'ringer-tees', slug: 'ringer-tees', href: '/shop/ringer-tees', label: 'Ringer Tees' },
   { id: 'henley', slug: 'henley', href: '/shop/henley', label: 'Henley' },
+  { id: 'waffle', slug: 'waffle', href: '/shop/waffle', label: 'Waffle' },
   { id: 'trackpants', slug: 'trackpants', href: '/shop/trackpants', label: 'Trackpants' },
   { id: 'sweatpants', slug: 'sweatpants', href: '/shop/sweatpants', label: 'Sweatpants' },
   { id: 'sale', slug: 'sale', href: '/shop/sale', label: 'Sale & Archive' },

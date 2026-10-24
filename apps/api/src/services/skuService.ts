@@ -40,6 +40,11 @@ export const CATEGORY_CODES: Record<string, string> = {
   'henley-tees': 'HEN',
   'henley-t-shirt': 'HEN',
 
+  waffle: 'WFL',
+  'waffle-tees': 'WFL',
+  'waffle-knit': 'WFL',
+  'waffle-t-shirt': 'WFL',
+
   trackpants: 'TRK',
   trackpant: 'TRK',
   track: 'TRK',

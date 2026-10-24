@@ -31,8 +31,9 @@ export const DEFAULT_NAV_LINKS: NavigationItem[] = [
   { id: 'nav-4', label: 'Printed tees', href: '/shop/printed-tees', type: 'category', targetValue: 'printed-tees', order: 3, isActive: true, openInNewTab: false },
   { id: 'nav-5', label: 'Ringer tees', href: '/shop/ringer-tees', type: 'category', targetValue: 'ringer-tees', order: 4, isActive: true, openInNewTab: false },
   { id: 'nav-6', label: 'Henley', href: '/shop/henley', type: 'category', targetValue: 'henley', order: 5, isActive: true, openInNewTab: false },
-  { id: 'nav-7', label: 'Trackpants', href: '/shop/trackpants', type: 'category', targetValue: 'trackpants', order: 6, isActive: true, openInNewTab: false },
-  { id: 'nav-8', label: 'Sweatpants', href: '/shop/sweatpants', type: 'category', targetValue: 'sweatpants', order: 7, isActive: true, openInNewTab: false },
+  { id: 'nav-7', label: 'Waffle', href: '/shop/waffle', type: 'category', targetValue: 'waffle', order: 6, isActive: true, openInNewTab: false },
+  { id: 'nav-8', label: 'Trackpants', href: '/shop/trackpants', type: 'category', targetValue: 'trackpants', order: 7, isActive: true, openInNewTab: false },
+  { id: 'nav-9', label: 'Sweatpants', href: '/shop/sweatpants', type: 'category', targetValue: 'sweatpants', order: 8, isActive: true, openInNewTab: false },
 ]
 
 export interface Product {
@@ -94,6 +95,7 @@ export const CATEGORY_FILTERS = [
   { id: 'printed-tees', label: 'Printed Tees' },
   { id: 'ringer-tees', label: 'Ringer Tees' },
   { id: 'henley', label: 'Henley' },
+  { id: 'waffle', label: 'Waffle' },
   { id: 'trackpants', label: 'Trackpants' },
   { id: 'sweatpants', label: 'Sweatpants' },
 ] as const
@@ -1009,6 +1011,13 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
         label: 'Henley',
         icon: '',
         img: '/teesgarage-category-assets/category-henley.webp',
+        count: '3 styles'
+      },
+      {
+        id: 'waffle',
+        label: 'Waffle',
+        icon: '',
+        img: '/teesgarage-category-assets/category-fullsleeve.webp',
         count: '3 styles'
       },
       {

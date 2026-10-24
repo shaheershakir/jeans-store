@@ -84,8 +84,9 @@ const CATEGORIES: Category[] = [
   { id: 4, name: 'Printed tees', slug: 'printed-tees', description: 'Screen printed and graphic streetwear tees.', parentId: null },
   { id: 5, name: 'Ringer tees', slug: 'ringer-tees', description: 'Vintage style contrast rib collar and cuff tees.', parentId: null },
   { id: 6, name: 'Henley', slug: 'henley', description: 'Button placket waffle and jersey knit tees.', parentId: null },
-  { id: 7, name: 'Trackpants', slug: 'trackpants', description: 'Athletic, training and tapered trackpants.', parentId: null },
-  { id: 8, name: 'Sweatpants', slug: 'sweatpants', description: 'Heavyweight fleece and French terry sweatpants.', parentId: null },
+  { id: 7, name: 'Waffle', slug: 'waffle', description: 'Thermal waffle knit tees and long sleeves with textured honeycomb weave.', parentId: null },
+  { id: 8, name: 'Trackpants', slug: 'trackpants', description: 'Athletic, training and tapered trackpants.', parentId: null },
+  { id: 9, name: 'Sweatpants', slug: 'sweatpants', description: 'Heavyweight fleece and French terry sweatpants.', parentId: null },
 ]
 
 const COLLECTIONS: Collection[] = [
@@ -1046,8 +1047,9 @@ export const DEFAULT_NAVIGATION_ITEMS: NavigationItem[] = [
   { id: 'nav-4', label: 'Printed tees', href: '/shop/printed-tees', type: 'category', targetValue: 'printed-tees', order: 3, isActive: true, openInNewTab: false },
   { id: 'nav-5', label: 'Ringer tees', href: '/shop/ringer-tees', type: 'category', targetValue: 'ringer-tees', order: 4, isActive: true, openInNewTab: false },
   { id: 'nav-6', label: 'Henley', href: '/shop/henley', type: 'category', targetValue: 'henley', order: 5, isActive: true, openInNewTab: false },
-  { id: 'nav-7', label: 'Trackpants', href: '/shop/trackpants', type: 'category', targetValue: 'trackpants', order: 6, isActive: true, openInNewTab: false },
-  { id: 'nav-8', label: 'Sweatpants', href: '/shop/sweatpants', type: 'category', targetValue: 'sweatpants', order: 7, isActive: true, openInNewTab: false },
+  { id: 'nav-7', label: 'Waffle', href: '/shop/waffle', type: 'category', targetValue: 'waffle', order: 6, isActive: true, openInNewTab: false },
+  { id: 'nav-8', label: 'Trackpants', href: '/shop/trackpants', type: 'category', targetValue: 'trackpants', order: 7, isActive: true, openInNewTab: false },
+  { id: 'nav-9', label: 'Sweatpants', href: '/shop/sweatpants', type: 'category', targetValue: 'sweatpants', order: 8, isActive: true, openInNewTab: false },
 ]
 
 export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
@@ -1129,6 +1131,10 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
       {
         id: 'henley', label: 'Henley', icon: '👔',
         img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=600&q=80', count: '3 styles'
+      },
+      {
+        id: 'waffle', label: 'Waffle', icon: '🧇',
+        img: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=600&q=80', count: '3 styles'
       },
       {
         id: 'trackpants', label: 'Trackpants', icon: '👖',

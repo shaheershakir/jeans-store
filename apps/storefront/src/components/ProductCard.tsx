@@ -24,8 +24,20 @@ const COLOR_HEX: Record<string, string> = {
   charcoal: '#414347',
   cream: '#eee9dd',
   ecru: '#eee9dd',
+  brown: '#5c4033',
+  tan: '#d2b48c',
+  khaki: '#c3b091',
+  sand: '#c2b280',
+  sage: '#9cb071',
+  burgundy: '#800020',
+  maroon: '#681c23',
+  rust: '#b7410e',
+  lavender: '#b57bee',
+  indigo: '#264348',
+  waffle: '#d9cdbe',
   'washed black': '#1e1e1e',
-  'vintage acid black': '#242426'
+  'vintage acid black': '#242426',
+  'off white': '#faf9f6'
 }
 
 const cardClass =
@@ -77,15 +89,24 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
     void useFavoriteStore.persist.rehydrate()
   }, [])
 
-  // Derive swatches matching the reference design
+  // Derive swatches matching the product's actual colors
   const swatches = useMemo(() => {
     if (product.variants?.length) {
       const uniqueColors = Array.from(new Set(product.variants.map((v) => v.color).filter(Boolean)))
       if (uniqueColors.length > 1) {
-        return uniqueColors.slice(0, 3).map((col) => ({
+        return uniqueColors.slice(0, 4).map((col) => ({
           name: col,
           hex: COLOR_HEX[col.toLowerCase()] || '#171717'
         }))
+      }
+      if (uniqueColors.length === 1) {
+        const col = uniqueColors[0]
+        return [
+          {
+            name: col,
+            hex: COLOR_HEX[col.toLowerCase()] || '#171717'
+          }
+        ]
       }
     }
     if (product.color && product.color.includes('/')) {
@@ -99,13 +120,8 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
       }))
     }
     const mainCol = product.color || 'Black'
-    const altCol =
-      mainCol.toLowerCase().includes('black') || mainCol.toLowerCase().includes('charcoal')
-        ? 'Grey'
-        : 'Black'
     return [
-      { name: mainCol, hex: COLOR_HEX[mainCol.toLowerCase()] || '#171717' },
-      { name: altCol, hex: COLOR_HEX[altCol.toLowerCase()] || '#85878b' }
+      { name: mainCol, hex: COLOR_HEX[mainCol.toLowerCase()] || '#171717' }
     ]
   }, [product])
 
@@ -114,7 +130,7 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
     product.wash ||
     (swatches.length > 1
       ? `${swatches[0].name} / ${swatches[1].name}`
-      : product.color || 'Pitch Black')
+      : product.color || swatches[0]?.name || 'Pitch Black')
 
   const displaySize =
     selectedSize ||

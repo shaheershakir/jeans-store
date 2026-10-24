@@ -21,6 +21,7 @@ export const CATEGORIES = [
   'printed-tees',
   'ringer-tees',
   'henley',
+  'waffle',
   'trackpants',
   'sweatpants',
   't-shirts',
