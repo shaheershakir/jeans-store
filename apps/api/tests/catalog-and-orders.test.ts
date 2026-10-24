@@ -108,6 +108,20 @@ describe('Catalog & Orders Unified Brand Seams', () => {
   })
 
   test('POST /api/orders/razorpay/create-order generates razorpay order', async () => {
+    // Keep the suite hermetic: never call the live Razorpay API from CI.
+    const originalCreateOrder = razorpayService.createOrder.bind(razorpayService)
+    razorpayService.createOrder = async (options) => ({
+      id: `order_test_${Date.now()}`,
+      entity: 'order',
+      amount: options.amount,
+      amount_paid: 0,
+      amount_due: options.amount,
+      currency: options.currency ?? 'INR',
+      receipt: options.receipt,
+      status: 'created',
+      created_at: Math.floor(Date.now() / 1000)
+    })
+
     const [{ product, variant }] = await pickSellableProducts(1)
     const payload = {
       currency: 'INR',
@@ -126,14 +140,18 @@ describe('Catalog & Orders Unified Brand Seams', () => {
       customerEmail: 'kabir@teesgarage.in'
     }
 
-    const res = await request(app)
-      .post('/api/orders/razorpay/create-order')
-      .send(payload)
+    try {
+      const res = await request(app)
+        .post('/api/orders/razorpay/create-order')
+        .send(payload)
 
-    assert.equal(res.status, 201, `Failed with ${JSON.stringify(res.body)}`)
-    assert.ok(res.body.razorpayOrderId)
-    assert.ok(res.body.amount > 0)
-    assert.equal(res.body.currency, 'INR')
+      assert.equal(res.status, 201, `Failed with ${JSON.stringify(res.body)}`)
+      assert.ok(res.body.razorpayOrderId)
+      assert.ok(res.body.amount > 0)
+      assert.equal(res.body.currency, 'INR')
+    } finally {
+      razorpayService.createOrder = originalCreateOrder
+    }
   })
 
   test('POST /api/orders/razorpay/verify validates signature and commits order', async () => {

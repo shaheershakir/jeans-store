@@ -55,3 +55,10 @@ if (testUrl) {
 }
 
 export const testDatabaseEnabled = Boolean(process.env.DATABASE_URL)
+
+// Payment tests exercise signature verification and the checkout contract, not
+// the live Razorpay API. Give them deterministic test credentials so the suite
+// behaves the same locally and on a clean CI checkout with no `.env` file.
+process.env.RAZORPAY_KEY_ID ||= 'rzp_test_ci000000000000'
+process.env.RAZORPAY_KEY_SECRET ||= 'ci_razorpay_test_secret'
+process.env.RAZORPAY_WEBHOOK_SECRET ||= 'ci_razorpay_webhook_secret'
