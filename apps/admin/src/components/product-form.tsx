@@ -9,13 +9,18 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  HelpCircle,
   ImagePlus,
+  Info,
   Link as LinkIcon,
   LoaderCircle,
+  Palette,
+  Pipette,
   Plus,
   Sparkles,
   Trash2,
   UploadCloud,
+  X,
   Zap
 } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
@@ -49,7 +54,12 @@ const APPAREL_CATEGORIES = [
   { name: 'Sweatpants', slug: 'sweatpants' },
 ] as const
 
-const POPULAR_COLORS = [
+interface ColorOption {
+  name: string
+  hex: string
+}
+
+const DEFAULT_POPULAR_COLORS: ColorOption[] = [
   { name: 'Black', hex: '#171717' },
   { name: 'White', hex: '#f5f3ed' },
   { name: 'Navy', hex: '#1e3157' },
@@ -60,6 +70,14 @@ const POPULAR_COLORS = [
   { name: 'Beige', hex: '#d8c7a7' },
   { name: 'Brown', hex: '#5c4033' },
   { name: 'Red', hex: '#a63836' },
+  { name: 'Burgundy', hex: '#800020' },
+  { name: 'Sage', hex: '#9cb071' },
+  { name: 'Sand', hex: '#c2b280' },
+  { name: 'Lavender', hex: '#b57bee' },
+  { name: 'Teal', hex: '#008080' },
+  { name: 'Coral', hex: '#e07a5f' },
+  { name: 'Mustard', hex: '#d4a373' },
+  { name: 'Mocha', hex: '#8a6240' },
 ]
 
 const TOP_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
@@ -140,6 +158,33 @@ export function ProductForm({ product }: { product?: Product }) {
   const [multiColors, setMultiColors] = React.useState<string[]>(initialColors.length ? initialColors : ['Black', 'White'])
   const [newColorInput, setNewColorInput] = React.useState('')
 
+  // Dynamic Palette & Interactive Color Picker States
+  const [palette, setPalette] = React.useState<ColorOption[]>(() => {
+    const list = [...DEFAULT_POPULAR_COLORS]
+    if (product?.variants?.length) {
+      const existing = Array.from(new Set(product.variants.map((v) => String(v.color)).filter(Boolean)))
+      existing.forEach((colName) => {
+        if (!list.some((c) => c.name.toLowerCase() === colName.toLowerCase())) {
+          list.push({ name: colName, hex: colName.startsWith('#') ? colName : '#414347' })
+        }
+      })
+    }
+    return list
+  })
+
+  const [customHex, setCustomHex] = React.useState<string>('#3b82f6')
+  const [customColorName, setCustomColorName] = React.useState<string>('')
+  const [isCreatingColor, setIsCreatingColor] = React.useState<boolean>(false)
+  const [showColorGuide, setShowColorGuide] = React.useState<boolean>(false)
+
+  const activeColorHex = React.useMemo(() => {
+    const match = palette.find((c) => c.name.toLowerCase() === primaryColor.toLowerCase())
+    if (match) return match.hex
+    if (primaryColor.startsWith('#')) return primaryColor
+    const hexMatch = primaryColor.match(/#(?:[0-9a-fA-F]{3}){1,2}\b/)
+    return hexMatch ? hexMatch[0] : '#171717'
+  }, [palette, primaryColor])
+
   // Bulk stock state
   const [bulkStockValue, setBulkStockValue] = React.useState<number>(20)
   const [showDetailedVariantTable, setShowDetailedVariantTable] = React.useState(isEdit)
@@ -211,6 +256,34 @@ export function ProductForm({ product }: { product?: Product }) {
         sku: generateBaseSku({ category: categorySlug, productType: 'Regular', color: newColor, size: v.size }),
       }))
     )
+  }
+
+  // Create and apply a new custom color from color picker or input
+  const handleAddCustomColor = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    const trimmedName = customColorName.trim()
+    const nameToUse = trimmedName || `Custom (${customHex.toUpperCase()})`
+
+    setPalette((prev) => {
+      const existingIndex = prev.findIndex((c) => c.name.toLowerCase() === nameToUse.toLowerCase())
+      if (existingIndex >= 0) {
+        const copy = [...prev]
+        copy[existingIndex] = { name: nameToUse, hex: customHex }
+        return copy
+      }
+      return [...prev, { name: nameToUse, hex: customHex }]
+    })
+
+    if (colorMode === 'single') {
+      handleSingleColorChange(nameToUse)
+      toastSuccess(`Applied custom color "${nameToUse}" (${customHex.toUpperCase()})`)
+    } else {
+      handleAddMultiColor(nameToUse)
+      toastSuccess(`Added custom color "${nameToUse}" (${customHex.toUpperCase()})`)
+    }
+
+    setCustomColorName('')
+    setIsCreatingColor(false)
   }
 
   // Toggle a size in/out of the variant matrix
@@ -712,104 +785,316 @@ export function ProductForm({ product }: { product?: Product }) {
               </div>
             </div>
 
-            {/* Color Selection Section */}
-            {colorMode === 'single' ? (
-              <div className="space-y-3 rounded-xl border border-border/80 bg-muted/20 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Product Colorway (Single Color)
-                  </span>
-                  <span className="text-xs font-semibold text-foreground">
-                    Selected: <span className="font-bold underline">{primaryColor}</span>
+            {/* Color Selection Section with Visual Color Picker & Custom Color Creator */}
+            <div className="space-y-4 rounded-xl border border-border/80 bg-muted/20 p-4">
+              {/* Header with Selected Color preview & Guide Toggle */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
+                <div className="flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    {colorMode === 'single' ? 'Product Colorway (Single Color)' : `Active Colorways (${multiColors.length})`}
                   </span>
                 </div>
 
-                {/* Popular Palette Swatches */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {POPULAR_COLORS.map((col) => (
-                    <button
-                      key={col.name}
-                      type="button"
-                      onClick={() => handleSingleColorChange(col.name)}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
-                        primaryColor.toLowerCase() === col.name.toLowerCase()
-                          ? 'border-primary bg-primary text-primary-foreground shadow-xs'
-                          : 'border-border bg-background text-foreground hover:border-foreground/40'
-                      }`}
-                    >
+                <div className="flex items-center gap-3">
+                  {colorMode === 'single' && (
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium shadow-2xs">
                       <span
-                        className="h-2.5 w-2.5 rounded-full border border-black/20"
-                        style={{ backgroundColor: col.hex }}
+                        className="h-3 w-3 rounded-full border border-black/20 shadow-xs"
+                        style={{ backgroundColor: activeColorHex }}
                       />
-                      {col.name}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Or Custom Color Input */}
-                <div className="flex items-center gap-2 pt-1">
-                  <Input
-                    value={primaryColor}
-                    onChange={(e) => handleSingleColorChange(e.target.value)}
-                    placeholder="Or type custom color (e.g. Heather Oatmeal)"
-                    className="h-8 max-w-xs text-xs"
-                  />
-                  <span className="text-[11px] text-muted-foreground">
-                    Applies to all generated sizes
-                  </span>
-                </div>
-              </div>
-            ) : (
-              /* Multi-Color Mode Section */
-              <div className="space-y-3 rounded-xl border border-border/80 bg-muted/20 p-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Active Colorways ({multiColors.length})
-                </span>
-                <div className="flex flex-wrap items-center gap-2">
-                  {multiColors.map((col) => (
-                    <div
-                      key={col}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold shadow-2xs"
-                    >
-                      <span>{col}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveMultiColor(col)}
-                        className="text-muted-foreground hover:text-destructive"
-                        title={`Remove ${col}`}
-                      >
-                        &times;
-                      </button>
+                      <span>Selected: <strong className="text-foreground">{primaryColor}</strong></span>
+                      <span className="text-[10px] uppercase font-mono text-muted-foreground">{activeColorHex}</span>
                     </div>
-                  ))}
-                </div>
+                  )}
 
-                {/* Add Color Form */}
-                <div className="flex items-center gap-2 pt-2">
-                  <Input
-                    value={newColorInput}
-                    onChange={(e) => setNewColorInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleAddMultiColor(newColorInput)
-                      }
-                    }}
-                    placeholder="Add color (e.g. Forest Green, Heather Grey)"
-                    className="h-8 max-w-xs text-xs"
-                  />
-                  <Button
+                  <button
                     type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() => handleAddMultiColor(newColorInput)}
+                    onClick={() => setShowColorGuide((prev) => !prev)}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition"
+                    title="How to add and use colors"
                   >
-                    <Plus className="mr-1 h-3.5 w-3.5" /> Add Color
-                  </Button>
+                    <HelpCircle className="h-3.5 w-3.5 text-primary" />
+                    <span>How to add a new color?</span>
+                  </button>
                 </div>
               </div>
-            )}
+
+              {/* Explanatory Guide Banner (collapsible) */}
+              {showColorGuide && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5 text-xs text-foreground/90 space-y-2">
+                  <div className="flex items-center justify-between font-semibold text-primary">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Info className="h-4 w-4" />
+                      How to add any new color to your product:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowColorGuide(false)}
+                      className="text-muted-foreground hover:text-foreground text-xs"
+                    >
+                      &times; Close
+                    </button>
+                  </div>
+                  <ol className="list-decimal pl-4 space-y-1 text-muted-foreground">
+                    <li>
+                      <strong>Pick from the Spectrum:</strong> Click the <span className="font-semibold text-foreground">"Pick Any Color"</span> button or the eye-dropper icon to open your system's color wheel and select any visual shade.
+                    </li>
+                    <li>
+                      <strong>Or Enter a Hex Code:</strong> Click <span className="font-semibold text-foreground">"+ Custom Color"</span> and type any 6-digit hex code (e.g. <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px] text-foreground">#7B904B</code> for Sage Green or <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px] text-foreground">#B38B6D</code> for Mocha).
+                    </li>
+                    <li>
+                      <strong>Name It & Save:</strong> Give it an apparel shade name (e.g., &quot;Olive Khaki&quot; or &quot;Dusty Rose&quot;). Clicking <strong>Save &amp; Apply</strong> immediately updates your variant matrix, generates SKUs, and renders the exact swatch dot on the storefront!
+                    </li>
+                  </ol>
+                </div>
+              )}
+
+              {/* Inline Custom Color Creator Drawer */}
+              {isCreatingColor && (
+                <form
+                  onSubmit={handleAddCustomColor}
+                  className="rounded-lg border border-primary/30 bg-background p-3.5 shadow-xs space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Pipette className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-bold text-foreground">Create New Apparel Color</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingColor(false)}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                    {/* Visual Color Picker input */}
+                    <div className="sm:col-span-3 flex items-center gap-2">
+                      <div className="relative flex items-center">
+                        <input
+                          type="color"
+                          value={customHex}
+                          onChange={(e) => setCustomHex(e.target.value)}
+                          className="h-9 w-12 cursor-pointer rounded border border-border bg-transparent p-0.5"
+                          id="color-picker-input"
+                          title="Open color wheel"
+                        />
+                      </div>
+                      <Input
+                        value={customHex.toUpperCase()}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          if (val.startsWith('#') || val === '') {
+                            setCustomHex(val)
+                          } else {
+                            setCustomHex(`#${val}`)
+                          }
+                        }}
+                        placeholder="#RRGGBB"
+                        maxLength={7}
+                        className="h-9 font-mono text-xs uppercase"
+                        aria-label="Hex color code"
+                      />
+                    </div>
+
+                    {/* Color Name Input */}
+                    <div className="sm:col-span-6">
+                      <Input
+                        value={customColorName}
+                        onChange={(e) => setCustomColorName(e.target.value)}
+                        placeholder="Color name (e.g. Sage Green, Dusty Rose, Mocha)"
+                        className="h-9 text-xs"
+                        autoFocus
+                      />
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="sm:col-span-3 flex items-center gap-2">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        className="h-9 w-full text-xs font-semibold"
+                      >
+                        <Plus className="mr-1 h-3.5 w-3.5" /> Save &amp; Apply
+                      </Button>
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {/* Single-Color Mode View */}
+              {colorMode === 'single' ? (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Interactive Color Wheel Quick-Picker */}
+                    <label
+                      htmlFor="quick-single-picker"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary/60 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition cursor-pointer"
+                      title="Open color wheel picker"
+                    >
+                      <input
+                        id="quick-single-picker"
+                        type="color"
+                        value={activeColorHex}
+                        onChange={(e) => {
+                          const hex = e.target.value
+                          setCustomHex(hex)
+                          handleSingleColorChange(`Color (${hex.toUpperCase()})`)
+                        }}
+                        className="sr-only"
+                      />
+                      <Pipette className="h-3 w-3" />
+                      <span>Pick Any Color</span>
+                    </label>
+
+                    {/* Add Custom Color button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCreatingColor(true)
+                        setCustomColorName('')
+                      }}
+                      className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs font-semibold text-foreground hover:border-primary hover:text-primary transition cursor-pointer"
+                    >
+                      <Plus className="h-3 w-3" />
+                      <span>+ Custom Color</span>
+                    </button>
+
+                    {/* Separator */}
+                    <span className="text-border">|</span>
+
+                    {/* Dynamic Palette Swatches (Standard + Any Created Custom Colors) */}
+                    {palette.map((col) => {
+                      const isSelected = primaryColor.toLowerCase() === col.name.toLowerCase()
+                      return (
+                        <button
+                          key={col.name}
+                          type="button"
+                          onClick={() => handleSingleColorChange(col.name)}
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
+                            isSelected
+                              ? 'border-primary bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/20'
+                              : 'border-border bg-background text-foreground hover:border-foreground/40'
+                          }`}
+                        >
+                          <span
+                            className="h-2.5 w-2.5 rounded-full border border-black/20 shrink-0"
+                            style={{ backgroundColor: col.hex }}
+                          />
+                          <span>{col.name}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Or Manual Custom Color text input */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <Input
+                      value={primaryColor}
+                      onChange={(e) => handleSingleColorChange(e.target.value)}
+                      placeholder="Or type custom color (e.g. Heather Oatmeal, Washed Denim)"
+                      className="h-8 max-w-sm text-xs"
+                    />
+                    <span className="text-[11px] text-muted-foreground">
+                      Applies to all generated sizes
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                /* Multi-Color Mode Section */
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Active Multi Colors list */}
+                    {multiColors.map((col) => {
+                      const foundHex = palette.find((p) => p.name.toLowerCase() === col.toLowerCase())?.hex || '#6B7280'
+                      return (
+                        <div
+                          key={col}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold shadow-2xs"
+                        >
+                          <span
+                            className="h-2.5 w-2.5 rounded-full border border-black/20 shrink-0"
+                            style={{ backgroundColor: foundHex }}
+                          />
+                          <span>{col}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMultiColor(col)}
+                            className="ml-1 text-muted-foreground hover:text-destructive cursor-pointer"
+                            title={`Remove ${col}`}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Multi-Color Quick Add Palette & Custom Form */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
+                    <span className="text-[11px] font-semibold text-muted-foreground">Quick Add from Palette:</span>
+                    {palette.slice(0, 10).map((col) => {
+                      const alreadyAdded = multiColors.some((c) => c.toLowerCase() === col.name.toLowerCase())
+                      return (
+                        <button
+                          key={col.name}
+                          type="button"
+                          disabled={alreadyAdded}
+                          onClick={() => handleAddMultiColor(col.name)}
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition cursor-pointer ${
+                            alreadyAdded
+                              ? 'opacity-40 border-border bg-muted cursor-not-allowed'
+                              : 'border-border bg-background hover:border-primary text-foreground'
+                          }`}
+                        >
+                          <span
+                            className="h-2 w-2 rounded-full border border-black/20"
+                            style={{ backgroundColor: col.hex }}
+                          />
+                          {col.name}
+                        </button>
+                      )
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingColor(true)}
+                      className="inline-flex items-center gap-1 rounded-full border border-primary/50 bg-primary/5 px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/10 transition cursor-pointer"
+                    >
+                      <Plus className="h-3 w-3" /> + Custom Color
+                    </button>
+                  </div>
+
+                  {/* Add Color by Name Input */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <Input
+                      value={newColorInput}
+                      onChange={(e) => setNewColorInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleAddMultiColor(newColorInput)
+                        }
+                      }}
+                      placeholder="Add color (e.g. Forest Green, Heather Grey, Mocha)"
+                      className="h-8 max-w-xs text-xs"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={() => handleAddMultiColor(newColorInput)}
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5" /> Add Color
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Quick Size Matrix Buttons */}
             <div className="space-y-3">

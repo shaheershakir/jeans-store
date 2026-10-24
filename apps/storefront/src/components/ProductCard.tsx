@@ -35,9 +35,31 @@ const COLOR_HEX: Record<string, string> = {
   lavender: '#b57bee',
   indigo: '#264348',
   waffle: '#d9cdbe',
+  teal: '#008080',
+  coral: '#e07a5f',
+  mustard: '#d4a373',
+  purple: '#6a0dad',
+  pink: '#f4a6b8',
+  mocha: '#8a6240',
+  plum: '#5c2c47',
+  terracotta: '#c85a32',
+  camel: '#c19a6b',
+  taupe: '#b38b6d',
+  mint: '#98ff98',
+  clay: '#b66a50',
   'washed black': '#1e1e1e',
   'vintage acid black': '#242426',
   'off white': '#faf9f6'
+}
+
+function resolveColorHex(colorName?: string): string {
+  if (!colorName) return '#171717'
+  const trimmed = colorName.trim()
+  if (trimmed.startsWith('#')) return trimmed
+  const hexMatch = trimmed.match(/#(?:[0-9a-fA-F]{3}){1,2}\b/)
+  if (hexMatch) return hexMatch[0]
+  const lower = trimmed.toLowerCase()
+  return COLOR_HEX[lower] || '#171717'
 }
 
 const cardClass =
@@ -96,7 +118,7 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
       if (uniqueColors.length > 1) {
         return uniqueColors.slice(0, 4).map((col) => ({
           name: col,
-          hex: COLOR_HEX[col.toLowerCase()] || '#171717'
+          hex: resolveColorHex(col)
         }))
       }
       if (uniqueColors.length === 1) {
@@ -104,7 +126,7 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
         return [
           {
             name: col,
-            hex: COLOR_HEX[col.toLowerCase()] || '#171717'
+            hex: resolveColorHex(col)
           }
         ]
       }
@@ -113,15 +135,12 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
       const parts = product.color.split('/').map((s) => s.trim())
       return parts.map((name, idx) => ({
         name,
-        hex:
-          idx === 0
-            ? COLOR_HEX[name.toLowerCase()] || '#171717'
-            : COLOR_HEX[name.toLowerCase()] || '#85878b'
+        hex: resolveColorHex(name)
       }))
     }
     const mainCol = product.color || 'Black'
     return [
-      { name: mainCol, hex: COLOR_HEX[mainCol.toLowerCase()] || '#171717' }
+      { name: mainCol, hex: resolveColorHex(mainCol) }
     ]
   }, [product])
 
