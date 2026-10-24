@@ -201,7 +201,7 @@ export default function ProfilePage() {
                 <Package className="w-6 h-6 stroke-[1.75] text-[#111111] shrink-0" />
                 <div className="min-w-0">
                   <h3 className="text-[15.5px] font-bold text-[#111111] leading-tight">Orders</h3>
-                  <p className="text-[13px] text-[#666666] mt-0.5 leading-tight">Track, return or view orders</p>
+                  <p className="text-[13px] text-[#666666] mt-0.5 leading-tight">Track or view orders</p>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-[#111111] stroke-[2] shrink-0" />

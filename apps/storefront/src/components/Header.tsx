@@ -400,7 +400,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                             </div>
                             <div className="min-w-0 text-left">
                               <h4 className="text-[14px] font-bold text-[#111111] leading-tight">Orders</h4>
-                              <p className="text-[12px] text-[#777777] mt-0.5 leading-tight truncate">Track, return or view orders</p>
+                              <p className="text-[12px] text-[#777777] mt-0.5 leading-tight truncate">Track or view orders</p>
                             </div>
                           </div>
                           <ChevronRight className="h-4 w-4 shrink-0 text-[#888888] transition-transform group-hover:translate-x-0.5" />
