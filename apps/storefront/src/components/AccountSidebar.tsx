@@ -57,9 +57,11 @@ export default function AccountSidebar({ activeTab, className = '' }: AccountSid
     router.push('/login')
   }
 
+  const isProfileRoute = pathname === '/profile'
+
   return (
     <aside
-      className={`w-[230px] shrink-0 max-[860px]:w-full ${className}`.trim()}
+      className={`w-[230px] shrink-0 ${isProfileRoute ? 'max-[860px]:hidden' : 'max-[860px]:w-full'} ${className}`.trim()}
       aria-label="Account Navigation"
     >
       <nav className="flex flex-col gap-1 sticky top-[96px] max-[860px]:static max-[860px]:flex-row max-[860px]:overflow-x-auto max-[860px]:pb-2.5 max-[860px]:border-b max-[860px]:border-black/8 scrollbar-none">

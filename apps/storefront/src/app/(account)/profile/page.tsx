@@ -12,6 +12,8 @@ import {
   Pencil,
   Plus,
   ArrowRight,
+  ChevronRight,
+  Settings,
   X
 } from 'lucide-react'
 import { useCartStore, useUIStore, useAuthStore, useFavoriteStore } from '@/lib/store'
@@ -172,15 +174,153 @@ export default function ProfilePage() {
 
   return (
     <>
-      {/* Page Header */}
-            <header className="mb-7">
-              <h1 className="text-[32px] md:text-[36px] font-extrabold tracking-[-0.03em] text-[#111111] leading-tight">
-                My Account
-              </h1>
-              <p className="mt-1 text-[15px] text-[#666666]">
-                Manage your details and preferences.
+      {/* ── MOBILE VIEW (< md) matching design ───────────────────── */}
+      <div className="block md:hidden">
+        {/* Header */}
+        <header className="mb-6">
+          <h1 className="text-[32px] font-bold tracking-tight text-[#111111] leading-tight">
+            My Account
+          </h1>
+          <p className="mt-1 text-[15px] text-[#666666]">
+            Manage your details and preferences.
+          </p>
+        </header>
+
+        {/* Section 1: Your account */}
+        <section className="mb-5">
+          <h2 className="text-[18px] font-bold text-[#111111] mb-3">
+            Your account
+          </h2>
+          <div className="rounded-[22px] bg-white border border-black/8 shadow-xs overflow-hidden divide-y divide-black/6">
+            {/* 1. Orders */}
+            <Link
+              href="/orders"
+              className="flex items-center justify-between p-4.5 hover:bg-black/2 transition-colors"
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <Package className="w-6 h-6 stroke-[1.75] text-[#111111] shrink-0" />
+                <div className="min-w-0">
+                  <h3 className="text-[15.5px] font-bold text-[#111111] leading-tight">Orders</h3>
+                  <p className="text-[13px] text-[#666666] mt-0.5 leading-tight">Track, return or view orders</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[#111111] stroke-[2] shrink-0" />
+            </Link>
+
+            {/* 2. Addresses */}
+            <Link
+              href="/addresses"
+              className="flex items-center justify-between p-4.5 hover:bg-black/2 transition-colors"
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <MapPin className="w-6 h-6 stroke-[1.75] text-[#111111] shrink-0" />
+                <div className="min-w-0">
+                  <h3 className="text-[15.5px] font-bold text-[#111111] leading-tight">Addresses</h3>
+                  <p className="text-[13px] text-[#666666] mt-0.5 leading-tight">Manage delivery addresses</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[#111111] stroke-[2] shrink-0" />
+            </Link>
+
+            {/* 3. Wishlist */}
+            <Link
+              href="/wishlist"
+              className="flex items-center justify-between p-4.5 hover:bg-black/2 transition-colors"
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <Heart className="w-6 h-6 stroke-[1.75] text-[#111111] shrink-0" />
+                <div className="min-w-0">
+                  <h3 className="text-[15.5px] font-bold text-[#111111] leading-tight">Wishlist</h3>
+                  <p className="text-[13px] text-[#666666] mt-0.5 leading-tight">Your saved pieces</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[#111111] stroke-[2] shrink-0" />
+            </Link>
+
+            {/* 4. Account settings */}
+            <Link
+              href="/settings"
+              className="flex items-center justify-between p-4.5 hover:bg-black/2 transition-colors"
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <Settings className="w-6 h-6 stroke-[1.75] text-[#111111] shrink-0" />
+                <div className="min-w-0">
+                  <h3 className="text-[15.5px] font-bold text-[#111111] leading-tight">Account settings</h3>
+                  <p className="text-[13px] text-[#666666] mt-0.5 leading-tight">Password and preferences</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[#111111] stroke-[2] shrink-0" />
+            </Link>
+          </div>
+        </section>
+
+        {/* Section 2: Welcome Back Card */}
+        <section className="mb-5">
+          <div className="rounded-[22px] bg-white border border-black/8 p-5 shadow-xs flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-[#e8e6e1] text-[#111111] text-[24px] font-bold flex items-center justify-center shrink-0">
+              {fullName.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[18px] font-bold text-[#111111] leading-tight">
+                Welcome back, {fullName}
+              </h2>
+              <p className="text-[13px] text-[#777777] mt-1 leading-normal">
+                Member since {memberSince}
               </p>
-            </header>
+              <button
+                type="button"
+                onClick={() => setIsEditProfileOpen(true)}
+                className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] bg-white border border-black/15 hover:bg-black/4 text-[#111111] text-[12.5px] font-semibold transition-colors shadow-2xs cursor-pointer"
+              >
+                <Pencil className="w-3.5 h-3.5 stroke-[2]" />
+                <span>Edit profile</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 3: Personal information */}
+        <section className="mb-8">
+          <div className="rounded-[22px] bg-white border border-black/8 p-5 shadow-xs">
+            <div className="flex items-center justify-between pb-3.5">
+              <h3 className="text-[17px] font-bold text-[#111111]">
+                Personal information
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditDetailsOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] bg-white border border-black/15 hover:bg-black/4 text-[#111111] text-[12.5px] font-semibold transition-colors shadow-2xs cursor-pointer"
+              >
+                <Pencil className="w-3.5 h-3.5 stroke-[2]" />
+                <span>Edit details</span>
+              </button>
+            </div>
+
+            <div className="divide-y divide-black/6 text-[13.5px]">
+              <div className="grid grid-cols-[100px_1fr] items-center py-3">
+                <span className="text-[#666666] font-normal">Full name</span>
+                <span className="font-bold text-[#111111]">{fullName}</span>
+              </div>
+              <div className="grid grid-cols-[100px_1fr] items-center py-3">
+                <span className="text-[#666666] font-normal">Email</span>
+                <span className="font-bold text-[#111111] truncate">{email}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* ── DESKTOP VIEW (hidden md:block) ─────────────────────────── */}
+      <div className="hidden md:block">
+        {/* Page Header */}
+        <header className="mb-7">
+          <h1 className="text-[32px] md:text-[36px] font-extrabold tracking-[-0.03em] text-[#111111] leading-tight">
+            My Account
+          </h1>
+          <p className="mt-1 text-[15px] text-[#666666]">
+            Manage your details and preferences.
+          </p>
+        </header>
 
             {/* Top Welcome Banner Card */}
             <div className="rounded-[20px] bg-white border border-black/8 p-6 lg:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between gap-5 max-[640px]:flex-col max-[640px]:items-start">
@@ -476,7 +616,7 @@ export default function ProfilePage() {
                 })}
               </div>
             </div>
-
+      </div>
 
       {/* ── Edit Profile Modal ─────────────────────────────────────── */}
       {(isEditProfileOpen || isEditDetailsOpen) && (

@@ -21,7 +21,8 @@ import {
   Settings,
   ChevronRight,
   ArrowLeft,
-  TrendingUp
+  TrendingUp,
+  MapPin
 } from 'lucide-react'
 import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore, useFavoriteStore } from '@/lib/store'
 import { DEFAULT_NAV_LINKS, type NavigationItem, PRODUCTS } from '@/lib/constants'
@@ -29,7 +30,7 @@ import { searchProducts } from '@/lib/utils'
 import UserOrdersModal from '@/components/UserOrdersModal'
 import MobileTabBar from '@/components/MobileTabBar'
 
-const TRENDING_SEARCHES = ['Stripes', 'Printed Tees', 'Henley', 'Trackpants', 'Oversized', 'Sweatpants']
+const TRENDING_SEARCHES = ['Stripes', 'Printed Tees', 'Henley', 'Waffle', 'Trackpants', 'Oversized', 'Sweatpants']
 
 const HEADER_ACTION_BTN =
   'grid h-[38px] w-[38px] cursor-pointer place-items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#111] no-underline transition-[background-color] duration-150 ease-[ease] hover:bg-[rgba(0,0,0,0.05)]'
@@ -343,101 +344,137 @@ export default function Header({ initialNavItems }: HeaderProps) {
                       />,
                       document.body
                     )}
-                    <div className="absolute right-0 top-[calc(100%+10px)] z-[1010] w-[280px] max-w-[calc(100vw-24px)] origin-top-right animate-[applePopoverEnter_var(--dur-base,220ms)_var(--ease-out,cubic-bezier(0.16,1,0.3,1))] rounded-[14px] border border-[rgba(21,21,21,0.1)] bg-[rgba(255,255,255,0.96)] p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.9),0_24px_54px_-10px_rgba(12,14,18,0.22),0_8px_18px_-4px_rgba(12,14,18,0.08)] backdrop-blur-[32px] backdrop-saturate-[2] supports-[not(backdrop-filter:blur(1px))]:bg-white">
-                      <Link
-                        href="/profile"
-                        className="group flex cursor-pointer items-center gap-3 rounded-[8px] px-2.5 py-2 no-underline transition-[background,transform] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] active:scale-[0.99]"
-                        onClick={() => setUserMenuOpen(false)}
-                        title="Go to Profile & Account Settings"
-                      >
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0c0e12] text-[14px] font-bold text-white [font-family:var(--font-brand)]">{user.name.charAt(0).toUpperCase()}</div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="m-0 truncate text-[13.5px] font-bold tracking-[-0.01em] text-[#0c0e12] [font-family:var(--font-brand)]">{user.name}</h4>
-                          <span className="mt-px block text-[11px] font-medium text-[#71717a]">Manage Profile &amp; Account</span>
+                    <div className="absolute right-0 top-[calc(100%+14px)] z-[1010] w-[340px] max-w-[calc(100vw-24px)] origin-top-right animate-[applePopoverEnter_var(--dur-base,220ms)_var(--ease-out,cubic-bezier(0.16,1,0.3,1))] rounded-[24px] border border-black/8 bg-white p-5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18),0_0_0_1px_rgba(0,0,0,0.04)] flex flex-col gap-3.5">
+                      {/* Top pointer notch */}
+                      <div className="absolute -top-1.5 right-3.5 h-3.5 w-3.5 rotate-45 rounded-xs border-l border-t border-black/8 bg-white" aria-hidden="true" />
+
+                      {/* Header Row: User Info & Close */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#e8e6e1] text-[20px] font-bold text-[#111111] [font-family:var(--font-brand)]">
+                            {user.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="m-0 truncate text-[16px] font-bold tracking-tight text-[#111111]">
+                              {user.name}
+                            </h3>
+                            <p className="mt-0.5 text-[12.5px] text-[#777777] font-normal leading-normal">
+                              Member since {user.createdAt ? new Date(user.createdAt).getFullYear() : '2025'}
+                            </p>
+                          </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 shrink-0 text-[#a1a1aa] transition-[transform,color] duration-200 ease-[ease] group-hover:translate-x-0.5 group-hover:text-[#18181b]" />
-                      </Link>
-
-                      <div className="mx-0.5 my-[5px] h-px bg-[rgba(12,14,18,0.07)]" />
-
-                      <div className="flex flex-col gap-0.5">
-                        <Link
-                          href="/orders"
-                          className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          <Package className="h-4 w-4 mr-2.5 text-zinc-700" />
-                          <span>My Orders &amp; Tracking</span>
-                          <span className="ml-auto rounded-full bg-[#0c0e12] px-1.5 py-px text-[10px] font-bold text-white">Active</span>
-                        </Link>
-
-                        <Link
-                          href="/profile"
-                          className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          <Settings className="h-4 w-4 mr-2.5 text-zinc-700" />
-                          <span>Profile &amp; Addresses</span>
-                        </Link>
-
-                        <Link
-                          href="/profile?tab=favorites"
-                          className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          <Heart className="h-4 w-4 mr-2.5 text-rose-500" />
-                          <span>Favorites &amp; Saved Fits</span>
-                          {favorites.length > 0 && <span className="ml-auto rounded-full bg-[#0c0e12] px-1.5 py-px text-[10px] font-bold text-white">{favorites.length}</span>}
-                        </Link>
-
                         <button
                           type="button"
-                          className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
-                          onClick={() => {
-                            setUserMenuOpen(false)
-                            openOverlay('cart')
-                          }}
-                        >
-                          <ShoppingBag className="h-4 w-4 mr-2.5 text-zinc-700" />
-                          <span>Shopping Bag</span>
-                          {count > 0 && <span className="ml-auto rounded-full bg-[#0c0e12] px-1.5 py-px text-[10px] font-bold text-white">{count}</span>}
-                        </button>
-
-                        <Link
-                          href="/profile?tab=preferences"
-                          className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
                           onClick={() => setUserMenuOpen(false)}
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-[#777777] hover:text-[#111111] hover:bg-black/5 transition-colors cursor-pointer"
+                          aria-label="Close menu"
                         >
-                          <Sparkles className="h-4 w-4 mr-2.5 text-amber-600" />
-                          <span>Fit &amp; Size Preferences</span>
-                        </Link>
-
-                        {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (
-                          <a
-                            href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi TEESGARAGE, I have an inquiry regarding my account.')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#1f2937] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(12,14,18,0.05)] hover:text-[#0c0e12] active:scale-[0.99]"
-                            onClick={() => setUserMenuOpen(false)}
-                          >
-                            <MessageCircle className="h-4 w-4 mr-2.5 text-emerald-600" />
-                            <span>Concierge WhatsApp</span>
-                          </a>
-                        )}
+                          <X className="h-4 w-4 stroke-[2.2]" />
+                        </button>
                       </div>
 
-                      <div className="mx-0.5 my-[5px] h-px bg-[rgba(12,14,18,0.07)]" />
+                      {/* View Profile Button */}
+                      <Link
+                        href="/profile"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] px-4 py-2.5 transition-colors text-[13.5px] font-semibold text-[#111111] cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <User className="h-4 w-4 text-[#333333] stroke-[2]" />
+                          <span>View profile</span>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-[#888888] transition-transform group-hover:translate-x-0.5" />
+                      </Link>
 
+                      {/* 4 Action Cards */}
+                      <div className="flex flex-col gap-2">
+                        {/* 1. Orders */}
+                        <Link
+                          href="/orders"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-2xs border border-black/5 text-[#111111]">
+                              <Package className="h-5 w-5 stroke-[1.8]" />
+                            </div>
+                            <div className="min-w-0 text-left">
+                              <h4 className="text-[14px] font-bold text-[#111111] leading-tight">Orders</h4>
+                              <p className="text-[12px] text-[#777777] mt-0.5 leading-tight truncate">Track, return or view orders</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-[#888888] transition-transform group-hover:translate-x-0.5" />
+                        </Link>
+
+                        {/* 2. Addresses */}
+                        <Link
+                          href="/addresses"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-2xs border border-black/5 text-[#111111]">
+                              <MapPin className="h-5 w-5 stroke-[1.8]" />
+                            </div>
+                            <div className="min-w-0 text-left">
+                              <h4 className="text-[14px] font-bold text-[#111111] leading-tight">Addresses</h4>
+                              <p className="text-[12px] text-[#777777] mt-0.5 leading-tight truncate">Manage delivery addresses</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-[#888888] transition-transform group-hover:translate-x-0.5" />
+                        </Link>
+
+                        {/* 3. Wishlist */}
+                        <Link
+                          href="/wishlist"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-2xs border border-black/5 text-[#111111]">
+                              <Heart className="h-5 w-5 stroke-[1.8]" />
+                            </div>
+                            <div className="min-w-0 text-left">
+                              <h4 className="text-[14px] font-bold text-[#111111] leading-tight">Wishlist</h4>
+                              <p className="text-[12px] text-[#777777] mt-0.5 leading-tight truncate">Your saved pieces</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-[#888888] transition-transform group-hover:translate-x-0.5" />
+                        </Link>
+
+                        {/* 4. Account settings */}
+                        <Link
+                          href="/settings"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-2xs border border-black/5 text-[#111111]">
+                              <Settings className="h-5 w-5 stroke-[1.8]" />
+                            </div>
+                            <div className="min-w-0 text-left">
+                              <h4 className="text-[14px] font-bold text-[#111111] leading-tight">Account settings</h4>
+                              <p className="text-[12px] text-[#777777] mt-0.5 leading-tight truncate">Password and preferences</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-[#888888] transition-transform group-hover:translate-x-0.5" />
+                        </Link>
+                      </div>
+
+                      {/* Sign Out Button */}
                       <button
                         type="button"
-                        className="mt-0.5 flex min-h-[38px] w-full cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-[#dc2626] no-underline transition-[background,color] duration-150 ease-[ease] hover:bg-[rgba(220,38,38,0.08)] hover:text-[#b91c1c] active:scale-[0.99]"
                         onClick={() => {
                           setUserMenuOpen(false)
                           logout()
                         }}
+                        className="group flex items-center justify-between w-full rounded-2xl bg-[#fff1f2] hover:bg-[#ffe4e6] p-3.5 transition-colors cursor-pointer border border-rose-100 text-[#e11d48]"
                       >
-                        <LogOut className="h-4 w-4 mr-2.5 text-red-600" />
-                        <span>Sign Out</span>
+                        <div className="flex items-center gap-3">
+                          <LogOut className="h-4 w-4 stroke-[2]" />
+                          <span className="text-[13.5px] font-semibold">Sign out</span>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-[#e11d48] transition-transform group-hover:translate-x-0.5" />
                       </button>
                     </div>
                     </>

@@ -302,15 +302,15 @@ export default function HomepageClient({ products }: HomepageClientProps) {
         </div>
       </section>
 
-      {/* ── 2. Quick Category Strip (8 Cards Row) ──────────────────── */}
+      {/* ── 2. Quick Category Strip (Carousel Row) ──────────────────── */}
       <section className="pb-12" aria-label="Quick Category Shortcuts">
         <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
-          <div className="grid grid-cols-8 gap-3 max-[1024px]:flex max-[1024px]:overflow-x-auto max-[1024px]:gap-3 max-[1024px]:pb-2.5 max-[1024px]:snap-x max-[1024px]:snap-mandatory scrollbar-none">
+          <div className="flex overflow-x-auto gap-3 md:gap-3.5 pb-2.5 snap-x snap-mandatory scrollbar-none">
             {QUICK_CATEGORIES.map((cat) => (
               <Link
                 key={cat.name}
                 href={cat.href}
-                className="group relative flex flex-col overflow-hidden rounded-[18px] bg-[#f4f2ee] shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(0,0,0,0.08)] max-[1024px]:flex-[0_0_135px] max-[1024px]:snap-start"
+                className="group relative flex flex-col overflow-hidden rounded-[18px] bg-[#f4f2ee] shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(0,0,0,0.08)] flex-[0_0_135px] sm:flex-[0_0_145px] lg:flex-[0_0_152px] snap-start shrink-0"
               >
                 <div className="relative w-full aspect-[1/1.42] overflow-hidden bg-[#e9e6df]">
                   <Image

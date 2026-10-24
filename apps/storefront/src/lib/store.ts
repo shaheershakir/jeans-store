@@ -301,6 +301,7 @@ export interface AuthUser {
   name: string
   phone?: string
   provider?: string
+  createdAt?: string
 }
 
 interface AuthState {
