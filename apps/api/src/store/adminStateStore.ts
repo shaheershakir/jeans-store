@@ -53,6 +53,12 @@ function numberOrZero(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+function normalizeTaxRate(value: unknown): number {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0
+  return Math.min(1, Math.max(0, parsed > 1 ? parsed / 100 : parsed))
+}
+
 function stringOrEmpty(value: unknown): string {
   return value === null || value === undefined ? '' : String(value)
 }
@@ -437,13 +443,18 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
           })
       } else {
         const { id: _ignored, ...roleWithoutId } = role
-        await tx
-          .insert(roles)
-          .values(roleWithoutId)
-          .onConflictDoUpdate({
-            target: roles.name,
-            set: { description: role.description, permissions: role.permissions, updatedAt: new Date() }
-          })
+        const [existingRole] = await tx
+          .select({ id: roles.id })
+          .from(roles)
+          .where(eq(sql`lower(${roles.name})`, role.name.toLowerCase()))
+        if (existingRole) {
+          await tx
+            .update(roles)
+            .set({ description: role.description, permissions: role.permissions, updatedAt: new Date() })
+            .where(eq(roles.id, existingRole.id))
+        } else {
+          await tx.insert(roles).values(roleWithoutId)
+        }
       }
     }
 
@@ -474,19 +485,24 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
           })
       } else {
         const { id: _ignored, ...colWithoutId } = collection
-        await tx
-          .insert(collections)
-          .values(colWithoutId)
-          .onConflictDoUpdate({
-            target: collections.slug,
-            set: {
+        const [existingCol] = await tx
+          .select({ id: collections.id })
+          .from(collections)
+          .where(eq(sql`lower(${collections.slug})`, collection.slug.toLowerCase()))
+        if (existingCol) {
+          await tx
+            .update(collections)
+            .set({
               name: collection.name,
               description: collection.description,
               status: collection.status,
               sortOrder: collection.sortOrder,
               updatedAt: new Date()
-            }
-          })
+            })
+            .where(eq(collections.id, existingCol.id))
+        } else {
+          await tx.insert(collections).values(colWithoutId)
+        }
       }
     }
 
@@ -545,12 +561,14 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
           .returning({ id: coupons.id })
         if (upserted?.id) effectiveCouponId = upserted.id
       } else {
-        const [upserted] = await tx
-          .insert(coupons)
-          .values(couponData)
-          .onConflictDoUpdate({
-            target: coupons.code,
-            set: {
+        const [existingCoupon] = await tx
+          .select({ id: coupons.id })
+          .from(coupons)
+          .where(eq(sql`lower(${coupons.code})`, couponData.code.toLowerCase()))
+        if (existingCoupon) {
+          await tx
+            .update(coupons)
+            .set({
               type: couponData.type,
               value: couponData.value,
               minOrderValue: couponData.minOrderValue,
@@ -561,10 +579,13 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
               perCustomerLimit: couponData.perCustomerLimit,
               isActive: couponData.isActive,
               updatedAt: new Date()
-            }
-          })
-          .returning({ id: coupons.id })
-        if (upserted?.id) effectiveCouponId = upserted.id
+            })
+            .where(eq(coupons.id, existingCoupon.id))
+          effectiveCouponId = existingCoupon.id
+        } else {
+          const [created] = await tx.insert(coupons).values(couponData).returning({ id: coupons.id })
+          if (created?.id) effectiveCouponId = created.id
+        }
       }
 
       if (effectiveCouponId > 0) {
@@ -1013,7 +1034,7 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         supportPhone: stringOrEmpty(settings.supportPhone) || null,
         address: stringOrEmpty(settings.address) || null,
         currency: stringOrEmpty(settings.currency) || 'INR',
-        taxRate: numberOrZero(settings.taxRate),
+        taxRate: normalizeTaxRate(settings.taxRate),
         orderPrefix: stringOrEmpty(settings.orderPrefix) || 'TG',
         returnWindowDays: numberOrZero(settings.returnWindowDays) || 7,
         cancellationAllowedAfter: stringOrEmpty(settings.cancellationAllowedAfter) || 'Processing',
@@ -1032,7 +1053,7 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
           supportPhone: stringOrEmpty(settings.supportPhone) || null,
           address: stringOrEmpty(settings.address) || null,
           currency: stringOrEmpty(settings.currency) || 'INR',
-          taxRate: numberOrZero(settings.taxRate),
+          taxRate: normalizeTaxRate(settings.taxRate),
           orderPrefix: stringOrEmpty(settings.orderPrefix) || 'TG',
           returnWindowDays: numberOrZero(settings.returnWindowDays) || 7,
           cancellationAllowedAfter: stringOrEmpty(settings.cancellationAllowedAfter) || 'Processing',

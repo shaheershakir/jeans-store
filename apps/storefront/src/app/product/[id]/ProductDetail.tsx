@@ -165,7 +165,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       category: product.category,
       price: product.priceNum,
       currency: 'INR',
-      fit: product.fit,
+
       color: selectedColor || product.color,
       selected_size: selectedSize,
       sizes_available: availableSizes,
@@ -240,7 +240,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       category: product.category,
       price: product.priceNum,
       currency: 'INR',
-      fit: product.fit,
+
       color: selectedColor || product.color,
       size: selectedSize,
       quantity: 1,
@@ -259,7 +259,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       category: product.category,
       price: product.priceNum,
       currency: 'INR',
-      fit: product.fit,
+
       color: selectedColor || product.color,
       size: selectedSize,
       quantity: 1,
@@ -590,7 +590,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                       'Heavyweight 320 GSM honeycomb waffle knit providing natural warmth, stretch recovery, and ribbed storm cuffs.'}
                   </p>
                   <ul className="list-disc list-inside space-y-1 text-gray-500">
-                    <li>Fit: {product.fit || 'Regular'} silhouette with ergonomic shoulder slope</li>
+                    <li>Silhouette with ergonomic shoulder slope</li>
                     <li>Sleeve: Full sleeve with 2.5" stretch-ribbed storm cuffs</li>
                     <li>Collar: 1.25" twin-needle bound ribbed crew collar</li>
                     <li>Construction: High-density waffle stitch retaining drape wash after wash</li>
@@ -686,7 +686,7 @@ export default function ProductDetail({ product }: { product: Product }) {
         isOpen={isSizeGuideOpen}
         onClose={() => setIsSizeGuideOpen(false)}
         productCategory={product.category}
-        productFit={product.fit}
+
       />
     </div>
   )

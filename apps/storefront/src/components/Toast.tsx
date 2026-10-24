@@ -56,7 +56,6 @@ export default function Toast() {
       category: product.category,
       price: product.priceNum,
       currency: 'INR',
-      fit: product.fit,
       color: selectedColor || product.color,
       size,
       quantity: 1,

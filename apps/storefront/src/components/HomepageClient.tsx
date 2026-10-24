@@ -382,7 +382,7 @@ export default function HomepageClient({ products }: HomepageClientProps) {
               const href = getProductUrl(item)
               const imageSrc = item.img || item.images?.[0] || '/mock-assets/product-vintage-skate-clean.jpg'
               const swatches = getProductSwatches(item)
-              const subtitle = item.wash || item.color || item.fit || (item.category ? `${item.category}` : 'Everyday Fit')
+              const subtitle = item.color || item.category || 'Everyday Essential'
               return (
                 <div key={String(item.id)} className="group relative flex flex-col">
                   {/* Image Stage */}
@@ -539,7 +539,7 @@ export default function HomepageClient({ products }: HomepageClientProps) {
               const href = getProductUrl(item)
               const imageSrc = item.img || item.images?.[0] || '/mock-assets/prod-1-clean.jpg'
               const swatches = getProductSwatches(item)
-              const subtitle = item.fit ? `${item.fit} Fit` : item.wash || item.color || 'Everyday Essential'
+              const subtitle = item.color || item.category || 'Everyday Essential'
               return (
                 <div key={String(item.id)} className="group relative flex flex-col">
                   {/* Image Stage */}

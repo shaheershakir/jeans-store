@@ -12,8 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
-import type { Product, Fit } from '@/lib/constants'
-import { FITS } from '@/lib/constants'
+import type { Product } from '@/lib/constants'
 import type { PriceRange, SortMode } from '@/lib/store'
 import { useCartStore, useFilterStore } from '@/lib/store'
 import { filterAndSortProducts } from '@/lib/utils'
@@ -71,7 +70,6 @@ export type FacetKey =
   | 'waistSize'
   | 'color'
   | 'price'
-  | 'fit'
   | 'fabric'
   | 'material'
   | 'sleeveLength'
@@ -97,7 +95,6 @@ const FACET_TITLES: Record<FacetKey, string> = {
   waistSize: 'WAIST SIZE',
   color: 'COLOR',
   price: 'PRICE',
-  fit: 'FIT',
   fabric: 'FABRIC',
   material: 'MATERIAL',
   sleeveLength: 'SLEEVE LENGTH',
@@ -124,7 +121,6 @@ const FACET_DISPLAY_NAMES: Record<FacetKey, string> = {
   waistSize: 'Waist Size',
   color: 'Color',
   price: 'Price',
-  fit: 'Fit',
   fabric: 'Fabric',
   material: 'Material',
   sleeveLength: 'Sleeve Length',
@@ -235,7 +231,6 @@ interface ShopClientProps {
   initialProducts: Product[]
   category?: string
   initialCategories?: string[]
-  initialFit?: string
   title: string
   description?: string
   slug?: string
@@ -245,20 +240,17 @@ export default function ShopClient({
   initialProducts,
   category: routeCategory = 'all',
   initialCategories,
-  initialFit,
   title,
   slug = 'all',
 }: ShopClientProps) {
   const filterCategories = useFilterStore((s) => s.categories)
   const filterCategory = useFilterStore((s) => s.category)
-  const filterFit = useFilterStore((s) => s.fit)
   const prices = useFilterStore((s) => s.prices)
   const sort = useFilterStore((s) => s.sort)
   const searchQuery = useFilterStore((s) => s.searchQuery)
   const setCategory = useFilterStore((s) => s.setCategory)
   const setCategories = useFilterStore((s) => s.setCategories)
   const toggleCategory = useFilterStore((s) => s.toggleCategory)
-  const setFit = useFilterStore((s) => s.setFit)
   const togglePrice = useFilterStore((s) => s.togglePrice)
   const setSort = useFilterStore((s) => s.setSort)
   const setSearchQuery = useFilterStore((s) => s.setSearchQuery)
@@ -302,7 +294,6 @@ export default function ShopClient({
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const [selectedWaistSizes, setSelectedWaistSizes] = useState<string[]>([])
   const [selectedColors, setSelectedColors] = useState<string[]>([])
-  const [selectedFits, setSelectedFits] = useState<string[]>([])
   const [selectedFabrics, setSelectedFabrics] = useState<string[]>([])
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([])
   const [selectedSleeveLengths, setSelectedSleeveLengths] = useState<string[]>([])
@@ -332,7 +323,6 @@ export default function ShopClient({
     availability: false,
     discount: false,
     rating: false,
-    fit: false,
     fabric: false,
     material: false,
     sleeveLength: false,
@@ -404,10 +394,7 @@ export default function ShopClient({
     } else if (routeCategory && routeCategory !== 'all') {
       setCategories([routeCategory])
     }
-    if (initialFit && FITS.includes(initialFit as Fit)) {
-      setFit(initialFit as Fit)
-    }
-  }, [routeCategory, initialCategories, initialFit, setCategories, setFit])
+  }, [routeCategory, initialCategories, setCategories])
 
   // Sync query parameters on /shop route
   useEffect(() => {
@@ -448,16 +435,13 @@ export default function ShopClient({
         : (filterCategories.length > 0 ? filterCategories : 'all')
 
     return filterAndSortProducts(
-      filterFit,
       prices,
       sort,
       initialProducts,
       activeCats,
       searchQuery,
       selectedSizes,
-      [],
       {
-        fits: selectedFits,
         colors: selectedColors,
         fabrics: selectedFabrics,
         materials: selectedMaterials,
@@ -483,13 +467,11 @@ export default function ShopClient({
   }, [
     routeCategory,
     filterCategories,
-    filterFit,
     prices,
     sort,
     initialProducts,
     searchQuery,
     selectedSizes,
-    selectedFits,
     selectedColors,
     selectedFabrics,
     selectedMaterials,
@@ -527,7 +509,6 @@ export default function ShopClient({
     setSelectedSizes([])
     setSelectedWaistSizes([])
     setSelectedColors([])
-    setSelectedFits([])
     setSelectedFabrics([])
     setSelectedMaterials([])
     setSelectedSleeveLengths([])
@@ -556,8 +537,6 @@ export default function ShopClient({
   // Active filter count
   const activeFilterCount =
     (routeCategory === 'all' ? filterCategories.length : 0) +
-    (filterFit !== 'all' ? 1 : 0) +
-    selectedFits.length +
     prices.length +
     selectedSizes.length +
     selectedWaistSizes.length +
@@ -633,9 +612,7 @@ export default function ShopClient({
     // Color
     COLOR_PALETTE.forEach(({ name }) => {
       map[`color-${name}`] = poolForCounts.filter(
-        (p) =>
-          p.color?.toLowerCase() === name.toLowerCase() ||
-          p.wash?.toLowerCase().includes(name.toLowerCase())
+        (p) => p.color?.toLowerCase() === name.toLowerCase()
       ).length
     })
 
@@ -645,11 +622,6 @@ export default function ShopClient({
       (p) => p.priceNum >= 1500 && p.priceNum <= 1999
     ).length
     map['price-above-2000'] = poolForCounts.filter((p) => p.priceNum >= 2000).length
-
-    // Fit
-    ;['Slim', 'Regular', 'Relaxed', 'Oversized', 'Boxy', 'Baggy'].forEach((f) => {
-      map[`fit-${f}`] = poolForCounts.filter((p) => p.fit === f).length
-    })
 
     // Fabric
     ;['Cotton', 'Cotton blend', 'Polyester', 'French terry', 'Fleece'].forEach(
@@ -773,8 +745,6 @@ export default function ShopClient({
         return selectedColors.length > 0
       case 'price':
         return prices.length > 0
-      case 'fit':
-        return selectedFits.length > 0 || filterFit !== 'all'
       case 'fabric':
         return selectedFabrics.length > 0
       case 'material':
@@ -952,34 +922,6 @@ export default function ShopClient({
                   {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                 </span>
                 <span className="font-ui text-[13px] font-normal text-gray-900">{PRICE_LABELS[range]}</span>
-                <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
-              </label>
-            )
-          })}
-        </div>
-      )
-    } else if (key === 'fit') {
-      const fitOptions = ['Slim', 'Regular', 'Relaxed', 'Oversized', 'Boxy', 'Baggy']
-      content = (
-        <div className="flex flex-col gap-2.5">
-          {fitOptions.map((f) => {
-            const isChecked = selectedFits.includes(f) || filterFit === f
-            const count = counts[`fit-${f}`] ?? 0
-            return (
-              <label key={f} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
-                <input
-                  className="peer pointer-events-none absolute h-0 w-0 opacity-0"
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => {
-                    if (filterFit === f) setFit('all')
-                    toggleStringItem(setSelectedFits, f)
-                  }}
-                />
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
-                  {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
-                </span>
-                <span className="font-ui text-[13px] font-normal text-gray-900">{f}</span>
                 <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
               </label>
             )

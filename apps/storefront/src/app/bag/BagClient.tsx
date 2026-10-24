@@ -249,9 +249,6 @@ export default function BagClient() {
                       {item.color && (
                         <span className="inline-flex items-center rounded-[4px] border border-line bg-bone px-2 py-[3px] font-ui text-[11.5px] font-medium leading-[1.3] text-ink-secondary">{item.color}</span>
                       )}
-                      <span className="inline-flex items-center rounded-[4px] border border-line bg-[#f4f4f5] px-2 py-[3px] font-ui text-[11.5px] font-semibold leading-[1.3] text-ink">
-                        {item.fit ? `${item.fit} Fit` : 'Relaxed Fit'}
-                      </span>
                       <span className="inline-flex items-center rounded-[4px] border border-line bg-bone px-2 py-[3px] font-ui text-[11.5px] font-medium leading-[1.3] text-ink-secondary">
                         Size {item.size}
                       </span>

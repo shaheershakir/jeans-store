@@ -434,7 +434,6 @@ export default function CartDrawer() {
                           <p className="m-0 font-ui text-[12px] text-[#71717a]">
                             {[
                               item.color,
-                              item.fit ? `${item.fit} Fit` : null,
                               `Size ${item.size}`
                             ]
                               .filter(Boolean)

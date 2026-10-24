@@ -9,7 +9,7 @@ interface Props {
 
 const SLUG_TO_CONFIG: Record<
   string,
-  { category: string; fit?: string; title: string; desc: string }
+  { category: string; title: string; desc: string }
 > = {
   all: {
     category: 'all',
@@ -93,7 +93,6 @@ export default async function ShopCategoryPage({ params }: Props) {
     <ShopClient
       initialProducts={products}
       category={config.category}
-      initialFit={config.fit}
       title={config.title}
       description={config.desc}
       slug={category.toLowerCase()}

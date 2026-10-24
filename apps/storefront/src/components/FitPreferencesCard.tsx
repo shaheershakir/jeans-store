@@ -17,7 +17,6 @@ import {
   DEFAULT_PREFERENCES,
   type FitPreferences
 } from '@/lib/store'
-import type { Fit } from '@/lib/constants'
 
 const WAIST_OPTIONS = [
   { size: '28', cm: '71 cm', label: '28"' },
@@ -38,7 +37,7 @@ const TOP_OPTIONS = [
 ]
 
 const FIT_OPTIONS: Array<{
-  fit: Fit
+  fit: string
   tagline: string
   desc: string
 }> = [
@@ -129,7 +128,7 @@ export default function FitPreferencesCard({ standalone = false }: FitPreference
     triggerFeedback(`Top size ${top} auto-selected on tees, shirts & hoodies`)
   }
 
-  const handleSelectFit = (fit: Fit) => {
+  const handleSelectFit = (fit: string) => {
     updatePreferences({ preferredFit: fit })
     triggerFeedback(`Signature silhouette set to ${fit}`)
   }

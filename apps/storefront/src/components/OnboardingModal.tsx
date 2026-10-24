@@ -21,7 +21,6 @@ import {
   useUIStore,
   type FitPreferences
 } from '@/lib/store'
-import type { Fit } from '@/lib/constants'
 
 const WAIST_OPTIONS = [
   { size: '28', cm: '71 cm', label: '28"' },
@@ -42,7 +41,7 @@ const TOP_OPTIONS = [
 ]
 
 const FIT_OPTIONS: Array<{
-  fit: Fit
+  fit: string
   tagline: string
   desc: string
 }> = [
@@ -138,7 +137,7 @@ export default function OnboardingModal({ standalone = false }: OnboardingModalP
   // Step 2: Fit & Size preference states
   const [waistSize, setWaistSize] = useState(preferences.waistSize || '32')
   const [topSize, setTopSize] = useState(preferences.topSize || 'M')
-  const [preferredFit, setPreferredFit] = useState<Fit>(preferences.preferredFit || 'Baggy')
+  const [preferredFit, setPreferredFit] = useState<string>(preferences.preferredFit || 'Baggy')
   const [inseam, setInseam] = useState(preferences.inseam || '32')
   const [comfortFit, setComfortFit] = useState<FitPreferences['comfortFit']>(
     preferences.comfortFit || 'relaxed'

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import type { Fit } from '@/lib/constants'
 
 export interface CarouselSlide {
   id: string
@@ -22,7 +21,7 @@ export interface CarouselSlide {
   buttons: {
     label: string
     category?: string
-    fit?: Fit
+    fit?: string
     href?: string
   }[]
 }
@@ -89,7 +88,7 @@ const CAROUSEL_SLIDES: CarouselSlide[] = [
 
 interface HeroCarouselProps {
   onSelectCategory?: (category: string) => void
-  onSelectFit?: (fit: Fit) => void
+  onSelectFit?: (fit: string) => void
 }
 
 export default function HeroCarousel({ onSelectCategory, onSelectFit }: HeroCarouselProps) {

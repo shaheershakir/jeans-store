@@ -1,4 +1,4 @@
-import type { Fit, Product } from './constants'
+import type { Product } from './constants'
 import type { SortMode } from './store'
 import { PRODUCTS } from './constants'
 
@@ -24,7 +24,7 @@ export function formatPrice(value: number): string {
 }
 
 export interface AdvancedFilterOptions {
-  fits?: string[]
+
   colors?: string[]
   fabrics?: string[]
   sleeveLengths?: string[]
@@ -48,14 +48,14 @@ export interface AdvancedFilterOptions {
 }
 
 export function filterAndSortProducts(
-  fit: Fit | 'all',
+
   prices: string[],
   sort: SortMode,
   catalog: Product[] = PRODUCTS,
   category: string | string[] | 'all' = 'all',
   searchQuery: string = '',
   sizes: string[] = [],
-  washes: string[] = [],
+
   advanced?: AdvancedFilterOptions
 ): Product[] {
   let list = [...catalog]
@@ -65,8 +65,8 @@ export function filterAndSortProducts(
     list = list.filter(
       (p) =>
         p.name.toLowerCase().includes(clean) ||
-        (p.fit && p.fit.toLowerCase().includes(clean)) ||
-        (p.wash && p.wash.toLowerCase().includes(clean)) ||
+
+
         (p.color && p.color.toLowerCase().includes(clean)) ||
         (p.fabric && p.fabric.toLowerCase().includes(clean)) ||
         (p.material && p.material.toLowerCase().includes(clean)) ||
@@ -96,13 +96,6 @@ export function filterAndSortProducts(
     }
   }
 
-  if (fit !== 'all') {
-    list = list.filter((p) => p.fit === fit)
-  }
-
-  if (advanced?.fits && advanced.fits.length > 0) {
-    list = list.filter((p) => p.fit && advanced.fits?.includes(p.fit))
-  }
 
   if (prices.length > 0) {
     list = list.filter((p) =>
@@ -121,17 +114,11 @@ export function filterAndSortProducts(
     )
   }
 
-  if (washes.length > 0) {
-    list = list.filter((p) =>
-      p.wash && washes.some((w) => p.wash?.toLowerCase().includes(w.toLowerCase()))
-    )
-  }
 
   if (advanced?.colors && advanced.colors.length > 0) {
     list = list.filter((p) =>
       advanced.colors?.some((c) =>
-        (p.color && p.color.toLowerCase() === c.toLowerCase()) ||
-        (p.wash && p.wash.toLowerCase().includes(c.toLowerCase()))
+        (p.color && p.color.toLowerCase() === c.toLowerCase())
       )
     )
   }
@@ -277,8 +264,6 @@ export function searchProducts(query: string, catalog: Product[] = PRODUCTS): Pr
   return catalog.filter(
     (p) =>
       p.name.toLowerCase().includes(clean) ||
-      (p.fit && p.fit.toLowerCase().includes(clean)) ||
-      (p.wash && p.wash.toLowerCase().includes(clean)) ||
       p.desc.toLowerCase().includes(clean) ||
       p.price.toLowerCase().includes(clean)
   )

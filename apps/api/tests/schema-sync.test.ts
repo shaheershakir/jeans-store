@@ -56,7 +56,9 @@ test('Single source of truth in @jeans-store/db (Phase 5)', async (t) => {
       '0006_dashing_the_executioner.sql',
       '0007_product_tax_rate_fraction.sql',
       '0008_free_size_shared_stock.sql',
-      '0009_material_shen.sql'
+      '0009_material_shen.sql',
+      '0010_useful_leech.sql',
+      '0011_schema_cleanup.sql'
     ]
 
     const sqlFiles = fs.readdirSync(pkgDrizzle).filter((f) => f.endsWith('.sql'))

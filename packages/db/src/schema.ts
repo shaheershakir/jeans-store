@@ -32,7 +32,7 @@ export const users = pgTable(
   {
     id: serial('id').primaryKey(),
     uid: varchar('uid', { length: 128 }).notNull().unique(),
-    email: varchar('email', { length: 255 }).notNull().unique(),
+    email: varchar('email', { length: 255 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
     passwordHash: text('password_hash'),
     provider: varchar('provider', { length: 50 }).default('cloud-iam').notNull(),
@@ -47,7 +47,7 @@ export const roles = pgTable(
   'roles',
   {
     id: serial('id').primaryKey(),
-    name: varchar('name', { length: 100 }).notNull().unique(),
+    name: varchar('name', { length: 100 }).notNull(),
     description: text('description'),
     permissions: text('permissions').array().notNull().default(sql`'{}'::text[]`),
     ...timestamps
@@ -60,7 +60,7 @@ export const adminUsers = pgTable(
   {
     id: serial('id').primaryKey(),
     name: varchar('name', { length: 255 }).notNull(),
-    email: varchar('email', { length: 255 }).notNull().unique(),
+    email: varchar('email', { length: 255 }).notNull(),
     passwordHash: text('password_hash'),
     roleId: integer('role_id').references(() => roles.id, { onDelete: 'set null' }),
     status: varchar('status', { length: 20 }).default('Active').notNull(),
@@ -81,7 +81,7 @@ export const categories = pgTable(
   'categories',
   {
     id: serial('id').primaryKey(),
-    slug: varchar('slug', { length: 60 }).notNull().unique(),
+    slug: varchar('slug', { length: 60 }).notNull(),
     name: varchar('name', { length: 100 }).notNull(),
     description: text('description'),
     imageUrl: text('image_url'),
@@ -101,7 +101,7 @@ export const collections = pgTable(
   'collections',
   {
     id: serial('id').primaryKey(),
-    slug: varchar('slug', { length: 80 }).notNull().unique(),
+    slug: varchar('slug', { length: 80 }).notNull(),
     name: varchar('name', { length: 120 }).notNull(),
     description: text('description'),
     imageUrl: text('image_url'),
@@ -124,7 +124,7 @@ export const products = pgTable(
       .notNull()
       .references(() => categories.id, { onDelete: 'restrict' }),
     collectionId: integer('collection_id').references(() => collections.id, { onDelete: 'set null' }),
-    slug: varchar('slug', { length: 160 }).notNull().unique(),
+    slug: varchar('slug', { length: 160 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description').notNull(),
     status: varchar('status', { length: 20 }).default('draft').notNull(),
@@ -189,7 +189,7 @@ export const productVariants = pgTable(
     productId: uuid('product_id')
       .notNull()
       .references(() => products.id, { onDelete: 'cascade' }),
-    sku: varchar('sku', { length: 100 }).notNull().unique(),
+    sku: varchar('sku', { length: 100 }).notNull(),
     size: varchar('size', { length: 50 }).notNull(),
     color: varchar('color', { length: 50 }).notNull(),
     price: integer('price'),
@@ -274,6 +274,7 @@ export const customerAddresses = pgTable(
     label: varchar('label', { length: 30 }).default('Home').notNull(),
     line1: text('line1').notNull(),
     line2: text('line2'),
+    landmark: varchar('landmark', { length: 255 }),
     city: varchar('city', { length: 100 }).notNull(),
     state: varchar('state', { length: 100 }).notNull(),
     pincode: varchar('pincode', { length: 20 }).notNull(),
@@ -298,7 +299,7 @@ export const coupons = pgTable(
   'coupons',
   {
     id: serial('id').primaryKey(),
-    code: varchar('code', { length: 60 }).notNull().unique(),
+    code: varchar('code', { length: 60 }).notNull(),
     description: text('description'),
     type: varchar('type', { length: 20 }).notNull(),
     value: integer('value').notNull(),
@@ -926,7 +927,7 @@ export const storeSettings = pgTable('store_settings', {
   supportPhone: varchar('support_phone', { length: 50 }),
   address: text('address'),
   currency: varchar('currency', { length: 3 }).default('INR').notNull(),
-  taxRate: integer('tax_rate').default(0).notNull(),
+  taxRate: real('tax_rate').default(0).notNull(),
   orderPrefix: varchar('order_prefix', { length: 10 }).default('TG').notNull(),
   returnWindowDays: integer('return_window_days').default(7).notNull(),
   cancellationAllowedAfter: varchar('cancellation_allowed_after', { length: 40 }).default('Processing').notNull(),
@@ -937,7 +938,7 @@ export const storeSettings = pgTable('store_settings', {
   notifyReviewAlerts: boolean('notify_review_alerts').default(true).notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 }, (t) => [
-  check('store_settings_tax_rate_check', sql.raw('tax_rate >= 0 AND tax_rate <= 100')),
+  check('store_settings_tax_rate_check', sql.raw('tax_rate >= 0 AND tax_rate <= 1')),
   check('store_settings_return_window_check', sql.raw('return_window_days >= 0'))
 ])
 

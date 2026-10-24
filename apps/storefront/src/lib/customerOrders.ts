@@ -2,8 +2,6 @@ export interface CustomerOrderItem {
   id: string
   name: string
   size: string
-  fit?: string
-  wash?: string
   price: string
   priceNum: number
   img: string
@@ -36,8 +34,6 @@ interface ApiOrder {
     id: string
     name?: string
     size: string
-    fit?: string
-    wash?: string
     price?: string
     priceNum?: number
     img?: string
@@ -93,8 +89,6 @@ function mapOrder(order: ApiOrder): CustomerOrder {
         id: item.id,
         name: item.name || 'TEESGARAGE product',
         size: item.size,
-        fit: item.fit,
-        wash: item.wash,
         price: item.price || `₹${priceNum.toLocaleString('en-IN')}`,
         priceNum,
         img: item.img || '/featured-collection.jpg',

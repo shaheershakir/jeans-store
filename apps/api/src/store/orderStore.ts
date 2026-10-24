@@ -396,22 +396,43 @@ class OrderStore {
       customerId = created.id
     }
 
-    const [existingAddress] = await executor
-      .select({ id: customerAddressesTable.id })
+    const existingAddresses = await executor
+      .select({
+        id: customerAddressesTable.id,
+        line1: customerAddressesTable.line1,
+        city: customerAddressesTable.city,
+        state: customerAddressesTable.state,
+        pincode: customerAddressesTable.pincode
+      })
       .from(customerAddressesTable)
       .where(eq(customerAddressesTable.customerId, customerId))
 
-    if (!existingAddress) {
+    const normalize = (val: string | null | undefined) => (val ?? '').trim().toLowerCase()
+    const targetLine1 = normalize(input.address)
+    const targetCity = normalize(input.city)
+    const targetState = normalize(input.state)
+    const targetPincode = normalize(input.pincode)
+
+    const addressExists = existingAddresses.some(
+      (addr) =>
+        normalize(addr.line1) === targetLine1 &&
+        normalize(addr.city) === targetCity &&
+        normalize(addr.state) === targetState &&
+        normalize(addr.pincode) === targetPincode
+    )
+
+    if (!addressExists) {
       await executor.insert(customerAddressesTable).values({
         customerId,
         label: 'Home',
         line1: input.address,
         line2: input.apartment ?? null,
+        landmark: (input as any).landmark ?? null,
         city: input.city,
         state: input.state,
         pincode: input.pincode,
         phone: input.customerPhone,
-        isDefault: true
+        isDefault: existingAddresses.length === 0
       })
     }
 

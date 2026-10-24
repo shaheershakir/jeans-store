@@ -40,7 +40,6 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       initialProducts={products}
       category="all"
       initialCategories={initialCategories}
-      initialFit={params.fit}
       title="All Garments"
       description="Explore the complete TEESGARAGE archive. Heavyweight tees, everyday tops, structured shirts, trackpants, and sweatpants."
       slug="all"

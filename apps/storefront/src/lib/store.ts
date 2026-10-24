@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Fit, Product } from './constants'
+import type { Product } from './constants'
 import { PRODUCTS } from './constants'
 import { identifyUser, resetUser } from './analytics'
 
@@ -12,8 +12,8 @@ export interface CartItem {
   variantId?: number
   color?: string
   name: string
-  fit?: Fit
-  wash?: string
+
+
   price: string
   priceNum: number
   img: string
@@ -78,8 +78,8 @@ export const useCartStore = create<CartState>()(
                 variantId: variant?.id,
                 color: variant?.color ?? color ?? product.color,
                 name: product.name,
-                fit: product.fit,
-                wash: product.wash,
+
+
                 price: variant?.price ? `₹${variant.price.toLocaleString('en-IN')}` : product.price,
                 priceNum: variant?.price ?? product.priceNum,
                 img: product.img,
@@ -129,14 +129,14 @@ export type PriceRange = 'under-1500' | '1500-2000' | 'above-2000'
 interface FilterState {
   category: string | 'all'
   categories: string[]
-  fit: Fit | 'all'
+
   prices: PriceRange[]
   sort: SortMode
   searchQuery: string
   setCategory: (category: string | 'all') => void
   setCategories: (categories: string[]) => void
   toggleCategory: (category: string) => void
-  setFit: (fit: Fit | 'all') => void
+
   togglePrice: (range: PriceRange) => void
   setSort: (sort: SortMode) => void
   setSearchQuery: (query: string) => void
@@ -148,7 +148,7 @@ export const useFilterStore = create<FilterState>()(
     (set) => ({
       category: 'all',
       categories: [],
-      fit: 'all',
+
       prices: [],
       sort: 'featured',
       searchQuery: '',
@@ -190,7 +190,7 @@ export const useFilterStore = create<FilterState>()(
             category: next.length === 0 ? 'all' : (next.length === 1 ? next[0] : next.join(','))
           }
         }),
-      setFit: (fit) => set({ fit }),
+
       togglePrice: (range) =>
         set((state) => ({
           prices: state.prices.includes(range)
@@ -203,7 +203,7 @@ export const useFilterStore = create<FilterState>()(
         set({
           category: 'all',
           categories: [],
-          fit: 'all',
+    
           prices: [],
           sort: 'featured',
           searchQuery: ''
@@ -439,7 +439,7 @@ export const useFavoriteStore = create<FavoriteState>()(
 export interface FitPreferences {
   waistSize: string
   topSize: string
-  preferredFit: Fit
+  preferredFit: string
   inseam: string
   comfortFit: 'true-to-size' | 'relaxed' | 'snug'
 }

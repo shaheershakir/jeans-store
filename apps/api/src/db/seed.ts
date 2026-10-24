@@ -88,10 +88,10 @@ export async function seedIfEmpty(): Promise<boolean> {
   }
 
   console.log(`Seeding ${CATEGORY_SEED.length} categories...`)
-  await db.insert(categories).values(CATEGORY_SEED).onConflictDoNothing({ target: categories.slug })
+  await db.insert(categories).values(CATEGORY_SEED).onConflictDoNothing()
 
   console.log(`Seeding ${ROLE_SEED.length} admin roles...`)
-  await db.insert(roles).values(ROLE_SEED).onConflictDoNothing({ target: roles.name })
+  await db.insert(roles).values(ROLE_SEED).onConflictDoNothing()
 
   console.log('Seeding store settings...')
   await db

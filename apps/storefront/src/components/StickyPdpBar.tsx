@@ -141,7 +141,7 @@ export default function StickyPdpBar({
     return 0
   })
 
-  const colorOrWash = product.wash || selectedColor || product.color || ''
+  const colorOrWash = selectedColor || product.color || ''
 
   return createPortal(
     <aside

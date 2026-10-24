@@ -225,9 +225,7 @@ export default function UserOrdersModal({ isOpen, onClose, userEmail }: UserOrde
                         <div className="apple-order-item-details">
                           <h4 className="apple-order-item-name">{item.name}</h4>
                           <p className="apple-order-item-spec">
-                            {[item.fit ? `${item.fit} Fit` : null, `Size ${item.size}`, item.wash]
-                              .filter(Boolean)
-                              .join(' · ')}
+                            {[`Size ${item.size}`].join(' · ')}
                           </p>
                           <span className="apple-order-item-qty">Qty: {item.qty}</span>
                         </div>

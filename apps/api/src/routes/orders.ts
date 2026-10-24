@@ -842,14 +842,12 @@ async function handleOrderConfirmationLookup(req: Request, res: Response): Promi
       items: order.items.map((item) => ({
         id: item.id,
         name: item.name,
-        fit: item.fit,
         size: item.size,
         quantity: item.quantity,
         price: item.price,
         priceNum: item.priceNum,
         img: item.img,
-        color: (item as any).color || (item as any).variantLabel,
-        wash: (item as any).wash
+        color: (item as any).color || (item as any).variantLabel
       }))
     }
   })

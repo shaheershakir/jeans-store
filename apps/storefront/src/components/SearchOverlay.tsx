@@ -154,7 +154,7 @@ export default function SearchOverlay() {
                     <h4 className="mb-0.5 font-brand text-[12px] font-semibold leading-[normal] max-[640px]:text-[13px]">{p.name}</h4>
                   </Link>
                   <p className="font-ui text-[11px] font-medium leading-[normal] text-ink-muted [font-feature-settings:'tnum']">
-                    {p.fit} fit · {p.wash}
+                    {p.color || p.category || 'Standard'}
                   </p>
                   <strong>{p.price}</strong>
                 </div>

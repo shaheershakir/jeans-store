@@ -24,7 +24,7 @@ import {
   TrendingUp
 } from 'lucide-react'
 import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore, useFavoriteStore } from '@/lib/store'
-import { DEFAULT_NAV_LINKS, type NavigationItem, type Fit, PRODUCTS } from '@/lib/constants'
+import { DEFAULT_NAV_LINKS, type NavigationItem, PRODUCTS } from '@/lib/constants'
 import { searchProducts } from '@/lib/utils'
 import UserOrdersModal from '@/components/UserOrdersModal'
 import MobileTabBar from '@/components/MobileTabBar'
@@ -44,7 +44,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const items = useCartStore((state) => state.items)
   const openOverlay = useUIStore((state) => state.openOverlay)
   const closeOverlay = useUIStore((state) => state.closeOverlay)
-  const setFit = useFilterStoreSync()
   const setCategory = useFilterStore((state) => state.setCategory)
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -156,19 +155,11 @@ export default function Header({ initialNavItems }: HeaderProps) {
       if (link.type === 'category') {
         const target = link.targetValue || 'all'
         setCategory(target)
-      } else if (link.type === 'fit') {
-        const target = (link.targetValue || 'all') as Fit | 'all'
-        setFit(target)
       }
       return
     }
 
-    if (link.type === 'fit') {
-      if (e) e.preventDefault()
-      const target = (link.targetValue || 'all') as Fit | 'all'
-      setFit(target)
-      router.push(`/shop?fit=${target}`)
-    } else if (link.type === 'category') {
+    if (link.type === 'category') {
       if (e) e.preventDefault()
       const target = link.targetValue || 'all'
       setCategory(target)
@@ -185,7 +176,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
   const handleShopAllClick = () => {
     setCategory('all')
-    setFit('all')
     router.push('/shop')
   }
 
@@ -704,7 +694,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                       <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
                         <span className="block truncate text-[13.5px] font-semibold text-[#182126]">{product.name}</span>
                         <span className="text-[12px] text-[#6b7280]">
-                          {product.fit ? `${product.fit} fit` : product.category} · {product.price}
+                          {product.category || 'Apparel'} · {product.price}
                         </span>
                       </div>
                       <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#d1d5db]" />
@@ -720,7 +710,3 @@ export default function Header({ initialNavItems }: HeaderProps) {
   )
 }
 
-function useFilterStoreSync() {
-  const setFit = useFilterStore((state) => state.setFit)
-  return setFit
-}

@@ -10,7 +10,7 @@ export interface BaseProductProperties {
   category?: string
   price: number
   currency?: string
-  fit?: string
+
   in_stock?: boolean
 }
 

@@ -789,8 +789,6 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         img: product.img,
         size: productSize,
         color: productColor,
-        wash: product.wash,
-        fit: product.fit,
         qty: productQty
       }
     ]
@@ -1475,14 +1473,12 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                     : items.map((item) => ({
                         id: item.id,
                         name: item.name,
-                        fit: item.fit,
                         size: item.size,
                         quantity: item.qty,
                         price: item.price,
                         priceNum: item.priceNum,
                         img: item.img,
-                        color: item.color,
-                        wash: item.wash
+                        color: item.color
                       }))
                 })
               )
@@ -1617,14 +1613,12 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
               : items.map((item) => ({
                   id: item.id,
                   name: item.name,
-                  fit: item.fit,
                   size: item.size,
                   quantity: item.qty,
                   price: item.price,
                   priceNum: item.priceNum,
                   img: item.img,
-                  color: item.color,
-                  wash: item.wash
+                  color: item.color
                 }))
           })
         )

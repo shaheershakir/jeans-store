@@ -146,10 +146,9 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
 
   const activeColor = swatches[activeColorIdx]?.name || product.color || 'Standard'
   const colorWashLabel =
-    product.wash ||
-    (swatches.length > 1
+    swatches.length > 1
       ? `${swatches[0].name} / ${swatches[1].name}`
-      : product.color || swatches[0]?.name || 'Pitch Black')
+      : product.color || swatches[0]?.name || 'Pitch Black'
 
   const displaySize =
     selectedSize ||
@@ -176,7 +175,6 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
         category: product.category,
         price: product.priceNum,
         currency: 'INR',
-        fit: product.fit,
         color: activeColor,
         size: singleSize,
         quantity: 1,
@@ -229,7 +227,6 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
       product_slug: getProductSlug(product),
       category: product.category,
       price: product.priceNum,
-      fit: product.fit,
       source_location: 'product_card',
       in_stock: availableSizes.length > 0
     })

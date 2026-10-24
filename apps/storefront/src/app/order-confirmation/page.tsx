@@ -23,14 +23,12 @@ import { useAuthStore, useFavoriteStore, useUIStore } from '@/lib/store'
 interface ConfirmationItem {
   id: string
   name: string
-  fit?: string
   size: string
   quantity: number
   price?: string
   priceNum?: number
   img?: string
   color?: string
-  wash?: string
 }
 
 interface OrderConfirmation {
@@ -596,7 +594,7 @@ function OrderConfirmationContent() {
 
                 <div className="mt-7 flex flex-col gap-5">
                   {pricedItems.map((item, index) => {
-                    const variant = [item.color || item.wash, item.size]
+                    const variant = [item.color, item.size]
                       .filter(Boolean)
                       .join(' / ')
 

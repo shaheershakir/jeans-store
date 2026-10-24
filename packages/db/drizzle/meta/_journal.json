@@ -78,6 +78,13 @@
       "when": 1792788854266,
       "tag": "0010_useful_leech",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792880000000,
+      "tag": "0011_schema_cleanup",
+      "breakpoints": true
     }
   ]
 }

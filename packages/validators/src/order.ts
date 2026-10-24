@@ -4,7 +4,6 @@ export const orderItemSchema = z.object({
   id: z.string().uuid(),
   variantId: z.union([z.number().int().positive(), z.null()]).optional().transform((v) => v ?? undefined),
   name: z.string(),
-  fit: z.string().optional(),
   size: z.string(),
   price: z.string(),
   priceNum: z.number(),
