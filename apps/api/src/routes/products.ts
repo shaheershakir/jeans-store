@@ -38,11 +38,11 @@ const skuPreviewSchema = z.object({
   productType: z.string().optional(),
   color: z.string().default('Black'),
   size: z.union([z.string(), z.number()]).default('M'),
-  productId: z.union([z.string(), z.number()]).optional()
+  productId: z.string().uuid().optional()
 })
 
 const skuBatchGenerateSchema = z.object({
-  productId: z.union([z.string(), z.number()]).optional(),
+  productId: z.string().uuid().optional(),
   variants: z.array(
     z.object({
       category: z.string().optional(),
@@ -240,7 +240,7 @@ productRouter.get('/api/products', async (req: Request, res: Response) => {
   } else if (sort === 'price-desc') {
     list.sort((a, b) => b.priceNum - a.priceNum)
   } else {
-    list.sort((a, b) => a.id.localeCompare(b.id))
+    list.sort((a, b) => String(a.id).localeCompare(String(b.id)))
   }
 
   res.json({ count: list.length, products: list })

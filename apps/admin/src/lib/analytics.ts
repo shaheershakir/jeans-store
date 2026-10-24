@@ -253,7 +253,7 @@ export interface ProductPerformance {
 }
 
 export function topProducts(data: DbState, limit = 8): ProductPerformance[] {
-  const sold = new Map<number, { units: number; revenue: number }>()
+  const sold = new Map<string, { units: number; revenue: number }>()
   const byProduct = new Map(data.products.map((p) => [p.id, p]))
   for (const o of data.orders) {
     for (const item of o.items) {
@@ -263,7 +263,7 @@ export function topProducts(data: DbState, limit = 8): ProductPerformance[] {
       sold.set(item.productId, entry)
     }
   }
-  const returnedUnits = new Map<number, number>()
+  const returnedUnits = new Map<string, number>()
   for (const r of data.returns) {
     for (const item of r.items) {
       returnedUnits.set(item.productId, (returnedUnits.get(item.productId) ?? 0) + item.quantity)
@@ -429,7 +429,7 @@ export function reviewStats(data: DbState): ReviewStats {
   const rated = data.reviews.filter((r) => r.rating > 0)
   const average = rated.length ? rated.reduce((s, r) => s + r.rating, 0) / rated.length : 0
 
-  const grouped = new Map<number, Review[]>()
+  const grouped = new Map<string, Review[]>()
   for (const r of data.reviews) {
     const list = grouped.get(r.productId) ?? []
     list.push(r)
@@ -440,7 +440,7 @@ export function reviewStats(data: DbState): ReviewStats {
     .map(([pid, list]) => ({ productId: pid, avg: list.reduce((s, r) => s + r.rating, 0) / list.length }))
     .sort((a, b) => b.avg - a.avg)
   const byProduct = new Map(data.products.map((p) => [p.id, p]))
-  const top = (list: { productId: number }[], count: number) =>
+  const top = (list: { productId: string }[], count: number) =>
     list.slice(0, count).flatMap((item) => {
       const product = byProduct.get(item.productId)
       if (!product) return []
@@ -618,7 +618,7 @@ export interface ViewConversionRow {
 }
 
 export function highViewsLowSales(data: DbState, limit = 5): ViewConversionRow[] {
-  const sold = new Map<number, number>()
+  const sold = new Map<string, number>()
   for (const o of data.orders) {
     for (const item of o.items) {
       sold.set(item.productId, (sold.get(item.productId) ?? 0) + item.quantity)

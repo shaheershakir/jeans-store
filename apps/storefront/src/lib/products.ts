@@ -105,7 +105,7 @@ export async function getProductBySlug(slug: string): Promise<Product | undefine
     (p) =>
       slugify(p.name) === cleanSlug ||
       String(p.id) === cleanSlug ||
-      (String(p.id) === '3' && (cleanSlug === 'thermal-waffle-knit-tee' || cleanSlug === 'thermal-waffle-knit-fullsleeve-tee'))
+      (p.name === 'Thermal Waffle Knit Tee' && cleanSlug === 'thermal-waffle-knit-fullsleeve-tee')
   )
 }
 

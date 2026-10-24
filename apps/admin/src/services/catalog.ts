@@ -6,7 +6,7 @@ import type { Collection, Product, ProductStatus, SizeChart } from '@/lib/types'
 
 interface ApiVariant {
   id?: number
-  productId?: number
+  productId?: string
   sku?: string
   size: number | string
   color: string
@@ -20,7 +20,7 @@ interface ApiVariant {
 }
 
 interface ApiProduct {
-  id: number
+  id: string
   store?: string
   category?: string
   name: string
@@ -185,24 +185,24 @@ export async function updateProduct(input: ProductInput): Promise<Product> {
   return fromApiProduct(response.product)
 }
 
-export async function deleteProduct(id: number): Promise<void> {
+export async function deleteProduct(id: string): Promise<void> {
   await apiFetch(`/api/products/${id}`, { method: 'DELETE' })
   await fetchBackendProducts()
 }
 
-export async function setProductStatus(id: number, status: ProductStatus): Promise<void> {
+export async function setProductStatus(id: string, status: ProductStatus): Promise<void> {
   const current = useAdminStore.getState().data.products.find((item) => item.id === id)
   if (!current) throw new Error('Product not found.')
   await updateProduct({ ...current, status })
 }
 
-export async function bulkSetProductStatus(ids: number[], status: ProductStatus): Promise<void> {
+export async function bulkSetProductStatus(ids: string[], status: ProductStatus): Promise<void> {
   const products = useAdminStore.getState().data.products.filter((item) => ids.includes(item.id))
   for (const product of products) await updateProduct({ ...product, status })
   await fetchBackendProducts()
 }
 
-export async function bulkDeleteProducts(ids: number[]): Promise<void> {
+export async function bulkDeleteProducts(ids: string[]): Promise<void> {
   for (const id of ids) await apiFetch(`/api/products/${id}`, { method: 'DELETE' })
   await fetchBackendProducts()
 }

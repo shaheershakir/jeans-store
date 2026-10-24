@@ -119,8 +119,8 @@ export async function seedIfEmpty(): Promise<boolean> {
   console.log(`Seeding ${PRODUCTS.length} products from the source catalog...`)
   for (let index = 0; index < PRODUCTS.length; index++) {
     const product = PRODUCTS[index]
-    const { id: _id, createdAt: _createdAt, variants: _variants, ...input } = product
-    await store.create(input as CreateProduct)
+    const { id, createdAt: _createdAt, variants: _variants, ...input } = product
+    await store.create(input as CreateProduct, id)
     if ((index + 1) % 5 === 0 || index === PRODUCTS.length - 1) {
       console.log(`  seeded ${index + 1}/${PRODUCTS.length}`)
     }
@@ -137,9 +137,6 @@ export async function seedIfEmpty(): Promise<boolean> {
 
   await db.execute(
     sql`SELECT setval(pg_get_serial_sequence('categories', 'id'), COALESCE((SELECT MAX(id) FROM categories), 1), true)`
-  )
-  await db.execute(
-    sql`SELECT setval(pg_get_serial_sequence('products', 'id'), COALESCE((SELECT MAX(id) FROM products), 1), true)`
   )
   await db.execute(
     sql`SELECT setval(pg_get_serial_sequence('product_variants', 'id'), COALESCE((SELECT MAX(id) FROM product_variants), 1), true)`

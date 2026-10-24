@@ -153,3 +153,16 @@ export async function recordCouponRedemption(
     })
     .onConflictDoNothing()
 }
+
+/**
+ * Frees a coupon when its order is cancelled, so the customer can use the code
+ * again. Released rows stay for audit history but no longer count toward usage
+ * or per-customer limits.
+ */
+export async function releaseCouponRedemption(executor: DbExecutor, orderId: number): Promise<void> {
+  await executor.execute(sql`
+    UPDATE coupon_redemptions
+    SET status = 'Released'
+    WHERE order_id = ${orderId} AND status = 'Redeemed'
+  `)
+}

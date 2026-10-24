@@ -9,7 +9,7 @@ import {
 } from '../src/services/pricing.js'
 
 const tee: PricedLineInput = {
-  productId: 1,
+  productId: '00000000-0000-4000-8000-000000000001',
   variantId: 11,
   name: 'Classic Stripe Tee',
   size: 'M',
@@ -20,7 +20,7 @@ const tee: PricedLineInput = {
 }
 
 const trouser: PricedLineInput = {
-  productId: 2,
+  productId: '00000000-0000-4000-8000-000000000002',
   variantId: 22,
   name: 'Relaxed Trackpant',
   size: 'L',

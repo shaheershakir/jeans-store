@@ -89,15 +89,49 @@ async function insertMovement(
   `)
 }
 
-async function productVariantCount(executor: DbExecutor, productId: string, activeOnly = false): Promise<number> {
-  const result = activeOnly
-    ? await executor.execute(sql`
-        SELECT count(*)::int AS count FROM product_variants
-        WHERE product_id = ${productId} AND status = 'Active'
-      `)
-    : await executor.execute(sql`
-        SELECT count(*)::int AS count FROM product_variants WHERE product_id = ${productId}
-      `)
+/**
+ * Counts the variants a free-size release/confirm must touch. Free-size
+ * products mirror the same reserved quantity on every variant, so the target
+ * set is every variant that still holds reserved units. Inactive variants are
+ * included: deactivating a variant must not strand its reserved units. If any
+ * target variant holds less than this reservation's quantity the caller sees a
+ * count mismatch and aborts rather than partially releasing stock.
+ */
+async function freeSizeTargetCount(
+  executor: DbExecutor,
+  productId: string,
+  quantity: number,
+  requireStock = false
+): Promise<number> {
+  const stockFilter = requireStock ? sql`AND stock >= ${quantity}` : sql``
+  const result = await executor.execute(sql`
+    SELECT count(*)::int AS count
+    FROM product_variants
+    WHERE product_id = ${productId}
+      AND reserved > 0
+      ${stockFilter}
+  `)
+  return Number((result.rows[0] as { count: number } | undefined)?.count ?? 0)
+}
+
+/**
+ * Counts the variants a free-size reservation must touch. Active variants are
+ * always included, and inactive variants are included while they still hold
+ * reserved units so the mirrored reserved quantity stays consistent when a
+ * variant is deactivated between reservations.
+ */
+async function freeSizeReservationTargetCount(
+  executor: DbExecutor,
+  productId: string,
+  quantity: number
+): Promise<number> {
+  const result = await executor.execute(sql`
+    SELECT count(*)::int AS count
+    FROM product_variants
+    WHERE product_id = ${productId}
+      AND (status = 'Active' OR reserved > 0)
+      AND stock - reserved >= ${quantity}
+  `)
   return Number((result.rows[0] as { count: number } | undefined)?.count ?? 0)
 }
 
@@ -107,15 +141,15 @@ async function applyReservation(executor: DbExecutor, item: ReservationItem): Pr
   }
 
   if (item.isFreeSize) {
+    const expected = await freeSizeReservationTargetCount(executor, item.productId, item.quantity)
     const updated = await executor.execute(sql`
       UPDATE product_variants
       SET reserved = reserved + ${item.quantity}, updated_at = now()
       WHERE product_id = ${item.productId}
-        AND status = 'Active'
+        AND (status = 'Active' OR reserved > 0)
         AND stock - reserved >= ${item.quantity}
       RETURNING id, product_id, sku, stock, reserved
     `)
-    const expected = await productVariantCount(executor, item.productId, true)
     if (expected === 0 || updated.rows.length !== expected) {
       throw new ReservationUnavailableError('This product does not have enough shared stock.')
     }
@@ -147,15 +181,14 @@ async function releaseStock(
   }
 ): Promise<VariantStockRow[]> {
   if (item.isFreeSize) {
+    const expected = await freeSizeTargetCount(executor, item.productId, item.quantity)
     const updated = await executor.execute(sql`
       UPDATE product_variants
       SET reserved = reserved - ${item.quantity}, updated_at = now()
       WHERE product_id = ${item.productId}
-        AND status = 'Active'
         AND reserved >= ${item.quantity}
       RETURNING id, product_id, sku, stock, reserved
     `)
-    const expected = await productVariantCount(executor, item.productId, true)
     if (expected === 0 || updated.rows.length !== expected) {
       throw new ReservationUnavailableError('Reserved stock is inconsistent for this product.')
     }
@@ -185,16 +218,15 @@ async function confirmStock(
   }
 ): Promise<VariantStockRow[]> {
   if (item.isFreeSize) {
+    const expected = await freeSizeTargetCount(executor, item.productId, item.quantity, true)
     const updated = await executor.execute(sql`
       UPDATE product_variants
       SET stock = stock - ${item.quantity}, reserved = reserved - ${item.quantity}, updated_at = now()
       WHERE product_id = ${item.productId}
-        AND status = 'Active'
         AND stock >= ${item.quantity}
         AND reserved >= ${item.quantity}
       RETURNING id, product_id, sku, stock, reserved
     `)
-    const expected = await productVariantCount(executor, item.productId, true)
     if (expected === 0 || updated.rows.length !== expected) {
       throw new ReservationUnavailableError('This product no longer has enough stock to complete the order.')
     }

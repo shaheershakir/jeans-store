@@ -140,9 +140,13 @@ export function getSizeCode(size?: string | number | null): string {
 }
 
 export function formatProductCode(productId: number | string): string {
-  const num = parseInt(String(productId).replace(/\D/g, ''), 10)
-  if (isNaN(num)) return 'P000'
-  return `P${String(num).padStart(3, '0')}`
+  const raw = String(productId).trim()
+  if (/^\d+$/.test(raw)) {
+    return `P${raw.padStart(3, '0')}`
+  }
+  const clean = raw.replace(/[^a-zA-Z0-9]/g, '')
+  if (!clean) return 'P000'
+  return `P${clean.slice(-6).toUpperCase()}`
 }
 
 export interface SkuComponents {

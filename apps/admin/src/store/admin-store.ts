@@ -65,7 +65,7 @@ export interface VariantInput {
 }
 
 export interface ProductInput {
-  id?: number
+  id?: string
   name: string
   slug: string
   sku: string
@@ -116,6 +116,20 @@ function nextId(list: { id: number }[]): number {
   return list.reduce((max, item) => Math.max(max, item.id), 0) + 1
 }
 
+/**
+ * Product ids are UUIDs everywhere, including the admin store. `randomUUID`
+ * covers modern browsers; the RFC 4122 v4 fallback keeps ids API-valid when it
+ * is unavailable instead of falling back to a non-UUID prefixed string.
+ */
+function newProductId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const random = Math.floor(Math.random() * 16)
+    const value = char === 'x' ? random : (random & 0x3) | 0x8
+    return value.toString(16)
+  })
+}
+
 function nowIso(): string {
   return new Date().toISOString()
 }
@@ -146,10 +160,10 @@ interface AdminState {
   markNotificationsRead: () => void
 
   saveProduct: (input: ProductInput) => Product
-  deleteProduct: (id: number) => void
-  setProductStatus: (id: number, status: ProductStatus) => void
-  bulkSetProductsStatus: (ids: number[], status: ProductStatus) => void
-  bulkDeleteProducts: (ids: number[]) => void
+  deleteProduct: (id: string) => void
+  setProductStatus: (id: string, status: ProductStatus) => void
+  bulkSetProductsStatus: (ids: string[], status: ProductStatus) => void
+  bulkDeleteProducts: (ids: string[]) => void
   saveCategory: (c: Omit<Category, 'id' | 'slug'> & { id?: number }) => Category
   deleteCategory: (id: number) => void
   saveCollection: (c: Omit<Collection, 'id' | 'slug' | 'description'> & { id?: number; description?: string }) => Collection
@@ -461,7 +475,7 @@ export const useAdminStore = create<AdminState>()(
             return updated
           }
 
-          const id = nextId(products)
+          const id = newProductId()
           let variantId = nextId(products.flatMap((p) => p.variants))
           const variants: Variant[] = input.variants.map((v) => {
             const resolvedSku = v.sku?.trim()

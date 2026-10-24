@@ -63,7 +63,7 @@ const INITIAL_REVIEWS: ReviewItem[] = [
 ]
 
 interface ProductReviewsProps {
-  productId: number
+  productId: string
   productName: string
 }
 

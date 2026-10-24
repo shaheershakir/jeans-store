@@ -20,7 +20,7 @@ export default function ProductsPage() {
   const [query, setQuery] = React.useState('')
   const [selectedCategory, setSelectedCategory] = React.useState<string>('all')
   const [selectedStatus, setSelectedStatus] = React.useState<string>('all')
-  const [selectedIds, setSelectedIds] = React.useState<number[]>([])
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([])
   const [loading, setLoading] = React.useState(true)
   const [loadError, setLoadError] = React.useState<string | null>(null)
 
@@ -59,7 +59,7 @@ export default function ProductsPage() {
     }
   }
 
-  const toggleSelect = (id: number) => {
+  const toggleSelect = (id: string) => {
     if (selectedIds.includes(id)) {
       setSelectedIds(selectedIds.filter((i) => i !== id))
     } else {

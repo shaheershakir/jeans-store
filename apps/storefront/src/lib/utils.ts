@@ -15,8 +15,8 @@ export function cn(...inputs: (string | undefined | null | false | Record<string
     .join(' ')
 }
 
-export function getProductById(id: number, catalog: Product[] = PRODUCTS): Product | undefined {
-  return catalog.find((p) => p.id === id)
+export function getProductById(id: string | number, catalog: Product[] = PRODUCTS): Product | undefined {
+  return catalog.find((p) => String(p.id) === String(id))
 }
 
 export function formatPrice(value: number): string {

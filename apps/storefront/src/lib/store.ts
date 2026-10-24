@@ -8,7 +8,7 @@ import { identifyUser, resetUser } from './analytics'
 
 
 export interface CartItem {
-  id: number | string
+  id: string
   variantId?: number
   color?: string
   name: string
@@ -21,11 +21,34 @@ export interface CartItem {
   qty: number
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isUuid(value: string): boolean {
+  return UUID_PATTERN.test(value)
+}
+
+/**
+ * Carts persisted before product ids became UUIDs still contain numeric ids.
+ * Re-point them at the bundled snapshot product with the same name; drop items
+ * that cannot be matched so checkout never sends a numeric product id.
+ */
+function migrateLegacyCartItems(items: unknown): CartItem[] {
+  if (!Array.isArray(items)) return []
+  return items.flatMap((raw) => {
+    if (!raw || typeof raw !== 'object') return []
+    const item = raw as CartItem & { id: string | number }
+    const id = String(item.id ?? '')
+    if (isUuid(id)) return [{ ...item, id }]
+    const match = PRODUCTS.find((product) => product.name === item.name)
+    return match ? [{ ...item, id: match.id }] : []
+  })
+}
+
 interface CartState {
   items: CartItem[]
-  addItem: (productId: number | string, size: string, product?: Product, color?: string) => void
-  updateQty: (id: number | string, size: string, delta: number, variantId?: number) => void
-  removeItem: (id: number | string, size: string, variantId?: number) => void
+  addItem: (productId: string, size: string, product?: Product, color?: string) => void
+  updateQty: (id: string, size: string, delta: number, variantId?: number) => void
+  removeItem: (id: string, size: string, variantId?: number) => void
   clearCart: () => void
 }
 
@@ -82,7 +105,12 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'teesgarage-cart',
-      skipHydration: true
+      version: 2,
+      skipHydration: true,
+      migrate: (persistedState) => {
+        const state = (persistedState || {}) as { items?: unknown }
+        return { ...state, items: migrateLegacyCartItems(state.items) } as unknown as CartState
+      }
     }
   )
 )
@@ -374,9 +402,9 @@ export const useAuthStore = create<AuthState>()(
 )
 
 interface FavoriteState {
-  favorites: (number | string)[]
-  toggleFavorite: (productId: number | string) => void
-  isFavorite: (productId: number | string) => boolean
+  favorites: string[]
+  toggleFavorite: (productId: string) => void
+  isFavorite: (productId: string) => boolean
   clearFavorites: () => void
 }
 
@@ -395,7 +423,15 @@ export const useFavoriteStore = create<FavoriteState>()(
     }),
     {
       name: 'teesgarage-favorites',
-      skipHydration: true
+      version: 2,
+      skipHydration: true,
+      migrate: (persistedState) => {
+        const state = (persistedState || {}) as { favorites?: unknown }
+        const favorites = Array.isArray(state.favorites)
+          ? state.favorites.map((id) => String(id)).filter((id) => isUuid(id))
+          : []
+        return { ...state, favorites } as unknown as FavoriteState
+      }
     }
   )
 )

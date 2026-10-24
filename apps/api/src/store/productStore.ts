@@ -124,7 +124,10 @@ export function normalizeImageInputs(img: string, img2: string, images?: string[
     if (key) {
       result.push({ storageKey: key, externalUrl: null, position: i })
     } else {
-      if (!/^https:\/\//i.test(rawUrl)) {
+      // The bundled catalogue ships a few storefront-local demo assets. They
+      // are served from the storefront's /mock-assets directory, so keep them
+      // relative instead of rejecting the seed on a fresh database.
+      if (!/^https:\/\//i.test(rawUrl) && !rawUrl.startsWith('/mock-assets/')) {
         throw new Error(`Product image URL must be a valid HTTPS URL: ${rawUrl}`)
       }
       result.push({ storageKey: null, externalUrl: rawUrl, position: i })
@@ -681,7 +684,7 @@ export class ProductStore {
     return { product: this.hydrateMemory(product), variant }
   }
 
-  async create(input: CreateProduct): Promise<Product> {
+  async create(input: CreateProduct, explicitId?: string): Promise<Product> {
     const currentLock = this.createLock
     let releaseLock: () => void
     this.createLock = new Promise<void>((resolve) => {
@@ -689,7 +692,7 @@ export class ProductStore {
     })
     try {
       await currentLock
-      return await this._doCreate(input)
+      return await this._doCreate(input, explicitId)
     } finally {
       releaseLock!()
     }
@@ -727,7 +730,7 @@ export class ProductStore {
     }
   }
 
-  private async _doCreate(input: CreateProduct): Promise<Product> {
+  private async _doCreate(input: CreateProduct, explicitId?: string): Promise<Product> {
     const normalizedImages = normalizeImageInputs(input.img, input.img2, input.images)
 
     const rawCategory = input.category || 'printed-tees'
@@ -757,7 +760,7 @@ export class ProductStore {
             status: 'Active' as const
           }))
 
-    const newProductId = randomUUID()
+    const newProductId = explicitId ?? randomUUID()
 
     if (isDatabaseConfigured() && db) {
       await db.insert(productsTable).values({

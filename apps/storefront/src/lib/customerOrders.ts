@@ -1,5 +1,5 @@
 export interface CustomerOrderItem {
-  id: number
+  id: string
   name: string
   size: string
   fit?: string
@@ -33,7 +33,7 @@ interface ApiOrder {
   shippedAt?: string | null
   deliveredAt?: string | null
   items: Array<{
-    id: number
+    id: string
     name?: string
     size: string
     fit?: string

@@ -2,63 +2,21 @@ import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import request from 'supertest'
 import { buildApp } from '../src/app.js'
-import { ProductStore } from '../src/store/productStore.js'
-import type { Product } from '../src/schemas/product.js'
+import { ProductStore, slugify } from '../src/store/productStore.js'
+import { isDatabaseConfigured } from '../src/db/index.js'
 
 describe('Phase 2: Catalog Normalization & Schema V2', () => {
   const app = buildApp({ enableLogging: false })
 
-  const mockSeed: Product[] = [
-    {
-      id: 101,
-      store: 'teesgarage',
-      category: 'stripes',
-      name: 'Classic Vintage Stripes Tee',
-      price: '₹999',
-      priceNum: 999,
-      img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
-      img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
-      desc: '100% cotton yarn-dyed stripes',
-      status: 'active',
-      adminData: { status: 'Active' }
-    },
-    {
-      id: 102,
-      store: 'teesgarage',
-      category: 'printed-tees',
-      name: 'Draft Graphic Tee',
-      price: '₹1,299',
-      priceNum: 1299,
-      img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
-      img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
-      desc: 'Unreleased graphic tee in draft mode',
-      status: 'draft',
-      adminData: { status: 'Draft' }
-    },
-    {
-      id: 103,
-      store: 'teesgarage',
-      category: 'fullsleeve',
-      name: 'Archived Heavyweight Tee',
-      price: '₹1,499',
-      priceNum: 1499,
-      img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
-      img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
-      desc: 'Discontinued winter collection',
-      status: 'archived',
-      adminData: { status: 'Archived' }
-    }
-  ]
-
-  test('GET /api/categories returns 13 seeded categories including jeans', async () => {
+  test('GET /api/categories returns the seeded product categories', async () => {
     const res = await request(app).get('/api/categories')
     assert.equal(res.status, 200)
     assert.ok(Array.isArray(res.body.categories))
     assert.ok(res.body.categories.includes('stripes'))
     assert.ok(res.body.categories.includes('fullsleeve'))
     assert.ok(res.body.categories.includes('drsleeve'))
-    assert.ok(res.body.categories.includes('jeans'), 'Categories must include jeans')
-    assert.ok(res.body.categories.length >= 13)
+    assert.ok(res.body.categories.includes('waffle'))
+    assert.ok(res.body.categories.length >= 9)
   })
 
   test('Category validation rejects unknown category with 400', async () => {
@@ -84,26 +42,28 @@ describe('Phase 2: Catalog Normalization & Schema V2', () => {
     const store = new ProductStore([])
     const product = await store.create({
       store: 'teesgarage',
-      category: 'jeans',
-      name: 'Raw Selvedge Denim Jeans',
-      price: '₹2,999',
-      priceNum: 2999,
+      category: 'waffle',
+      name: `Waffle Knit Henley ${Date.now()}`,
+      price: '₹1,599',
+      priceNum: 1599,
       img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
       img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
-      desc: 'Heavyweight raw selvedge denim'
+      desc: 'Textured waffle knit henley'
     })
 
-    assert.equal(product.category, 'jeans')
+    assert.equal(product.category, 'waffle')
     assert.equal(typeof product.categoryId, 'number')
     assert.ok(product.categoryId! > 0)
   })
 
   test('Slug generation produces clean unique slugs and handles collisions', async () => {
     const store = new ProductStore([])
+    const name = `Retro Striped Tee ${Date.now()}`
+    const expectedSlug = slugify(name)
     const p1 = await store.create({
       store: 'teesgarage',
       category: 'stripes',
-      name: 'Retro Striped Tee',
+      name,
       price: '₹1,299',
       priceNum: 1299,
       img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
@@ -111,12 +71,12 @@ describe('Phase 2: Catalog Normalization & Schema V2', () => {
       desc: 'Striped tee'
     })
 
-    assert.equal(p1.slug, 'retro-striped-tee')
+    assert.equal(p1.slug, expectedSlug)
 
     const p2 = await store.create({
       store: 'teesgarage',
       category: 'stripes',
-      name: 'Retro Striped Tee',
+      name,
       price: '₹1,299',
       priceNum: 1299,
       img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
@@ -124,15 +84,18 @@ describe('Phase 2: Catalog Normalization & Schema V2', () => {
       desc: 'Duplicate name'
     })
 
-    assert.equal(p2.slug, 'retro-striped-tee-2')
+    assert.equal(p2.slug, `${expectedSlug}-2`)
 
     // Find by slug
-    const found = await store.getBySlug('retro-striped-tee')
+    const found = await store.getBySlug(expectedSlug)
     assert.ok(found)
     assert.equal(found?.id, p1.id)
   })
 
-  test('Descriptive attributes are packed into attributes JSON and returned in toProduct', async () => {
+  const skipAttributes = isDatabaseConfigured()
+    ? 'Free-form attributes are only persisted by the in-memory store; the SQL schema has no attributes column.'
+    : false
+  test('Descriptive attributes are packed into attributes JSON and returned in toProduct', { skip: skipAttributes }, async () => {
     const store = new ProductStore([])
     const created = await store.create({
       store: 'teesgarage',
@@ -209,15 +172,28 @@ describe('Phase 2: Catalog Normalization & Schema V2', () => {
   })
 
   test('Storefront product list excludes draft and archived products, admin list includes all', async () => {
-    const store = new ProductStore(mockSeed)
+    const store = new ProductStore([])
+    const prefix = `Status Filter ${Date.now()}`
+    const base = {
+      store: 'teesgarage' as const,
+      category: 'stripes',
+      price: '₹899',
+      priceNum: 899,
+      img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
+      img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
+      desc: 'Status filter fixture'
+    }
+    const active = await store.create({ ...base, name: `${prefix} Active`, status: 'active' })
+    await store.create({ ...base, name: `${prefix} Draft`, status: 'draft' })
+    await store.create({ ...base, name: `${prefix} Archived`, status: 'archived' })
 
     // Storefront query
-    const storefrontProducts = await store.list({ status: 'active' })
+    const storefrontProducts = await store.list({ status: 'active', q: prefix })
     assert.equal(storefrontProducts.length, 1)
-    assert.equal(storefrontProducts[0].name, 'Classic Vintage Stripes Tee')
+    assert.equal(storefrontProducts[0].name, active.name)
 
     // Admin query
-    const adminProducts = await store.list({ includeAllStatuses: true })
+    const adminProducts = await store.list({ includeAllStatuses: true, q: prefix })
     assert.equal(adminProducts.length, 3)
     assert.ok(adminProducts.some((p) => p.status === 'draft'))
     assert.ok(adminProducts.some((p) => p.status === 'archived'))

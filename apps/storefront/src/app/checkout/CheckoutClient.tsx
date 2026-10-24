@@ -75,7 +75,7 @@ interface CheckoutOrderPayload {
   state: string
   pincode: string
   notes: string
-  items: Array<{ id: number | string; variantId?: number; size: string; quantity: number }>
+  items: Array<{ id: string; variantId?: number; size: string; quantity: number }>
 }
 
 interface DeliveryEstimation {
@@ -769,8 +769,8 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
           state: form.state.trim(),
           pincode: cleanPin,
           items: items.map((item) => ({
-            id: item.id,
-            variantId: item.variantId,
+            id: String(item.id),
+            variantId: typeof item.variantId === 'number' && item.variantId > 0 ? item.variantId : undefined,
             size: String(item.size),
             quantity: item.qty
           }))
@@ -937,6 +937,9 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     setForm((prev) => ({ ...prev, [field]: value }))
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
+    if (field === 'state' || field === 'pincode') {
+      setPaymentError(null)
     }
   }
 
@@ -1147,8 +1150,8 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         ? 'Customer opted in to order updates by email.'
         : 'Customer opted out of email updates.',
       items: items.map((item) => ({
-        id: item.id,
-        variantId: item.variantId,
+        id: String(item.id),
+        variantId: typeof item.variantId === 'number' && item.variantId > 0 ? item.variantId : undefined,
         size: String(item.size),
         quantity: item.qty
       }))

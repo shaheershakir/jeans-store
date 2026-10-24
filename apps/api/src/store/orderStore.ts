@@ -21,7 +21,7 @@ import {
 import type { CalculatedOrder, Order } from '../schemas/order.js'
 import type { DbExecutor } from '../db/types.js'
 import { assetUrl } from '@jeans-store/shared'
-import { resolveCoupon, recordCouponRedemption, CouponError } from '../services/coupon.js'
+import { resolveCoupon, recordCouponRedemption, releaseCouponRedemption, CouponError } from '../services/coupon.js'
 import {
   confirmReservations,
   expireReservations,
@@ -826,6 +826,9 @@ class OrderStore {
             reason: `Order ${patch.status?.toLowerCase()}`
           })
           await restockOrder(executor, id, `Order ${patch.status?.toLowerCase()}`)
+          if (patch.status === 'Cancelled') {
+            await releaseCouponRedemption(executor, id)
+          }
         })
       }
 

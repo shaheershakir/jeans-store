@@ -43,8 +43,14 @@ import {
 } from '@/lib/sku'
 
 const SEED = 20260830
+
+const SEED_PRODUCT_ID_PREFIX = '00000000-0000-4000-8000-'
+
+export function seedProductId(index: number): string {
+  return `${SEED_PRODUCT_ID_PREFIX}${String(index + 1).padStart(12, '0')}`
+}
 const NOW = Date.now()
-export const DATA_VERSION = 6
+export const DATA_VERSION = 7
 
 
 export const IMAGE_POOL = [
@@ -116,7 +122,7 @@ function buildProduct(
   const status: ProductStatus = index % 9 === 7 ? 'Draft' : index % 13 === 11 ? 'Archived' : 'Active'
   const sizes = sizeRangeFor(spec.category)
   const colors = [spec.color, alternateColor(spec.color)]
-  const productId = index + 1
+  const productId = seedProductId(index)
   const category = CATEGORIES.find((c) => c.slug === spec.category) ?? CATEGORIES[3]
   const categoryId = category.id
   const categorySlug = category.slug
@@ -697,7 +703,7 @@ function buildReviews(
   for (let i = 0; i < count; i++) {
     const customer = customers[i % customers.length]
     const order = delivered[i % Math.max(1, delivered.length)]
-    const productId = order ? (order.items[0]?.productId ?? 1) : 1
+    const productId = order ? (order.items[0]?.productId ?? products[0]?.id ?? '') : (products[0]?.id ?? '')
     const template = pick(rand, REVIEW_TEXTS)
     const statusRoll = rand()
     const status: ReviewStatus =

@@ -148,8 +148,8 @@ export default function CartDrawer() {
       body: JSON.stringify({
         state: deliveryState,
         items: items.map((item) => ({
-          id: item.id,
-          variantId: item.variantId,
+          id: String(item.id),
+          variantId: typeof item.variantId === 'number' && item.variantId > 0 ? item.variantId : undefined,
           size: String(item.size),
           quantity: item.qty
         }))

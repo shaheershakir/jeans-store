@@ -34,6 +34,14 @@ async function getOptionalCustomerClaims(req: Request): Promise<{ email: string 
   return { email: claims.email.trim().toLowerCase() }
 }
 
+function isUniqueConstraintViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: string }).code === '23505'
+  )
+}
+
 // Public: Get Razorpay configuration
 orderRouter.get('/api/orders/razorpay/config', (_req: Request, res: Response) => {
   const keyId = razorpayService.getKeyId()
@@ -43,13 +51,20 @@ orderRouter.get('/api/orders/razorpay/config', (_req: Request, res: Response) =>
   })
 })
 
+const orderItemInputSchema = z.object({
+  id: z.string().uuid(),
+  variantId: z.union([z.number().int().positive(), z.null()]).optional().transform((v) => v ?? undefined),
+  size: z.string().min(1),
+  quantity: z.number().int().positive().max(50)
+})
+
 // Public: Create Razorpay checkout order
 const createRazorpayOrderSchema = z.object({
   currency: z.string().default('INR'),
   orderNumber: z.string().min(1),
   state: z.string().default(''),
   pincode: z.string().optional(),
-  items: z.array(z.object({ id: z.string(), variantId: z.number().int().positive().optional(), size: z.string(), quantity: z.number().int().positive().max(50) })).min(1),
+  items: z.array(orderItemInputSchema).min(1),
   customerName: z.string().optional(),
   customerEmail: z.string().optional(),
   customerPhone: z.string().optional(),
@@ -195,12 +210,7 @@ async function calculateOrder(
 const quoteSchema = z.object({
   state: z.string().trim().max(100).optional().default(''),
   pincode: z.string().trim().max(10).optional().default(''),
-  items: z.array(z.object({
-    id: z.string(),
-    variantId: z.number().int().positive().optional(),
-    size: z.string().min(1),
-    quantity: z.number().int().positive().max(50)
-  })).min(1),
+  items: z.array(orderItemInputSchema).min(1, 'Cart cannot be empty'),
   couponCode: z.string().trim().min(1).max(60).optional()
 }).refine((data) => data.state.length > 0 || data.pincode.replace(/\D/g, '').length === 6, {
   message: 'A delivery state or 6-digit PIN code is required.'
@@ -209,7 +219,9 @@ const quoteSchema = z.object({
 orderRouter.post('/api/orders/quote', async (req: Request, res: Response) => {
   const parsed = quoteSchema.safeParse(req.body)
   if (!parsed.success) {
-    res.status(400).json({ error: 'A delivery state or 6-digit PIN code and valid cart items are required.' })
+    res.status(400).json({
+      error: parsed.error.issues[0]?.message || 'A delivery state or 6-digit PIN code and valid cart items are required.'
+    })
     return
   }
   try {
@@ -241,18 +253,13 @@ const couponQuoteSchema = z.object({
   code: z.string().trim().min(1).max(60),
   state: z.string().trim().max(100).optional().default(''),
   pincode: z.string().trim().max(10).optional().default(''),
-  items: z.array(z.object({
-    id: z.string(),
-    variantId: z.number().int().positive().optional(),
-    size: z.string().min(1),
-    quantity: z.number().int().positive().max(50)
-  })).min(1)
+  items: z.array(orderItemInputSchema).min(1, 'Cart cannot be empty')
 })
 
 orderRouter.post('/api/orders/coupon/validate', async (req: Request, res: Response) => {
   const parsed = couponQuoteSchema.safeParse(req.body)
   if (!parsed.success) {
-    res.status(400).json({ error: 'Enter a valid discount code and cart.' })
+    res.status(400).json({ error: parsed.error.issues[0]?.message || 'Enter a valid discount code and cart.' })
     return
   }
   try {
@@ -690,6 +697,14 @@ orderRouter.post('/api/orders', async (req: Request, res: Response) => {
   }
 
   try {
+    const existingOrder = await orderStore.getByOrderNumber(parsed.data.orderNumber)
+    if (existingOrder) {
+      res.status(409).json({
+        error: 'This order number has already been recorded. Please contact support if you need help with an existing order.'
+      })
+      return
+    }
+
     const calculatedOrder = await calculateOrder(parsed.data)
     const order = await orderStore.create({
       ...calculatedOrder,
@@ -724,6 +739,12 @@ orderRouter.post('/api/orders', async (req: Request, res: Response) => {
     }
     if (err instanceof ReservationUnavailableError) {
       res.status(409).json({ error: 'One or more items are no longer available in the requested quantity.' })
+      return
+    }
+    if (isUniqueConstraintViolation(err)) {
+      res.status(409).json({
+        error: 'This order number has already been recorded. Please contact support if you need help with an existing order.'
+      })
       return
     }
     res.status(500).json({ error: 'Failed to process order' })

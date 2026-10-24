@@ -18,7 +18,7 @@ import { getProductUrl } from '@/lib/products'
 import { useFavoriteStore, useUIStore } from '@/lib/store'
 
 interface ConfirmationItem {
-  id: number
+  id: string
   name: string
   fit?: string
   size: string
@@ -74,7 +74,7 @@ const SAMPLE_ORDER: OrderConfirmation = {
   pincode: '560001',
   items: [
     {
-      id: 3,
+      id: '00000000-0000-4000-8000-000000000004',
       name: 'Thermal Waffle Knit Tee',
       fit: 'Regular',
       size: 'S',
@@ -89,7 +89,7 @@ const SAMPLE_ORDER: OrderConfirmation = {
 
 const RECOMMENDATIONS = [
   {
-    productId: 4,
+    productId: '00000000-0000-4000-8000-000000000005',
     name: 'Heavy Combed Cotton Tee',
     priceNum: 1299,
     img: '/mock-assets/pdp/like_high_1.png',
@@ -101,7 +101,7 @@ const RECOMMENDATIONS = [
     ]
   },
   {
-    productId: 9,
+    productId: '00000000-0000-4000-8000-000000000010',
     name: 'Good Days Ahead Tee',
     priceNum: 1249,
     img: '/mock-assets/pdp/like_high_2.png',
@@ -113,7 +113,7 @@ const RECOMMENDATIONS = [
     ]
   },
   {
-    productId: 0,
+    productId: '00000000-0000-4000-8000-000000000001',
     name: 'Classic Stripe Tee',
     priceNum: 1199,
     img: '/mock-assets/pdp/like_high_3.png',
@@ -124,7 +124,7 @@ const RECOMMENDATIONS = [
     ]
   },
   {
-    productId: 22,
+    productId: '00000000-0000-4000-8000-000000000023',
     name: 'Essential Sweatpants',
     priceNum: 1699,
     img: '/mock-assets/pdp/like_high_4.png',
@@ -147,7 +147,6 @@ function RecommendationCard({
   const [activeSwatch, setActiveSwatch] = useState(0)
   const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite)
   const showToast = useUIStore((state) => state.showToast)
-  const isFavorite = useFavoriteStore((state) => state.isFavorite(item.productId))
 
   useEffect(() => setMounted(true), [])
 
@@ -155,6 +154,8 @@ function RecommendationCard({
     () => PRODUCTS.find((entry) => String(entry.id) === String(item.productId) || entry.name === item.name),
     [item.productId, item.name]
   )
+  const favoriteId = product?.id
+  const isFavorite = useFavoriteStore((state) => (favoriteId ? state.isFavorite(favoriteId) : false))
   const href = product ? getProductUrl(product) : '/shop'
   const saved = mounted && isFavorite
   const imageSrc = product?.img || item.img
@@ -177,7 +178,8 @@ function RecommendationCard({
           type="button"
           className="absolute right-1.5 top-2.5 z-10 grid h-[30px] w-[30px] place-items-center rounded-full border-0 bg-white p-0 text-[#111] shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-transform duration-150 hover:scale-105 active:scale-95"
           onClick={() => {
-            toggleFavorite(item.productId)
+            if (!favoriteId) return
+            toggleFavorite(favoriteId)
             showToast(saved ? 'Removed from favorites' : `Saved ${item.name} to favorites`)
           }}
           aria-label={saved ? `Remove ${item.name} from favorites` : `Add ${item.name} to favorites`}

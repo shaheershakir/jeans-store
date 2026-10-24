@@ -18,7 +18,7 @@ import { PRODUCTS } from '@/lib/constants'
 import { getProductUrl } from '@/lib/products'
 
 interface WishlistProduct {
-  id: number | string
+  id: string
   name: string
   variant: string
   price: string
@@ -83,7 +83,7 @@ function productToWishlistItem(p: Product, inWishlist: boolean = true): Wishlist
 
 const INITIAL_WISHLIST_PRODUCTS: WishlistProduct[] = [
   {
-    id: 101,
+    id: '00000000-0000-4000-8000-000000000101',
     name: 'Vintage Skate Micro-Stripe Tee',
     variant: 'Washed Black / Ash  •  L',
     price: '₹1,249',
@@ -95,7 +95,7 @@ const INITIAL_WISHLIST_PRODUCTS: WishlistProduct[] = [
     inWishlist: true,
   },
   {
-    id: 102,
+    id: '00000000-0000-4000-8000-000000000102',
     name: 'Doodle Archive Oversized Tee',
     variant: 'Off White  •  XL',
     price: '₹1,099',
@@ -107,7 +107,7 @@ const INITIAL_WISHLIST_PRODUCTS: WishlistProduct[] = [
     inWishlist: true,
   },
   {
-    id: 103,
+    id: '00000000-0000-4000-8000-000000000103',
     name: 'Good Days Ahead Tee',
     variant: 'Forest Green  •  M',
     price: '₹1,249',
@@ -119,7 +119,7 @@ const INITIAL_WISHLIST_PRODUCTS: WishlistProduct[] = [
     inWishlist: true,
   },
   {
-    id: 104,
+    id: '00000000-0000-4000-8000-000000000104',
     name: 'Daisy Minimal Tee',
     variant: 'Black  •  L',
     price: '₹1,099',
@@ -131,7 +131,7 @@ const INITIAL_WISHLIST_PRODUCTS: WishlistProduct[] = [
     inWishlist: true,
   },
   {
-    id: 105,
+    id: '00000000-0000-4000-8000-000000000105',
     name: 'Classic Stripe Tee',
     variant: 'White / Black  •  M',
     price: '₹1,249',
@@ -143,7 +143,7 @@ const INITIAL_WISHLIST_PRODUCTS: WishlistProduct[] = [
     inWishlist: true,
   },
   {
-    id: 106,
+    id: '00000000-0000-4000-8000-000000000106',
     name: 'Better Days Tee',
     variant: 'Off White  •  L',
     price: '₹1,199',
@@ -155,7 +155,7 @@ const INITIAL_WISHLIST_PRODUCTS: WishlistProduct[] = [
     inWishlist: true,
   },
   {
-    id: 107,
+    id: '00000000-0000-4000-8000-000000000107',
     name: 'Classic Trackpants',
     variant: 'Black  •  L',
     price: '₹1,699',
@@ -167,7 +167,7 @@ const INITIAL_WISHLIST_PRODUCTS: WishlistProduct[] = [
     inWishlist: true,
   },
   {
-    id: 108,
+    id: '00000000-0000-4000-8000-000000000108',
     name: 'Essential Sweatpants',
     variant: 'Grey  •  L',
     price: '₹1,699',
@@ -222,7 +222,7 @@ export default function WishlistContent() {
     }
   }, [favorites, catalog])
 
-  const handleToggleWishlist = (id: number | string, name: string) => {
+  const handleToggleWishlist = (id: string, name: string) => {
     toggleFavorite(id)
     const wasIn = items.find((i) => String(i.id) === String(id))?.inWishlist
     setItems((prev) =>
@@ -235,7 +235,7 @@ export default function WishlistContent() {
     }
   }
 
-  const handleRemoveFromWishlist = (id: number | string, name: string) => {
+  const handleRemoveFromWishlist = (id: string, name: string) => {
     toggleFavorite(id)
     setItems((prev) => prev.filter((item) => String(item.id) !== String(id)))
     setActiveMenuId(null)
@@ -246,7 +246,8 @@ export default function WishlistContent() {
     // Extract size from variant string or default 'L'
     const sizeMatch = product.variant.match(/•\s*([A-Z0-9]+)$/)
     const size = sizeMatch ? sizeMatch[1].trim() : 'L'
-    addItem(product.id, size)
+    const catalogProduct = catalog.find((entry) => String(entry.id) === String(product.id))
+    addItem(product.id, size, catalogProduct)
     showToast(`Added ${product.name} to bag`)
     openOverlay('cart')
   }

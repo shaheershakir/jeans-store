@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useCartStore, useUIStore, useAuthStore } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
+import { PRODUCTS } from '@/lib/constants'
 import { fetchCustomerOrders, type CustomerOrder } from '@/lib/customerOrders'
 
 // ─── Mock Orders Data Matching Design 1:1 ───────────────────────────────────
@@ -137,9 +138,10 @@ export default function OrdersPage() {
   }, [])
 
   const handleBuyAgain = (productName?: string) => {
-    // Add default item to cart
-    addItem(101, 'L')
-    showToast(`Added ${productName || 'item'} to bag`)
+    const product = PRODUCTS.find((entry) => entry.name === productName) ?? PRODUCTS[0]
+    if (!product) return
+    addItem(product.id, 'L', product)
+    showToast(`Added ${product.name} to bag`)
     openOverlay('cart')
   }
 

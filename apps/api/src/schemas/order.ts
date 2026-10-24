@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const orderItemSchema = z.object({
   id: z.string().uuid(),
-  variantId: z.number().int().positive().optional(),
+  variantId: z.union([z.number().int().positive(), z.null()]).optional().transform((v) => v ?? undefined),
   name: z.string().optional(),
   fit: z.string().optional(),
   size: z.string().min(1),

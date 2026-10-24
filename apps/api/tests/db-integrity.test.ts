@@ -40,7 +40,7 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
       VALUES (${categoryId}, ${suffix}, ${'Oversell Tee'}, ${'Test fixture'}, ${999}, ${200})
       RETURNING id
     `)
-    const productId = Number((product.rows[0] as { id: number }).id)
+    const productId = String((product.rows[0] as { id: string }).id)
     const variant = await db.execute(sql`
       INSERT INTO product_variants (product_id, sku, size, color, stock, status)
       VALUES (${productId}, ${suffix}, ${'M'}, ${'Black'}, ${5}, ${'Active'})
@@ -118,7 +118,7 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
       VALUES (${categoryId}, ${suffix}, ${'Confirm Tee'}, ${'Test fixture'}, ${999}, ${200})
       RETURNING id
     `)
-    const productId = Number((product.rows[0] as { id: number }).id)
+    const productId = String((product.rows[0] as { id: string }).id)
     const variant = await db.execute(sql`
       INSERT INTO product_variants (product_id, sku, size, color, stock, status)
       VALUES (${productId}, ${suffix}, ${'M'}, ${'Black'}, ${5}, ${'Active'})
@@ -154,6 +154,103 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
     }
   })
 
+  test('free-size reservations keep every variant mirrored when one is deactivated', { skip }, async () => {
+    const { db } = await import('@jeans-store/db')
+    const { sql } = await import('drizzle-orm')
+    const { reserveInventory, releaseReservations } = await import('../src/services/inventory.js')
+    const executor = db as unknown as import('../src/db/types.js').DbExecutor
+
+    const suffix = unique('free-size')
+    const category = await db.execute(sql`INSERT INTO categories (slug, name) VALUES (${suffix}, ${suffix}) RETURNING id`)
+    const categoryId = Number((category.rows[0] as { id: number }).id)
+    const product = await db.execute(sql`
+      INSERT INTO products (category_id, slug, name, description, price, weight_grams, is_free_size)
+      VALUES (${categoryId}, ${suffix}, ${'Free Size Tee'}, ${'Test fixture'}, ${999}, ${200}, ${true})
+      RETURNING id
+    `)
+    const productId = String((product.rows[0] as { id: string }).id)
+    const firstVariant = await db.execute(sql`
+      INSERT INTO product_variants (product_id, sku, size, color, stock, status)
+      VALUES (${productId}, ${`${suffix}-a`}, ${'Free'}, ${'Black'}, ${10}, ${'Active'})
+      RETURNING id
+    `)
+    const secondVariant = await db.execute(sql`
+      INSERT INTO product_variants (product_id, sku, size, color, stock, status)
+      VALUES (${productId}, ${`${suffix}-b`}, ${'Free'}, ${'White'}, ${10}, ${'Active'})
+      RETURNING id
+    `)
+    const firstVariantId = Number((firstVariant.rows[0] as { id: number }).id)
+    const secondVariantId = Number((secondVariant.rows[0] as { id: number }).id)
+
+    const reservedFor = async () => {
+      const result = await db.execute(sql`
+        SELECT id, stock, reserved FROM product_variants
+        WHERE product_id = ${productId}
+        ORDER BY id
+      `)
+      return result.rows.map((row) => ({
+        id: Number((row as { id: number }).id),
+        stock: Number((row as { stock: number }).stock),
+        reserved: Number((row as { reserved: number }).reserved)
+      }))
+    }
+
+    try {
+      await reserveInventory(executor, {
+        gatewayOrderId: `${suffix}-gw-1`,
+        reservationKeyPrefix: `${suffix}-res-1`,
+        items: [{ productId, variantId: firstVariantId, quantity: 2, isFreeSize: true }],
+        ttlSeconds: 60
+      })
+      assert.deepEqual(
+        (await reservedFor()).map((row) => row.reserved),
+        [2, 2],
+        'both active variants mirror the first reservation'
+      )
+
+      // Deactivating a variant must not strand its mirrored reserved units.
+      await db.execute(sql`UPDATE product_variants SET status = 'Inactive' WHERE id = ${secondVariantId}`)
+
+      await reserveInventory(executor, {
+        gatewayOrderId: `${suffix}-gw-2`,
+        reservationKeyPrefix: `${suffix}-res-2`,
+        items: [{ productId, variantId: firstVariantId, quantity: 2, isFreeSize: true }],
+        ttlSeconds: 60
+      })
+      assert.deepEqual(
+        (await reservedFor()).map((row) => row.reserved),
+        [4, 4],
+        'inactive variants that still hold reserved units stay mirrored'
+      )
+
+      await releaseReservations(executor, { gatewayOrderId: `${suffix}-gw-1`, reason: 'test release 1' })
+      assert.deepEqual(
+        (await reservedFor()).map((row) => row.reserved),
+        [2, 2],
+        'releasing one hold decrements every mirrored variant'
+      )
+
+      await releaseReservations(executor, { gatewayOrderId: `${suffix}-gw-2`, reason: 'test release 2' })
+      const finalRows = await reservedFor()
+      assert.deepEqual(
+        finalRows.map((row) => row.reserved),
+        [0, 0],
+        'releasing the last hold clears every variant'
+      )
+      assert.deepEqual(
+        finalRows.map((row) => row.stock),
+        [10, 10],
+        'releasing holds must not change physical stock'
+      )
+    } finally {
+      await db.execute(sql`DELETE FROM inventory_movements WHERE product_id = ${productId}`)
+      await db.execute(sql`DELETE FROM inventory_reservations WHERE product_id = ${productId}`)
+      await db.execute(sql`DELETE FROM product_variants WHERE product_id = ${productId}`)
+      await db.execute(sql`DELETE FROM products WHERE id = ${productId}`)
+      await db.execute(sql`DELETE FROM categories WHERE id = ${categoryId}`)
+    }
+  })
+
   test('cancelling a pending hold does not inflate stock, while a confirmed sale restocks once', { skip }, async () => {
     const { db } = await import('@jeans-store/db')
     const { sql } = await import('drizzle-orm')
@@ -173,7 +270,7 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
       VALUES (${categoryId}, ${suffix}, ${'Restock Tee'}, ${'Test fixture'}, ${999}, ${200})
       RETURNING id
     `)
-    const productId = Number((product.rows[0] as { id: number }).id)
+    const productId = String((product.rows[0] as { id: string }).id)
     const variant = await db.execute(sql`
       INSERT INTO product_variants (product_id, sku, size, color, stock, status)
       VALUES (${productId}, ${suffix}, ${'M'}, ${'Black'}, ${5}, ${'Active'})
@@ -345,7 +442,7 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
               const resolved = await resolveCoupon(txExecutor, {
                 code: code.toUpperCase(),
                 customerId: null,
-                items: [{ productId: index + 1, lineTotal: 1000 }],
+                items: [{ productId: '00000000-0000-4000-8000-000000000001', lineTotal: 1000 }],
                 subtotal: 1000,
                 forUpdate: true
               })
@@ -443,7 +540,7 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
       VALUES (${categoryId}, ${suffix}, ${'Price Snapshot Tee'}, ${'Test fixture'}, ${1500}, ${0.05}, ${200}, ${'active'})
       RETURNING id
     `)
-    const productId = Number((product.rows[0] as { id: number }).id)
+    const productId = String((product.rows[0] as { id: string }).id)
     const variant = await db.execute(sql`
       INSERT INTO product_variants (product_id, sku, size, color, stock, status)
       VALUES (${productId}, ${suffix}, ${'M'}, ${'Black'}, ${5}, ${'Active'})

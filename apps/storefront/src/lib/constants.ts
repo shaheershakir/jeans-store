@@ -37,7 +37,7 @@ export const DEFAULT_NAV_LINKS: NavigationItem[] = [
 ]
 
 export interface Product {
-  id: number | string
+  id: string
   store?: string
   category?: string
   name: string
@@ -76,7 +76,7 @@ export interface Product {
 
 export interface ProductVariant {
   id?: number
-  productId?: number
+  productId?: string
   sku?: string
   size: string | number
   color: string
@@ -100,7 +100,7 @@ export const CATEGORY_FILTERS = [
   { id: 'sweatpants', label: 'Sweatpants' },
 ] as const
 
-export const PRODUCTS: Product[] = [
+const SNAPSHOT_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
   // ─── 1. STRIPES (Striped T-Shirts) ──────────────────────────────────────────
   {
     id: 0,
@@ -764,6 +764,16 @@ export const PRODUCTS: Product[] = [
     collection: 'New arrivals'
   }
 ]
+
+// Bundled fallback catalog uses the same deterministic UUIDs as the API seed
+// (apps/api/src/data/products.ts), so snapshot products can be checked out
+// against the live API without mixing numeric and UUID identifiers.
+const SNAPSHOT_PRODUCT_ID_PREFIX = '00000000-0000-4000-8000-'
+
+export const PRODUCTS: Product[] = SNAPSHOT_PRODUCTS.map((product, index) => ({
+  ...product,
+  id: `${SNAPSHOT_PRODUCT_ID_PREFIX}${String(index + 1).padStart(12, '0')}`
+}))
 
 export const FITS: Fit[] = ['Oversized', 'Boxy', 'Relaxed', 'Regular', 'Straight', 'Baggy', 'Tapered']
 

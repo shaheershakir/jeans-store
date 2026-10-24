@@ -50,7 +50,7 @@ export type ProductStatus = 'Active' | 'Draft' | 'Archived'
 export type StockStatus = 'Healthy' | 'Low Stock' | 'Out of Stock'
 
 export interface Product {
-  id: number
+  id: string
   name: string
   slug: string
   sku: string
@@ -91,7 +91,7 @@ export interface ProductImage {
 
 export interface Variant {
   id: number
-  productId: number
+  productId: string
   sku: string
   size: number | string
   color: Color
@@ -137,7 +137,7 @@ export type FulfillmentStatus =
 
 export interface OrderItem {
   id: number
-  productId: number
+  productId: string
   variantId: number
   productName: string
   variantLabel: string
@@ -271,7 +271,7 @@ export interface Coupon {
   endsAt: string
   usageLimit: number | null
   perCustomerLimit: number
-  productIds: number[]
+  productIds: string[]
   categoryIds: number[]
   isActive: boolean
   timesUsed: number
@@ -310,7 +310,7 @@ export type ReviewStatus = 'Pending' | 'Approved' | 'Rejected' | 'Hidden'
 export interface Review {
   id: number
   customerId: number
-  productId: number
+  productId: string
   rating: number
   title: string
   content: string
@@ -439,7 +439,7 @@ export type MovementType = 'PURCHASE' | 'SALE' | 'ADJUSTMENT' | 'RETURN' | 'RESE
 
 export interface InventoryMovement {
   id: number
-  productId: number
+  productId: string
   variantId: number
   sku: string
   type: MovementType

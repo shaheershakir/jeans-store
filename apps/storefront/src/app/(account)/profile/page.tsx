@@ -15,6 +15,7 @@ import {
   X
 } from 'lucide-react'
 import { useCartStore, useUIStore, useAuthStore, useFavoriteStore } from '@/lib/store'
+import { PRODUCTS } from '@/lib/constants'
 
 // ─── Mock Recent Orders for Profile Overview ─────────────────────────────────
 
@@ -154,8 +155,10 @@ export default function ProfilePage() {
   }
 
   const handleBuyAgain = (productName: string) => {
-    addItem(101, 'L')
-    showToast(`Added ${productName} to bag`)
+    const product = PRODUCTS.find((entry) => entry.name === productName) ?? PRODUCTS[0]
+    if (!product) return
+    addItem(product.id, 'L', product)
+    showToast(`Added ${product.name} to bag`)
     openOverlay('cart')
   }
 

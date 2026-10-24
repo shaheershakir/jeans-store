@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   generateBaseSku,
   generateProductScopedSku,
+  formatProductCode,
   getCategoryCode,
   getProductTypeCode,
   getColorCode,
@@ -135,6 +136,31 @@ describe('Duplicate SKU Handling & Collision Resolution', () => {
       'STR-OVS-P105-BLK-M'
     )
   })
+
+  test('derives stable, collision-resistant product codes from UUID ids', () => {
+    assert.equal(
+      generateProductScopedSku({
+        category: 'stripes',
+        productType: 'Oversized',
+        color: 'Black',
+        size: 'M',
+        productId: '00000000-0000-4000-8000-000000000012'
+      }),
+      'STR-OVS-P000012-BLK-M'
+    )
+    const codes = new Set(
+      Array.from({ length: 100 }, (_, index) =>
+        generateProductScopedSku({
+          category: 'stripes',
+          productType: 'Oversized',
+          color: 'Black',
+          size: 'M',
+          productId: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`
+        })
+      )
+    )
+    assert.equal(codes.size, 100, 'seed UUIDs must not collide on product codes')
+  })
 })
 
 describe('ProductStore Variant Operations & Concurrency Safety', () => {
@@ -223,8 +249,15 @@ describe('ProductStore Variant Operations & Concurrency Safety', () => {
 
     // Must not be identical!
     assert.notEqual(sku1, sku2)
-    // One must have the standard code, the other must have the stable product-scoped code
-    assert.ok(sku1 === 'HEN-REG-NVY-XL' || sku2.includes(`P${String(p2.id).padStart(3, '0')}`))
+    // Each SKU is either the shared standard code or carries its own product code.
+    assert.ok(
+      sku1 === 'HEN-REG-NVY-XL' || sku1.includes(formatProductCode(p1.id)),
+      'first SKU should be standard or product-scoped'
+    )
+    assert.ok(
+      sku2 === 'HEN-REG-NVY-XL' || sku2.includes(formatProductCode(p2.id)),
+      'second SKU should be standard or product-scoped'
+    )
   })
 
   test('preserves existing variant SKUs on product update and generates new SKU only for new variant', async () => {

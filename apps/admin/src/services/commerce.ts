@@ -98,7 +98,7 @@ interface ApiOrder {
   state: string
   pincode: string
   notes?: string
-  items: Array<{ id: number; variantId?: number; name?: string; size: string; color?: string; sku?: string; priceNum?: number; quantity: number }>
+  items: Array<{ id: string; variantId?: number; name?: string; size: string; color?: string; sku?: string; priceNum?: number; quantity: number }>
   subtotal: number
   shipping: number
   total: number

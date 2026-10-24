@@ -4,11 +4,30 @@ import request from 'supertest'
 import { buildApp } from '../src/app.js'
 import { userStore } from '../src/store/userStore.js'
 import { orderStore } from '../src/store/orderStore.js'
+import { ProductStore } from '../src/store/productStore.js'
 import { createCloudIamToken } from '../src/services/cloudIam.js'
 import type { CalculatedOrder } from '../src/schemas/order.js'
 
 describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
   const app = buildApp({ enableLogging: false })
+
+  async function createOrderFixture(name: string, category: string, priceNum: number) {
+    const store = new ProductStore([])
+    const product = await store.create({
+      store: 'teesgarage',
+      category,
+      name,
+      price: `₹${priceNum}`,
+      priceNum,
+      img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
+      img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
+      desc: 'Order store fixture',
+      variants: [{ size: 'M', color: 'Black', stock: 10 }]
+    } as any)
+    const variant = product.variants?.[0]
+    if (!variant?.id) throw new Error('Order fixture did not create a variant')
+    return { productId: product.id, variantId: variant.id, name: product.name, sku: variant.sku ?? '' }
+  }
 
   describe('User Store & Auth Endpoints', () => {
     test('userStore supports googleSub and onboardingCompletedAt', async () => {
@@ -79,6 +98,7 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
   describe('Order Store Normalization & Dual-Write', () => {
     test('orderStore.create stores order, dual-writes items and events, and reconstructs legacy shapes', async () => {
       const orderNumber = `TEST-ORD-V2-${Date.now()}`
+      const fixture = await createOrderFixture(`Order Store Tee ${Date.now()}`, 'stripes', 999)
       const testInput: CalculatedOrder = {
         orderNumber,
         store: 'teesgarage',
@@ -95,14 +115,14 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
         total: 2048,
         items: [
           {
-            id: 1,
-            variantId: 10,
-            name: 'Classic Breton Striped Tee',
+            id: fixture.productId,
+            variantId: fixture.variantId,
+            name: fixture.name,
             fit: 'Regular',
             size: 'M',
             price: '₹999',
             priceNum: 999,
-            sku: 'TEE-STR-REG-BLK-M',
+            sku: fixture.sku,
             quantity: 2,
             img: 'https://storage.googleapis.com/test-bucket/products/breton-1.jpg'
           }
@@ -119,8 +139,8 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
 
       // Legacy item shape check
       const lineItem = created.items[0]
-      assert.equal(lineItem.id, 1)
-      assert.equal(lineItem.name, 'Classic Breton Striped Tee')
+      assert.equal(lineItem.id, fixture.productId)
+      assert.equal(lineItem.name, fixture.name)
       assert.equal(lineItem.size, 'M')
       assert.equal(lineItem.priceNum, 999)
       assert.equal(lineItem.quantity, 2)
@@ -136,7 +156,7 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
       assert.ok(fetchedById)
       assert.equal(fetchedById.orderNumber, orderNumber)
       assert.equal(fetchedById.items.length, 1)
-      assert.equal(fetchedById.items[0].sku, 'TEE-STR-REG-BLK-M')
+      assert.equal(fetchedById.items[0].sku, fixture.sku)
 
       // Fetch by Order Number
       const fetchedByNumber = await orderStore.getByOrderNumber(orderNumber)
@@ -165,6 +185,7 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
       })
 
       const orderNumber = `USER-ORD-${Date.now()}`
+      const fixture = await createOrderFixture(`User Order Tee ${Date.now()}`, 'fullsleeve', 1199)
       const orderInput: CalculatedOrder & { userId?: number } = {
         userId: buyer.id,
         orderNumber,
@@ -182,10 +203,10 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
         total: 1199,
         items: [
           {
-            id: 2,
-            variantId: 21,
-            name: 'Fullsleeve Ribbed Tee',
-            size: 'S',
+            id: fixture.productId,
+            variantId: fixture.variantId,
+            name: fixture.name,
+            size: 'M',
             price: '₹1,199',
             priceNum: 1199,
             quantity: 1
@@ -214,6 +235,7 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
       })
 
       const orderNumber = `MINE-ORD-${Date.now()}`
+      const fixture = await createOrderFixture(`History Order Tee ${Date.now()}`, 'ringer-tees', 899)
       await orderStore.create({
         userId: user.id,
         orderNumber,
@@ -231,10 +253,10 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
         total: 899,
         items: [
           {
-            id: 3,
-            variantId: 30,
-            name: 'Ringer Graphic Tee',
-            size: 'L',
+            id: fixture.productId,
+            variantId: fixture.variantId,
+            name: fixture.name,
+            size: 'M',
             price: '₹899',
             priceNum: 899,
             quantity: 1

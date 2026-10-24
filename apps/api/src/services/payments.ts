@@ -434,7 +434,10 @@ async function applyRefundWebhook(
   }
   const paymentIdInternal = Number(payment.id)
   const paymentAmount = Number(payment.amount)
-  const amountInr = Math.round(amount / 100)
+  // Internal money is integer rupees. Floor (never round up) so a fractional
+  // paise refund can never be recorded as more than the gateway refunded and
+  // cannot push the refund total above the captured amount.
+  const amountInr = Math.floor(amount / 100)
   const status =
     input.eventType === 'refund.processed' ? 'Processed' : input.eventType === 'refund.failed' ? 'Failed' : 'Pending'
 

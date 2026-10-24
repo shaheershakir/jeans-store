@@ -12,7 +12,7 @@ export default function EditProductPage({
   params: Promise<{ id: string }>
 }) {
   const resolvedParams = React.use(params)
-  const productId = parseInt(resolvedParams.id, 10)
+  const productId = resolvedParams.id
   const products = useAdminStore((s) => s.data.products)
   const product = products.find((p) => p.id === productId)
   const [loading, setLoading] = React.useState(!product)

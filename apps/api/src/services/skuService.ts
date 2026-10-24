@@ -209,14 +209,21 @@ export function getSizeCode(size?: string | number | null): string {
 }
 
 /**
- * Formats a product ID into a stable 3+ digit code, e.g. 12 -> P012, 1 -> P001, 105 -> P105.
+ * Formats a product ID into a stable product code.
+ * Numeric IDs keep their padded form (12 -> P012); UUIDs use the last six
+ * alphanumeric characters (…-000000000012 -> P000012), which stays unique for
+ * the deterministic seed IDs and avoids SKU collisions for random UUIDs.
  */
 export function formatProductCode(productId: number | string): string {
-  const num = parseInt(String(productId).replace(/\D/g, ''), 10)
-  if (isNaN(num)) {
+  const raw = String(productId).trim()
+  if (/^\d+$/.test(raw)) {
+    return `P${raw.padStart(3, '0')}`
+  }
+  const clean = raw.replace(/[^a-zA-Z0-9]/g, '')
+  if (!clean) {
     return 'P000'
   }
-  return `P${String(num).padStart(3, '0')}`
+  return `P${clean.slice(-6).toUpperCase()}`
 }
 
 export interface SkuComponents {

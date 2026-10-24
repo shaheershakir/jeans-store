@@ -8,96 +8,124 @@ test('Admin State Store Non-Destructive Persistence (Phase 4)', async (t) => {
   })
 
   await t.test('preserves audit logs across multiple saveAdminState invocations', async () => {
+    const stamp = Date.now()
+    const firstAuditId = 700_000_000 + (stamp % 100_000_000)
+    const secondAuditId = firstAuditId + 1
+    const couponId = 800_000_000 + (stamp % 100_000_000)
+    const couponCode = `welcome${couponId}`
+
     // Initial save with an audit log entry and a coupon
     await saveAdminState({
       auditLog: [
-        { id: 1, action: 'product.create', userName: 'Admin User', detail: 'Created Jeans product' }
+        { id: firstAuditId, action: 'product.create', userName: 'Admin User', detail: 'Created Jeans product' }
       ],
       coupons: [
-        { id: 101, code: 'WELCOME10', type: 'percentage', value: 10, minOrderValue: 500 }
+        { id: couponId, code: couponCode, type: 'percentage', value: 10, minOrderValue: 500 }
       ]
     })
 
     let state = await getAdminState()
-    assert.equal((state.auditLog as any[])?.length, 1)
-    assert.equal((state.auditLog as any[])[0].id, 1)
-    assert.equal((state.coupons as any[])?.length, 1)
+    let logs = state.auditLog as any[]
+    assert.ok(logs.some((log) => log.id === firstAuditId && log.action === 'product.create'))
+    let coupons = (state.coupons as any[]).filter((coupon) => coupon.id === couponId)
+    assert.equal(coupons.length, 1)
+    assert.equal(coupons[0].code, couponCode)
 
     // Second save adds a new audit log entry and updates the coupon value
     await saveAdminState({
       auditLog: [
-        { id: 2, action: 'coupon.update', userName: 'Admin User', detail: 'Updated WELCOME10' }
+        { id: secondAuditId, action: 'coupon.update', userName: 'Admin User', detail: 'Updated welcome coupon' }
       ],
       coupons: [
-        { id: 101, code: 'WELCOME10', type: 'percentage', value: 15, minOrderValue: 600 }
+        { id: couponId, code: couponCode, type: 'percentage', value: 15, minOrderValue: 600 }
       ]
     })
 
     state = await getAdminState()
-    const logs = state.auditLog as any[]
-    assert.equal(logs.length, 2, 'Preexisting audit log should not be wiped out on subsequent saves')
-    assert.ok(logs.some((l) => l.id === 1 && l.action === 'product.create'))
-    assert.ok(logs.some((l) => l.id === 2 && l.action === 'coupon.update'))
+    logs = state.auditLog as any[]
+    assert.ok(logs.some((log) => log.id === firstAuditId), 'Preexisting audit log should not be wiped out')
+    assert.ok(logs.some((log) => log.id === secondAuditId), 'New audit log should be appended')
 
-    const coupons = state.coupons as any[]
+    coupons = (state.coupons as any[]).filter((coupon) => coupon.id === couponId)
     assert.equal(coupons.length, 1, 'Coupon should be updated, not duplicated')
     assert.equal(coupons[0].value, 15)
   })
 
   await t.test('preserves inventory movements and product reviews across saves', async () => {
+    const stamp = Date.now()
+    const firstMovementId = 710_000_000 + (stamp % 100_000_000)
+    const secondMovementId = firstMovementId + 1
+    const reviewId = 810_000_000 + (stamp % 100_000_000)
+    const productId = '00000000-0000-4000-8000-000000000010'
+
     await saveAdminState({
       inventoryMovements: [
-        { id: 501, productId: 10, variantId: 20, type: 'PURCHASE', delta: 50, before: 0, after: 50 }
+        { id: firstMovementId, productId, type: 'PURCHASE', delta: 50, before: 0, after: 50 }
       ],
       reviews: [
-        { id: 301, productId: 10, rating: 5, content: 'Great quality fabric!' }
+        {
+          id: reviewId,
+          productId,
+          rating: 5,
+          content: 'Great quality fabric!',
+          reviewerName: 'Test Customer'
+        }
       ]
     })
 
     let state = await getAdminState()
-    assert.equal((state.inventoryMovements as any[])?.length, 1)
-    assert.equal((state.reviews as any[])?.length, 1)
+    let movements = state.inventoryMovements as any[]
+    assert.ok(movements.some((movement) => movement.id === firstMovementId))
+    let reviews = (state.reviews as any[]).filter((review) => review.id === reviewId)
+    assert.equal(reviews.length, 1)
 
     // Save with another movement
     await saveAdminState({
       inventoryMovements: [
-        { id: 502, productId: 10, variantId: 20, type: 'SALE', delta: -2, before: 50, after: 48 }
+        { id: secondMovementId, productId, type: 'SALE', delta: -2, before: 50, after: 48 }
       ]
     })
 
     state = await getAdminState()
-    const movements = state.inventoryMovements as any[]
-    assert.equal(movements.length, 2, 'Previous inventory movements must be preserved')
-    assert.ok(movements.some((m) => m.id === 501))
-    assert.ok(movements.some((m) => m.id === 502))
+    movements = state.inventoryMovements as any[]
+    assert.ok(movements.some((movement) => movement.id === firstMovementId), 'Previous movements must be preserved')
+    assert.ok(movements.some((movement) => movement.id === secondMovementId), 'New movement should be appended')
 
-    const reviews = state.reviews as any[]
+    reviews = (state.reviews as any[]).filter((review) => review.id === reviewId)
     assert.equal(reviews.length, 1, 'Product reviews should remain untouched when saving other admin data')
   })
 
   await t.test('merges operational entities correctly on ID conflict', async () => {
+    const stamp = Date.now()
+    const firstCollectionId = 900_000_000 + (stamp % 100_000_000)
+    const secondCollectionId = firstCollectionId + 1
+    const thirdCollectionId = firstCollectionId + 2
+    const slugPrefix = `collection-${stamp}`
+
     await saveAdminState({
       collections: [
-        { id: 1, name: 'Summer 2026', slug: 'summer-2026', status: 'Active' },
-        { id: 2, name: 'Denim Core', slug: 'denim-core', status: 'Active' }
+        { id: firstCollectionId, name: 'Summer 2026', slug: `${slugPrefix}-summer`, status: 'Active' },
+        { id: secondCollectionId, name: 'Denim Core', slug: `${slugPrefix}-denim`, status: 'Active' }
       ]
     })
 
-    // Update collection 1, add collection 3
+    // Update the first collection, add a third
     await saveAdminState({
       collections: [
-        { id: 1, name: 'Summer 2026 (Updated)', slug: 'summer-2026', status: 'Inactive' },
-        { id: 3, name: 'Winter Drop', slug: 'winter-drop', status: 'Active' }
+        { id: firstCollectionId, name: 'Summer 2026 (Updated)', slug: `${slugPrefix}-summer`, status: 'Inactive' },
+        { id: thirdCollectionId, name: 'Winter Drop', slug: `${slugPrefix}-winter`, status: 'Active' }
       ]
     })
 
     const state = await getAdminState()
-    const collections = state.collections as any[]
+    const collections = (state.collections as any[]).filter((collection) =>
+      [firstCollectionId, secondCollectionId, thirdCollectionId].includes(collection.id)
+    )
     assert.equal(collections.length, 3)
-    const col1 = collections.find((c) => c.id === 1)
-    assert.equal(col1.name, 'Summer 2026 (Updated)')
-    assert.equal(col1.status, 'Inactive')
-    assert.ok(collections.some((c) => c.id === 2))
-    assert.ok(collections.some((c) => c.id === 3))
+    const first = collections.find((collection) => collection.id === firstCollectionId)
+    assert.equal(first.name, 'Summer 2026 (Updated)')
+    assert.equal(first.status, 'Inactive')
+    assert.ok(collections.some((collection) => collection.id === secondCollectionId))
+    assert.ok(collections.some((collection) => collection.id === thirdCollectionId))
   })
 })
