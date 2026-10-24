@@ -8,7 +8,8 @@ import { razorpayService } from '../services/razorpay.js'
 import { logger } from '../lib/logger.js'
 import { productStore } from '../store/productStore.js'
 import { calculateShipping, getShippingRates, getDeliveryEstimation } from '../services/shipping.js'
-import { verifyCloudIamToken } from '../services/cloudIam.js'
+import { verifyCloudIamToken, signGuestOrderToken, verifyGuestOrderToken } from '../services/cloudIam.js'
+import { verifyAdminSession } from '../services/adminSession.js'
 import { trackServerEvent } from '../services/posthog.js'
 import { userStore } from '../store/userStore.js'
 import { db, isDatabaseConfigured } from '../db/index.js'
@@ -441,6 +442,7 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
       res.status(200).json({
         success: true,
         order: existingPaidOrder,
+        guestToken: signGuestOrderToken(existingPaidOrder.orderNumber, existingPaidOrder.customerEmail),
         paymentId: razorpay_payment_id,
         idempotent: true
       })
@@ -463,6 +465,7 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
         res.status(200).json({
           success: true,
           order: existing,
+          guestToken: signGuestOrderToken(existing.orderNumber, existing.customerEmail),
           paymentId: razorpay_payment_id,
           idempotent: true
         })
@@ -518,6 +521,7 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
         res.status(200).json({
           success: true,
           order: existingByNumber,
+          guestToken: signGuestOrderToken(existingByNumber.orderNumber, existingByNumber.customerEmail),
           paymentId: razorpay_payment_id,
           idempotent: true
         })
@@ -580,6 +584,7 @@ orderRouter.post('/api/orders/razorpay/verify', async (req: Request, res: Respon
     res.status(201).json({
       success: true,
       order: finalOrder,
+      guestToken: signGuestOrderToken(finalOrder.orderNumber, finalOrder.customerEmail),
       paymentId: razorpay_payment_id
     })
   } catch (err: any) {
@@ -730,7 +735,8 @@ orderRouter.post('/api/orders', async (req: Request, res: Response) => {
       }))
     })
 
-    res.status(201).json({ order })
+    const guestToken = signGuestOrderToken(order.orderNumber, order.customerEmail)
+    res.status(201).json({ order, guestToken })
   } catch (err) {
     logger.error({ err }, 'Failed to save order')
     if (err instanceof CouponError) {
@@ -750,6 +756,107 @@ orderRouter.post('/api/orders', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to process order' })
   }
 })
+
+// Customer / Guest / Admin: Retrieve order details for order confirmation
+async function handleOrderConfirmationLookup(req: Request, res: Response): Promise<void> {
+  const { orderNumber } = req.params
+  if (!orderNumber || typeof orderNumber !== 'string') {
+    res.status(400).json({ error: 'Order number is required' })
+    return
+  }
+
+  const order = await orderStore.getByOrderNumber(orderNumber.trim())
+  if (!order) {
+    res.status(404).json({ error: 'Order not found' })
+    return
+  }
+
+  let isAuthorized = false
+
+  // 1. Check admin key or admin session token
+  const adminKey = process.env.ADMIN_API_KEY?.trim()
+  const headerKey = req.headers['x-admin-key']
+  const authHeader = req.headers.authorization
+  const bearerToken = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim()
+
+  if (adminKey && (headerKey === adminKey || bearerToken === adminKey)) {
+    isAuthorized = true
+  } else if (bearerToken && verifyAdminSession(bearerToken)) {
+    isAuthorized = true
+  }
+
+  // 2. Check customer token
+  if (!isAuthorized) {
+    const customer = await getOptionalCustomerClaims(req)
+    if (customer && customer.email) {
+      if (order.customerEmail.toLowerCase() === customer.email.toLowerCase()) {
+        isAuthorized = true
+      } else {
+        const user = await userStore.findByEmail(customer.email)
+        if (user && order.userId && order.userId === user.id) {
+          isAuthorized = true
+        }
+      }
+    }
+  }
+
+  // 3. Check guest verification token
+  const token = (req.query.token as string) || (req.headers['x-guest-token'] as string)
+  if (!isAuthorized && token) {
+    if (verifyGuestOrderToken(order.orderNumber, token)) {
+      isAuthorized = true
+    }
+  }
+
+  // 4. Check guest email match if explicitly passed as a verification fallback
+  const emailQuery = req.query.email as string
+  if (!isAuthorized && emailQuery) {
+    if (order.customerEmail.toLowerCase() === emailQuery.trim().toLowerCase()) {
+      isAuthorized = true
+    }
+  }
+
+  if (!isAuthorized) {
+    res.status(403).json({ error: 'You are not authorized to view this order.' })
+    return
+  }
+
+  res.json({
+    order: {
+      orderNumber: order.orderNumber,
+      paymentId: order.paymentId || (order.paymentMethod === 'cod' ? 'Cash on delivery' : ''),
+      paymentMethod: order.paymentMethod === 'cod' || order.handoffType === 'cod' ? 'cod' : 'online',
+      total: order.total,
+      subtotal: order.subtotal,
+      shipping: order.shipping,
+      createdAt: order.createdAt instanceof Date ? order.createdAt.toISOString() : String(order.createdAt),
+      customerName: order.customerName,
+      email: order.customerEmail,
+      phone: order.customerPhone,
+      address: order.address,
+      apartment: order.apartment || '',
+      city: order.city,
+      state: order.state,
+      pincode: order.pincode,
+      status: order.status,
+      items: order.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        fit: item.fit,
+        size: item.size,
+        quantity: item.quantity,
+        price: item.price,
+        priceNum: item.priceNum,
+        img: item.img,
+        color: (item as any).color || (item as any).variantLabel,
+        wash: (item as any).wash
+      }))
+    }
+  })
+}
+
+orderRouter.get('/api/orders/confirmation/:orderNumber', handleOrderConfirmationLookup)
+orderRouter.get('/api/orders/lookup/:orderNumber', handleOrderConfirmationLookup)
 
 // Admin: List all captured orders
 orderRouter.get('/api/orders/mine', async (req: Request, res: Response) => {

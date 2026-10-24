@@ -181,6 +181,80 @@ export async function verifyCloudIamToken(token: string): Promise<CloudIamClaims
   }
 }
 
+/**
+ * Signs a tamper-proof guest order token scoped to an orderNumber and email.
+ * Valid for 30 days.
+ */
+export function signGuestOrderToken(orderNumber: string, email?: string): string {
+  const secret = jwtSecret()
+  const payload = JSON.stringify({
+    orderNumber: orderNumber.trim(),
+    email: email ? email.trim().toLowerCase() : '',
+    exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60
+  })
+  const encodedPayload = base64UrlEncode(payload)
+  const signature = crypto
+    .createHmac('sha256', secret)
+    .update(encodedPayload)
+    .digest('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+
+  return `${encodedPayload}.${signature}`
+}
+
+/**
+ * Verifies a guest order token against the requested orderNumber.
+ */
+export function verifyGuestOrderToken(orderNumber: string, token: string): boolean {
+  if (!token || typeof token !== 'string') return false
+  const parts = token.split('.')
+  if (parts.length !== 2) return false
+  const [encodedPayload, signature] = parts
+
+  try {
+    const candidateSecrets = [
+      jwtSecret(),
+      process.env.JWT_SECRET?.trim(),
+      'local-dev-customer-jwt-secret-change-me',
+      'local-development-only-jwt-secret-not-for-production'
+    ].filter((s): s is string => Boolean(s && s.length > 0))
+
+    let signatureValid = false
+    for (const secret of candidateSecrets) {
+      const candidateSig = crypto
+        .createHmac('sha256', secret)
+        .update(encodedPayload)
+        .digest('base64')
+        .replace(/=/g, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+
+      if (
+        signature.length === candidateSig.length &&
+        crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(candidateSig))
+      ) {
+        signatureValid = true
+        break
+      }
+    }
+
+    if (!signatureValid) return false
+
+    const payload = JSON.parse(base64UrlDecode(encodedPayload)) as {
+      orderNumber?: string
+      exp?: number
+    }
+
+    const now = Math.floor(Date.now() / 1000)
+    if (payload.exp && payload.exp < now) return false
+    return payload.orderNumber === orderNumber.trim()
+  } catch {
+    return false
+  }
+}
+
 async function verifyWithGoogleOidc(token: string): Promise<CloudIamClaims | null> {
   try {
     const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`, {

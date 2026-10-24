@@ -13,11 +13,13 @@ import {
   Check,
   ChevronRight,
   CreditCard,
+  Info,
   Landmark,
   Loader2,
   Lock,
   Minus,
   Plus,
+  ShieldCheck,
   Tag,
   Trash2,
   Wallet
@@ -60,6 +62,8 @@ interface CheckoutForm {
   state: string
   pincode: string
 }
+
+export type PaymentStage = 'idle' | 'creating_order' | 'awaiting_popup' | 'verifying' | 'redirecting'
 
 type CheckoutErrors = Partial<Record<keyof CheckoutForm | 'email', string>>
 
@@ -576,6 +580,166 @@ function CheckoutStepper({
   )
 }
 
+interface PaymentWaitingScreenProps {
+  stage: PaymentStage
+  isCod?: boolean
+}
+
+function PaymentWaitingScreen({ stage, isCod = false }: PaymentWaitingScreenProps) {
+  const [progress, setProgress] = useState(() => {
+    if (stage === 'redirecting') return 100
+    if (stage === 'verifying') return 55
+    if (stage === 'awaiting_popup') return 35
+    return 18
+  })
+
+  useEffect(() => {
+    if (stage === 'redirecting') {
+      setProgress(100)
+      return
+    }
+
+    if (stage === 'verifying') {
+      setProgress((prev) => Math.max(prev, 55))
+    } else if (stage === 'awaiting_popup') {
+      setProgress((prev) => Math.max(prev, 35))
+    }
+
+    const targetCap = stage === 'verifying' ? 90 : stage === 'awaiting_popup' ? 48 : 32
+
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= targetCap) return prev
+        const remaining = targetCap - prev
+        const step = Math.max(1, Math.floor(remaining * 0.15))
+        return Math.min(targetCap, prev + step)
+      })
+    }, 350)
+
+    return () => clearInterval(interval)
+  }, [stage])
+
+  const headingText =
+    stage === 'redirecting'
+      ? 'Order confirmed'
+      : isCod
+        ? 'Placing your order'
+        : stage === 'verifying'
+          ? 'Confirming your payment'
+          : stage === 'awaiting_popup'
+            ? 'Opening payment gateway'
+            : 'Preparing your order'
+
+  const subtitleText =
+    stage === 'redirecting'
+      ? 'Your receipt is ready. Taking you to your order confirmation...'
+      : isCod
+        ? "Your order was submitted. We're finalizing details and securing your items."
+        : stage === 'verifying'
+          ? "Your payment was submitted. We're verifying the transaction and preparing your order."
+          : stage === 'awaiting_popup'
+            ? 'Please complete your payment in the secure Razorpay checkout window.'
+            : 'Setting up a secure session with our payment partner...'
+
+  const statusLabel =
+    stage === 'redirecting'
+      ? 'Order confirmed'
+      : stage === 'verifying'
+        ? 'Verifying transaction...'
+        : stage === 'awaiting_popup'
+          ? 'Awaiting payment completion'
+          : 'Initializing secure checkout'
+
+  return (
+    <main className="min-h-screen bg-[#FBFBFA] flex flex-col font-ui text-[#1C2022]">
+      {/* Top Navigation / Brand Header */}
+      <header className="w-full border-b border-[#EAE8E4] bg-[#FBFBFA]/80 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+          <Link href="/" className="inline-block transition-opacity hover:opacity-85" aria-label="TEESGARAGE Homepage">
+            <Image
+              src="/teesgarage-logo.svg"
+              alt="TEESGARAGE"
+              width={150}
+              height={42}
+              priority
+              className="h-[28px] sm:h-[32px] w-auto object-contain"
+            />
+          </Link>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-[#6F7473]">
+            <Lock className="w-3.5 h-3.5 text-[#2F7D4F]" aria-hidden="true" />
+            <span>256-Bit SSL Secured</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Card Content */}
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
+        <div
+          className="w-full max-w-[560px] rounded-2xl border border-[#E7E5DF] bg-white p-7 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]"
+          role="status"
+          aria-live="polite"
+        >
+          {/* Status Icon */}
+          <div className="flex justify-center mb-6">
+            {stage === 'redirecting' ? (
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EBF5EE] text-[#2F7D4F] transition-transform duration-300 scale-100">
+                <Check className="w-7 h-7" strokeWidth={2.5} aria-hidden="true" />
+              </div>
+            ) : stage === 'verifying' ? (
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#111111] text-white shadow-sm">
+                <ShieldCheck className="w-7 h-7" strokeWidth={2} aria-hidden="true" />
+              </div>
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F4F3EF] text-[#111111]">
+                <Loader2 className="w-7 h-7 animate-spin text-[#111111]" strokeWidth={2} aria-hidden="true" />
+              </div>
+            )}
+          </div>
+
+          <h1 className="text-center text-xl sm:text-2xl font-semibold tracking-tight text-[#111111] mb-2">
+            {headingText}
+          </h1>
+
+          <p className="text-center text-sm sm:text-[15px] leading-relaxed text-[#6F7473] max-w-md mx-auto mb-8">
+            {subtitleText}
+          </p>
+
+          {/* Progress Bar */}
+          <div
+            className="w-full h-2 bg-[#EAE8E4] rounded-full overflow-hidden mb-3"
+            role="progressbar"
+            aria-valuenow={progress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className={`h-full rounded-full transition-all duration-500 ease-out ${
+                stage === 'redirecting' ? 'bg-[#2F7D4F]' : 'bg-[#111111]'
+              }`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          {/* Meta Information */}
+          <div className="flex items-center justify-between text-xs font-medium text-[#6F7473] mb-8">
+            <span>{statusLabel}</span>
+            <div className="flex items-center gap-1 text-[#8B8F8E]">
+              <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Encrypted</span>
+            </div>
+          </div>
+
+          {/* Security Notice Footer */}
+          <div className="border-t border-[#ECEBE6] pt-5 flex items-center justify-center gap-2 text-xs text-[#8B8F8E] text-center">
+            <Info className="w-4 h-4 text-[#8B8F8E] shrink-0" aria-hidden="true" />
+            <span>Please don&apos;t refresh or close this page. This may take a few moments.</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  )
+}
+
 export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClientProps) {
   const router = useRouter()
 
@@ -647,6 +811,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
   const [errors, setErrors] = useState<CheckoutErrors>({})
   const [step, setStep] = useState<0 | 1 | 2>(0)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [paymentStage, setPaymentStage] = useState<PaymentStage>('idle')
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuote | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
@@ -659,6 +824,27 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
   const [upiError, setUpiError] = useState<string | null>(null)
 
   const backHref = isProductMode && product ? getProductUrl(product) : '/bag'
+
+  // Prefetch order confirmation page for instant transitions
+  useEffect(() => {
+    router.prefetch('/order-confirmation')
+  }, [router])
+
+  // Prevent accidental navigation/tab close while payment is being verified or redirected
+  useEffect(() => {
+    if (paymentStage !== 'verifying' && paymentStage !== 'redirecting') return
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+      return ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [paymentStage])
 
   // Prefill contact details for signed-in customers.
   useEffect(() => {
@@ -918,7 +1104,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
   }, [emailValid, form.name, form.address, form.district, form.state, phoneDigits, cleanPin])
 
   const canContinue = Boolean(isShippingComplete && !quoteLoading)
-  const canPay = Boolean(canContinue && !isProcessing && items.length > 0)
+  const canPay = Boolean(canContinue && !isProcessing && paymentStage === 'idle' && items.length > 0)
   const shippingDisplay = deliveryQuote
     ? shipping === 0
       ? 'Free'
@@ -1163,12 +1349,14 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     }
 
     setIsProcessing(true)
+    setPaymentStage('creating_order')
     setPaymentError(null)
 
     const scriptLoaded = await loadRazorpayScript()
     if (!scriptLoaded || typeof window === 'undefined' || !window.Razorpay) {
       setPaymentError('Unable to load Razorpay payment SDK. Please reload the page.')
       setIsProcessing(false)
+      setPaymentStage('idle')
       return
     }
 
@@ -1225,6 +1413,10 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
           razorpay_payment_id: string
           razorpay_signature: string
         }) {
+          // Immediately set stage to 'verifying' so the dark waiting screen renders
+          // the exact frame the Razorpay modal closes
+          setPaymentStage('verifying')
+
           try {
             const verifyHeaders: Record<string, string> = {
               'Content-Type': 'application/json'
@@ -1255,11 +1447,15 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
             saveCheckoutAddress()
 
             const confirmedOrder = verifyData.order || {}
+            const finalOrderNumber = confirmedOrder.orderNumber || orderId
+            const guestToken = verifyData.guestToken || ''
+
             try {
               window.sessionStorage.setItem(
                 'teesgarage-order-confirmation',
                 JSON.stringify({
-                  orderNumber: confirmedOrder.orderNumber || orderId,
+                  orderNumber: finalOrderNumber,
+                  guestToken,
                   paymentId: response.razorpay_payment_id,
                   paymentMethod: 'online',
                   total: Number(confirmedOrder.total ?? rzpData.total ?? total),
@@ -1295,8 +1491,8 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
             }
 
             trackEvent('order_completed', {
-              order_id: orderId,
-              order_number: orderId,
+              order_id: finalOrderNumber,
+              order_number: finalOrderNumber,
               total: Number(verifyData.order?.total ?? rzpData.total ?? total),
               subtotal,
               shipping,
@@ -1314,21 +1510,34 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
               }))
             })
 
+            // Snap to 100% on redirecting
+            setPaymentStage('redirecting')
+
             if (!isProductMode) {
               clearCart()
             }
-            router.replace('/order-confirmation')
+
+            const confirmUrl = new URL('/order-confirmation', window.location.origin)
+            confirmUrl.searchParams.set('orderNumber', finalOrderNumber)
+            if (guestToken) {
+              confirmUrl.searchParams.set('token', guestToken)
+            }
+
+            setTimeout(() => {
+              router.replace(confirmUrl.pathname + confirmUrl.search)
+            }, 350)
           } catch (err: any) {
+            setIsProcessing(false)
+            setPaymentStage('idle')
             setPaymentError(
               err.message || 'Payment verification encountered an issue. Please contact support.'
             )
-          } finally {
-            setIsProcessing(false)
           }
         },
         modal: {
           ondismiss: function () {
             setIsProcessing(false)
+            setPaymentStage('idle')
             setPaymentError(
               'Payment window was closed. You can retry payment whenever you are ready.'
             )
@@ -1339,19 +1548,24 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       const rzp = new window.Razorpay(options)
       rzp.on('payment.failed', function (resp: any) {
         setIsProcessing(false)
+        setPaymentStage('idle')
         setPaymentError(
           resp.error?.description || 'Payment was declined. Please try another card or UPI account.'
         )
       })
+
+      setPaymentStage('awaiting_popup')
       rzp.open()
     } catch (err: any) {
       setIsProcessing(false)
+      setPaymentStage('idle')
       setPaymentError(err.message || 'Failed to initialize payment gateway')
     }
   }
 
   async function placeCashOnDeliveryOrder(orderPayload: CheckoutOrderPayload, orderId: string) {
     setIsProcessing(true)
+    setPaymentStage('creating_order')
     setPaymentError(null)
 
     try {
@@ -1375,11 +1589,15 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       saveCheckoutAddress()
 
       const confirmedOrder = (data.order || {}) as Record<string, any>
+      const finalOrderNumber = confirmedOrder.orderNumber || orderId
+      const guestToken = data.guestToken || ''
+
       try {
         window.sessionStorage.setItem(
           'teesgarage-order-confirmation',
           JSON.stringify({
-            orderNumber: confirmedOrder.orderNumber || orderId,
+            orderNumber: finalOrderNumber,
+            guestToken,
             paymentId: 'Cash on delivery',
             paymentMethod: 'cod',
             total: Number(confirmedOrder.total ?? total),
@@ -1415,8 +1633,8 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       }
 
       trackEvent('order_completed', {
-        order_id: orderId,
-        order_number: orderId,
+        order_id: finalOrderNumber,
+        order_number: finalOrderNumber,
         total: Number(confirmedOrder.total ?? total),
         subtotal,
         shipping,
@@ -1434,17 +1652,39 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         }))
       })
 
+      // Snap to 100% on redirecting
+      setPaymentStage('redirecting')
+
       if (!isProductMode) {
         clearCart()
       }
-      router.replace('/order-confirmation')
+
+      const confirmUrl = new URL('/order-confirmation', window.location.origin)
+      confirmUrl.searchParams.set('orderNumber', finalOrderNumber)
+      if (guestToken) {
+        confirmUrl.searchParams.set('token', guestToken)
+      }
+
+      setTimeout(() => {
+        router.replace(confirmUrl.pathname + confirmUrl.search)
+      }, 350)
     } catch (err) {
+      setIsProcessing(false)
+      setPaymentStage('idle')
       setPaymentError(
         err instanceof Error ? err.message : 'Could not place your order. Please try again.'
       )
-    } finally {
-      setIsProcessing(false)
     }
+  }
+
+  // Order progress / redirect screen guard: loads immediately after clicking pay and precedes empty bag guard
+  if (paymentStage !== 'idle') {
+    return (
+      <PaymentWaitingScreen
+        stage={paymentStage}
+        isCod={paymentMethod === 'cod'}
+      />
+    )
   }
 
   // Empty bag view

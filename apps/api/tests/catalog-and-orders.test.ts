@@ -232,5 +232,62 @@ describe('Catalog & Orders Unified Brand Seams', () => {
       razorpayService.fetchPayment = origFetchPayment
     }
   })
-})
+  test('GET /api/orders/confirmation/:orderNumber verifies customer authorization or guest token', async () => {
+    const [{ product, variant }] = await pickSellableProducts(1)
+    const quote = await quoteCart(app, [
+      { id: product.id as any, variantId: variant.id, size: String(variant.size), quantity: 1 }
+    ])
 
+    const orderNumber = `ORD-CONF-${Date.now()}`
+    const createRes = await request(app)
+      .post('/api/orders')
+      .send({
+        store: 'teesgarage',
+        orderNumber,
+        customerName: 'Test Customer',
+        customerPhone: '9876543210',
+        customerEmail: 'customer@example.com',
+        address: '123 Street',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400050',
+        subtotal: quote.subtotal,
+        shipping: quote.shipping,
+        total: quote.total,
+        handoffType: 'cod',
+        items: [
+          {
+            id: product.id,
+            variantId: variant.id,
+            name: product.name,
+            size: String(variant.size),
+            quantity: 1
+          }
+        ]
+      })
+
+    assert.equal(createRes.status, 201, `Failed to create order: ${JSON.stringify(createRes.body)}`)
+    assert.ok(createRes.body.guestToken, 'Should return guestToken on order creation')
+    const guestToken = createRes.body.guestToken
+
+    // 1. Without authorization or token -> 403
+    const unauthRes = await request(app).get(`/api/orders/confirmation/${orderNumber}`)
+    assert.equal(unauthRes.status, 403)
+
+    // 2. With invalid token -> 403
+    const invalidTokenRes = await request(app).get(`/api/orders/confirmation/${orderNumber}?token=invalid.token`)
+    assert.equal(invalidTokenRes.status, 403)
+
+    // 3. With valid guest token -> 200
+    const validTokenRes = await request(app).get(`/api/orders/confirmation/${orderNumber}?token=${encodeURIComponent(guestToken)}`)
+    assert.equal(validTokenRes.status, 200)
+    assert.equal(validTokenRes.body.order.orderNumber, orderNumber)
+    assert.equal(validTokenRes.body.order.customerName, 'Test Customer')
+    assert.equal(validTokenRes.body.order.email, 'customer@example.com')
+    assert.ok(Array.isArray(validTokenRes.body.order.items) && validTokenRes.body.order.items.length === 1)
+
+    // 4. Non-existent order -> 404
+    const notFoundRes = await request(app).get(`/api/orders/confirmation/NON_EXISTENT_12345?token=${encodeURIComponent(guestToken)}`)
+    assert.equal(notFoundRes.status, 404)
+  })
+});
