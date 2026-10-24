@@ -152,19 +152,22 @@ function RecommendationCard({
   useEffect(() => setMounted(true), [])
 
   const product = useMemo(
-    () => PRODUCTS.find((entry) => entry.id === item.productId),
-    [item.productId]
+    () => PRODUCTS.find((entry) => String(entry.id) === String(item.productId) || entry.name === item.name),
+    [item.productId, item.name]
   )
   const href = product ? getProductUrl(product) : '/shop'
   const saved = mounted && isFavorite
+  const imageSrc = product?.img || item.img
+  const displayPrice = product?.priceNum ?? item.priceNum
+  const displayName = product?.name ?? item.name
 
   return (
     <article className="flex min-w-0 flex-col gap-3.5 md:flex-row md:gap-5">
       <div className="relative aspect-square w-full shrink-0 overflow-hidden rounded-[6px] bg-[#f2eee6] md:w-1/2">
-        <Link href={href} className="absolute inset-0 block" aria-label={item.name}>
+        <Link href={href} className="absolute inset-0 block" aria-label={displayName}>
           <Image
-            src={item.img}
-            alt={item.name}
+            src={imageSrc}
+            alt={displayName}
             fill
             sizes="(max-width: 640px) 46vw, (max-width: 1280px) 23vw, 156px"
             className="origin-bottom object-cover object-bottom scale-[1.06]"
@@ -191,11 +194,11 @@ function RecommendationCard({
       <div className="flex min-w-0 flex-1 flex-col justify-start pt-0 md:pt-3">
         <Link href={href} className="text-[#111] no-underline">
           <h3 className="text-[15.5px] font-medium leading-[1.6] tracking-[-0.005em]">
-            {item.name}
+            {displayName}
           </h3>
         </Link>
         <p className="mt-1.5 text-[18px] font-bold leading-none text-[#111] tabular-nums min-[1360px]:mt-auto">
-          {formatPrice(item.priceNum)}
+          {formatPrice(displayPrice)}
         </p>
         <div
           className="mt-[18px] flex items-center gap-[17px] min-[1360px]:mb-[28px] min-[1360px]:mt-[26px]"

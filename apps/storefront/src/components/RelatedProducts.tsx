@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { Product } from '@/lib/constants'
 import { PRODUCTS } from '@/lib/constants'
@@ -11,94 +11,65 @@ import { getProductSlug } from '@/lib/products'
 
 interface RelatedProductsProps {
   currentProduct: Product
+  catalog?: Product[]
 }
 
-export default function RelatedProducts({ currentProduct }: RelatedProductsProps) {
-  const isBottomwear =
-    currentProduct.category === 'trackpants' || currentProduct.category === 'sweatpants'
+export default function RelatedProducts({ currentProduct, catalog: initialCatalog }: RelatedProductsProps) {
+  const [catalog, setCatalog] = useState<Product[]>(initialCatalog || [])
+
+  useEffect(() => {
+    if (!initialCatalog || initialCatalog.length === 0) {
+      fetch('/api/products')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (Array.isArray(data?.products) && data.products.length > 0) {
+            setCatalog(data.products)
+          } else {
+            setCatalog(PRODUCTS)
+          }
+        })
+        .catch(() => setCatalog(PRODUCTS))
+    }
+  }, [initialCatalog])
+
+  const pool = catalog.length > 0 ? catalog : PRODUCTS
 
   const relatedList: Product[] = useMemo(() => {
-    // If viewing Thermal Waffle Knit Tee, match reference mockup:
-    // 1: Heavy Combed Cotton Tee, 2: Good Days Ahead Tee, 3: Classic Stripe Tee, 4: Essential Sweatpants
+    const isBottomwear =
+      currentProduct.category === 'trackpants' || currentProduct.category === 'sweatpants'
+
     const isWaffle =
       currentProduct.name.toLowerCase().includes('thermal waffle') ||
-      currentProduct.id === 3 ||
-      currentProduct.id === 4
+      String(currentProduct.id) === '3' ||
+      String(currentProduct.id) === '4'
 
     if (isWaffle) {
-      const p1 = PRODUCTS.find((p) => p.name === 'Heavy Combed Cotton Tee') || {
-        id: 4,
-        store: 'teesgarage',
-        category: 'fullsleeve',
-        name: 'Heavy Combed Cotton Tee',
-        fit: 'Relaxed',
-        price: '₹1,299',
-        priceNum: 1299,
-        img: '/mock-assets/pdp/like_high_1.png',
-        img2: '/mock-assets/pdp/like_high_1.png',
-        images: ['/mock-assets/pdp/like_high_1.png'],
-        color: 'White',
-        sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-        inStock: true
+      const p1 = pool.find((p) => p.name === 'Heavy Combed Cotton Tee')
+      const p2 = pool.find((p) => p.name === 'Good Days Ahead Tee')
+      const p3 = pool.find((p) => p.name === 'Classic Stripe Tee')
+      const p4 = pool.find((p) => p.name === 'Essential Sweatpants')
+      const curated = [p1, p2, p3, p4].filter(Boolean) as Product[]
+      if (curated.length === 4) {
+        return curated
       }
-      const p2 = PRODUCTS.find((p) => p.name === 'Good Days Ahead Tee') || {
-        id: 9,
-        store: 'teesgarage',
-        category: 'printed-tees',
-        name: 'Good Days Ahead Tee',
-        fit: 'Oversized',
-        price: '₹1,249',
-        priceNum: 1249,
-        img: '/mock-assets/pdp/like_high_2.png',
-        img2: '/mock-assets/pdp/like_high_2.png',
-        images: ['/mock-assets/pdp/like_high_2.png'],
-        color: 'Green',
-        sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-        inStock: true
-      }
-      const p3 = PRODUCTS.find((p) => p.name === 'Classic Stripe Tee') || {
-        id: 0,
-        store: 'teesgarage',
-        category: 'stripes',
-        name: 'Classic Stripe Tee',
-        fit: 'Boxy',
-        price: '₹1,199',
-        priceNum: 1199,
-        img: '/mock-assets/pdp/like_high_3.png',
-        img2: '/mock-assets/pdp/like_high_3.png',
-        images: ['/mock-assets/pdp/like_high_3.png'],
-        color: 'White',
-        sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-        inStock: true
-      }
-      const p4 = PRODUCTS.find((p) => p.name === 'Essential Sweatpants') || {
-        id: 22,
-        store: 'teesgarage',
-        category: 'sweatpants',
-        name: 'Essential Sweatpants',
-        fit: 'Regular',
-        price: '₹1,699',
-        priceNum: 1699,
-        img: '/mock-assets/pdp/like_high_4.png',
-        img2: '/mock-assets/pdp/like_high_4.png',
-        images: ['/mock-assets/pdp/like_high_4.png'],
-        color: 'Grey',
-        sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-        inStock: true
-      }
-      return [
-        { ...p1, id: 9001 },
-        { ...p2, id: 9002 },
-        { ...p3, id: 9003 },
-        { ...p4, id: 9004 }
-      ] as Product[]
     }
 
     if (isBottomwear) {
-      return PRODUCTS.filter((p) => p.id !== currentProduct.id && p.category !== 'trackpants' && p.category !== 'sweatpants').slice(0, 4)
+      const tops = pool.filter(
+        (p) =>
+          String(p.id) !== String(currentProduct.id) &&
+          p.category !== 'trackpants' &&
+          p.category !== 'sweatpants'
+      )
+      return tops.slice(0, 4)
     }
-    return PRODUCTS.filter((p) => p.id !== currentProduct.id && (p.category === 'sweatpants' || p.category === 'trackpants' || p.category !== currentProduct.category)).slice(0, 4)
-  }, [currentProduct.id, currentProduct.name, isBottomwear])
+
+    const mixed = pool.filter((p) => String(p.id) !== String(currentProduct.id))
+    const bottoms = mixed.filter((p) => p.category === 'sweatpants' || p.category === 'trackpants')
+    const otherTops = mixed.filter((p) => p.category !== 'sweatpants' && p.category !== 'trackpants')
+    const result = [...bottoms.slice(0, 2), ...otherTops.slice(0, 2)]
+    return result.length > 0 ? result : mixed.slice(0, 4)
+  }, [currentProduct.id, currentProduct.name, currentProduct.category, pool])
 
   useEffect(() => {
     if (relatedList.length > 0) {

@@ -63,9 +63,9 @@ export async function getProducts(): Promise<Product[]> {
   }
 }
 
-export async function getProduct(id: number): Promise<Product | undefined> {
+export async function getProduct(id: number | string): Promise<Product | undefined> {
   const products = await getProducts()
-  return products.find((p) => p.id === id)
+  return products.find((p) => String(p.id) === String(id))
 }
 
 export function slugify(text: string): string {
@@ -76,16 +76,16 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-export function getProductSlug(product: { id: number; name: string }): string {
+export function getProductSlug(product: { id: number | string; name: string }): string {
   return slugify(product.name) || String(product.id)
 }
 
-export function getProductUrl(product: { id: number; name: string }): string {
+export function getProductUrl(product: { id: number | string; name: string }): string {
   return `/${getProductSlug(product)}`
 }
 
 export function getProductCheckoutUrl(
-  product: { id: number; name: string },
+  product: { id: number | string; name: string },
   options?: { size?: string; color?: string; qty?: number }
 ): string {
   const base = `/${getProductSlug(product)}/checkout`
@@ -105,7 +105,7 @@ export async function getProductBySlug(slug: string): Promise<Product | undefine
     (p) =>
       slugify(p.name) === cleanSlug ||
       String(p.id) === cleanSlug ||
-      (p.id === 3 && (cleanSlug === 'thermal-waffle-knit-tee' || cleanSlug === 'thermal-waffle-knit-fullsleeve-tee'))
+      (String(p.id) === '3' && (cleanSlug === 'thermal-waffle-knit-tee' || cleanSlug === 'thermal-waffle-knit-fullsleeve-tee'))
   )
 }
 

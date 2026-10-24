@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Heart, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Product, HomepageConfig } from '@/lib/constants'
 import { useCartStore, useFilterStore, useFavoriteStore } from '@/lib/store'
+import { getProductUrl } from '@/lib/products'
 
 // ─── Data Definitions matching Storefront Assets ───────────────────────────
 
@@ -74,54 +75,42 @@ const TOP_BANNERS: TopBanner[] = [
   }
 ]
 
-interface MockArrival {
-  fallbackId: number
-  name: string
-  wash: string
-  price: string
-  swatches: string[]
-  image: string
-  searchTerm: string
-}
-
-const MOCK_NEW_ARRIVALS: MockArrival[] = [
-  {
-    fallbackId: 101,
-    name: 'Vintage Skate Micro-Stripe Tee',
-    wash: 'Washed Black / Ash',
-    price: '₹1,249',
-    swatches: ['#1c1c1c', '#9e9e9e'],
-    image: '/mock-assets/product-vintage-skate-clean.jpg',
-    searchTerm: 'Vintage Skate'
-  },
-  {
-    fallbackId: 102,
-    name: 'Doodle Archive Oversized Tee',
-    wash: 'Off White',
-    price: '₹1,099',
-    swatches: ['#333333', '#e0dcd5', '#7a7a7a'],
-    image: '/mock-assets/product-doodle-archive-clean.jpg',
-    searchTerm: 'Doodle Archive'
-  },
-  {
-    fallbackId: 103,
-    name: 'Good Days Ahead Tee',
-    wash: 'Forest Green',
-    price: '₹1,249',
-    swatches: ['#1c3b2b', '#232323'],
-    image: '/mock-assets/product-good-days-ahead-clean.jpg',
-    searchTerm: 'Good Days Ahead'
-  },
-  {
-    fallbackId: 104,
-    name: 'Daisy Minimal Tee',
-    wash: 'Black',
-    price: '₹1,099',
-    swatches: ['#111111', '#c5c5c5'],
-    image: '/mock-assets/product-daisy-minimal-clean.jpg',
-    searchTerm: 'Daisy Minimal'
+function getProductSwatches(product: Product): string[] {
+  if (product.variants && product.variants.length > 0) {
+    const colorMap: Record<string, string> = {
+      black: '#141414',
+      white: '#f5f5f5',
+      grey: '#9e9e9e',
+      gray: '#9e9e9e',
+      navy: '#1b2b48',
+      blue: '#2563eb',
+      green: '#1e3a2b',
+      forest: '#1e3a2b',
+      beige: '#d6c8b2',
+      cream: '#ede6d8',
+      olive: '#556b2f',
+      brown: '#5c4033',
+      red: '#991b1b',
+      charcoal: '#222222',
+      washed: '#333333'
+    }
+    const colors = Array.from(new Set(product.variants.map((v) => v.color.toLowerCase())))
+    return colors.slice(0, 4).map((c) => colorMap[c] || '#444444')
   }
-]
+  if (product.color) {
+    const colorMap: Record<string, string> = {
+      black: '#141414',
+      white: '#f5f5f5',
+      grey: '#9e9e9e',
+      navy: '#1b2b48',
+      green: '#1e3a2b',
+      beige: '#d6c8b2',
+      charcoal: '#222222'
+    }
+    return [colorMap[product.color.toLowerCase()] || '#333333']
+  }
+  return ['#1c1c1c', '#9e9e9e']
+}
 
 interface ShopCategory {
   name: string
@@ -166,19 +155,33 @@ export default function HomepageClient({ products }: HomepageClientProps) {
     return () => clearInterval(timer)
   }, [])
 
-  // Resolve product links to existing DB products where matching, or fallback to search
-  const resolvedArrivals = MOCK_NEW_ARRIVALS.map((arrival) => {
-    const match = products.find((p) =>
-      p.name.toLowerCase().includes(arrival.searchTerm.toLowerCase())
+  // Live database products for New Arrivals (fresh drops)
+  const newArrivals = useMemo(() => {
+    if (!products || products.length === 0) return []
+    const explicitNew = products.filter(
+      (p) => p.badge?.toLowerCase() === 'new' || p.collection?.toLowerCase() === 'new arrivals'
     )
-    const id = match ? match.id : arrival.fallbackId
-    const href = match ? `/product/${match.id}` : `/shop?search=${encodeURIComponent(arrival.searchTerm)}`
-    return {
-      ...arrival,
-      id,
-      href,
-    }
-  })
+    const list = explicitNew.length >= 4 ? explicitNew : products
+    return list.slice(0, 4)
+  }, [products])
+
+  // Live database products for Curated Recommendations
+  const recommendedProducts = useMemo(() => {
+    if (!products || products.length === 0) return []
+    const arrivalIds = new Set(newArrivals.map((p) => String(p.id)))
+    const candidates = products.filter((p) => !arrivalIds.has(String(p.id)))
+
+    const curated = candidates.filter(
+      (p) =>
+        p.badge?.toLowerCase() === 'bestseller' ||
+        p.collection?.toLowerCase() === 'bestsellers' ||
+        p.collection?.toLowerCase() === 'featured' ||
+        (p.rating && p.rating >= 4.6)
+    )
+
+    const list = curated.length >= 4 ? curated : candidates
+    return list.slice(0, 4)
+  }, [products, newArrivals])
 
   return (
     <div className="min-h-screen bg-[#FAF9F6] text-[#111111] selection:bg-black selection:text-white">
@@ -369,21 +372,30 @@ export default function HomepageClient({ products }: HomepageClientProps) {
           </div>
 
           <div className="grid grid-cols-4 gap-4.5 max-[900px]:grid-cols-2 max-[900px]:gap-3.5">
-            {resolvedArrivals.map((item) => {
+            {newArrivals.map((item) => {
               const favorited = isFavorite(item.id)
+              const href = getProductUrl(item)
+              const imageSrc = item.img || item.images?.[0] || '/mock-assets/product-vintage-skate-clean.jpg'
+              const swatches = getProductSwatches(item)
+              const subtitle = item.wash || item.color || item.fit || (item.category ? `${item.category}` : 'Everyday Fit')
               return (
-                <div key={item.name} className="group relative flex flex-col">
+                <div key={String(item.id)} className="group relative flex flex-col">
                   {/* Image Stage */}
                   <div className="relative w-full aspect-[1/1.18] overflow-hidden rounded-[18px] bg-[#edeae4] shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(0,0,0,0.07)]">
-                    <Link href={item.href} className="absolute inset-0 z-0 block h-full w-full" aria-label={`View ${item.name}`}>
+                    <Link href={href} className="absolute inset-0 z-0 block h-full w-full" aria-label={`View ${item.name}`}>
                       <Image
-                        src={item.image}
+                        src={imageSrc}
                         alt={item.name}
                         fill
                         sizes="(max-width: 900px) 50vw, 25vw"
                         className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-104"
                       />
                     </Link>
+                    {item.badge && (
+                      <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-black/80 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-white backdrop-blur-xs shadow-xs">
+                        {item.badge}
+                      </span>
+                    )}
                     <button
                       type="button"
                       className={`absolute right-2.5 top-2.5 z-10 flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-xs backdrop-blur-xs transition-all duration-200 hover:scale-110 hover:bg-white ${
@@ -407,14 +419,14 @@ export default function HomepageClient({ products }: HomepageClientProps) {
 
                   {/* Product Details */}
                   <div className="mt-2.5 flex flex-col">
-                    <Link href={item.href} className="truncate text-[13.5px] font-bold leading-snug text-[#111111] no-underline transition-colors hover:underline">
+                    <Link href={href} className="truncate text-[13.5px] font-bold leading-snug text-[#111111] no-underline transition-colors hover:underline">
                       <h3>{item.name}</h3>
                     </Link>
-                    <p className="mt-0.5 text-[11.5px] text-[#777777]">{item.wash}</p>
+                    <p className="mt-0.5 text-[11.5px] text-[#777777]">{subtitle}</p>
                     <div className="mt-1.5 flex items-center justify-between">
                       <span className="text-[14.5px] font-extrabold tracking-tight text-[#111111]">{item.price}</span>
                       <div className="flex items-center gap-1.5" aria-label="Available colors">
-                        {item.swatches.map((color, idx) => (
+                        {swatches.map((color, idx) => (
                           <span
                             key={idx}
                             className="inline-block h-[9px] w-[9px] rounded-full border border-black/15"
@@ -444,7 +456,7 @@ export default function HomepageClient({ products }: HomepageClientProps) {
             />
             {/* Contrast Overlay for Right-Aligned Text */}
             <div
-              className="absolute inset-0 bg-gradient-to-l from-white/85 via-white/45 to-transparent pointer-events-none z-[1] max-[768px]:from-white/90 max-[768px]:via-white/70 max-[768px]:to-white/40"
+              className="absolute inset-0 bg-linear-to-l from-white/85 via-white/45 to-transparent pointer-events-none z-[1] max-[768px]:from-white/90 max-[768px]:via-white/70 max-[768px]:to-white/40"
               aria-hidden="true"
             />
             <div className="relative z-10 ml-auto mr-[clamp(40px,7vw,100px)] max-w-[440px] py-11 text-left max-[900px]:mr-6 max-[900px]:max-w-[320px] max-[900px]:py-8 max-[640px]:mr-4 max-[640px]:max-w-[260px]">
@@ -481,7 +493,114 @@ export default function HomepageClient({ products }: HomepageClientProps) {
         </div>
       </section>
 
-      {/* ── 5. Shop by Category (8 Cards: 2 Rows x 4 Cols) ─────────── */}
+      {/* ── 5. Recommended For You (Curated Picks) ─────────────────── */}
+      <section className="pb-14" aria-labelledby="tg-recommended-heading">
+        <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
+          <div className="mb-5.5 flex items-end justify-between">
+            <div>
+              <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-black/60">
+                Curated For You
+              </span>
+              <h2 className="text-[clamp(26px,3vw,34px)] font-bold tracking-[-0.025em] text-[#111111] leading-tight" id="tg-recommended-heading">
+                Recommended
+              </h2>
+              <p className="mt-1 text-[15px] text-[#666666]">Handpicked silhouettes tailored to your daily rotation.</p>
+            </div>
+            <Link
+              href="/shop"
+              className="group inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-[#111111] transition-colors hover:text-black"
+            >
+              <span>Explore Collection</span>
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="transition-transform duration-200 group-hover:translate-x-1"
+              >
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-4 gap-4.5 max-[900px]:grid-cols-2 max-[900px]:gap-3.5">
+            {recommendedProducts.map((item) => {
+              const favorited = isFavorite(item.id)
+              const href = getProductUrl(item)
+              const imageSrc = item.img || item.images?.[0] || '/mock-assets/prod-1-clean.jpg'
+              const swatches = getProductSwatches(item)
+              const subtitle = item.fit ? `${item.fit} Fit` : item.wash || item.color || 'Everyday Essential'
+              return (
+                <div key={String(item.id)} className="group relative flex flex-col">
+                  {/* Image Stage */}
+                  <div className="relative w-full aspect-[1/1.18] overflow-hidden rounded-[18px] bg-[#edeae4] shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(0,0,0,0.07)]">
+                    <Link href={href} className="absolute inset-0 z-0 block h-full w-full" aria-label={`View ${item.name}`}>
+                      <Image
+                        src={imageSrc}
+                        alt={item.name}
+                        fill
+                        sizes="(max-width: 900px) 50vw, 25vw"
+                        className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-104"
+                      />
+                    </Link>
+                    {item.badge && (
+                      <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-black/80 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-white backdrop-blur-xs shadow-xs">
+                        {item.badge}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className={`absolute right-2.5 top-2.5 z-10 flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-xs backdrop-blur-xs transition-all duration-200 hover:scale-110 hover:bg-white ${
+                        favorited ? 'text-[#e11d48]' : 'text-[#222222]'
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        toggleFavorite(item.id)
+                      }}
+                      aria-label={favorited ? `Remove ${item.name} from wishlist` : `Add ${item.name} to wishlist`}
+                    >
+                      <Heart
+                        className="h-4 w-4"
+                        fill={favorited ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Product Details */}
+                  <div className="mt-2.5 flex flex-col">
+                    <Link href={href} className="truncate text-[13.5px] font-bold leading-snug text-[#111111] no-underline transition-colors hover:underline">
+                      <h3>{item.name}</h3>
+                    </Link>
+                    <p className="mt-0.5 text-[11.5px] text-[#777777]">{subtitle}</p>
+                    <div className="mt-1.5 flex items-center justify-between">
+                      <span className="text-[14.5px] font-extrabold tracking-tight text-[#111111]">{item.price}</span>
+                      <div className="flex items-center gap-1.5" aria-label="Available colors">
+                        {swatches.map((color, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-block h-[9px] w-[9px] rounded-full border border-black/15"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. Shop by Category (8 Cards: 2 Rows x 4 Cols) ─────────── */}
       <section className="pb-14" aria-labelledby="tg-shop-cats-heading">
         <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
           <div className="mb-5.5">

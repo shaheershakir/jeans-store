@@ -187,16 +187,31 @@ export default function CartDrawer() {
   }
 
   // Clear bag
+  const [catalog, setCatalog] = useState<Product[]>(PRODUCTS)
+
+  useEffect(() => {
+    if (open) {
+      fetch('/api/products')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (Array.isArray(data?.products) && data.products.length > 0) {
+            setCatalog(data.products)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [open])
+
   const handleClearBag = () => {
     clearCart()
     showToast('Shopping bag cleared')
   }
 
-  // Curated cross-sell recommendations
+  // Curated cross-sell recommendations from live catalog
   const crossSellProducts = useMemo(() => {
-    const inCartIds = new Set(items.map((i) => i.id))
-    return PRODUCTS.filter((p) => !inCartIds.has(p.id)).slice(0, 3)
-  }, [items])
+    const inCartIds = new Set(items.map((i) => String(i.id)))
+    return catalog.filter((p) => !inCartIds.has(String(p.id))).slice(0, 3)
+  }, [items, catalog])
 
   const handleQuickAdd = (product: Product) => {
     const defaultSize = product.sizes?.[0] || 'M'

@@ -265,7 +265,7 @@ export function filterAndSortProducts(
   } else if (sort === 'price-desc') {
     list.sort((a, b) => b.priceNum - a.priceNum)
   } else {
-    list.sort((a, b) => a.id - b.id)
+    list.sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }))
   }
 
   return list

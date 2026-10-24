@@ -13,11 +13,12 @@ import {
   Check
 } from 'lucide-react'
 import { useCartStore, useUIStore, useAuthStore, useFavoriteStore } from '@/lib/store'
-
-// ─── Wishlist Items Matching Mockup 1:1 ───────────────────────────────────────
+import type { Product } from '@/lib/constants'
+import { PRODUCTS } from '@/lib/constants'
+import { getProductUrl } from '@/lib/products'
 
 interface WishlistProduct {
-  id: number
+  id: number | string
   name: string
   variant: string
   price: string
@@ -27,6 +28,24 @@ interface WishlistProduct {
   href: string
   category: string
   inWishlist: boolean
+}
+
+function productToWishlistItem(p: Product, inWishlist: boolean = true): WishlistProduct {
+  const color = p.color || p.variants?.[0]?.color || 'Standard'
+  const size = p.sizes?.[0] || 'L'
+  const image = p.img || p.images?.[0] || '/mock-assets/prod-1-clean.jpg'
+  return {
+    id: p.id,
+    name: p.name,
+    variant: `${color}  •  ${size}`,
+    price: p.price,
+    priceNum: p.priceNum,
+    image,
+    swatches: ['#1c1c1c', '#c4c4c4'],
+    href: getProductUrl(p),
+    category: p.category ? p.category.charAt(0).toUpperCase() + p.category.slice(1) : 'Apparel',
+    inWishlist
+  }
 }
 
 const INITIAL_WISHLIST_PRODUCTS: WishlistProduct[] = [
@@ -129,39 +148,63 @@ const INITIAL_WISHLIST_PRODUCTS: WishlistProduct[] = [
 ]
 
 export default function WishlistContent() {
-  const [items, setItems] = useState<WishlistProduct[]>(INITIAL_WISHLIST_PRODUCTS)
+  const favorites = useFavoriteStore((s) => s.favorites)
+  const toggleFavorite = useFavoriteStore((s) => s.toggleFavorite)
+  const [catalog, setCatalog] = useState<Product[]>(PRODUCTS)
+  const [items, setItems] = useState<WishlistProduct[]>([])
   const [sortOption, setSortOption] = useState<'recent' | 'price-low' | 'price-high'>('recent')
-  const [activeMenuId, setActiveMenuId] = useState<number | null>(null)
+  const [activeMenuId, setActiveMenuId] = useState<number | string | null>(null)
 
   const addItem = useCartStore((s) => s.addItem)
   const openOverlay = useUIStore((s) => s.openOverlay)
   const showToast = useUIStore((s) => s.showToast)
-  const favorites = useFavoriteStore((s) => s.favorites)
-  const toggleFavorite = useFavoriteStore((s) => s.toggleFavorite)
 
   useEffect(() => {
     void useAuthStore.persist.rehydrate()
     void useFavoriteStore.persist.rehydrate()
     void useCartStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
+
+    fetch('/api/products')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data?.products) && data.products.length > 0) {
+          setCatalog(data.products)
+        }
+      })
+      .catch(() => {})
   }, [])
 
-  const handleToggleWishlist = (id: number, name: string) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, inWishlist: !item.inWishlist } : item))
-    )
+  useEffect(() => {
+    if (favorites.length > 0) {
+      const favSet = new Set(favorites.map((f) => String(f)))
+      const matched = catalog
+        .filter((p) => favSet.has(String(p.id)))
+        .map((p) => productToWishlistItem(p, true))
+      setItems(matched)
+    } else {
+      // If user has no favorites yet, provide recommendations from live catalog
+      const recommendations = catalog.slice(0, 4).map((p) => productToWishlistItem(p, false))
+      setItems(recommendations)
+    }
+  }, [favorites, catalog])
+
+  const handleToggleWishlist = (id: number | string, name: string) => {
     toggleFavorite(id)
-    const current = items.find((i) => i.id === id)
-    if (current?.inWishlist) {
+    const wasIn = items.find((i) => String(i.id) === String(id))?.inWishlist
+    setItems((prev) =>
+      prev.map((item) => (String(item.id) === String(id) ? { ...item, inWishlist: !item.inWishlist } : item))
+    )
+    if (wasIn) {
       showToast(`Removed ${name} from wishlist`)
     } else {
       showToast(`Saved ${name} to wishlist`)
     }
   }
 
-  const handleRemoveFromWishlist = (id: number, name: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id))
+  const handleRemoveFromWishlist = (id: number | string, name: string) => {
     toggleFavorite(id)
+    setItems((prev) => prev.filter((item) => String(item.id) !== String(id)))
     setActiveMenuId(null)
     showToast(`Removed ${name} from wishlist`)
   }
@@ -197,7 +240,7 @@ export default function WishlistContent() {
         {/* Right: Items Count & Sort Pill */}
         <div className="flex items-center gap-4.5 self-end max-[640px]:self-auto max-[640px]:w-full max-[640px]:justify-between">
           <span className="font-ui text-[13px] font-medium text-[#777777] whitespace-nowrap">
-            12 items
+            {items.length} {items.length === 1 ? 'item' : 'items'}
           </span>
 
           <div className="relative">

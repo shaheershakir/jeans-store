@@ -36,7 +36,7 @@ export const DEFAULT_NAV_LINKS: NavigationItem[] = [
 ]
 
 export interface Product {
-  id: number
+  id: number | string
   store?: string
   category?: string
   name: string

@@ -8,7 +8,7 @@ import { identifyUser, resetUser } from './analytics'
 
 
 export interface CartItem {
-  id: number
+  id: number | string
   variantId?: number
   color?: string
   name: string
@@ -23,9 +23,9 @@ export interface CartItem {
 
 interface CartState {
   items: CartItem[]
-  addItem: (productId: number, size: string, product?: Product, color?: string) => void
-  updateQty: (id: number, size: string, delta: number, variantId?: number) => void
-  removeItem: (id: number, size: string, variantId?: number) => void
+  addItem: (productId: number | string, size: string, product?: Product, color?: string) => void
+  updateQty: (id: number | string, size: string, delta: number, variantId?: number) => void
+  removeItem: (id: number | string, size: string, variantId?: number) => void
   clearCart: () => void
 }
 
@@ -35,11 +35,11 @@ export const useCartStore = create<CartState>()(
       items: [],
       addItem: (productId, size, productDetails, color) =>
         set((state) => {
-          const product = productDetails ?? PRODUCTS.find((p) => p.id === productId)
+          const product = productDetails ?? PRODUCTS.find((p) => String(p.id) === String(productId))
           if (!product) return state
           const variant = product.variants?.find((item) => String(item.size) === String(size) && item.status === 'Active' && (!color || item.color.toLowerCase() === color.toLowerCase()))
           if (product.variants && (!variant || variant.stock - variant.reserved <= 0)) return state
-          const existing = state.items.find((item) => item.id === productId && item.size === size && item.variantId === variant?.id)
+          const existing = state.items.find((item) => String(item.id) === String(productId) && item.size === size && item.variantId === variant?.id)
           if (existing) {
             return {
               items: state.items.map((item) =>
@@ -70,13 +70,13 @@ export const useCartStore = create<CartState>()(
         set((state) => ({
           items: state.items
             .map((item) =>
-              item.id === id && item.size === size && (variantId === undefined || item.variantId === variantId) ? { ...item, qty: item.qty + delta } : item
+              String(item.id) === String(id) && item.size === size && (variantId === undefined || item.variantId === variantId) ? { ...item, qty: item.qty + delta } : item
             )
             .filter((item) => item.qty > 0)
         })),
       removeItem: (id, size, variantId) =>
         set((state) => ({
-          items: state.items.filter((item) => !(item.id === id && item.size === size && (variantId === undefined || item.variantId === variantId)))
+          items: state.items.filter((item) => !(String(item.id) === String(id) && item.size === size && (variantId === undefined || item.variantId === variantId)))
         })),
       clearCart: () => set({ items: [] })
     }),
@@ -374,9 +374,9 @@ export const useAuthStore = create<AuthState>()(
 )
 
 interface FavoriteState {
-  favorites: number[]
-  toggleFavorite: (productId: number) => void
-  isFavorite: (productId: number) => boolean
+  favorites: (number | string)[]
+  toggleFavorite: (productId: number | string) => void
+  isFavorite: (productId: number | string) => boolean
   clearFavorites: () => void
 }
 
@@ -386,11 +386,11 @@ export const useFavoriteStore = create<FavoriteState>()(
       favorites: [],
       toggleFavorite: (productId) =>
         set((state) => ({
-          favorites: state.favorites.includes(productId)
-            ? state.favorites.filter((id) => id !== productId)
+          favorites: state.favorites.some((id) => String(id) === String(productId))
+            ? state.favorites.filter((id) => String(id) !== String(productId))
             : [...state.favorites, productId]
         })),
-      isFavorite: (productId) => get().favorites.includes(productId),
+      isFavorite: (productId) => get().favorites.some((id) => String(id) === String(productId)),
       clearFavorites: () => set({ favorites: [] })
     }),
     {

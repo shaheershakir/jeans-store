@@ -75,7 +75,7 @@ interface CheckoutOrderPayload {
   state: string
   pincode: string
   notes: string
-  items: Array<{ id: number; variantId?: number; size: string; quantity: number }>
+  items: Array<{ id: number | string; variantId?: number; size: string; quantity: number }>
 }
 
 interface DeliveryEstimation {
