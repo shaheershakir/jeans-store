@@ -13,7 +13,7 @@ export class CouponError extends Error {
 }
 
 export interface CouponCartItem {
-  productId: number
+  productId: string
   categoryId?: number
   lineTotal: number
 }

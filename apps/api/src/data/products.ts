@@ -1,10 +1,20 @@
 import type { Product } from '../schemas/product.js'
 
+const SEED_PRODUCT_ID_PREFIX = '00000000-0000-4000-8000-'
+
+/**
+ * Deterministic UUIDs for the bundled snapshot. Runtime-created products use
+ * randomUUID() instead; seeds stay stable so mock carts and links survive reloads.
+ */
+export function seedProductId(index: number): string {
+  return `${SEED_PRODUCT_ID_PREFIX}${String(index + 1).padStart(12, '0')}`
+}
+
 /**
  * Seed dataset — single source of truth for the product catalog.
  * Heavyweight T-Shirts and premium Bottomwear with structured category attributes for TEESGARAGE.
  */
-export const PRODUCTS: Product[] = [
+const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
   // ─── 1. STRIPES (Striped T-Shirts) ──────────────────────────────────────────
   {
     id: 0,
@@ -499,3 +509,8 @@ export const PRODUCTS: Product[] = [
     collection: 'New arrivals'
   }
 ]
+
+export const PRODUCTS: Product[] = SEED_PRODUCTS.map((product) => ({
+  ...product,
+  id: seedProductId(product.id)
+}))

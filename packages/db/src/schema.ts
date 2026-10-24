@@ -7,6 +7,7 @@ import {
   smallint,
   real,
   timestamp,
+  uuid,
   jsonb,
   varchar,
   boolean,
@@ -118,7 +119,7 @@ export const collections = pgTable(
 export const products = pgTable(
   'products',
   {
-    id: serial('id').primaryKey(),
+    id: uuid('id').primaryKey().defaultRandom(),
     categoryId: integer('category_id')
       .notNull()
       .references(() => categories.id, { onDelete: 'restrict' }),
@@ -161,7 +162,7 @@ export const productImages = pgTable(
   'product_images',
   {
     id: serial('id').primaryKey(),
-    productId: integer('product_id')
+    productId: uuid('product_id')
       .notNull()
       .references(() => products.id, { onDelete: 'cascade' }),
     color: varchar('color', { length: 50 }),
@@ -185,7 +186,7 @@ export const productVariants = pgTable(
   'product_variants',
   {
     id: serial('id').primaryKey(),
-    productId: integer('product_id')
+    productId: uuid('product_id')
       .notNull()
       .references(() => products.id, { onDelete: 'cascade' }),
     sku: varchar('sku', { length: 100 }).notNull().unique(),
@@ -333,7 +334,7 @@ export const couponProducts = pgTable(
     couponId: integer('coupon_id')
       .notNull()
       .references(() => coupons.id, { onDelete: 'cascade' }),
-    productId: integer('product_id')
+    productId: uuid('product_id')
       .notNull()
       .references(() => products.id, { onDelete: 'cascade' })
   },
@@ -469,7 +470,7 @@ export const orderItems = pgTable(
     orderId: integer('order_id')
       .notNull()
       .references(() => orders.id, { onDelete: 'cascade' }),
-    productId: integer('product_id').references(() => products.id, { onDelete: 'set null' }),
+    productId: uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
     variantId: integer('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
     sku: varchar('sku', { length: 100 }),
     name: varchar('name', { length: 255 }).notNull(),
@@ -661,7 +662,7 @@ export const returnItems = pgTable(
       .notNull()
       .references(() => returnRequests.id, { onDelete: 'cascade' }),
     orderItemId: integer('order_item_id').references(() => orderItems.id, { onDelete: 'set null' }),
-    productId: integer('product_id').references(() => products.id, { onDelete: 'set null' }),
+    productId: uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
     variantId: integer('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
     sku: varchar('sku', { length: 100 }),
     productName: varchar('product_name', { length: 255 }).notNull(),
@@ -753,7 +754,7 @@ export const productReviews = pgTable(
   'product_reviews',
   {
     id: serial('id').primaryKey(),
-    productId: integer('product_id')
+    productId: uuid('product_id')
       .notNull()
       .references(() => products.id, { onDelete: 'cascade' }),
     customerId: integer('customer_id').references(() => customers.id, { onDelete: 'set null' }),
@@ -817,7 +818,7 @@ export const inventoryReservations = pgTable(
     orderId: integer('order_id').references(() => orders.id, { onDelete: 'cascade' }),
     gatewayOrderId: varchar('gateway_order_id', { length: 100 }),
     reservationKey: varchar('reservation_key', { length: 200 }).notNull().unique(),
-    productId: integer('product_id').references(() => products.id, { onDelete: 'set null' }),
+    productId: uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
     variantId: integer('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
     quantity: integer('quantity').notNull(),
     status: varchar('status', { length: 20 }).default('active').notNull(),
@@ -848,7 +849,7 @@ export const inventoryMovements = pgTable(
   'inventory_movements',
   {
     id: serial('id').primaryKey(),
-    productId: integer('product_id').references(() => products.id, { onDelete: 'set null' }),
+    productId: uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
     variantId: integer('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
     orderId: integer('order_id').references(() => orders.id, { onDelete: 'set null' }),
     reservationId: integer('reservation_id').references(() => inventoryReservations.id, { onDelete: 'set null' }),

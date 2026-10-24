@@ -55,7 +55,7 @@ function toOrder(
   shipment?: DbShipment,
   payment?: DbPayment,
   customer?: DbCustomer,
-  productImageMap?: Map<number, string>
+  productImageMap?: Map<string, string>
 ): Order {
   const items: Order['items'] = itemsRows.map((item) => {
     let img: string | undefined = undefined
@@ -73,7 +73,7 @@ function toOrder(
     }
 
     return {
-      id: item.productId ?? 0,
+      id: item.productId ?? '',
       variantId: item.variantId ?? undefined,
       name: item.name,
       size: item.size,
@@ -226,7 +226,7 @@ class OrderStore {
             .orderBy(productImagesTable.position)
         : []
 
-    const productImageMap = new Map<number, string>()
+    const productImageMap = new Map<string, string>()
     for (const img of productImages) {
       if (!productImageMap.has(img.productId)) {
         const resolved = img.externalUrl || (img.storageKey ? assetUrl(img.storageKey) : '')
@@ -448,7 +448,7 @@ class OrderStore {
       byVariant.set(Number(record.variant_id), record)
     }
 
-    const productIds = [...new Set([...byVariant.values()].map((row) => Number(row.product_id)))]
+    const productIds = [...new Set([...byVariant.values()].map((row) => String(row.product_id)))]
     const imageRows = productIds.length
       ? await executor.execute(sql`
           SELECT product_id, storage_key, external_url
@@ -460,10 +460,10 @@ class OrderStore {
           ORDER BY product_id, position
         `)
       : { rows: [] as Record<string, unknown>[] }
-    const imageByProduct = new Map<number, string>()
+    const imageByProduct = new Map<string, string>()
     for (const raw of imageRows.rows) {
       const row = raw as Record<string, unknown>
-      const productId = Number(row.product_id)
+      const productId = String(row.product_id)
       if (imageByProduct.has(productId)) continue
       const image = row.external_url
         ? String(row.external_url)
@@ -482,7 +482,7 @@ class OrderStore {
       if (String(row.variant_status) !== 'Active') {
         throw new Error(`Size ${String(row.size)} for ${String(row.product_name)} is no longer available.`)
       }
-      const productId = Number(row.product_id)
+      const productId = String(row.product_id)
       if (item.id && item.id !== productId) {
         throw new Error('A cart item does not belong to the selected product.')
       }

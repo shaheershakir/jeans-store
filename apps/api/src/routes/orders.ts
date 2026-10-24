@@ -49,7 +49,7 @@ const createRazorpayOrderSchema = z.object({
   orderNumber: z.string().min(1),
   state: z.string().default(''),
   pincode: z.string().optional(),
-  items: z.array(z.object({ id: z.number(), variantId: z.number().int().positive().optional(), size: z.string(), quantity: z.number().int().positive().max(50) })).min(1),
+  items: z.array(z.object({ id: z.string(), variantId: z.number().int().positive().optional(), size: z.string(), quantity: z.number().int().positive().max(50) })).min(1),
   customerName: z.string().optional(),
   customerEmail: z.string().optional(),
   customerPhone: z.string().optional(),
@@ -69,7 +69,7 @@ async function calculateCheckout(
   }
 > {
   const pricedInputs: PricedLineInput[] = []
-  const freeSizeRequested = new Map<number, { quantity: number; available: number; name: string }>()
+  const freeSizeRequested = new Map<string, { quantity: number; available: number; name: string }>()
 
   for (const requested of itemsRequest) {
     const product = await productStore.getById(requested.id)
@@ -196,7 +196,7 @@ const quoteSchema = z.object({
   state: z.string().trim().max(100).optional().default(''),
   pincode: z.string().trim().max(10).optional().default(''),
   items: z.array(z.object({
-    id: z.number(),
+    id: z.string(),
     variantId: z.number().int().positive().optional(),
     size: z.string().min(1),
     quantity: z.number().int().positive().max(50)
@@ -242,7 +242,7 @@ const couponQuoteSchema = z.object({
   state: z.string().trim().max(100).optional().default(''),
   pincode: z.string().trim().max(10).optional().default(''),
   items: z.array(z.object({
-    id: z.number().int().positive(),
+    id: z.string(),
     variantId: z.number().int().positive().optional(),
     size: z.string().min(1),
     quantity: z.number().int().positive().max(50)

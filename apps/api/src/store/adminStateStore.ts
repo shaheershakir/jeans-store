@@ -125,7 +125,7 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
     getSettings()
   ])
 
-  const productIdsByCoupon = new Map<number, number[]>()
+  const productIdsByCoupon = new Map<number, string[]>()
   for (const row of couponProductRows) {
     const list = productIdsByCoupon.get(row.couponId) ?? []
     list.push(row.productId)
@@ -167,7 +167,7 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
       customerId: row.customerId,
       items: (itemsByReturn.get(row.id) ?? []).map((item) => ({
         id: item.id,
-        productId: item.productId ?? 0,
+        productId: item.productId ?? '',
         variantId: item.variantId ?? 0,
         productName: item.productName,
         variantLabel: item.variantLabel ?? '',
@@ -272,7 +272,7 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
     })),
     inventoryMovements: movementRows.map((row) => ({
       id: row.id,
-      productId: row.productId ?? 0,
+      productId: row.productId ?? '',
       variantId: row.variantId ?? 0,
       sku: row.sku ?? '',
       type: row.type,
@@ -571,9 +571,12 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         await tx.delete(couponProducts).where(eq(couponProducts.couponId, effectiveCouponId))
         await tx.delete(couponCategories).where(eq(couponCategories.couponId, effectiveCouponId))
 
-        const productLinks: Array<{ couponId: number; productId: number }> = []
+        const productLinks: Array<{ couponId: number; productId: string }> = []
         for (const productId of Array.isArray(coupon.productIds) ? coupon.productIds : []) {
-          if (productIds.has(Number(productId))) productLinks.push({ couponId: effectiveCouponId, productId: Number(productId) })
+          const normalizedProductId = String(productId)
+          if (productIds.has(normalizedProductId)) {
+            productLinks.push({ couponId: effectiveCouponId, productId: normalizedProductId })
+          }
         }
         if (productLinks.length > 0) await tx.insert(couponProducts).values(productLinks)
 
@@ -658,7 +661,7 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
     }
 
     for (const review of arrays('reviews')) {
-      const productId = Number(review.productId)
+      const productId = stringOrEmpty(review.productId)
       if (!productIds.has(productId)) continue
       const reviewId = numberOrZero(review.id)
       const reviewData = {
@@ -756,7 +759,7 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
       const movementId = numberOrZero(movement.id)
       const requestedVariantId = Number(movement.variantId)
       const variantId = variantIds.has(requestedVariantId) ? requestedVariantId : null
-      const requestedProductId = Number(movement.productId)
+      const requestedProductId = stringOrEmpty(movement.productId)
       const productIdFromVariant = variantId ? variantProductById.get(variantId) ?? null : null
       const productId =
         productIdFromVariant ?? (productIds.has(requestedProductId) ? requestedProductId : null)
@@ -938,7 +941,7 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         for (const item of Array.isArray(request.items) ? request.items : []) {
           const requestedVariantId = Number(item.variantId)
           const variantId = variantIds.has(requestedVariantId) ? requestedVariantId : null
-          const requestedProductId = Number(item.productId)
+          const requestedProductId = stringOrEmpty(item.productId)
           const productId =
             (variantId ? variantProductById.get(variantId) ?? null : null) ??
             (productIds.has(requestedProductId) ? requestedProductId : null)

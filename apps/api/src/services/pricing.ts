@@ -14,7 +14,7 @@
  *   total         = subtotal - discountTotal + shipping + taxTotal
  */
 export interface PricedLineInput {
-  productId: number
+  productId: string
   variantId: number
   name: string
   size: string

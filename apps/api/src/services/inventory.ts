@@ -22,7 +22,7 @@ export class ReservationUnavailableError extends Error {
 }
 
 export interface ReservationItem {
-  productId: number
+  productId: string
   variantId: number
   quantity: number
   isFreeSize?: boolean
@@ -33,7 +33,7 @@ export interface ReservationRow {
   id: number
   orderId: number | null
   gatewayOrderId: string | null
-  productId: number | null
+  productId: string | null
   variantId: number | null
   quantity: number
   status: string
@@ -42,7 +42,7 @@ export interface ReservationRow {
 
 interface VariantStockRow {
   id: number
-  product_id: number
+  product_id: string
   sku: string | null
   stock: number
   reserved: number
@@ -53,7 +53,7 @@ function mapReservation(row: Record<string, unknown>): ReservationRow {
     id: Number(row.id),
     orderId: row.order_id === null ? null : Number(row.order_id),
     gatewayOrderId: row.gateway_order_id === null ? null : String(row.gateway_order_id),
-    productId: row.product_id === null ? null : Number(row.product_id),
+    productId: row.product_id === null ? null : String(row.product_id),
     variantId: row.variant_id === null ? null : Number(row.variant_id),
     quantity: Number(row.quantity),
     status: String(row.status),
@@ -64,7 +64,7 @@ function mapReservation(row: Record<string, unknown>): ReservationRow {
 async function insertMovement(
   executor: DbExecutor,
   input: {
-    productId: number | null
+    productId: string | null
     variantId: number | null
     orderId?: number | null
     reservationId?: number | null
@@ -89,7 +89,7 @@ async function insertMovement(
   `)
 }
 
-async function productVariantCount(executor: DbExecutor, productId: number, activeOnly = false): Promise<number> {
+async function productVariantCount(executor: DbExecutor, productId: string, activeOnly = false): Promise<number> {
   const result = activeOnly
     ? await executor.execute(sql`
         SELECT count(*)::int AS count FROM product_variants
@@ -140,7 +140,7 @@ async function applyReservation(executor: DbExecutor, item: ReservationItem): Pr
 async function releaseStock(
   executor: DbExecutor,
   item: {
-    productId: number
+    productId: string
     variantId: number
     quantity: number
     isFreeSize?: boolean
@@ -178,7 +178,7 @@ async function releaseStock(
 async function confirmStock(
   executor: DbExecutor,
   item: {
-    productId: number
+    productId: string
     variantId: number
     quantity: number
     isFreeSize?: boolean
@@ -559,7 +559,7 @@ export async function restockOrder(executor: DbExecutor, orderId: number, reason
     const locked = await executor.execute(sql`
       SELECT id, product_id, sku, stock FROM product_variants WHERE id = ${variantId} FOR UPDATE
     `)
-    const variant = locked.rows[0] as { id: number; product_id: number; sku: string | null; stock: number } | undefined
+    const variant = locked.rows[0] as { id: number; product_id: string; sku: string | null; stock: number } | undefined
     if (!variant) return false
 
     const before = Number(variant.stock)
@@ -585,7 +585,7 @@ export async function restockOrder(executor: DbExecutor, orderId: number, reason
   let restored = 0
   for (const raw of itemResult.rows) {
     const item = raw as {
-      product_id: number
+      product_id: string
       variant_id: number
       quantity: number
       is_free_size: boolean

@@ -32,7 +32,7 @@ export type Category = (typeof CATEGORIES)[number]
 
 export interface Variant {
   id?: number
-  productId?: number
+  productId?: string
   sku?: string
   size: string | number
   color: string
@@ -46,7 +46,7 @@ export interface Variant {
 }
 
 export interface Product {
-  id: number
+  id: string
   store?: string
   category?: string
   name: string
@@ -81,7 +81,7 @@ export interface Product {
 }
 
 export interface OrderItem {
-  id: number
+  id: string
   variantId?: number
   name: string
   size: string
@@ -385,7 +385,7 @@ export interface CustomerAddress {
 
 export interface ProductReview {
   id: number
-  productId: number
+  productId: string
   customerId?: number | null
   reviewerName: string
   rating: number

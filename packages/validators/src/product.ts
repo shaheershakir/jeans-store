@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const variantSchema = z.object({
   id: z.number().int().nonnegative().optional(),
-  productId: z.number().int().nonnegative().optional(),
+  productId: z.string().uuid().optional(),
   sku: z.string().min(1).optional(),
   size: z.union([z.string().min(1), z.number()]),
   color: z.string().min(1),
@@ -16,7 +16,7 @@ export const variantSchema = z.object({
 })
 
 export const productSchema = z.object({
-  id: z.number().int().nonnegative(),
+  id: z.string().uuid(),
   store: z.string().default('teesgarage'),
   category: z.string().default('printed-tees'),
   name: z.string().min(1),

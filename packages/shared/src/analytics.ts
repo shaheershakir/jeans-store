@@ -4,7 +4,7 @@
  */
 
 export interface BaseProductProperties {
-  product_id: number
+  product_id: string | number
   product_name: string
   product_slug?: string
   category?: string
@@ -15,7 +15,7 @@ export interface BaseProductProperties {
 }
 
 export interface ProductListItem {
-  product_id: number
+  product_id: string | number
   product_name: string
   product_slug?: string
   category?: string
@@ -42,7 +42,7 @@ export interface ProductViewedProperties extends BaseProductProperties {
 }
 
 export interface ProductVariantSelectedProperties {
-  product_id: number
+  product_id: string | number
   product_name: string
   product_slug?: string
   variant_type: 'color' | 'size'
@@ -52,20 +52,20 @@ export interface ProductVariantSelectedProperties {
 }
 
 export interface ProductSizeGuideOpenedProperties {
-  product_id: number
+  product_id: string | number
   product_name: string
   category?: string
 }
 
 export interface ProductFavoritedProperties {
-  product_id: number
+  product_id: string | number
   product_name: string
   category?: string
   price?: number
 }
 
 export interface ProductUnfavoritedProperties {
-  product_id: number
+  product_id: string | number
   product_name: string
 }
 
@@ -86,7 +86,7 @@ export interface ProductBuyNowClickedProperties extends BaseProductProperties {
 }
 
 export interface CartItemSummary {
-  product_id: number
+  product_id: string | number
   product_name: string
   size: string
   color?: string

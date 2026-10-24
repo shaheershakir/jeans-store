@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import {
   CATEGORIES,
@@ -233,7 +234,7 @@ export function toProduct(
 
 interface RawVariantInput {
   id?: number
-  productId?: number
+  productId?: string
   size: string | number
   color?: string
   sku?: string
@@ -248,7 +249,7 @@ interface RawVariantInput {
 
 interface ReadyVariant {
   id?: number
-  productId: number
+  productId: string
   sku: string
   size: string
   color: string
@@ -269,9 +270,8 @@ export class ProductStore {
   private memoryProducts: Product[]
   private memoryVariants: Variant[]
   private memoryProductImages: DbProductImage[]
-  private nextMemoryProductId: number
   private nextMemoryVariantId = 0
-  private memoryClaimedSkus = new Map<string, number>()
+  private memoryClaimedSkus = new Map<string, string>()
   private createLock: Promise<void> = Promise.resolve()
 
   constructor(seed: Product[]) {
@@ -334,7 +334,7 @@ export class ProductStore {
                 reserved: 0,
                 reorderPoint: 5,
                 weight: p.weightGrams ?? 350,
-                barcode: String(8900000000000 + (p.id + 1) * 1000 + variantCounter),
+                barcode: String(8900000000000 + variantCounter * 1000),
                 status: 'Active' as const
               }
             })
@@ -343,7 +343,6 @@ export class ProductStore {
       return { ...p, variants }
     })
 
-    this.nextMemoryProductId = Math.max(...this.memoryProducts.map((p) => p.id), 0)
     this.nextMemoryVariantId = Math.max(...this.memoryVariants.map((variant) => variant.id ?? 0), 0)
     for (const v of this.memoryVariants) {
       if (v.sku && v.productId !== undefined) {
@@ -377,13 +376,13 @@ export class ProductStore {
     ])
 
     const categoryMap = new Map<number, string>(categoryRows.map((category) => [category.id, category.slug]))
-    const variantMap = new Map<number, Variant[]>()
+    const variantMap = new Map<string, Variant[]>()
     for (const row of variantRows) {
       const list = variantMap.get(row.productId) ?? []
       list.push(variantFromRow(row, rows.find((product) => product.id === row.productId)))
       variantMap.set(row.productId, list)
     }
-    const imageMap = new Map<number, DbProductImage[]>()
+    const imageMap = new Map<string, DbProductImage[]>()
     for (const image of imageRows) {
       const list = imageMap.get(image.productId) ?? []
       list.push(image)
@@ -421,7 +420,7 @@ export class ProductStore {
     return INITIAL_CATEGORIES.map((c) => c.slug)
   }
 
-  async generateUniqueSlug(name: string, requestedSlug?: string, currentProductId?: number): Promise<string> {
+  async generateUniqueSlug(name: string, requestedSlug?: string, currentProductId?: string): Promise<string> {
     const base = slugify(requestedSlug || name) || 'product'
     let candidate = base
     let counter = 1
@@ -446,7 +445,7 @@ export class ProductStore {
     }
   }
 
-  async isSkuClaimedByOtherProduct(sku: string, currentProductId?: number): Promise<boolean> {
+  async isSkuClaimedByOtherProduct(sku: string, currentProductId?: string): Promise<boolean> {
     const cleanSku = sku.trim().toUpperCase()
     if (isDatabaseConfigured() && db) {
       const rows = await db
@@ -583,7 +582,7 @@ export class ProductStore {
     return product ? this.hydrateMemory(product) : undefined
   }
 
-  async getById(id: number): Promise<Product | undefined> {
+  async getById(id: string): Promise<Product | undefined> {
     if (isDatabaseConfigured() && db) {
       const [row] = await db.select().from(productsTable).where(eq(productsTable.id, id))
       if (!row) return undefined
@@ -757,21 +756,19 @@ export class ProductStore {
             status: 'Active' as const
           }))
 
-    const newProductId = isDatabaseConfigured() && db
-      ? (
-          await db
-            .insert(productsTable)
-            .values({
-              categoryId,
-              slug,
-              name: input.name,
-              description: input.desc,
-              status,
-              ...this.productColumns(input, attributes, weightGrams)
-            })
-            .returning({ id: productsTable.id })
-        )[0].id
-      : ++this.nextMemoryProductId
+    const newProductId = randomUUID()
+
+    if (isDatabaseConfigured() && db) {
+      await db.insert(productsTable).values({
+        id: newProductId,
+        categoryId,
+        slug,
+        name: input.name,
+        description: input.desc,
+        status,
+        ...this.productColumns(input, attributes, weightGrams)
+      })
+    }
 
     try {
       const variantsToInsert = await this.prepareVariants(rawVariants, input, newProductId, weightGrams)
@@ -849,7 +846,7 @@ export class ProductStore {
   private async prepareVariants(
     rawVariants: RawVariantInput[],
     input: CreateProduct,
-    productId: number,
+    productId: string,
     productWeight: number
   ): Promise<ReadyVariant[]> {
     const seenCombos = new Set<string>()
@@ -898,7 +895,7 @@ export class ProductStore {
         weight: variant.weight ?? productWeight,
         barcode:
           variant.barcode ||
-          String(8900000000000 + productId * 1000 + variantsToInsert.length),
+          `890${Math.abs(Array.from(productId).reduce((acc, c) => ((acc << 5) - acc + c.charCodeAt(0)) | 0, 0)).toString().padEnd(9, '0').slice(0, 9)}${String(variantsToInsert.length).padStart(2, '0')}`,
         status: variant.status || 'Active'
       })
     }
@@ -906,7 +903,7 @@ export class ProductStore {
     return variantsToInsert
   }
 
-  async update(id: number, patch: UpdateProduct): Promise<Product | undefined> {
+  async update(id: string, patch: UpdateProduct): Promise<Product | undefined> {
     const existing = await this.getById(id)
     if (!existing) return undefined
 
@@ -1130,7 +1127,7 @@ export class ProductStore {
   }
 
   private async syncDbVariants(
-    id: number,
+    id: string,
     patch: UpdateProduct,
     existing: Product,
     productWeight: number
@@ -1231,7 +1228,7 @@ export class ProductStore {
     }
   }
 
-  async remove(id: number): Promise<boolean> {
+  async remove(id: string): Promise<boolean> {
     if (isDatabaseConfigured() && db) {
       await db.delete(productImagesTable).where(eq(productImagesTable.productId, id))
       await db.delete(productVariantsTable).where(eq(productVariantsTable.productId, id))

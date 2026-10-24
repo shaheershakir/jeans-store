@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const orderItemSchema = z.object({
-  id: z.number(),
+  id: z.string().uuid(),
   variantId: z.number().int().positive().optional(),
   name: z.string(),
   fit: z.string().optional(),

@@ -15,6 +15,14 @@ import { logger } from '../lib/logger.js'
 
 const SORT_MODES = ['featured', 'price-asc', 'price-desc'] as const
 
+const productIdSchema = z.string().uuid()
+
+function parseProductId(value: unknown): string | null {
+  const str = Array.isArray(value) ? value[0] : typeof value === 'string' ? value : ''
+  const parsed = productIdSchema.safeParse(str)
+  return parsed.success ? parsed.data : null
+}
+
 const listQuerySchema = z.object({
   store: z.string().optional(),
   category: z.string().optional(),
@@ -102,20 +110,20 @@ productRouter.get('/api/admin/products', verifyAdminAuth, async (req: Request, r
 })
 
 productRouter.get('/api/admin/products/:id', verifyAdminAuth, async (req: Request, res: Response) => {
-  const numericId = Number(req.params.id)
-  if (!Number.isInteger(numericId) || numericId < 0) {
-    res.status(400).json({ error: 'Product id must be a non-negative integer' })
+  const productId = parseProductId(req.params.id)
+  if (!productId) {
+    res.status(400).json({ error: 'Product id must be a UUID' })
     return
   }
   try {
-    const product = await productStore.getById(numericId)
+    const product = await productStore.getById(productId)
     if (!product) {
-      res.status(404).json({ error: `Product ${numericId} not found` })
+      res.status(404).json({ error: `Product ${productId} not found` })
       return
     }
     res.json({ product })
   } catch (err) {
-    logger.error({ err, numericId }, 'Failed to fetch admin product')
+    logger.error({ err, productId }, 'Failed to fetch admin product')
     res.status(503).json({ error: 'Product catalog is unavailable.' })
   }
 })
@@ -232,7 +240,7 @@ productRouter.get('/api/products', async (req: Request, res: Response) => {
   } else if (sort === 'price-desc') {
     list.sort((a, b) => b.priceNum - a.priceNum)
   } else {
-    list.sort((a, b) => a.id - b.id)
+    list.sort((a, b) => a.id.localeCompare(b.id))
   }
 
   res.json({ count: list.length, products: list })
@@ -240,19 +248,19 @@ productRouter.get('/api/products', async (req: Request, res: Response) => {
 
 productRouter.get('/api/products/:id', async (req: Request, res: Response) => {
   const { id } = req.params
-  const numericId = Number(id)
-  if (!Number.isInteger(numericId) || numericId < 0) {
-    res.status(400).json({ error: 'Product id must be a non-negative integer' })
+  const productId = parseProductId(id)
+  if (!productId) {
+    res.status(400).json({ error: 'Product id must be a UUID' })
     return
   }
-  const product = await productStore.getById(numericId)
+  const product = await productStore.getById(productId)
   if (!product) {
-    res.status(404).json({ error: `Product ${numericId} not found` })
+    res.status(404).json({ error: `Product ${productId} not found` })
     return
   }
   const status = (product.adminData as Record<string, unknown> | undefined)?.status
   if (product.status === 'draft' || product.status === 'archived' || status === 'Draft' || status === 'Archived') {
-    res.status(404).json({ error: `Product ${numericId} not found` })
+    res.status(404).json({ error: `Product ${productId} not found` })
     return
   }
   res.json({ product })
@@ -281,9 +289,9 @@ productRouter.post('/api/products', verifyAdminAuth, async (req: Request, res: R
 
 productRouter.put('/api/products/:id', verifyAdminAuth, async (req: Request, res: Response) => {
   const { id } = req.params
-  const numericId = Number(id)
-  if (!Number.isInteger(numericId) || numericId < 0) {
-    res.status(400).json({ error: 'Product id must be a non-negative integer' })
+  const productId = parseProductId(id)
+  if (!productId) {
+    res.status(400).json({ error: 'Product id must be a UUID' })
     return
   }
   const parsed = updateProductSchema.safeParse(req.body)
@@ -296,9 +304,9 @@ productRouter.put('/api/products/:id', verifyAdminAuth, async (req: Request, res
   }
 
   try {
-    const product = await productStore.update(numericId, parsed.data)
+    const product = await productStore.update(productId, parsed.data)
     if (!product) {
-      res.status(404).json({ error: `Product ${numericId} not found` })
+      res.status(404).json({ error: `Product ${productId} not found` })
       return
     }
     void triggerFrontendRevalidation(product.store)
@@ -312,15 +320,15 @@ productRouter.put('/api/products/:id', verifyAdminAuth, async (req: Request, res
 
 productRouter.delete('/api/products/:id', verifyAdminAuth, async (req: Request, res: Response) => {
   const { id } = req.params
-  const numericId = Number(id)
-  if (!Number.isInteger(numericId) || numericId < 0) {
-    res.status(400).json({ error: 'Product id must be a non-negative integer' })
+  const productId = parseProductId(id)
+  if (!productId) {
+    res.status(400).json({ error: 'Product id must be a UUID' })
     return
   }
-  const existing = await productStore.getById(numericId)
-  const removed = await productStore.remove(numericId)
+  const existing = await productStore.getById(productId)
+  const removed = await productStore.remove(productId)
   if (!removed) {
-    res.status(404).json({ error: `Product ${numericId} not found` })
+    res.status(404).json({ error: `Product ${productId} not found` })
     return
   }
   void triggerFrontendRevalidation(existing?.store)

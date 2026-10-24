@@ -22,7 +22,7 @@ export type Category = (typeof CATEGORIES)[number]
 
 export const variantSchema = z.object({
   id: z.number().int().nonnegative().optional(),
-  productId: z.number().int().nonnegative().optional(),
+  productId: z.string().uuid().optional(),
   sku: z.string().min(1).optional(),
   size: z.union([z.string().min(1), z.number()]),
   color: z.string().min(1),
@@ -41,7 +41,7 @@ export type Variant = z.infer<typeof variantSchema>
  * Shared Product model across backend, frontend, and admin.
  */
 export const productSchema = z.object({
-  id: z.number().int().nonnegative(),
+  id: z.string().uuid(),
   store: z.string().default('teesgarage'),
   category: z.string().min(1).default('printed-tees'),
   categoryId: z.number().int().optional(),
