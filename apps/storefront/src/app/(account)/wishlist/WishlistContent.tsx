@@ -81,105 +81,6 @@ function productToWishlistItem(p: Product, inWishlist: boolean = true): Wishlist
   }
 }
 
-const INITIAL_WISHLIST_PRODUCTS: WishlistProduct[] = [
-  {
-    id: '00000000-0000-4000-8000-000000000101',
-    name: 'Vintage Skate Micro-Stripe Tee',
-    variant: 'Washed Black / Ash  •  L',
-    price: '₹1,249',
-    priceNum: 1249,
-    image: '/mock-assets/product-vintage-skate-clean.jpg',
-    swatches: ['#1c1c1c', '#c4c4c4'],
-    href: '/shop',
-    category: 'Stripes',
-    inWishlist: true,
-  },
-  {
-    id: '00000000-0000-4000-8000-000000000102',
-    name: 'Doodle Archive Oversized Tee',
-    variant: 'Off White  •  XL',
-    price: '₹1,099',
-    priceNum: 1099,
-    image: '/mock-assets/product-doodle-archive-clean.jpg',
-    swatches: ['#ded9ce', '#6e6e6e'],
-    href: '/shop',
-    category: 'Printed tees',
-    inWishlist: true,
-  },
-  {
-    id: '00000000-0000-4000-8000-000000000103',
-    name: 'Good Days Ahead Tee',
-    variant: 'Forest Green  •  M',
-    price: '₹1,249',
-    priceNum: 1249,
-    image: '/mock-assets/product-good-days-ahead-clean.jpg',
-    swatches: ['#1c382b', '#dedad2'],
-    href: '/shop',
-    category: 'Printed tees',
-    inWishlist: true,
-  },
-  {
-    id: '00000000-0000-4000-8000-000000000104',
-    name: 'Daisy Minimal Tee',
-    variant: 'Black  •  L',
-    price: '₹1,099',
-    priceNum: 1099,
-    image: '/mock-assets/product-daisy-minimal-clean.jpg',
-    swatches: ['#111111', '#dedad2'],
-    href: '/shop',
-    category: 'Printed tees',
-    inWishlist: true,
-  },
-  {
-    id: '00000000-0000-4000-8000-000000000105',
-    name: 'Classic Stripe Tee',
-    variant: 'White / Black  •  M',
-    price: '₹1,249',
-    priceNum: 1249,
-    image: '/mock-assets/wishlist-classic-stripe.jpg',
-    swatches: ['#111111', '#dedad2'],
-    href: '/shop',
-    category: 'Stripes',
-    inWishlist: true,
-  },
-  {
-    id: '00000000-0000-4000-8000-000000000106',
-    name: 'Better Days Tee',
-    variant: 'Off White  •  L',
-    price: '₹1,199',
-    priceNum: 1199,
-    image: '/mock-assets/wishlist-better-days.jpg',
-    swatches: ['#dedad2', '#4b5548'],
-    href: '/shop',
-    category: 'Printed tees',
-    inWishlist: true,
-  },
-  {
-    id: '00000000-0000-4000-8000-000000000107',
-    name: 'Classic Trackpants',
-    variant: 'Black  •  L',
-    price: '₹1,699',
-    priceNum: 1699,
-    image: '/mock-assets/wishlist-classic-trackpants.jpg',
-    swatches: ['#111111', '#dedad2'],
-    href: '/shop',
-    category: 'Trackpants',
-    inWishlist: true,
-  },
-  {
-    id: '00000000-0000-4000-8000-000000000108',
-    name: 'Essential Sweatpants',
-    variant: 'Grey  •  L',
-    price: '₹1,699',
-    priceNum: 1699,
-    image: '/mock-assets/wishlist-essential-sweatpants.jpg',
-    swatches: ['#dedad2', '#222222'],
-    href: '/shop',
-    category: 'Sweatpants',
-    inWishlist: true,
-  },
-]
-
 export default function WishlistContent() {
   const favorites = useFavoriteStore((s) => s.favorites)
   const toggleFavorite = useFavoriteStore((s) => s.toggleFavorite)
@@ -211,22 +112,12 @@ export default function WishlistContent() {
   useEffect(() => {
     if (favorites.length > 0) {
       const favSet = new Set(favorites.map((f) => String(f)))
-      const matchedCatalog = catalog
+      const matched = catalog
         .filter((p) => favSet.has(String(p.id)))
         .map((p) => productToWishlistItem(p, true))
-      const matchedInitial = INITIAL_WISHLIST_PRODUCTS
-        .filter((p) => favSet.has(String(p.id)))
-        .map((p) => ({ ...p, inWishlist: true }))
-
-      const combined = [...matchedCatalog]
-      for (const item of matchedInitial) {
-        if (!combined.some((c) => String(c.id) === String(item.id))) {
-          combined.push(item)
-        }
-      }
-      setItems(combined.length > 0 ? combined : INITIAL_WISHLIST_PRODUCTS)
+      setItems(matched)
     } else {
-      setItems(INITIAL_WISHLIST_PRODUCTS)
+      setItems([])
     }
   }, [favorites, catalog])
 
@@ -280,30 +171,51 @@ export default function WishlistContent() {
         </div>
 
         {/* Right: Items Count & Sort Pill */}
-        <div className="flex items-center gap-4 self-baseline max-[640px]:self-auto max-[640px]:w-full max-[640px]:justify-between">
-          <span className="font-ui text-[12.5px] font-medium text-[#777777] whitespace-nowrap">
-            {items.length} {items.length === 1 ? 'item' : 'items'}
-          </span>
+        {items.length > 0 && (
+          <div className="flex items-center gap-4 self-baseline max-[640px]:self-auto max-[640px]:w-full max-[640px]:justify-between">
+            <span className="font-ui text-[12.5px] font-medium text-[#777777] whitespace-nowrap">
+              {items.length} {items.length === 1 ? 'item' : 'items'}
+            </span>
 
-          <div className="relative">
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value as any)}
-              className="appearance-none bg-white border border-black/15 hover:border-black/25 text-[#111111] font-ui text-[12.5px] font-semibold py-1.5 pl-3.5 pr-8 rounded-[8px] shadow-2xs cursor-pointer focus:outline-hidden focus:border-black transition-colors"
-              aria-label="Sort wishlist items"
-            >
-              <option value="recent">Recently added</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-[#555555] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none stroke-[2]" />
+            <div className="relative">
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value as any)}
+                className="appearance-none bg-white border border-black/15 hover:border-black/25 text-[#111111] font-ui text-[12.5px] font-semibold py-1.5 pl-3.5 pr-8 rounded-[8px] shadow-2xs cursor-pointer focus:outline-hidden focus:border-black transition-colors"
+                aria-label="Sort wishlist items"
+              >
+                <option value="recent">Recently added</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-[#555555] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none stroke-[2]" />
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
-      {/* Product Cards 4-Column Grid */}
-      <div className="grid grid-cols-4 gap-3.5 xl:gap-4 max-[1240px]:grid-cols-3 max-[860px]:grid-cols-2 max-[500px]:grid-cols-1">
-        {sortedItems.map((product) => {
+      {/* Empty State vs Product Cards 4-Column Grid */}
+      {items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-[16px] border border-black/[0.08] bg-white py-16 px-6 text-center my-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f4f4f5] text-[#71717a]">
+            <Heart className="h-6 w-6 stroke-[1.8]" />
+          </div>
+          <h2 className="font-brand text-[20px] font-bold text-[#111111]">
+            No wishlist items
+          </h2>
+          <p className="mt-1 mb-6 font-ui text-[13px] text-[#71717a] max-w-[280px]">
+            You haven&apos;t saved any garments to your wishlist yet.
+          </p>
+          <Link
+            href="/shop"
+            className="inline-flex h-10 items-center justify-center rounded-[8px] bg-[#111111] px-6 font-brand text-[12.5px] font-semibold text-white hover:bg-black transition-colors"
+          >
+            Explore Garments
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 gap-3.5 xl:gap-4 max-[1240px]:grid-cols-3 max-[860px]:grid-cols-2 max-[500px]:grid-cols-1">
+          {sortedItems.map((product) => {
           return (
             <div
               key={product.id}
@@ -443,7 +355,8 @@ export default function WishlistContent() {
             </div>
           )
         })}
-      </div>
+        </div>
+      )}
     </>
   )
 }

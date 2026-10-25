@@ -461,7 +461,7 @@ export default function ProfilePage() {
                       Wishlist
                     </h4>
                     <p className="text-[12.5px] text-[#777777] mt-0.5 truncate">
-                      12 saved items
+                      {favorites.length} saved {favorites.length === 1 ? 'item' : 'items'}
                     </p>
                   </div>
                 </div>
