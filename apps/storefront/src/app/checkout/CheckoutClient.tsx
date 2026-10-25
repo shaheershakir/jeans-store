@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { cartCount, cartSubtotal, useCartStore, useAuthStore, type UserAddress } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
+import type { Order } from '@jeans-store/shared'
 import type { Product } from '@/lib/constants'
 import { getProductUrl, getAvailableProductSizes } from '@/lib/products'
 import { trackEvent } from '@/lib/analytics'
@@ -63,7 +64,8 @@ interface CheckoutForm {
   pincode: string
 }
 
-export type PaymentStage = 'idle' | 'creating_order' | 'awaiting_popup' | 'verifying' | 'redirecting'
+export type PaymentStage =
+  'idle' | 'creating_order' | 'awaiting_popup' | 'verifying' | 'redirecting'
 
 type CheckoutErrors = Partial<Record<keyof CheckoutForm | 'email', string>>
 
@@ -75,6 +77,7 @@ interface CheckoutOrderPayload {
   customerEmail: string
   address: string
   apartment?: string
+  landmark?: string
   city: string
   state: string
   pincode: string
@@ -386,10 +389,7 @@ function CustomCheckbox({
   id?: string
 }) {
   return (
-    <label
-      htmlFor={id}
-      className="inline-flex cursor-pointer items-center gap-2.5 select-none"
-    >
+    <label htmlFor={id} className="inline-flex cursor-pointer items-center gap-2.5 select-none">
       <span
         className={`grid h-4 w-4 shrink-0 place-items-center rounded-[3px] border transition-colors ${
           checked
@@ -406,9 +406,7 @@ function CustomCheckbox({
         onChange={(e) => onChange(e.target.checked)}
         className="sr-only"
       />
-      <span className="text-[12.5px] leading-normal text-[#27272A] font-normal">
-        {label}
-      </span>
+      <span className="text-[12.5px] leading-normal text-[#27272A] font-normal">{label}</span>
     </label>
   )
 }
@@ -655,7 +653,11 @@ function PaymentWaitingScreen({ stage, isCod = false }: PaymentWaitingScreenProp
       {/* Top Navigation / Brand Header */}
       <header className="w-full border-b border-[#EAE8E4] bg-[#FBFBFA]/80 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-          <Link href="/" className="inline-block transition-opacity hover:opacity-85" aria-label="TEESGARAGE Homepage">
+          <Link
+            href="/"
+            className="inline-block transition-opacity hover:opacity-85"
+            aria-label="TEESGARAGE Homepage"
+          >
             <Image
               src="/teesgarage-logo.svg"
               alt="TEESGARAGE"
@@ -691,7 +693,11 @@ function PaymentWaitingScreen({ stage, isCod = false }: PaymentWaitingScreenProp
               </div>
             ) : (
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F4F3EF] text-[#111111]">
-                <Loader2 className="w-7 h-7 animate-spin text-[#111111]" strokeWidth={2} aria-hidden="true" />
+                <Loader2
+                  className="w-7 h-7 animate-spin text-[#111111]"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
               </div>
             )}
           </div>
@@ -954,7 +960,8 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
           pincode: cleanPin,
           items: items.map((item) => ({
             id: String(item.id),
-            variantId: typeof item.variantId === 'number' && item.variantId > 0 ? item.variantId : undefined,
+            variantId:
+              typeof item.variantId === 'number' && item.variantId > 0 ? item.variantId : undefined,
             size: String(item.size),
             quantity: item.qty
           }))
@@ -1102,7 +1109,9 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
   }, [emailValid, form.name, form.address, form.district, form.state, phoneDigits, cleanPin])
 
   const canContinue = Boolean(isShippingComplete && !quoteLoading)
-  const canPay = Boolean(canContinue && !isProcessing && paymentStage === 'idle' && items.length > 0)
+  const canPay = Boolean(
+    canContinue && !isProcessing && paymentStage === 'idle' && items.length > 0
+  )
   const shippingDisplay = deliveryQuote
     ? shipping === 0
       ? 'Free'
@@ -1269,10 +1278,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     }
 
     try {
-      window.localStorage.setItem(
-        GUEST_CHECKOUT_KEY,
-        JSON.stringify({ email: email.trim(), form })
-      )
+      window.localStorage.setItem(GUEST_CHECKOUT_KEY, JSON.stringify({ email: email.trim(), form }))
     } catch {
       // Saving details is optional; never block a paid order.
     }
@@ -1326,7 +1332,8 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       customerPhone: form.phone.trim(),
       customerEmail: email.trim(),
       address: form.address.trim(),
-      apartment: [form.place.trim(), form.landmark.trim()].filter(Boolean).join(', ') || undefined,
+      apartment: form.place.trim() || undefined,
+      landmark: form.landmark.trim() || undefined,
       city: form.district.trim(),
       state: form.state.trim(),
       pincode: form.pincode.trim(),
@@ -1335,7 +1342,8 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         : 'Customer opted out of email updates.',
       items: items.map((item) => ({
         id: String(item.id),
-        variantId: typeof item.variantId === 'number' && item.variantId > 0 ? item.variantId : undefined,
+        variantId:
+          typeof item.variantId === 'number' && item.variantId > 0 ? item.variantId : undefined,
         size: String(item.size),
         quantity: item.qty
       }))
@@ -1421,31 +1429,61 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
             }
             if (authToken) verifyHeaders.Authorization = `Bearer ${authToken}`
 
-            const verifyRes = await fetch(`${backendUrl}/api/orders/razorpay/verify`, {
-              method: 'POST',
-              headers: verifyHeaders,
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                order: {
-                  ...orderPayload,
-                  status: 'paid',
-                  handoffType: 'razorpay'
-                }
-              })
-            })
+            let verifyRes: Response | null = null
+            let verifyData: { order?: Order; guestToken?: string; error?: string } = {}
+            let lastErr: Error | null = null
 
-            const verifyData = await verifyRes.json().catch(() => ({}))
-            if (!verifyRes.ok) {
-              const verifyErr = verifyData as { error?: string }
-              throw new Error(verifyErr.error || 'Payment signature verification failed')
+            // Retry up to 3 attempts with brief backoff for transient server/network blips
+            for (let attempt = 0; attempt < 3; attempt++) {
+              try {
+                verifyRes = await fetch(`${backendUrl}/api/orders/razorpay/verify`, {
+                  method: 'POST',
+                  headers: verifyHeaders,
+                  body: JSON.stringify({
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature,
+                    order: {
+                      ...orderPayload,
+                      status: 'paid',
+                      handoffType: 'razorpay'
+                    }
+                  })
+                })
+                verifyData = (await verifyRes.json().catch(() => ({}))) as {
+                  order?: Order
+                  guestToken?: string
+                  error?: string
+                }
+                if (verifyRes.ok) {
+                  lastErr = null
+                  break
+                }
+                const errMessage = verifyData.error || 'Payment signature verification failed'
+                lastErr = new Error(errMessage)
+                // If it's a 4xx validation or client error (not a 500 commit error), don't retry
+                if (verifyRes.status >= 400 && verifyRes.status < 500) {
+                  break
+                }
+              } catch (netErr) {
+                lastErr =
+                  netErr instanceof Error
+                    ? netErr
+                    : new Error('Network error during payment verification')
+              }
+              if (attempt < 2) {
+                await new Promise((r) => setTimeout(r, 1500))
+              }
+            }
+
+            if (lastErr || !verifyRes?.ok) {
+              throw lastErr || new Error('Payment signature verification failed')
             }
 
             saveCheckoutAddress()
 
-            const confirmedOrder = verifyData.order || {}
-            const finalOrderNumber = confirmedOrder.orderNumber || orderId
+            const confirmedOrder = verifyData.order
+            const finalOrderNumber = confirmedOrder?.orderNumber || orderId
             const guestToken = verifyData.guestToken || ''
 
             try {
@@ -1456,19 +1494,19 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                   guestToken,
                   paymentId: response.razorpay_payment_id,
                   paymentMethod: 'online',
-                  total: Number(confirmedOrder.total ?? rzpData.total ?? total),
-                  subtotal: Number(confirmedOrder.subtotal ?? rzpData.subtotal ?? subtotal),
-                  shipping: Number(confirmedOrder.shipping ?? rzpData.shipping ?? shipping),
-                  createdAt: confirmedOrder.createdAt || new Date().toISOString(),
-                  customerName: confirmedOrder.customerName || form.name.trim(),
-                  email: confirmedOrder.customerEmail || email.trim(),
-                  phone: confirmedOrder.customerPhone || form.phone.trim(),
-                  address: confirmedOrder.address || form.address.trim(),
-                  apartment: confirmedOrder.apartment || form.place.trim(),
-                  city: confirmedOrder.city || form.district.trim(),
-                  state: confirmedOrder.state || form.state.trim(),
-                  pincode: confirmedOrder.pincode || form.pincode.trim(),
-                  items: Array.isArray(confirmedOrder.items)
+                  total: Number(confirmedOrder?.total ?? rzpData.total ?? total),
+                  subtotal: Number(confirmedOrder?.subtotal ?? rzpData.subtotal ?? subtotal),
+                  shipping: Number(confirmedOrder?.shipping ?? rzpData.shipping ?? shipping),
+                  createdAt: confirmedOrder?.createdAt || new Date().toISOString(),
+                  customerName: confirmedOrder?.customerName || form.name.trim(),
+                  email: confirmedOrder?.customerEmail || email.trim(),
+                  phone: confirmedOrder?.customerPhone || form.phone.trim(),
+                  address: confirmedOrder?.address || form.address.trim(),
+                  apartment: confirmedOrder?.apartment || form.place.trim(),
+                  city: confirmedOrder?.city || form.district.trim(),
+                  state: confirmedOrder?.state || form.state.trim(),
+                  pincode: confirmedOrder?.pincode || form.pincode.trim(),
+                  items: Array.isArray(confirmedOrder?.items)
                     ? confirmedOrder.items
                     : items.map((item) => ({
                         id: item.id,
@@ -1522,11 +1560,17 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
             setTimeout(() => {
               router.replace(confirmUrl.pathname + confirmUrl.search)
             }, 350)
-          } catch (err: any) {
+          } catch (err: unknown) {
             setIsProcessing(false)
             setPaymentStage('idle')
+            const msg =
+              err instanceof Error
+                ? err.message
+                : 'Payment verification encountered an issue. Please contact support.'
             setPaymentError(
-              err.message || 'Payment verification encountered an issue. Please contact support.'
+              response.razorpay_payment_id
+                ? `${msg} (Payment ID: ${response.razorpay_payment_id})`
+                : msg
             )
           }
         },
@@ -1673,12 +1717,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
   // Order progress / redirect screen guard: loads immediately after clicking pay and precedes empty bag guard
   if (paymentStage !== 'idle') {
-    return (
-      <PaymentWaitingScreen
-        stage={paymentStage}
-        isCod={paymentMethod === 'cod'}
-      />
-    )
+    return <PaymentWaitingScreen stage={paymentStage} isCod={paymentMethod === 'cod'} />
   }
 
   // Empty bag view
@@ -1687,7 +1726,11 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       <main className="checkout-page min-h-screen bg-[#FBFBFA] pb-24 font-ui text-[#1C2022]">
         <header className="w-full">
           <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
-            <Link href="/" className="inline-block transition-opacity hover:opacity-85" aria-label="TEESGARAGE Homepage">
+            <Link
+              href="/"
+              className="inline-block transition-opacity hover:opacity-85"
+              aria-label="TEESGARAGE Homepage"
+            >
               <Image
                 src="/teesgarage-logo.svg"
                 alt="TEESGARAGE"
@@ -1750,7 +1793,11 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       {/* Top Header Bar */}
       <header className="w-full">
         <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
-          <Link href="/" className="inline-block transition-opacity hover:opacity-85" aria-label="TEESGARAGE Homepage">
+          <Link
+            href="/"
+            className="inline-block transition-opacity hover:opacity-85"
+            aria-label="TEESGARAGE Homepage"
+          >
             <Image
               src="/teesgarage-logo.svg"
               alt="TEESGARAGE"
@@ -1781,11 +1828,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_430px] items-start">
           {/* Left column */}
-          <form
-            className="flex flex-col gap-5"
-            onSubmit={handleSubmit}
-            noValidate
-          >
+          <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
             {step === 0 ? (
               <>
                 {/* Contact information */}
@@ -1932,9 +1975,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
                 {/* Delivery options */}
                 <div>
-                  <h3 className="text-[14px] font-semibold text-[#111] mb-2.5">
-                    Delivery options
-                  </h3>
+                  <h3 className="text-[14px] font-semibold text-[#111] mb-2.5">Delivery options</h3>
                   <div className="rounded-lg border border-[#E2E0D8] bg-[#FAF9F6]/50 p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3.5">
                       <RadioDot selected={true} />
@@ -1947,9 +1988,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                         </span>
                       </div>
                     </div>
-                    <span className="text-[13.5px] font-medium text-[#111]">
-                      {shippingDisplay}
-                    </span>
+                    <span className="text-[13.5px] font-medium text-[#111]">{shippingDisplay}</span>
                   </div>
                 </div>
 
@@ -2157,9 +2196,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                         <p className="text-[10.5px] font-medium uppercase tracking-[0.06em] text-[#71717A]">
                           Contact
                         </p>
-                        <p className="mt-1 truncate text-[13px] text-[#111]">
-                          {email}
-                        </p>
+                        <p className="mt-1 truncate text-[13px] text-[#111]">{email}</p>
                         <p className="text-[12px] text-[#71717A]">{form.phone}</p>
                       </div>
                       <button
@@ -2176,9 +2213,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                         <p className="text-[10.5px] font-medium uppercase tracking-[0.06em] text-[#71717A]">
                           Shipping address
                         </p>
-                        <p className="mt-1 text-[13px] font-medium text-[#111]">
-                          {form.name}
-                        </p>
+                        <p className="mt-1 text-[13px] font-medium text-[#111]">{form.name}</p>
                         <p className="text-[12px] text-[#52525B] leading-relaxed">
                           {[form.address, form.place, form.landmark, form.district, form.state]
                             .filter(Boolean)
@@ -2203,9 +2238,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                         <p className="mt-1 text-[13px] font-medium text-[#111]">
                           Standard delivery · {shippingDisplay}
                         </p>
-                        <p className="text-[12px] text-[#71717A]">
-                          {deliveryOptionSubtitle}
-                        </p>
+                        <p className="text-[12px] text-[#71717A]">{deliveryOptionSubtitle}</p>
                       </div>
                       <button
                         type="button"
@@ -2305,7 +2338,10 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
               <div className="mt-5 flex max-h-[380px] flex-col gap-5 overflow-y-auto pr-0.5">
                 {itemsWithPricing.map((item) => (
-                  <div key={`${item.id}-${item.variantId ?? item.size}`} className="flex gap-3.5 items-start">
+                  <div
+                    key={`${item.id}-${item.variantId ?? item.size}`}
+                    className="flex gap-3.5 items-start"
+                  >
                     <div className="relative h-[82px] w-[82px] shrink-0 overflow-hidden rounded-lg border border-[#eeece7] bg-[#f6f5f1]">
                       <Image
                         src={item.img}
@@ -2403,9 +2439,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
               <div className="mt-5 border-t border-[#F0EFEA] pt-4">
                 <p className="text-[12px] text-[#71717A]">Estimated arrival</p>
-                <p className="mt-1 text-[15px] font-bold text-[#111]">
-                  {arrivalDisplay}
-                </p>
+                <p className="mt-1 text-[15px] font-bold text-[#111]">{arrivalDisplay}</p>
               </div>
 
               <div className="mt-4 flex flex-col gap-2 border-t border-[#F0EFEA] pt-4 text-[13px]">
@@ -2440,9 +2474,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                     {formatPrice(total)}
                   </span>
                 </div>
-                <p className="mt-1 text-right text-[11px] text-[#71717A]">
-                  Inclusive of all taxes
-                </p>
+                <p className="mt-1 text-right text-[11px] text-[#71717A]">Inclusive of all taxes</p>
               </div>
             </div>
           </aside>

@@ -1,4 +1,5 @@
 # Design System: TEESGARAGE
+
 **Project:** TEESGARAGE Apparel Storefront & Operation Systems  
 **Design Lead Directive:** Editorial Catalog, Archival Precision, Tactile Micro-Interactions
 
@@ -6,7 +7,7 @@
 
 ## 1. Visual Theme & Atmosphere
 
-A restrained, archival-editorial catalog with confident typographic hierarchy, asymmetric spatial layouts, and fluid spring-physics motion. The aesthetic rejects generic e-commerce conventions (no artificial countdown clocks, no fake review counters, no strike-through pricing, no aggressive neon glows). 
+A restrained, archival-editorial catalog with confident typographic hierarchy, asymmetric spatial layouts, and fluid spring-physics motion. The aesthetic rejects generic e-commerce conventions (no artificial countdown clocks, no fake review counters, no strike-through pricing, no aggressive neon glows).
 
 The atmosphere draws inspiration from high-fashion lookbooks, industrial manifests, and raw fabric ateliers. Surfaces use warm tactile alabaster (`--paper` / `#f5f3ef`) and neutral bone surfaces (`--bone` / `#ede8e1`) with graphite charcoal ink (`--ink` / `#151515`), layered with translucent frosted glass (`backdrop-filter: blur(28px)`) on floating utilities and drawers.
 
@@ -41,6 +42,7 @@ Strict four-tier type system from Google Fonts. Generic fonts like `Inter`, `Tim
 4. **Archivo Black** (`var(--display)`, `var(--font-brand)`): Brand wordmark and select hero typographic accents.
 
 ### Hierarchy & Scale
+
 - **Display Hero:** `clamp(48px, 6.5vw, 84px)`, line-height 0.96, tracking `-0.04em`.
 - **Section Title:** `clamp(28px, 3.8vw, 42px)`, line-height 1.05, tracking `-0.03em`.
 - **Product Card Title:** `15px` to `17px`, line-height 1.3, font-weight 500.
@@ -51,13 +53,13 @@ Strict four-tier type system from Google Fonts. Generic fonts like `Inter`, `Tim
 
 ## 4. Component Stylings
 
-* **Buttons:**
+- **Buttons:**
   - Flat, tactile push feedback (`transform: scale(0.98)` on `:active`).
   - Primary CTA: `--ink` fill with `--paper` text, 2px corner radius.
   - Secondary CTA: `--paper` fill with 1px `--line-strong` border.
   - No neon glows, no gradient borders, no custom mouse cursors.
 
-* **Product Cards (3:4 Editorial Portrait):**
+- **Product Cards (3:4 Editorial Portrait):**
   - Strict 3:4 aspect ratio portrait frame (`aspect-ratio: 3 / 4`).
   - Small rounded corners (`var(--radius-sm, 4px)`).
   - Dual-image crossfade: smooth opacity transition from `product.img` to `product.img2` on `@media (hover: hover)`.
@@ -65,18 +67,18 @@ Strict four-tier type system from Google Fonts. Generic fonts like `Inter`, `Tim
   - Refined overlay heart wishlist button on top-left.
   - Intentional, compact size selector and "Add to Bag" action bar.
 
-* **Floating Glass Surfaces (Popovers, Drawers, Mobile Panels):**
+- **Floating Glass Surfaces (Popovers, Drawers, Mobile Panels):**
   - True full-viewport backdrop portaled to `document.body` with `backdrop-filter: blur(12px)` and subtle ambient darkening.
   - Surface layer: semi-transparent (`rgba(255, 255, 255, 0.96)` / `rgba(250, 249, 246, 0.96)`) with `backdrop-filter: blur(32px) saturate(180%)`.
   - Inset specular highlight: `0 0 0 1px rgba(255, 255, 255, 0.8) inset`.
   - Solid fallback via `@supports not (backdrop-filter: blur(1px))`.
 
-* **Search Overlay:**
+- **Search Overlay:**
   - Unified desktop and mobile modal (`SearchOverlay`).
   - Centered presentation with auto-focus, focus trapping (`Tab` cycle), and `Esc` dismissal.
   - Instant catalog search with curated popular tags.
 
-* **Skeletal Loaders:**
+- **Skeletal Loaders:**
   - Shimmer pulse matching exact layout dimensions (3:4 image, title bar, price bar, action button).
   - No generic circular spinners.
 
@@ -101,7 +103,6 @@ Strict four-tier type system from Google Fonts. Generic fonts like `Inter`, `Tim
   - `--ease-out: cubic-bezier(0.23, 1, 0.32, 1)` (entering surfaces)
   - `--ease-drawer: cubic-bezier(0.32, 0.72, 0, 1)` (sheet slides)
 - **Hardware Acceleration:** Animations strictly operate on `transform` and `opacity`. Layout-triggering properties (`top`, `left`, `width`, `height`) are never animated.
-- **Scroll Reveal:** Reusable `IntersectionObserver` stagger (`useScrollReveal`) triggering once per element with `--reveal-index` cascade.
 - **Page Transitions:** Route changes smoothly fade in via `app/template.tsx`.
 - **Accessibility:** Comprehensive `@media (prefers-reduced-motion: reduce)` overrides across all transitions.
 

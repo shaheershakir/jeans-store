@@ -33,29 +33,32 @@ interface AuthVisualPanelProps {
 
 export default function AuthVisualPanel({ mode = 'signin', customSubtitle }: AuthVisualPanelProps) {
   const [activeSlide, setActiveSlide] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
-  const resetTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current)
+  useEffect(() => {
+    if (isPaused) {
+      if (timerRef.current) clearInterval(timerRef.current)
+      return
+    }
     timerRef.current = setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % SUNLIT_SLIDES.length)
     }, 10000)
-  }
-
-  useEffect(() => {
-    resetTimer()
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [])
+  }, [isPaused, activeSlide])
 
   const handleSelectSlide = (index: number) => {
     setActiveSlide(index)
-    resetTimer()
   }
 
   return (
-    <div className="relative w-full h-[380px] sm:h-[480px] lg:h-full min-h-[380px] lg:min-h-[calc(100vh-2.5rem)] rounded-[28px] sm:rounded-[32px] overflow-hidden bg-neutral-950 flex flex-col justify-between p-6 sm:p-8 lg:p-10 select-none shadow-xl animate-auth-enter">
+    <div
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      className="relative w-full h-[380px] sm:h-[480px] lg:h-full min-h-[380px] lg:min-h-[calc(100vh-2.5rem)] rounded-[28px] sm:rounded-[32px] overflow-hidden bg-neutral-950 flex flex-col justify-between p-6 sm:p-8 lg:p-10 select-none shadow-xl animate-auth-enter"
+    >
       {/* 3 Sunlit Slides with 10-second Cross-fade and subtle ease-out scale */}
       {SUNLIT_SLIDES.map((slide, index) => {
         const isActive = activeSlide === index
@@ -104,33 +107,53 @@ export default function AuthVisualPanel({ mode = 'signin', customSubtitle }: Aut
 
       {/* Bottom Content: Bold Typography, Subtitle, and 3 Indicators */}
       <div className="relative z-20 mt-auto">
-        <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-bold text-white tracking-tight leading-[1.08] mb-3 whitespace-pre-line drop-shadow-md">
-          {mode === 'signup' && activeSlide === 0 ? 'Good tees.\nBetter days.' : SUNLIT_SLIDES[activeSlide].heading}
-        </h2>
+        <div key={`${activeSlide}-${mode}`} className="animate-auth-enter">
+          <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-bold text-white tracking-tight leading-[1.08] mb-3 whitespace-pre-line drop-shadow-md">
+            {mode === 'signup' && activeSlide === 0
+              ? 'Good tees.\nBetter days.'
+              : SUNLIT_SLIDES[activeSlide].heading}
+          </h2>
 
-        <p className="text-white/85 text-xs sm:text-sm lg:text-[15px] leading-relaxed max-w-[360px] mb-7 font-normal whitespace-pre-line drop-shadow-sm">
-          {customSubtitle ||
-            (mode === 'signup' && activeSlide === 0
-              ? 'Create an account to access your orders,\nsaved items and personalized\nrecommendations.'
-              : SUNLIT_SLIDES[activeSlide].subtitle)}
-        </p>
+          <p className="text-white/85 text-xs sm:text-sm lg:text-[15px] leading-relaxed max-w-[360px] mb-7 font-normal whitespace-pre-line drop-shadow-sm">
+            {customSubtitle ||
+              (mode === 'signup' && activeSlide === 0
+                ? 'Create an account to access your orders,\nsaved items and personalized\nrecommendations.'
+                : SUNLIT_SLIDES[activeSlide].subtitle)}
+          </p>
+        </div>
 
         {/* 3 Pagination Pill Bars (changes every 10s or on click with ease-out transition) */}
-        <div className="flex items-center gap-2" role="tablist" aria-label="Sunlit gallery indicators">
-          {SUNLIT_SLIDES.map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleSelectSlide(idx)}
-              className={`h-1 rounded-full transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer ${
-                activeSlide === idx
-                  ? 'w-8 bg-white shadow-xs'
-                  : 'w-5 bg-white/35 hover:bg-white/65'
-              }`}
-              aria-label={`Go to slide ${idx + 1}`}
-              aria-selected={activeSlide === idx}
-            />
-          ))}
+        <div
+          className="flex items-center gap-2"
+          role="tablist"
+          aria-label="Sunlit gallery indicators"
+        >
+          {SUNLIT_SLIDES.map((_, idx) => {
+            const isActive = activeSlide === idx
+            return (
+              <button
+                key={idx}
+                type="button"
+                role="tab"
+                onClick={() => handleSelectSlide(idx)}
+                className={`cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                  isActive
+                    ? 'relative h-1.5 w-10 bg-white/30 overflow-hidden rounded-full'
+                    : 'h-1.5 w-5 bg-white/35 hover:bg-white/60 rounded-full'
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+                aria-selected={isActive}
+              >
+                {isActive && (
+                  <span
+                    key={activeSlide}
+                    className="absolute inset-0 bg-white rounded-full origin-left animate-auth-progress"
+                    style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
+                  />
+                )}
+              </button>
+            )
+          })}
         </div>
       </div>
     </div>

@@ -1,8 +1,11 @@
-import { z } from 'zod'
+import { z } from "zod";
 
 export const orderItemSchema = z.object({
   id: z.string().uuid(),
-  variantId: z.union([z.number().int().positive(), z.null()]).optional().transform((v) => v ?? undefined),
+  variantId: z
+    .union([z.number().int().positive(), z.null()])
+    .optional()
+    .transform((v) => v ?? undefined),
   name: z.string(),
   size: z.string(),
   price: z.string(),
@@ -16,17 +19,18 @@ export const orderItemSchema = z.object({
   taxAmount: z.number().int().nonnegative().optional(),
   discountAmount: z.number().int().nonnegative().optional(),
   taxableAmount: z.number().int().nonnegative().optional(),
-  variantLabel: z.string().optional()
-})
+  variantLabel: z.string().optional(),
+});
 
 export const createOrderSchema = z.object({
   orderNumber: z.string().min(1),
-  store: z.string().default('teesgarage'),
+  store: z.string().default("teesgarage"),
   customerName: z.string().min(1),
   customerPhone: z.string().min(10),
   customerEmail: z.string().email(),
   address: z.string().min(1),
   apartment: z.string().optional(),
+  landmark: z.string().max(255).optional(),
   city: z.string().min(1),
   state: z.string().min(1),
   pincode: z.string().min(5),
@@ -39,14 +43,16 @@ export const createOrderSchema = z.object({
   total: z.number().nonnegative(),
   weightGrams: z.number().int().nonnegative().optional(),
   couponCode: z.string().trim().min(1).max(60).optional(),
-  handoffType: z.enum(['whatsapp', 'email', 'razorpay', 'cod']).default('whatsapp'),
+  handoffType: z
+    .enum(["whatsapp", "email", "razorpay", "cod"])
+    .default("whatsapp"),
   status: z.string().optional(),
   paymentMethod: z.string().optional(),
   paymentId: z.string().optional(),
   razorpayOrderId: z.string().optional(),
   razorpayPaymentId: z.string().optional(),
-  razorpaySignature: z.string().optional()
-})
+  razorpaySignature: z.string().optional(),
+});
 
-export type OrderItemSchemaType = z.infer<typeof orderItemSchema>
-export type CreateOrderSchemaType = z.infer<typeof createOrderSchema>
+export type OrderItemSchemaType = z.infer<typeof orderItemSchema>;
+export type CreateOrderSchemaType = z.infer<typeof createOrderSchema>;

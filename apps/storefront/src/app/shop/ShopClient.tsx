@@ -10,7 +10,7 @@ import {
   Check,
   Star,
   ChevronDown,
-  ChevronUp,
+  ChevronUp
 } from 'lucide-react'
 import type { Product } from '@/lib/constants'
 import type { PriceRange, SortMode } from '@/lib/store'
@@ -23,13 +23,13 @@ import { getProductSlug } from '@/lib/products'
 const PRICE_LABELS: Record<PriceRange, string> = {
   'under-1500': 'Under ₹1,500',
   '1500-2000': '₹1,500 – ₹1,999',
-  'above-2000': '₹2,000 & Above',
+  'above-2000': '₹2,000 & Above'
 }
 
 const SORT_OPTIONS: { mode: SortMode; label: string }[] = [
   { mode: 'featured', label: 'Recommended' },
   { mode: 'price-asc', label: 'Price: Low to High' },
-  { mode: 'price-desc', label: 'Price: High to Low' },
+  { mode: 'price-desc', label: 'Price: High to Low' }
 ]
 
 const SIZE_PILL_INACTIVE =
@@ -48,7 +48,7 @@ const SHOP_CATEGORIES = [
   { id: 'waffle', slug: 'waffle', href: '/shop/waffle', label: 'Waffle' },
   { id: 'trackpants', slug: 'trackpants', href: '/shop/trackpants', label: 'Trackpants' },
   { id: 'sweatpants', slug: 'sweatpants', href: '/shop/sweatpants', label: 'Sweatpants' },
-  { id: 'sale', slug: 'sale', href: '/shop/sale', label: 'Sale & Archive' },
+  { id: 'sale', slug: 'sale', href: '/shop/sale', label: 'Sale & Archive' }
 ]
 
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
@@ -61,7 +61,7 @@ const COLOR_PALETTE: { name: string; hex: string }[] = [
   { name: 'Grey', hex: '#6b7280' },
   { name: 'Beige', hex: '#c9b89d' },
   { name: 'Green', hex: '#3a6946' },
-  { name: 'Red', hex: '#8b1e2d' },
+  { name: 'Red', hex: '#8b1e2d' }
 ]
 
 export type FacetKey =
@@ -112,7 +112,7 @@ const FACET_TITLES: Record<FacetKey, string> = {
   availability: 'AVAILABILITY',
   discount: 'DISCOUNT RANGE',
   rating: 'RATING',
-  collection: 'COLLECTION',
+  collection: 'COLLECTION'
 }
 
 const FACET_DISPLAY_NAMES: Record<FacetKey, string> = {
@@ -138,93 +138,20 @@ const FACET_DISPLAY_NAMES: Record<FacetKey, string> = {
   availability: 'Availability',
   discount: 'Discount range',
   rating: 'Customer rating',
-  collection: 'Collection',
+  collection: 'Collection'
 }
 
 const CATEGORY_FACETS: Record<string, FacetKey[]> = {
-  all: [
-    'categories',
-    'size',
-    'color',
-    'price',
-    'availability',
-    'discount',
-    'rating',
-    'collection',
-  ],
-  stripes: [
-    'size',
-    'color',
-    'price',
-    'availability',
-    'discount',
-    'rating',
-  ],
-  fullsleeve: [
-    'size',
-    'color',
-    'price',
-    'availability',
-    'discount',
-    'rating',
-  ],
-  drsleeve: [
-    'size',
-    'color',
-    'price',
-    'availability',
-    'discount',
-    'rating',
-  ],
-  'printed-tees': [
-    'size',
-    'color',
-    'price',
-    'availability',
-    'discount',
-    'rating',
-  ],
-  'ringer-tees': [
-    'size',
-    'color',
-    'price',
-    'availability',
-    'discount',
-    'rating',
-  ],
-  henley: [
-    'size',
-    'color',
-    'price',
-    'availability',
-    'discount',
-    'rating',
-  ],
-  trackpants: [
-    'waistSize',
-    'color',
-    'price',
-    'availability',
-    'discount',
-    'rating',
-  ],
-  sweatpants: [
-    'waistSize',
-    'color',
-    'price',
-    'availability',
-    'discount',
-    'rating',
-  ],
-  sale: [
-    'categories',
-    'size',
-    'color',
-    'price',
-    'availability',
-    'discount',
-    'rating',
-  ],
+  all: ['categories', 'size', 'color', 'price', 'availability', 'discount', 'rating', 'collection'],
+  stripes: ['size', 'color', 'price', 'availability', 'discount', 'rating'],
+  fullsleeve: ['size', 'color', 'price', 'availability', 'discount', 'rating'],
+  drsleeve: ['size', 'color', 'price', 'availability', 'discount', 'rating'],
+  'printed-tees': ['size', 'color', 'price', 'availability', 'discount', 'rating'],
+  'ringer-tees': ['size', 'color', 'price', 'availability', 'discount', 'rating'],
+  henley: ['size', 'color', 'price', 'availability', 'discount', 'rating'],
+  trackpants: ['waistSize', 'color', 'price', 'availability', 'discount', 'rating'],
+  sweatpants: ['waistSize', 'color', 'price', 'availability', 'discount', 'rating'],
+  sale: ['categories', 'size', 'color', 'price', 'availability', 'discount', 'rating']
 }
 
 interface ShopClientProps {
@@ -241,7 +168,7 @@ export default function ShopClient({
   category: routeCategory = 'all',
   initialCategories,
   title,
-  slug = 'all',
+  slug = 'all'
 }: ShopClientProps) {
   const filterCategories = useFilterStore((s) => s.categories)
   const filterCategory = useFilterStore((s) => s.category)
@@ -337,13 +264,13 @@ export default function ShopClient({
     use: false,
     legStyle: false,
     rise: false,
-    collection: false,
+    collection: false
   })
 
   const toggleFacet = (key: string) => {
     setOpenFacets((prev) => ({
       ...prev,
-      [key]: !prev[key],
+      [key]: !prev[key]
     }))
   }
 
@@ -374,7 +301,7 @@ export default function ShopClient({
 
   // Mobile Drawer Tab selection
   const [activeMobileTab, setActiveMobileTab] = useState<FacetKey>(() => {
-    return routeCategory === 'all' ? 'categories' : (activeFacets[0] || 'size')
+    return routeCategory === 'all' ? 'categories' : activeFacets[0] || 'size'
   })
 
   useEffect(() => {
@@ -432,7 +359,9 @@ export default function ShopClient({
     const activeCats =
       routeCategory !== 'all'
         ? [routeCategory]
-        : (filterCategories.length > 0 ? filterCategories : 'all')
+        : filterCategories.length > 0
+          ? filterCategories
+          : 'all'
 
     return filterAndSortProducts(
       prices,
@@ -461,7 +390,7 @@ export default function ShopClient({
         availability: selectedAvailability,
         discount: selectedDiscount,
         rating: selectedRating,
-        collections: selectedCollections,
+        collections: selectedCollections
       }
     )
   }, [
@@ -491,7 +420,7 @@ export default function ShopClient({
     selectedAvailability,
     selectedDiscount,
     selectedRating,
-    selectedCollections,
+    selectedCollections
   ])
 
   // Generic toggle helper
@@ -499,9 +428,7 @@ export default function ShopClient({
     setter: React.Dispatch<React.SetStateAction<string[]>>,
     val: string
   ) => {
-    setter((prev) =>
-      prev.includes(val) ? prev.filter((item) => item !== val) : [...prev, val]
-    )
+    setter((prev) => (prev.includes(val) ? prev.filter((item) => item !== val) : [...prev, val]))
   }
 
   const clearAllFilters = () => {
@@ -624,15 +551,13 @@ export default function ShopClient({
     map['price-above-2000'] = poolForCounts.filter((p) => p.priceNum >= 2000).length
 
     // Fabric
-    ;['Cotton', 'Cotton blend', 'Polyester', 'French terry', 'Fleece'].forEach(
-      (fb) => {
-        map[`fabric-${fb}`] = poolForCounts.filter(
-          (p) =>
-            p.fabric?.toLowerCase() === fb.toLowerCase() ||
-            p.material?.toLowerCase() === fb.toLowerCase()
-        ).length
-      }
-    )
+    ;['Cotton', 'Cotton blend', 'Polyester', 'French terry', 'Fleece'].forEach((fb) => {
+      map[`fabric-${fb}`] = poolForCounts.filter(
+        (p) =>
+          p.fabric?.toLowerCase() === fb.toLowerCase() ||
+          p.material?.toLowerCase() === fb.toLowerCase()
+      ).length
+    })
 
     // Material (Bottomwear)
     ;['Nylon-Cotton', 'Poly-Tricot', 'Taslan Nylon', 'Cotton', 'French terry', 'Fleece'].forEach(
@@ -811,14 +736,19 @@ export default function ShopClient({
               {isAllChecked && <Check className="h-3 w-3 stroke-[3]" />}
             </span>
             <span className="font-ui text-[13px] font-normal text-gray-900">All Garments</span>
-            <span className="ml-0.5 font-ui text-[12px] text-gray-400">({initialProducts.length})</span>
+            <span className="ml-0.5 font-ui text-[12px] text-gray-400">
+              ({initialProducts.length})
+            </span>
           </label>
 
           {SHOP_CATEGORIES.filter((cat) => cat.slug !== 'all').map((cat) => {
             const isChecked = filterCategories.includes(cat.slug)
             const count = counts[`cat-${cat.slug}`] ?? 0
             return (
-              <label key={cat.slug} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={cat.slug}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -882,7 +812,10 @@ export default function ShopClient({
             const isChecked = selectedColors.includes(name)
             const count = counts[`color-${name}`] ?? 0
             return (
-              <label key={name} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={name}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -911,7 +844,10 @@ export default function ShopClient({
             const isChecked = prices.includes(range)
             const count = counts[`price-${range}`] ?? 0
             return (
-              <label key={range} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={range}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -921,7 +857,9 @@ export default function ShopClient({
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
                   {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                 </span>
-                <span className="font-ui text-[13px] font-normal text-gray-900">{PRICE_LABELS[range]}</span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">
+                  {PRICE_LABELS[range]}
+                </span>
                 <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
               </label>
             )
@@ -936,7 +874,10 @@ export default function ShopClient({
             const isChecked = selectedFabrics.includes(fb)
             const count = counts[`fabric-${fb}`] ?? 0
             return (
-              <label key={fb} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={fb}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -960,7 +901,7 @@ export default function ShopClient({
         'Taslan Nylon',
         'Cotton',
         'French terry',
-        'Fleece',
+        'Fleece'
       ]
       content = (
         <div className="flex flex-col gap-2.5">
@@ -968,7 +909,10 @@ export default function ShopClient({
             const isChecked = selectedMaterials.includes(mat)
             const count = counts[`mat-${mat}`] ?? 0
             return (
-              <label key={mat} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={mat}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -993,7 +937,10 @@ export default function ShopClient({
             const isChecked = selectedSleeveLengths.includes(sl)
             const count = counts[`sleeve-${sl}`] ?? 0
             return (
-              <label key={sl} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={sl}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1018,7 +965,10 @@ export default function ShopClient({
             const isChecked = selectedNeckTypes.includes(nk)
             const count = counts[`neck-${nk}`] ?? 0
             return (
-              <label key={nk} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={nk}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1043,7 +993,10 @@ export default function ShopClient({
             const isChecked = selectedPatterns.includes(pt)
             const count = counts[`pat-${pt}`] ?? 0
             return (
-              <label key={pt} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={pt}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1068,7 +1021,10 @@ export default function ShopClient({
             const isChecked = selectedPrintStyles.includes(ps)
             const count = counts[`print-${ps}`] ?? 0
             return (
-              <label key={ps} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={ps}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1093,7 +1049,10 @@ export default function ShopClient({
             const isChecked = selectedTrimColors.includes(tc)
             const count = counts[`trim-${tc}`] ?? 0
             return (
-              <label key={tc} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={tc}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1118,7 +1077,10 @@ export default function ShopClient({
             const isChecked = selectedButtons.includes(btn)
             const count = counts[`btn-${btn}`] ?? 0
             return (
-              <label key={btn} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={btn}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1143,7 +1105,10 @@ export default function ShopClient({
             const isChecked = selectedLengths.includes(len)
             const count = counts[`len-${len}`] ?? 0
             return (
-              <label key={len} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={len}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1168,7 +1133,10 @@ export default function ShopClient({
             const isChecked = selectedClosures.includes(cl)
             const count = counts[`cl-${cl}`] ?? 0
             return (
-              <label key={cl} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={cl}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1193,7 +1161,10 @@ export default function ShopClient({
             const isChecked = selectedPockets.includes(pk)
             const count = counts[`pk-${pk}`] ?? 0
             return (
-              <label key={pk} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={pk}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1218,7 +1189,10 @@ export default function ShopClient({
             const isChecked = selectedUses.includes(u)
             const count = counts[`use-${u}`] ?? 0
             return (
-              <label key={u} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={u}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1243,7 +1217,10 @@ export default function ShopClient({
             const isChecked = selectedLegStyles.includes(ls)
             const count = counts[`leg-${ls}`] ?? 0
             return (
-              <label key={ls} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={ls}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1268,7 +1245,10 @@ export default function ShopClient({
             const isChecked = selectedRises.includes(rs)
             const count = counts[`rise-${rs}`] ?? 0
             return (
-              <label key={rs} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={rs}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1288,14 +1268,17 @@ export default function ShopClient({
     } else if (key === 'availability') {
       const availOptions = [
         { id: 'in-stock', label: 'In stock', count: counts['avail-in-stock'] ?? 0 },
-        { id: 'out-of-stock', label: 'Out of stock', count: counts['avail-out-of-stock'] ?? 0 },
+        { id: 'out-of-stock', label: 'Out of stock', count: counts['avail-out-of-stock'] ?? 0 }
       ]
       content = (
         <div className="flex flex-col gap-2.5">
           {availOptions.map(({ id, label, count }) => {
             const isChecked = selectedAvailability === id
             return (
-              <label key={id} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={id}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1320,7 +1303,10 @@ export default function ShopClient({
             const isChecked = selectedDiscount === pct
             const count = counts[`disc-${pct}`] ?? 0
             return (
-              <label key={pct} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={pct}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1330,7 +1316,9 @@ export default function ShopClient({
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-gray-300 bg-white text-white transition-colors peer-checked:border-black peer-checked:bg-black">
                   {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                 </span>
-                <span className="font-ui text-[13px] font-normal text-gray-900">{pct}% and above</span>
+                <span className="font-ui text-[13px] font-normal text-gray-900">
+                  {pct}% and above
+                </span>
                 <span className="ml-0.5 font-ui text-[12px] text-gray-400">({count})</span>
               </label>
             )
@@ -1340,14 +1328,17 @@ export default function ShopClient({
     } else if (key === 'rating') {
       const ratingOptions = [
         { val: 4, label: '4★ and above', count: counts['rate-4'] ?? 0 },
-        { val: 3, label: '3★ and above', count: counts['rate-3'] ?? 0 },
+        { val: 3, label: '3★ and above', count: counts['rate-3'] ?? 0 }
       ]
       content = (
         <div className="flex flex-col gap-2.5">
           {ratingOptions.map(({ val, label, count }) => {
             const isChecked = selectedRating === val
             return (
-              <label key={val} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={val}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1372,7 +1363,10 @@ export default function ShopClient({
             const isChecked = selectedCollections.includes(col)
             const count = counts[`col-${col}`] ?? 0
             return (
-              <label key={col} className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]">
+              <label
+                key={col}
+                className="relative flex cursor-pointer select-none items-center gap-2.5 text-[13px]"
+              >
                 <input
                   className="peer pointer-events-none absolute h-0 w-0 opacity-0"
                   type="checkbox"
@@ -1409,9 +1403,7 @@ export default function ShopClient({
           className="flex w-full cursor-pointer select-none items-center justify-between py-1 text-left"
           aria-expanded={isOpen}
         >
-          <span className="font-brand text-[13px] font-bold text-gray-900">
-            {titleText}
-          </span>
+          <span className="font-brand text-[13px] font-bold text-gray-900">{titleText}</span>
           {isOpen ? (
             <ChevronUp className="h-4 w-4 text-gray-700" />
           ) : (
@@ -1558,158 +1550,171 @@ export default function ShopClient({
       </div>
 
       {/* 5 & 6. Mobile Actions & Modals (Portaled to document.body to stick directly to device viewport) */}
-      {mounted && typeof document !== 'undefined' && createPortal(
-        <>
-          {/* Mobile Fixed Bottom Action Bar */}
-          <div className="fixed inset-x-0 bottom-0 z-[95] hidden h-[calc(54px+env(safe-area-inset-bottom,0px))] w-full border-t border-black/[0.08] bg-[rgba(255,255,255,0.94)] pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(0,0,0,0.05),0_-1px_3px_rgba(0,0,0,0.03)] [@media(max-width:768px)]:flex [@media(max-width:768px)]:items-stretch" aria-label="Mobile filter actions">
-            <button
-              type="button"
-              className="flex flex-1 cursor-pointer touch-manipulation select-none items-center justify-center gap-2 border-0 bg-transparent font-brand text-[12.5px] font-bold uppercase leading-[18.75px] tracking-[0.06em] text-store-ink [-webkit-tap-highlight-color:transparent] [transition:transform_0.12s_cubic-bezier(0.16,1,0.3,1),background-color_0.15s_ease] active:bg-black/[0.04]"
-              onClick={() => setSortSheetOpen(true)}
-            >
-              <ArrowUpDown className="h-4 w-4" />
-              <span>SORT</span>
-            </button>
-            <div className="h-[22px] w-px self-center bg-black/[0.08]" />
-            <button
-              type="button"
-              className="flex flex-1 cursor-pointer touch-manipulation select-none items-center justify-center gap-2 border-0 bg-transparent font-brand text-[12.5px] font-bold uppercase leading-[18.75px] tracking-[0.06em] text-store-ink [-webkit-tap-highlight-color:transparent] [transition:transform_0.12s_cubic-bezier(0.16,1,0.3,1),background-color_0.15s_ease] active:bg-black/[0.04]"
-              onClick={() => setDrawerOpen(true)}
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              <span>FILTER</span>
-              {activeFilterCount > 0 && (
-                <span className="ml-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-store-ink px-1 font-mono text-[10px] font-bold leading-[15px] text-white">{activeFilterCount}</span>
-              )}
-            </button>
-          </div>
-
-          {/* Mobile Sort Bottom Sheet */}
-          {sortSheetOpen && (
+      {mounted &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <>
+            {/* Mobile Fixed Bottom Action Bar */}
             <div
-              className="fixed inset-0 z-[99998] hidden bg-[rgba(0,0,0,0.55)] [animation:fadeInModalBackdrop_0.2s_ease] [@media(max-width:768px)]:block"
-              onClick={() => setSortSheetOpen(false)}
-              aria-hidden="true"
-            />
-          )}
-          <div
-            className={`fixed inset-x-0 bottom-0 z-[99999] hidden max-h-[80vh] overflow-y-auto rounded-t-2xl bg-store-paper shadow-[0_-4px_24px_rgba(0,0,0,0.18)] [transition:transform_0.25s_cubic-bezier(0.16,1,0.3,1),visibility_0.25s] [@media(max-width:768px)]:block ${sortSheetOpen ? 'visible pointer-events-auto [transform:translateY(0)]' : 'invisible pointer-events-none [transform:translateY(100%)]'}`}
-            aria-hidden={!sortSheetOpen}
-            role="dialog"
-            aria-label="Sort options"
-          >
-            <div className="flex items-center justify-between border-b border-[#f3f4f6] px-5 py-4">
-              <span className="font-brand text-[13.5px] font-bold leading-[20.25px] tracking-[0.04em] text-[#282c3f]">SORT BY</span>
+              className="shop-mobile-bottom-bar hidden [@media(max-width:768px)]:flex items-center"
+              aria-label="Mobile filter actions"
+            >
               <button
                 type="button"
-                className="flex cursor-pointer items-center justify-center border-0 bg-transparent p-1 text-[#878b94]"
-                onClick={() => setSortSheetOpen(false)}
-                aria-label="Close sort dialog"
+                className="shop-mobile-bar-btn flex flex-1 cursor-pointer touch-manipulation select-none items-center justify-center gap-2 border-0 bg-transparent font-brand text-[12.5px] font-bold uppercase leading-[18.75px] tracking-[0.06em] [-webkit-tap-highlight-color:transparent] active:scale-95 transition-transform"
+                onClick={() => setSortSheetOpen(true)}
               >
-                <X className="h-5 w-5" />
+                <ArrowUpDown className="h-4 w-4" />
+                <span>SORT</span>
+              </button>
+              <div className="shop-mobile-bar-divider h-[22px] w-px self-center" />
+              <button
+                type="button"
+                className="shop-mobile-bar-btn flex flex-1 cursor-pointer touch-manipulation select-none items-center justify-center gap-2 border-0 bg-transparent font-brand text-[12.5px] font-bold uppercase leading-[18.75px] tracking-[0.06em] [-webkit-tap-highlight-color:transparent] active:scale-95 transition-transform"
+                onClick={() => setDrawerOpen(true)}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                <span>FILTER</span>
+                {activeFilterCount > 0 && (
+                  <span className="ml-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-white px-1 font-mono text-[10px] font-bold leading-[15px] text-black">
+                    {activeFilterCount}
+                  </span>
+                )}
               </button>
             </div>
-            <div className="flex flex-col pb-5 pt-1.5">
-              {SORT_OPTIONS.map((opt) => (
-                <label
-                  key={opt.mode}
-                  className={`flex cursor-pointer items-center gap-3.5 px-5 py-3.5 [transition:background_0.15s_ease] ${sort === opt.mode ? 'bg-[#fafafb]' : ''}`}
-                  onClick={() => {
-                    setSort(opt.mode)
-                    setSortSheetOpen(false)
-                  }}
-                >
-                  <span className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 ${sort === opt.mode ? 'border-[#ff3f6c]' : 'border-[#d4d5d9]'}`}>
-                    {sort === opt.mode && <span className="h-2 w-2 rounded-full bg-[#ff3f6c]" />}
-                  </span>
-                  <span className="font-ui text-[13.5px] font-medium leading-[20.25px] text-[#282c3f]">{opt.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
 
-          {/* Mobile Filter Modal (2-Column Split Body) */}
-          <div
-            className={`fixed inset-0 z-[99999] hidden h-[100dvh] w-screen flex-col overflow-hidden bg-white [transition:transform_0.28s_cubic-bezier(0.16,1,0.3,1),visibility_0.28s] [@media(max-width:768px)]:flex ${drawerOpen ? 'visible pointer-events-auto [transform:translateY(0)]' : 'invisible pointer-events-none [transform:translateY(100%)]'}`}
-            aria-hidden={!drawerOpen}
-            role="dialog"
-            aria-label="Filter catalog"
-          >
-            {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-store-line bg-store-paper px-5 py-4">
-              <span className="font-brand text-[15px] font-bold uppercase leading-[22.5px] tracking-[0.05em] text-[#282c3f]">FILTERS</span>
-              <div className="flex items-center gap-3">
-                {activeFilterCount > 0 && (
-                  <button
-                    type="button"
-                    className="cursor-pointer border-0 bg-transparent px-2 py-1 font-brand text-[12px] font-bold leading-[18px] tracking-[0.04em] text-[#ff3f6c]"
-                    onClick={clearAllFilters}
-                  >
-                    CLEAR ALL
-                  </button>
-                )}
+            {/* Mobile Sort Bottom Sheet */}
+            {sortSheetOpen && (
+              <div
+                className="fixed inset-0 z-[99998] hidden bg-[rgba(0,0,0,0.55)] [animation:fadeInModalBackdrop_0.2s_ease] [@media(max-width:768px)]:block"
+                onClick={() => setSortSheetOpen(false)}
+                aria-hidden="true"
+              />
+            )}
+            <div
+              className={`fixed inset-x-0 bottom-0 z-[99999] hidden max-h-[80vh] overflow-y-auto rounded-t-2xl bg-store-paper shadow-[0_-4px_24px_rgba(0,0,0,0.18)] [transition:transform_0.25s_cubic-bezier(0.16,1,0.3,1),visibility_0.25s] [@media(max-width:768px)]:block ${sortSheetOpen ? 'visible pointer-events-auto [transform:translateY(0)]' : 'invisible pointer-events-none [transform:translateY(100%)]'}`}
+              aria-hidden={!sortSheetOpen}
+              role="dialog"
+              aria-label="Sort options"
+            >
+              <div className="flex items-center justify-between border-b border-[#f3f4f6] px-5 py-4">
+                <span className="font-brand text-[13.5px] font-bold leading-[20.25px] tracking-[0.04em] text-[#282c3f]">
+                  SORT BY
+                </span>
                 <button
                   type="button"
-                  className="flex cursor-pointer items-center justify-center rounded-[4px] border-0 bg-transparent p-1 text-[#555964] [transition:color_0.15s,background-color_0.15s] hover:bg-[#f3f4f6] hover:text-[#111827]"
-                  onClick={() => setDrawerOpen(false)}
-                  aria-label="Close filters"
+                  className="flex cursor-pointer items-center justify-center border-0 bg-transparent p-1 text-[#878b94]"
+                  onClick={() => setSortSheetOpen(false)}
+                  aria-label="Close sort dialog"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
+              <div className="flex flex-col pb-5 pt-1.5">
+                {SORT_OPTIONS.map((opt) => (
+                  <label
+                    key={opt.mode}
+                    className={`flex cursor-pointer items-center gap-3.5 px-5 py-3.5 [transition:background_0.15s_ease] ${sort === opt.mode ? 'bg-[#fafafb]' : ''}`}
+                    onClick={() => {
+                      setSort(opt.mode)
+                      setSortSheetOpen(false)
+                    }}
+                  >
+                    <span
+                      className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 ${sort === opt.mode ? 'border-[#ff3f6c]' : 'border-[#d4d5d9]'}`}
+                    >
+                      {sort === opt.mode && <span className="h-2 w-2 rounded-full bg-[#ff3f6c]" />}
+                    </span>
+                    <span className="font-ui text-[13.5px] font-medium leading-[20.25px] text-[#282c3f]">
+                      {opt.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
 
-            {/* 2-Column Body */}
-            <div className="flex flex-1 overflow-hidden bg-white">
-              {/* Left Column: Facet Tabs for Active Category */}
-              <div className="flex w-[38%] min-w-[125px] max-w-[155px] shrink-0 flex-col overflow-y-auto border-r border-[#eaeaec] bg-[#f5f5f6] [-webkit-overflow-scrolling:touch]">
-                {activeFacets.map((facetKey) => {
-                  const hasSelection = checkFacetHasSelection(facetKey)
-                  return (
+            {/* Mobile Filter Modal (2-Column Split Body) */}
+            <div
+              className={`fixed inset-0 z-[99999] hidden h-[100dvh] w-screen flex-col overflow-hidden bg-white [transition:transform_0.28s_cubic-bezier(0.16,1,0.3,1),visibility_0.28s] [@media(max-width:768px)]:flex ${drawerOpen ? 'visible pointer-events-auto [transform:translateY(0)]' : 'invisible pointer-events-none [transform:translateY(100%)]'}`}
+              aria-hidden={!drawerOpen}
+              role="dialog"
+              aria-label="Filter catalog"
+            >
+              {/* Header */}
+              <div className="flex shrink-0 items-center justify-between border-b border-store-line bg-store-paper px-5 py-4">
+                <span className="font-brand text-[15px] font-bold uppercase leading-[22.5px] tracking-[0.05em] text-[#282c3f]">
+                  FILTERS
+                </span>
+                <div className="flex items-center gap-3">
+                  {activeFilterCount > 0 && (
                     <button
-                      key={facetKey}
                       type="button"
-                      className={`relative flex w-full cursor-pointer items-center justify-between border-0 border-b border-[#eaeaec] px-3.5 py-4 text-left font-ui text-[13.5px] leading-[20.25px] text-[#282c3f] [transition:background_0.15s_ease,font-weight_0.15s_ease] ${activeMobileTab === facetKey ? '-mr-px border-r border-r-white bg-white font-bold' : 'bg-[#f5f5f6] font-medium'}`}
-                      onClick={() => setActiveMobileTab(facetKey)}
+                      className="cursor-pointer border-0 bg-transparent px-2 py-1 font-brand text-[12px] font-bold leading-[18px] tracking-[0.04em] text-[#ff3f6c]"
+                      onClick={clearAllFilters}
                     >
-                      <span className="flex-1 leading-[1.3]">
-                        {FACET_TITLES[facetKey]}
-                      </span>
-                      {hasSelection && <span className="ml-1.5 h-[7px] w-[7px] shrink-0 rounded-full bg-[#ff3f6c]" />}
+                      CLEAR ALL
                     </button>
-                  )
-                })}
-              </div>
-
-              {/* Right Column: Facet Options for Active Tab */}
-              <div className="flex-1 overflow-y-auto bg-white [-webkit-overflow-scrolling:touch]">
-                <div className="px-4 py-3">
-                  {renderFacetBlock(activeMobileTab, true)}
+                  )}
+                  <button
+                    type="button"
+                    className="flex cursor-pointer items-center justify-center rounded-[4px] border-0 bg-transparent p-1 text-[#555964] [transition:color_0.15s,background-color_0.15s] hover:bg-[#f3f4f6] hover:text-[#111827]"
+                    onClick={() => setDrawerOpen(false)}
+                    aria-label="Close filters"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
               </div>
-            </div>
 
-            {/* Bottom Action Footer */}
-            <div className="flex h-[52px] shrink-0 border-t border-store-line bg-[rgba(248,247,243,0.97)]">
-              <button
-                type="button"
-                className="flex flex-1 cursor-pointer items-center justify-center rounded-[2px] border-0 border-r border-[#eaeaec] bg-store-ink font-brand text-[13px] font-bold uppercase leading-[19.5px] tracking-[0.05em] text-white [transition:background_0.15s_ease] active:bg-[#f5f5f6]"
-                onClick={() => setDrawerOpen(false)}
-              >
-                CLOSE
-              </button>
-              <button
-                type="button"
-                className="flex flex-1 cursor-pointer items-center justify-center rounded-[2px] border-0 bg-store-ink font-brand text-[13px] font-bold uppercase leading-[19.5px] tracking-[0.05em] text-white [transition:background_0.15s_ease] active:bg-[#fff5f7]"
-                onClick={() => setDrawerOpen(false)}
-              >
-                APPLY {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
-              </button>
+              {/* 2-Column Body */}
+              <div className="flex flex-1 overflow-hidden bg-white">
+                {/* Left Column: Facet Tabs for Active Category */}
+                <div className="flex w-[38%] min-w-[125px] max-w-[155px] shrink-0 flex-col overflow-y-auto border-r border-[#eaeaec] bg-[#f5f5f6] [-webkit-overflow-scrolling:touch]">
+                  {activeFacets.map((facetKey) => {
+                    const hasSelection = checkFacetHasSelection(facetKey)
+                    return (
+                      <button
+                        key={facetKey}
+                        type="button"
+                        className={`relative flex w-full cursor-pointer items-center justify-between border-0 border-b border-[#eaeaec] px-3.5 py-4 text-left font-ui text-[13.5px] leading-[20.25px] text-[#282c3f] [transition:background_0.15s_ease,font-weight_0.15s_ease] ${activeMobileTab === facetKey ? '-mr-px border-r border-r-white bg-white font-bold' : 'bg-[#f5f5f6] font-medium'}`}
+                        onClick={() => setActiveMobileTab(facetKey)}
+                      >
+                        <span className="flex-1 leading-[1.3]">{FACET_TITLES[facetKey]}</span>
+                        {hasSelection && (
+                          <span className="ml-1.5 h-[7px] w-[7px] shrink-0 rounded-full bg-[#ff3f6c]" />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Right Column: Facet Options for Active Tab */}
+                <div className="flex-1 overflow-y-auto bg-white [-webkit-overflow-scrolling:touch]">
+                  <div className="px-4 py-3">{renderFacetBlock(activeMobileTab, true)}</div>
+                </div>
+              </div>
+
+              {/* Bottom Action Footer */}
+              <div className="flex h-[52px] shrink-0 border-t border-store-line bg-[rgba(248,247,243,0.97)]">
+                <button
+                  type="button"
+                  className="flex flex-1 cursor-pointer items-center justify-center rounded-[2px] border-0 border-r border-[#eaeaec] bg-store-ink font-brand text-[13px] font-bold uppercase leading-[19.5px] tracking-[0.05em] text-white [transition:background_0.15s_ease] active:bg-[#f5f5f6]"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  CLOSE
+                </button>
+                <button
+                  type="button"
+                  className="flex flex-1 cursor-pointer items-center justify-center rounded-[2px] border-0 bg-store-ink font-brand text-[13px] font-bold uppercase leading-[19.5px] tracking-[0.05em] text-white [transition:background_0.15s_ease] active:bg-[#fff5f7]"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  APPLY {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
+                </button>
+              </div>
             </div>
-          </div>
-        </>,
-        document.body
-      )}
+          </>,
+          document.body
+        )}
     </div>
   )
 }

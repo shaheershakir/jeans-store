@@ -157,18 +157,6 @@
   animation: pageFadeIn var(--dur-slow) var(--ease-out) both;
 }
 
-@utility reveal-item {
-  opacity: 0;
-  transform: translateY(14px);
-  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
-  transition-delay: calc(var(--reveal-index, 0) * 50ms);
-
-  &[data-revealed='true'] {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @utility tnum {
   font-variant-numeric: tabular-nums;
 }
@@ -194,20 +182,36 @@
 }
 
 @keyframes heart-pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes heartPop {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.25); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes popoverBackdropIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes authEnter {
@@ -255,19 +259,115 @@
   animation: authEnter 0.45s cubic-bezier(0.23, 1, 0.32, 1) 0.12s both;
 }
 
+@keyframes authSlideProgress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@utility animate-auth-progress {
+  animation: authSlideProgress 10s linear forwards;
+  transform-origin: left;
+}
+
+@keyframes formErrorShake {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@utility animate-error-shake {
+  animation: formErrorShake 380ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes tgShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@utility skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: #edeae4;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(250, 249, 246, 0.65) 50%,
+      transparent 100%
+    );
+    animation: tgShimmer 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+}
+
+@utility shop-mobile-bottom-bar {
+  position: fixed;
+  bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: auto;
+  min-width: 220px;
+  height: 44px;
+  padding: 0 8px;
+  border-radius: 9999px;
+  background: rgba(24, 25, 27, 0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  z-index: 80;
+}
+
+@utility shop-mobile-bar-btn {
+  color: #ffffff;
+}
+
+@utility shop-mobile-bar-divider {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
 /* ── Accessibility: Reduced Motion ───────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   .page-transition-wrapper,
   .animate-auth-enter,
   .animate-auth-stagger-1,
-  .animate-auth-stagger-2 {
+  .animate-auth-stagger-2,
+  .animate-auth-progress,
+  .animate-error-shake {
     animation: none !important;
   }
-  .reveal-item {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
+  .animate-auth-progress {
+    transform: scaleX(1) !important;
+  }
+  .skeleton-shimmer::after {
+    animation: none !important;
   }
   button:active:not(:disabled),
   .clickable:active,

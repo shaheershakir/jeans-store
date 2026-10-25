@@ -1,8 +1,11 @@
-import { z } from 'zod'
+import { z } from "zod";
 
 export const orderItemSchema = z.object({
   id: z.string().uuid(),
-  variantId: z.union([z.number().int().positive(), z.null()]).optional().transform((v) => v ?? undefined),
+  variantId: z
+    .union([z.number().int().positive(), z.null()])
+    .optional()
+    .transform((v) => v ?? undefined),
   name: z.string().optional(),
 
   size: z.string().min(1),
@@ -19,18 +22,19 @@ export const orderItemSchema = z.object({
   taxableAmount: z.number().int().nonnegative().optional(),
   variantLabel: z.string().optional(),
   categoryId: z.number().int().positive().optional(),
-  isFreeSize: z.boolean().optional()
-})
+  isFreeSize: z.boolean().optional(),
+});
 
 export const createOrderSchema = z.object({
   userId: z.number().int().positive().nullable().optional(),
   orderNumber: z.string().min(1),
-  store: z.string().default('teesgarage'),
+  store: z.string().default("teesgarage"),
   customerName: z.string().min(1),
   customerPhone: z.string().min(10),
   customerEmail: z.string().email(),
   address: z.string().min(1),
   apartment: z.string().optional(),
+  landmark: z.string().max(255).optional(),
   city: z.string().min(1),
   state: z.string().min(1),
   pincode: z.string().min(5),
@@ -45,57 +49,71 @@ export const createOrderSchema = z.object({
   total: z.number().nonnegative().optional(),
   weightGrams: z.number().nonnegative().optional(),
   couponCode: z.string().trim().min(1).max(60).optional(),
-  handoffType: z.enum(['whatsapp', 'email', 'razorpay', 'cod']).default('whatsapp'),
+  handoffType: z
+    .enum(["whatsapp", "email", "razorpay", "cod"])
+    .default("whatsapp"),
   status: z.string().optional(),
   paymentMethod: z.string().optional(),
   paymentId: z.string().optional(),
   razorpayOrderId: z.string().optional(),
   razorpayPaymentId: z.string().optional(),
-  razorpaySignature: z.string().optional()
-})
+  razorpaySignature: z.string().optional(),
+});
 
-export type CreateOrder = z.infer<typeof createOrderSchema>
+export type CreateOrder = z.infer<typeof createOrderSchema>;
 
 export type CalculatedOrder = Omit<
   CreateOrder,
-  'items' | 'subtotal' | 'discountTotal' | 'shipping' | 'taxTotal' | 'total'
+  "items" | "subtotal" | "discountTotal" | "shipping" | "taxTotal" | "total"
 > & {
-  userId?: number | null
+  userId?: number | null;
   items: Array<
     z.infer<typeof orderItemSchema> & {
-      variantId: number
-      name: string
-      price: string
-      priceNum: number
-      img?: string
-      lineTotal: number
-      taxRate: number
-      taxAmount: number
-      discountAmount: number
-      taxableAmount: number
-      variantLabel: string
-      isFreeSize: boolean
+      variantId: number;
+      name: string;
+      price: string;
+      priceNum: number;
+      img?: string;
+      lineTotal: number;
+      taxRate: number;
+      taxAmount: number;
+      discountAmount: number;
+      taxableAmount: number;
+      variantLabel: string;
+      isFreeSize: boolean;
     }
-  >
-  subtotal: number
-  discountTotal: number
-  shipping: number
-  taxTotal: number
-  total: number
-  weightGrams?: number
-}
+  >;
+  subtotal: number;
+  discountTotal: number;
+  shipping: number;
+  taxTotal: number;
+  total: number;
+  weightGrams?: number;
+};
 
 export interface Order extends CreateOrder {
-  id: number
-  userId?: number | null
-  status: string
-  paymentStatus: 'Pending' | 'Paid' | 'Failed' | 'Refunded'
-  carrier: string | null
-  trackingNumber: string | null
-  shippedAt: Date | null
-  deliveredAt: Date | null
-  adminNotes: Array<{ id: string; text: string; at: string; by: string; internal: boolean }>
-  events: Array<{ id: string; status: string; note: string; at: string; by: string }>
-  createdAt: Date
-  updatedAt: Date
+  id: number;
+  userId?: number | null;
+  status: string;
+  paymentStatus: "Pending" | "Paid" | "Failed" | "Refunded";
+  carrier: string | null;
+  trackingNumber: string | null;
+  shippedAt: Date | null;
+  deliveredAt: Date | null;
+  adminNotes: Array<{
+    id: string;
+    text: string;
+    at: string;
+    by: string;
+    internal: boolean;
+  }>;
+  events: Array<{
+    id: string;
+    status: string;
+    note: string;
+    at: string;
+    by: string;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
 }

@@ -5,20 +5,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { addDays, format, isValid } from 'date-fns'
-import {
-  AlertCircle,
-  ArrowRight,
-  Check,
-  Copy,
-  Heart,
-  Loader2,
-  MapPin,
-  Truck
-} from 'lucide-react'
+import { AlertCircle, ArrowRight, Check, Copy, Heart, MapPin, Truck } from 'lucide-react'
 import { PRODUCTS } from '@/lib/constants'
 import { formatPrice } from '@/lib/utils'
 import { getProductUrl } from '@/lib/products'
 import { useAuthStore, useFavoriteStore, useUIStore } from '@/lib/store'
+import { OrderConfirmationSkeleton } from '@/components/skeletons/StorefrontSkeletons'
 
 interface ConfirmationItem {
   id: string
@@ -108,11 +100,7 @@ const RECOMMENDATIONS = [
 
 const STEPS = ['Order placed', 'Shipped', 'Out for delivery', 'Delivered']
 
-function RecommendationCard({
-  item
-}: {
-  item: (typeof RECOMMENDATIONS)[number]
-}) {
+function RecommendationCard({ item }: { item: (typeof RECOMMENDATIONS)[number] }) {
   const [mounted, setMounted] = useState(false)
   const [activeSwatch, setActiveSwatch] = useState(0)
   const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite)
@@ -121,11 +109,16 @@ function RecommendationCard({
   useEffect(() => setMounted(true), [])
 
   const product = useMemo(
-    () => PRODUCTS.find((entry) => String(entry.id) === String(item.productId) || entry.name === item.name),
+    () =>
+      PRODUCTS.find(
+        (entry) => String(entry.id) === String(item.productId) || entry.name === item.name
+      ),
     [item.productId, item.name]
   )
   const favoriteId = product?.id
-  const isFavorite = useFavoriteStore((state) => (favoriteId ? state.isFavorite(favoriteId) : false))
+  const isFavorite = useFavoriteStore((state) =>
+    favoriteId ? state.isFavorite(favoriteId) : false
+  )
   const href = product ? getProductUrl(product) : '/shop'
   const saved = mounted && isFavorite
   const imageSrc = product?.img || item.img
@@ -152,7 +145,9 @@ function RecommendationCard({
             toggleFavorite(favoriteId)
             showToast(saved ? 'Removed from favorites' : `Saved ${item.name} to favorites`)
           }}
-          aria-label={saved ? `Remove ${item.name} from favorites` : `Add ${item.name} to favorites`}
+          aria-label={
+            saved ? `Remove ${item.name} from favorites` : `Add ${item.name} to favorites`
+          }
         >
           <Heart
             className="h-[17px] w-[17px]"
@@ -396,12 +391,7 @@ function OrderConfirmationContent() {
   )
 
   const addressLine = order
-    ? [
-        order.address,
-        order.apartment,
-        order.city,
-        order.pincode
-      ]
+    ? [order.address, order.apartment, order.city, order.pincode]
         .map((part) => part?.trim())
         .filter(Boolean)
         .join(', ')
@@ -417,15 +407,14 @@ function OrderConfirmationContent() {
     }
   }
 
+  if (loading && !order) {
+    return <OrderConfirmationSkeleton />
+  }
+
   return (
     <main className="min-h-screen bg-[#faf9f6] pb-16 pt-7 font-ui text-[#111] lg:pb-20">
       <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8">
-        {loading && !order ? (
-          <div className="mx-auto flex min-h-[45vh] max-w-[600px] flex-col items-center justify-center gap-4 px-4 text-center">
-            <Loader2 className="h-9 w-9 animate-spin text-[#111]" />
-            <p className="text-[15px] font-medium text-[#6b7280]">Loading order details...</p>
-          </div>
-        ) : !order ? (
+        {!order ? (
           <OrderUnavailableState
             orderNumber={orderNumberParam}
             message={errorMessage || undefined}
@@ -445,8 +434,8 @@ function OrderConfirmationContent() {
                     Order placed successfully!
                   </h1>
                   <p className="mt-5 max-w-[560px] text-[15px] leading-[1.55] text-[#6b7280] sm:text-[16px]">
-                    Thank you for shopping with TEESGARAGE. We&apos;ve received your order and
-                    will notify you once it&apos;s shipped.
+                    Thank you for shopping with TEESGARAGE. We&apos;ve received your order and will
+                    notify you once it&apos;s shipped.
                   </p>
 
                   <div className="mt-3 flex flex-wrap gap-[19px]">
@@ -594,9 +583,7 @@ function OrderConfirmationContent() {
 
                 <div className="mt-7 flex flex-col gap-5">
                   {pricedItems.map((item, index) => {
-                    const variant = [item.color, item.size]
-                      .filter(Boolean)
-                      .join(' / ')
+                    const variant = [item.color, item.size].filter(Boolean).join(' / ')
 
                     return (
                       <article key={`${item.id}-${item.size}-${index}`} className="flex gap-[22px]">
@@ -689,7 +676,11 @@ function OrderConfirmationContent() {
               {/* Shipping address */}
               <section className="rounded-[10px] border border-[#e7e5df] bg-white px-6 pb-5 pt-6 sm:px-7">
                 <div className="flex items-center gap-4">
-                  <MapPin className="h-5 w-5 shrink-0 text-[#111]" strokeWidth={1.7} aria-hidden="true" />
+                  <MapPin
+                    className="h-5 w-5 shrink-0 text-[#111]"
+                    strokeWidth={1.7}
+                    aria-hidden="true"
+                  />
                   <h2 className="text-[17px] font-bold leading-tight tracking-[-0.01em] text-[#111]">
                     Shipping to
                   </h2>
@@ -737,16 +728,7 @@ function OrderConfirmationContent() {
 
 export default function OrderConfirmationPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-[#faf9f6] pb-16 pt-7 font-ui text-[#111] lg:pb-20">
-          <div className="mx-auto flex min-h-[45vh] max-w-[600px] flex-col items-center justify-center gap-4 px-4 text-center">
-            <Loader2 className="h-9 w-9 animate-spin text-[#111]" />
-            <p className="text-[15px] font-medium text-[#6b7280]">Loading order details...</p>
-          </div>
-        </main>
-      }
-    >
+    <Suspense fallback={<OrderConfirmationSkeleton />}>
       <OrderConfirmationContent />
     </Suspense>
   )
