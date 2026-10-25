@@ -1,5 +1,10 @@
-import { redirect } from 'next/navigation'
+import WishlistContent from './WishlistContent'
+
+export const metadata = {
+  title: 'My Wishlist — TEESGARAGE',
+  description: 'Items you love, all in one place.'
+}
 
 export default function WishlistPage() {
-  redirect('/bookmark')
+  return <WishlistContent />
 }

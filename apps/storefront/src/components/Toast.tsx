@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { Check, ShoppingBag, X } from 'lucide-react'
 import { useUIStore, useCartStore } from '@/lib/store'
 import { getAvailableProductSizes, getProductSizeOptions } from '@/lib/products'
 import { trackEvent } from '@/lib/analytics'
 
 export default function Toast() {
+  const router = useRouter()
   const toast = useUIStore((state) => state.toast)
   const hideToast = useUIStore((state) => state.hideToast)
   const sizePrompt = useUIStore((state) => state.sizePrompt)
@@ -132,7 +134,11 @@ export default function Toast() {
           className="toast-view-bag-btn"
           onClick={() => {
             hideToast()
-            openOverlay('cart')
+            if (typeof window !== 'undefined' && window.innerWidth < 768) {
+              router.push('/bag')
+            } else {
+              openOverlay('cart')
+            }
           }}
         >
           View Bag

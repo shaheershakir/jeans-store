@@ -6,7 +6,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Bookmark,
   Heart,
   ShoppingBag,
   MapPin,
@@ -271,7 +270,7 @@ export default function ProductDetail({ product }: { product: Product }) {
     setTimeout(() => setFavAnimate(false), 400)
 
     const nextState = !isFavorite
-    showToast(nextState ? `Saved ${product.name} to bookmarks` : 'Removed from bookmarks')
+    showToast(nextState ? `Saved ${product.name} to wishlist` : 'Removed from wishlist')
 
     if (nextState) {
       trackEvent('product_favorited', {
@@ -612,23 +611,21 @@ export default function ProductDetail({ product }: { product: Product }) {
           {/* Action CTAs */}
           <div id="pdp-main-actions" data-pdp-actions className="flex flex-col gap-3 mb-8">
             <div className="flex items-center gap-3">
-              {/* Redesigned Desktop Bookmark Button */}
+              {/* Wishlist Heart Button */}
               <button
                 type="button"
                 onClick={handleFavoriteClick}
-                className={`group relative w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 touch-manipulation cursor-pointer transition-all duration-200 active:scale-95 ${
-                  mounted && isFavorite
-                    ? 'border-zinc-900 bg-zinc-900 text-white shadow-2xs'
-                    : 'border-zinc-200 bg-white text-zinc-800 hover:border-black hover:bg-zinc-50'
-                } ${favAnimate ? 'scale-105' : ''}`}
-                aria-label={isFavorite ? 'Remove from bookmarks' : 'Save to bookmarks'}
-                title={isFavorite ? 'Remove from bookmarks' : 'Save to bookmarks'}
+                className={`w-12 h-12 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-gray-900 hover:border-gray-400 transition-colors shrink-0 touch-manipulation cursor-pointer active:scale-95 ${
+                  favAnimate ? 'scale-110' : ''
+                }`}
+                aria-label={isFavorite ? 'Remove from wishlist' : 'Add to wishlist'}
+                title={isFavorite ? 'Remove from wishlist' : 'Add to wishlist'}
               >
-                <Bookmark
-                  className="w-5 h-5 transition-transform duration-200 group-hover:scale-105"
-                  fill={mounted && isFavorite ? 'currentColor' : 'none'}
-                  stroke="currentColor"
-                  strokeWidth={1.8}
+                <Heart
+                  className="w-5 h-5 transition-transform"
+                  fill={mounted && isFavorite ? '#e11d48' : 'none'}
+                  stroke={mounted && isFavorite ? '#e11d48' : 'currentColor'}
+                  strokeWidth={1.75}
                 />
               </button>
 

@@ -12,7 +12,6 @@ import {
   Pencil,
   Plus,
   ArrowRight,
-  Bookmark,
   ChevronRight,
   Settings,
   X
@@ -223,15 +222,15 @@ export default function ProfilePage() {
               <ChevronRight className="w-5 h-5 text-[#111111] stroke-[2] shrink-0" />
             </Link>
 
-            {/* 3. Bookmarks */}
+            {/* 3. Wishlist */}
             <Link
-              href="/bookmark"
+              href="/wishlist"
               className="flex items-center justify-between p-4.5 hover:bg-black/2 transition-colors"
             >
               <div className="flex items-center gap-4 min-w-0">
-                <Bookmark className="w-6 h-6 stroke-[1.75] text-[#111111] shrink-0" />
+                <Heart className="w-6 h-6 stroke-[1.75] text-[#111111] shrink-0" />
                 <div className="min-w-0">
-                  <h3 className="text-[15.5px] font-bold text-[#111111] leading-tight">Bookmarks</h3>
+                  <h3 className="text-[15.5px] font-bold text-[#111111] leading-tight">Wishlist</h3>
                   <p className="text-[13px] text-[#666666] mt-0.5 leading-tight">Your saved pieces</p>
                 </div>
               </div>
@@ -448,21 +447,21 @@ export default function ProfilePage() {
                 <ArrowRight className="w-4 h-4 text-[#888888] shrink-0 transition-transform group-hover:translate-x-0.5" />
               </Link>
 
-              {/* Card 2: Bookmarks */}
+              {/* Card 2: Wishlist */}
               <Link
-                href="/bookmark"
+                href="/favorites"
                 className="group rounded-[20px] bg-white border border-black/8 p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all duration-150 hover:shadow-[0_6px_20px_rgba(0,0,0,0.04)] hover:border-black/15"
               >
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-12 h-12 rounded-[14px] bg-[#FAF9F6] border border-black/6 flex items-center justify-center shrink-0 text-[#111111]">
-                    <Bookmark className="w-5 h-5 stroke-[1.8]" />
+                    <Heart className="w-5 h-5 stroke-[1.8]" />
                   </div>
                   <div className="min-w-0">
                     <h4 className="text-[14.5px] font-bold text-[#111111] tracking-tight leading-tight">
-                      Bookmarks
+                      Wishlist
                     </h4>
                     <p className="text-[12.5px] text-[#777777] mt-0.5 truncate">
-                      {favorites.length} saved {favorites.length === 1 ? 'item' : 'items'}
+                      12 saved items
                     </p>
                   </div>
                 </div>

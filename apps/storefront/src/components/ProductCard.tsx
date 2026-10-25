@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Bookmark, ShoppingBag, ArrowRight, Check } from 'lucide-react'
+import { Heart, ShoppingBag, ArrowRight, Check } from 'lucide-react'
 import type { Product } from '@/lib/constants'
 import { useCartStore, useUIStore, useFavoriteStore } from '@/lib/store'
 import { getAvailableProductSizes, getProductUrl, getProductSlug } from '@/lib/products'
@@ -203,7 +203,7 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
     setTimeout(() => setFavAnimate(false), 400)
 
     const nextState = !isFavorite
-    showToast(nextState ? `Saved ${product.name} to bookmarks` : `Removed from bookmarks`)
+    showToast(nextState ? `Saved ${product.name} to favorites` : `Removed from favorites`)
 
     if (nextState) {
       trackEvent('product_favorited', {
@@ -242,24 +242,26 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
     >
       {/* ── 1. Image Container with Badge, Heart & Indicator ── */}
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-neutral-100">
-        {/* Top-Left Circular Bookmark Button */}
+        {/* Top-Left Circular Favorite Button */}
         <button
           type="button"
           className={`absolute left-2 top-2 sm:left-2.5 sm:top-2.5 z-10 flex h-7.5 w-7.5 sm:h-9 sm:w-9 cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-white p-0 text-black shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition-transform duration-200 hover:scale-105 active:scale-95 ${
-            favAnimate ? 'scale-110' : ''
+            favAnimate ? 'animate-heart-pop' : ''
           }`}
           onClick={handleFavoriteClick}
           aria-label={
             mounted && isFavorite
-              ? `Remove ${product.name} from bookmarks`
-              : `Add ${product.name} to bookmarks`
+              ? `Remove ${product.name} from favorites`
+              : `Add ${product.name} to favorites`
           }
-          title={mounted && isFavorite ? 'Remove from bookmarks' : 'Add to bookmarks'}
+          title={mounted && isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         >
-          <Bookmark
-            className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-[transform,stroke,fill] duration-200"
-            fill={mounted && isFavorite ? '#111827' : 'none'}
-            stroke="#111827"
+          <Heart
+            className={`h-3.5 w-3.5 sm:h-4 sm:w-4 transition-[transform,stroke,fill] duration-200 ${
+              favAnimate ? 'animate-heart-pop-icon' : ''
+            }`}
+            fill={mounted && isFavorite ? '#ef4444' : 'none'}
+            stroke={mounted && isFavorite ? '#ef4444' : '#111827'}
             strokeWidth={mounted && isFavorite ? 2 : 1.75}
           />
         </button>

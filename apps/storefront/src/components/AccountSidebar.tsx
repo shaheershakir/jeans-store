@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  Bookmark,
+  CreditCard,
+  Heart,
   LogOut,
   MapPin,
   Package,
@@ -17,6 +18,7 @@ export type AccountTabId =
   | 'orders'
   | 'wishlist'
   | 'addresses'
+  | 'payments'
   | 'settings'
 
 export interface AccountSidebarProps {
@@ -27,8 +29,9 @@ export interface AccountSidebarProps {
 export const ACCOUNT_NAV_ITEMS = [
   { label: 'My Account', href: '/profile', Icon: User, id: 'account' as const },
   { label: 'Orders', href: '/orders', Icon: Package, id: 'orders' as const },
-  { label: 'Bookmarks', href: '/bookmark', Icon: Bookmark, id: 'wishlist' as const },
+  { label: 'Wishlist', href: '/wishlist', Icon: Heart, id: 'wishlist' as const },
   { label: 'Addresses', href: '/addresses', Icon: MapPin, id: 'addresses' as const },
+  { label: 'Payment Methods', href: '/settings', Icon: CreditCard, id: 'payments' as const },
   { label: 'Account Settings', href: '/settings', Icon: Settings, id: 'settings' as const },
 ]
 
@@ -44,7 +47,7 @@ export default function AccountSidebar({ activeTab, className = '' }: AccountSid
     (() => {
       if (!pathname) return 'account'
       if (pathname.startsWith('/orders')) return 'orders'
-      if (pathname.startsWith('/wishlist') || pathname.startsWith('/favorites') || pathname.startsWith('/bookmark')) return 'wishlist'
+      if (pathname.startsWith('/wishlist') || pathname.startsWith('/favorites')) return 'wishlist'
       if (pathname.startsWith('/addresses')) return 'addresses'
       if (pathname.startsWith('/settings')) return 'settings'
       if (pathname.startsWith('/profile')) return 'account'
@@ -73,16 +76,20 @@ export default function AccountSidebar({ activeTab, className = '' }: AccountSid
               href={href}
               scroll={false}
               prefetch={true}
-              className={`group flex items-center gap-3.5 px-4 py-3 rounded-[14px] text-[13.5px] transition-colors whitespace-nowrap w-full max-[860px]:w-auto shrink-0 ${
+              className={`group flex items-center gap-3.5 px-4 py-2.5 rounded-[10px] text-[13.5px] transition-colors whitespace-nowrap w-full max-[860px]:w-auto shrink-0 ${
                 isActive
-                  ? 'font-bold text-[#111111] bg-[#e8e6e1]'
+                  ? 'font-bold text-[#111111] bg-[#eae7df]'
                   : 'font-medium text-[#555555] hover:text-[#111111] hover:bg-black/4'
               }`}
               aria-current={isActive ? 'page' : undefined}
             >
               <Icon
                 className={`w-[18px] h-[18px] shrink-0 stroke-[1.8] transition-colors ${
-                  isActive ? 'text-[#111111]' : 'text-[#555555] group-hover:text-[#111111]'
+                  isActive
+                    ? id === 'wishlist'
+                      ? 'text-[#111111] fill-[#111111]'
+                      : 'text-[#111111]'
+                    : 'text-[#555555] group-hover:text-[#111111]'
                 }`}
                 aria-hidden="true"
               />

@@ -7,8 +7,7 @@ const RESERVED_SLUGS = new Set([
   'admin',
   'api',
   'auth',
-  'bookmark',
-  'bookmarks',
+  'bag',
   'category',
   'checkout',
   'favorites',
@@ -20,8 +19,7 @@ const RESERVED_SLUGS = new Set([
   'profile',
   'register',
   'shop',
-  'wishlist',
-  'bag'
+  'wishlist'
 ])
 
 export async function generateStaticParams() {

@@ -9,7 +9,6 @@ import {
   MapPin,
   ArrowRight,
   Plus,
-  Bookmark,
   Heart,
   Trash2,
   RefreshCw,
@@ -180,11 +179,11 @@ export default function CartDrawer() {
   const amountToFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal)
   const freeShippingPct = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100))
 
-  // Move item to bookmarks
+  // Move item to wishlist
   const handleMoveToWishlist = (item: CartItem) => {
     toggleFavorite(item.id)
     removeItem(item.id, item.size, item.variantId)
-    showToast(`Moved ${item.name} to bookmarks`)
+    showToast(`Moved ${item.name} to wishlist`)
   }
 
   // Clear bag
@@ -477,8 +476,8 @@ export default function CartDrawer() {
                         className="inline-flex h-7 cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-[6px] border border-[#e4e4e7] bg-white px-2.5 font-ui text-[11.5px] font-medium text-[#3f3f46] transition-all duration-150 ease-[ease] hover:border-[#111827] hover:text-[#111827] max-[640px]:hidden"
                         onClick={() => handleMoveToWishlist(item)}
                       >
-                        <Bookmark className="h-3.5 w-3.5" />
-                        <span>Move to bookmarks</span>
+                        <Heart className="h-3.5 w-3.5" />
+                        <span>Move to wishlist</span>
                       </button>
 
                       <button

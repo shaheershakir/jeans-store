@@ -30,16 +30,15 @@ export default function MobileTabBar({
   }, [])
 
   const count = mounted ? cartCount(items) : 0
-  const isCartOpen = overlay === 'cart'
+  const isBagActive = (pathname === '/bag' || pathname.startsWith('/bag')) && !isSearchOpen
 
   // Tab definitions
-  const isHomeActive = pathname === '/' && !isSearchOpen && !isCartOpen
-  const isSearchActive = (isSearchOpen || pathname.startsWith('/search')) && !isCartOpen
-  const isCartActive = isCartOpen
+  const isHomeActive = pathname === '/' && !isSearchOpen && !isBagActive
+  const isSearchActive = (isSearchOpen || pathname.startsWith('/search')) && !isBagActive
   const isProfileActive =
     (pathname.startsWith('/profile') || pathname.startsWith('/orders') || (pathname === '/login' && !isAuthenticated)) &&
     !isSearchOpen &&
-    !isCartOpen
+    !isBagActive
 
   const handleHomeClick = () => {
     if (pathname === '/') {
@@ -57,8 +56,11 @@ export default function MobileTabBar({
     }
   }
 
-  const handleCartClick = () => {
-    openOverlay('cart')
+  const handleBagClick = () => {
+    if (overlay) {
+      useUIStore.getState().closeOverlay()
+    }
+    router.push('/bag')
   }
 
   const handleProfileClick = () => {
@@ -137,19 +139,19 @@ export default function MobileTabBar({
           )}
         </button>
 
-        {/* Tab 3: Cart */}
+        {/* Tab 3: Bag */}
         <button
           type="button"
-          onClick={handleCartClick}
-          aria-label={`Cart with ${count} items`}
+          onClick={handleBagClick}
+          aria-label={`Bag with ${count} items`}
           className="relative flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-transform duration-100 ease-out select-none [-webkit-tap-highlight-color:transparent] touch-manipulation active:scale-[0.92]"
         >
           <div className="relative inline-flex items-center justify-center">
             <ShoppingBag
               className={`h-5 w-5 transition-colors duration-150 ${
-                isCartActive ? 'text-[#0c0e12]' : 'text-[#71717a]'
+                isBagActive ? 'text-[#0c0e12]' : 'text-[#71717a]'
               }`}
-              strokeWidth={isCartActive ? 2.3 : 1.8}
+              strokeWidth={isBagActive ? 2.3 : 1.8}
               aria-hidden="true"
             />
             {count > 0 && (
@@ -160,12 +162,12 @@ export default function MobileTabBar({
           </div>
           <span
             className={`text-[10px] tracking-tight leading-none transition-colors duration-150 ${
-              isCartActive ? 'font-bold text-[#0c0e12]' : 'font-medium text-[#71717a]'
+              isBagActive ? 'font-bold text-[#0c0e12]' : 'font-medium text-[#71717a]'
             }`}
           >
-            Cart
+            Bag
           </span>
-          {isCartActive && (
+          {isBagActive && (
             <span
               className="absolute bottom-1 h-0.5 w-3.5 rounded-full bg-[#0c0e12]"
               aria-hidden="true"

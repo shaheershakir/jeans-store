@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Bookmark, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Heart, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Product, HomepageConfig } from '@/lib/constants'
 import { useCartStore, useFilterStore, useFavoriteStore } from '@/lib/store'
 import { getProductUrl } from '@/lib/products'
@@ -404,16 +404,16 @@ export default function HomepageClient({ products }: HomepageClientProps) {
                     <button
                       type="button"
                       className={`absolute right-2.5 top-2.5 z-10 flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-xs backdrop-blur-xs transition-all duration-200 hover:scale-110 hover:bg-white ${
-                        favorited ? 'text-[#111111]' : 'text-[#555555]'
+                        favorited ? 'text-[#e11d48]' : 'text-[#222222]'
                       }`}
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
                         toggleFavorite(item.id)
                       }}
-                      aria-label={favorited ? `Remove ${item.name} from bookmarks` : `Add ${item.name} to bookmarks`}
+                      aria-label={favorited ? `Remove ${item.name} from wishlist` : `Add ${item.name} to wishlist`}
                     >
-                      <Bookmark
+                      <Heart
                         className="h-4 w-4"
                         fill={favorited ? 'currentColor' : 'none'}
                         stroke="currentColor"
@@ -561,16 +561,16 @@ export default function HomepageClient({ products }: HomepageClientProps) {
                     <button
                       type="button"
                       className={`absolute right-2.5 top-2.5 z-10 flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-xs backdrop-blur-xs transition-all duration-200 hover:scale-110 hover:bg-white ${
-                        favorited ? 'text-[#111111]' : 'text-[#555555]'
+                        favorited ? 'text-[#e11d48]' : 'text-[#222222]'
                       }`}
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
                         toggleFavorite(item.id)
                       }}
-                      aria-label={favorited ? `Remove ${item.name} from bookmarks` : `Add ${item.name} to bookmarks`}
+                      aria-label={favorited ? `Remove ${item.name} from wishlist` : `Add ${item.name} to wishlist`}
                     >
-                      <Bookmark
+                      <Heart
                         className="h-4 w-4"
                         fill={favorited ? 'currentColor' : 'none'}
                         stroke="currentColor"
