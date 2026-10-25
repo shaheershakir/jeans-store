@@ -1,5 +1,6 @@
+# syntax=docker/dockerfile:1
 # Multi-stage Dockerfile for Express API in Monorepo
-FROM node:20-alpine AS base
+FROM node:lts-alpine AS base
 WORKDIR /app
 
 # Stage 1: Install dependencies
@@ -31,6 +32,7 @@ COPY apps/api/package.json ./apps/api/
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/packages/db/dist ./packages/db/dist
 
 # Secure non-root user
 USER node

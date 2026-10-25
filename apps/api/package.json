@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc --noEmit && node scripts/build.mjs",
     "test": "tsx --import ./tests/setup-env.ts --test tests/*.test.ts",
     "smoke": "tsx scripts/smoke.ts",
     "db:generate": "drizzle-kit generate",
@@ -50,6 +50,7 @@
     "pino-pretty": "^13.1.2",
     "supertest": "^7.3.1",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "esbuild": "^0.25.12"
   }
 }

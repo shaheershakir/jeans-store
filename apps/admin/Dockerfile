@@ -1,5 +1,6 @@
+# syntax=docker/dockerfile:1
 # Multi-stage Dockerfile for Next.js Admin Dashboard in Monorepo
-FROM node:20-alpine AS base
+FROM node:lts-alpine AS base
 WORKDIR /app
 
 # Stage 1: Install dependencies
