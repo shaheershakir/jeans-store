@@ -58,6 +58,7 @@ export interface Product {
   inStock?: boolean
   collection?: string
   createdAt?: string
+  weight?: number
   variants?: ProductVariant[]
 }
 

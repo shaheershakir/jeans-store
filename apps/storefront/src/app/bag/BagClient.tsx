@@ -167,21 +167,35 @@ export default function BagClient() {
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return
-        // Fallback calculation:
+        // Fallback calculation based on weight & area from admin delivery rates:
         const sub = cartSubtotal(items)
         const isKerala =
           deliveryState.toLowerCase().includes('kerala') ||
           pincode.startsWith('67') ||
           pincode.startsWith('68') ||
           pincode.startsWith('69')
-        const shippingFee = sub >= 1999 ? 0 : isKerala ? 60 : 100
+        const totalWeight = items.reduce((sum, item) => {
+          const product = catalog.find((p) => String(p.id) === String(item.id))
+          const variantWeight = product?.variants?.find((v) =>
+            item.variantId ? v.id === item.variantId : String(v.size) === String(item.size)
+          )?.weight
+          return sum + (variantWeight ?? product?.weight ?? 350) * item.qty
+        }, 0)
+        // Admin rates: Kerala ₹60 (up to 500g) + ₹20/500g; Outside Kerala ₹90 (up to 500g) + ₹30/500g
+        const baseWeight = 500
+        const baseRate = isKerala ? 60 : 90
+        const addWeight = 500
+        const addRate = isKerala ? 20 : 30
+        const extraUnits = Math.ceil(Math.max(0, totalWeight - baseWeight) / addWeight)
+        const shippingFee = baseRate + extraUnits * addRate
         setQuote({
           subtotal: sub,
           shipping: shippingFee,
           total: sub + shippingFee,
+          weightGrams: totalWeight,
           deliveryEstimation: {
-            minDays: isKerala ? 2 : 4,
-            maxDays: isKerala ? 5 : 7,
+            minDays: isKerala ? 2 : 7,
+            maxDays: isKerala ? 5 : 14,
             zone: isKerala ? 'kerala' : 'restOfIndia'
           }
         })
@@ -193,9 +207,35 @@ export default function BagClient() {
     return () => controller.abort()
   }, [deliveryState, pincode, items])
 
+  const isKerala = useMemo(() => {
+    return (
+      deliveryState.toLowerCase().includes('kerala') ||
+      pincode.startsWith('67') ||
+      pincode.startsWith('68') ||
+      pincode.startsWith('69')
+    )
+  }, [deliveryState, pincode])
+
+  const totalWeight = useMemo(() => {
+    return items.reduce((sum, item) => {
+      const product = catalog.find((p) => String(p.id) === String(item.id))
+      const variantWeight = product?.variants?.find((v) =>
+        item.variantId ? v.id === item.variantId : String(v.size) === String(item.size)
+      )?.weight
+      return sum + (variantWeight ?? product?.weight ?? 350) * item.qty
+    }, 0)
+  }, [items, catalog])
+
+  const defaultShippingFee = useMemo(() => {
+    const baseRate = isKerala ? 60 : 90
+    const addRate = isKerala ? 20 : 30
+    const extraUnits = Math.ceil(Math.max(0, totalWeight - 500) / 500)
+    return baseRate + extraUnits * addRate
+  }, [isKerala, totalWeight])
+
   const count = cartCount(items)
   const subtotal = cartSubtotal(items)
-  const shipping = quote?.shipping ?? (pincode ? 60 : 0)
+  const shipping = quote?.shipping ?? defaultShippingFee
   const total = quote ? quote.total : subtotal + shipping
 
   // Check out-of-stock logic
@@ -478,8 +518,16 @@ export default function BagClient() {
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[11px] font-medium text-[#555555]">Estimated delivery</span>
-                      <strong className="text-[13px] font-bold text-[#111827]">2 to 5 business days</strong>
-                      <span className="text-[11px] text-[#71717a]">Dispatch from Kannur</span>
+                      <strong className="text-[13px] font-bold text-[#111827]">
+                        {quote?.deliveryEstimation?.minDays
+                          ? `${quote.deliveryEstimation.minDays} to ${quote.deliveryEstimation.maxDays} business days`
+                          : isKerala
+                            ? '2 to 5 business days'
+                            : '7 to 14 business days'}
+                      </strong>
+                      <span className="text-[11px] text-[#71717a]">
+                        Dispatch from Kannur · {isKerala ? 'Kerala rate' : 'Outside Kerala rate'} ({quote?.weightGrams ?? totalWeight}g)
+                      </span>
                     </div>
                   </div>
                 )}
@@ -497,8 +545,6 @@ export default function BagClient() {
                   <span>
                     {quoteLoading ? (
                       <span className="text-[11.5px] text-[#71717a]">Calculating…</span>
-                    ) : shipping === 0 ? (
-                      <strong className="font-bold text-[#059669]">FREE</strong>
                     ) : (
                       <span className="font-medium text-[#111827] tabular-nums">{formatPrice(shipping)}</span>
                     )}

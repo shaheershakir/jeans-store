@@ -61,8 +61,21 @@ export default function CartDrawer() {
     return state.includes('kerala') || pin.startsWith('67') || pin.startsWith('68') || pin.startsWith('69')
   }, [savedAddress])
 
-  // Fallback delivery fee
-  const fallbackShipping = subtotal >= 1999 ? 0 : isKerala ? 60 : 100
+  // Total estimated shipment weight (standard tee/bottomwear ~350g)
+  const totalWeight = useMemo(() => {
+    return items.reduce((sum, item) => sum + 350 * item.qty, 0)
+  }, [items])
+
+  // Weight-based paid delivery rates from admin:
+  // Kerala: base ₹60 (up to 500g) + ₹20 per additional 500g
+  // Outside Kerala: base ₹90 (up to 500g) + ₹30 per additional 500g
+  const fallbackShipping = useMemo(() => {
+    const baseRate = isKerala ? 60 : 90
+    const addRate = isKerala ? 20 : 30
+    const extraUnits = Math.ceil(Math.max(0, totalWeight - 500) / 500)
+    return baseRate + extraUnits * addRate
+  }, [isKerala, totalWeight])
+
   const shippingFee = hasSavedAddress
     ? (deliveryQuote?.shipping ?? fallbackShipping)
     : 0
@@ -330,8 +343,6 @@ export default function CartDrawer() {
                   <span>
                     {isQuoteLoading ? (
                       <span className="text-[11.5px] text-[#9ca3af]">Calculating…</span>
-                    ) : shippingFee === 0 ? (
-                      <strong className="font-bold text-[#059669]">FREE</strong>
                     ) : (
                       <span className="font-brand font-bold text-[#111827] tabular-nums">
                         {formatPrice(shippingFee)}
@@ -349,10 +360,10 @@ export default function CartDrawer() {
                   <span className="text-[17px] font-bold text-[#111827] tabular-nums">{formatPrice(totalWithShipping)}</span>
                 </div>
 
-                {/* Subline with delivery destination */}
-                <p className="mt-0.5 mb-3 font-ui text-[11px] text-[#059669] flex items-center gap-1">
-                  <span>Delivering to {savedAddress.pincode}</span>
-                  {shippingFee === 0 && <span className="font-medium">• Free delivery unlocked</span>}
+                {/* Subline with delivery destination and parcel weight */}
+                <p className="mt-0.5 mb-3 font-ui text-[11px] text-[#71717a] flex items-center justify-between">
+                  <span>Delivering to {savedAddress.pincode} ({isKerala ? 'Kerala' : 'Outside Kerala'})</span>
+                  <span>{totalWeight}g</span>
                 </p>
               </div>
             ) : (

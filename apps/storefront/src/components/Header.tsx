@@ -42,6 +42,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const logout = useAuthStore((state) => state.logout)
   const favorites = useFavoriteStore((state) => state.favorites)
+  const showToast = useUIStore((state) => state.showToast)
 
   const [mounted, setMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -156,6 +157,22 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
   const count = cartCount(items)
   const activeLinks = navLinks.filter((l) => l.isActive)
+
+  const userInitial = (user?.name?.trim()?.charAt(0) || user?.email?.trim()?.charAt(0) || 'U').toUpperCase()
+
+  const handleLogout = () => {
+    setUserMenuOpen(false)
+    logout()
+    showToast('Signed out successfully')
+    router.push('/login')
+  }
+
+  const handleDrawerLogout = () => {
+    setMenuOpen(false)
+    logout()
+    showToast('Signed out successfully')
+    router.push('/login')
+  }
 
   return (
     <>
@@ -272,18 +289,24 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 </div>
               </button>
 
-              {/* User Avatar Circle */}
+              {/* User Avatar Circle / Login Button */}
               {mounted && isAuthenticated && user ? (
                 <div className="relative" ref={userMenuRef}>
                   <button
                     type="button"
-                    className={HEADER_ACTION_BTN}
                     onClick={() => setUserMenuOpen((v) => !v)}
                     aria-expanded={userMenuOpen}
-                    aria-label={`Account menu for ${user.name}`}
+                    aria-label={`Account menu for ${user.name || 'Member'}`}
+                    className="group relative flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-full transition-transform duration-150 ease-out hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-[#31586f] focus-visible:outline-offset-2 select-none"
                   >
-                    <div className="grid h-[32px] w-[32px] place-items-center justify-center rounded-full border-[1.5px] border-[#1c1c1c] bg-transparent text-[13px] font-semibold leading-none text-[#111]">
-                      {user.name.charAt(0).toUpperCase()}
+                    <div
+                      className={`flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[#182126] text-[#faf9f6] text-[13px] font-bold tracking-tight shadow-[0_1px_3px_rgba(0,0,0,0.16)] transition-all duration-200 group-hover:bg-black group-hover:shadow-[0_2px_8px_rgba(0,0,0,0.2)] ${
+                        userMenuOpen
+                          ? 'ring-2 ring-[#182126] ring-offset-2 ring-offset-[#faf9f6]'
+                          : 'border border-black/10'
+                      }`}
+                    >
+                      <span>{userInitial}</span>
                     </div>
                   </button>
 
@@ -306,8 +329,8 @@ export default function Header({ initialNavItems }: HeaderProps) {
                       {/* Header Row: User Info & Close */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#e8e6e1] text-[20px] font-bold text-[#111111] [font-family:var(--font-brand)]">
-                            {user.name.charAt(0).toUpperCase()}
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#182126] text-[18px] font-bold text-white shadow-xs [font-family:var(--font-brand)]">
+                            {userInitial}
                           </div>
                           <div className="min-w-0">
                             <h3 className="m-0 truncate text-[16px] font-bold tracking-tight text-[#111111]">
@@ -419,10 +442,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                       {/* Sign Out Button */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setUserMenuOpen(false)
-                          logout()
-                        }}
+                        onClick={handleLogout}
                         className="group flex items-center justify-between w-full rounded-2xl bg-[#fff1f2] hover:bg-[#ffe4e6] p-3.5 transition-colors cursor-pointer border border-rose-100 text-[#e11d48]"
                       >
                         <div className="flex items-center gap-3">
@@ -438,10 +458,10 @@ export default function Header({ initialNavItems }: HeaderProps) {
               ) : (
                 <Link
                   href="/login"
-                  className="inline-flex h-[34px] items-center gap-1.5 rounded-full border border-[#182126]/20 bg-transparent px-3 text-[12px] font-semibold uppercase tracking-wider text-[#182126] transition-[background,transform] duration-150 hover:bg-black/5 active:scale-95 [-webkit-tap-highlight-color:transparent] touch-manipulation"
+                  className="inline-flex h-[36px] items-center gap-1.5 rounded-full bg-[#182126] px-3.5 text-[12.5px] font-semibold text-white shadow-2xs transition-all duration-150 hover:bg-black hover:shadow-xs active:scale-95 [-webkit-tap-highlight-color:transparent] touch-manipulation"
                   aria-label="Sign in to your account"
                 >
-                  <User className="h-3.5 w-3.5" strokeWidth={2} />
+                  <User className="h-3.5 w-3.5 stroke-[2.2]" />
                   <span>Login</span>
                 </Link>
               )}
@@ -530,12 +550,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                   <button
                     type="button"
                     className="flex min-h-[46px] cursor-pointer items-center justify-between border-0 bg-transparent py-2 pr-0 pl-0 text-left text-[14px] font-semibold uppercase leading-normal text-red-600 [font-family:var(--font-ui)]"
-                    onClick={() => {
-                      if (window.confirm(`Sign out from ${user.name}?`)) {
-                        logout()
-                        setMenuOpen(false)
-                      }
-                    }}
+                    onClick={handleDrawerLogout}
                   >
                     Sign Out ({user.name.split(' ')[0]})
                   </button>

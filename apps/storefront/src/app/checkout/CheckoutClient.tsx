@@ -2461,12 +2461,6 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                 ) : null}
               </div>
 
-              {deliveryQuote && shipping === 0 ? (
-                <div className="mt-3.5 rounded-lg bg-[#E8F8EE] px-3 py-2 text-[11px] font-medium leading-normal text-[#15803D]">
-                  Free standard delivery applied to this order
-                </div>
-              ) : null}
-
               <div className="mt-4 border-t border-[#F0EFEA] pt-4">
                 <div className="flex items-baseline justify-between">
                   <span className="text-[18px] font-bold text-[#111]">Total</span>

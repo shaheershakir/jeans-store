@@ -593,7 +593,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                       </span>
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5">
-                      Free delivery on orders over ₹999 · ₹40 standard delivery
+                      Paid delivery calculated by area and parcel weight
                     </div>
                   </div>
                 </div>
@@ -771,9 +771,10 @@ export default function ProductDetail({ product }: { product: Product }) {
                       Orders are processed and dispatched within 24 hours from our fulfillment hub.
                     </p>
                     <ul className="list-disc list-inside space-y-1 text-gray-500">
-                      <li>Standard Delivery: 2-4 business days across India</li>
-                      <li>Free shipping on all orders over ₹999</li>
-                      <li>Flat ₹40 delivery fee for orders under ₹999</li>
+                      <li>Direct fulfillment from Kannur, Kerala</li>
+                      <li>Kerala delivery: 2-5 business days (standard ₹60 base rate)</li>
+                      <li>Outside Kerala: 7-14 business days (standard ₹90 base rate)</li>
+                      <li>Weight-based parcel shipping calculated at checkout</li>
                       <li>7-day doorstep return and instant size exchange guarantee</li>
                     </ul>
                   </div>

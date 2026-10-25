@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -14,10 +15,12 @@ import {
   ArrowRight,
   ChevronRight,
   Settings,
-  X
+  X,
+  LogOut
 } from 'lucide-react'
 import { useCartStore, useUIStore, useAuthStore, useFavoriteStore } from '@/lib/store'
 import { PRODUCTS } from '@/lib/constants'
+import { AccountProfileSkeleton } from '@/components/skeletons/StorefrontSkeletons'
 
 // ─── Mock Recent Orders for Profile Overview ─────────────────────────────────
 
@@ -69,7 +72,9 @@ const PROFILE_RECENT_ORDERS: ProfileRecentOrder[] = [
 ]
 
 export default function ProfilePage() {
+  const router = useRouter()
   const user = useAuthStore((s) => s.user)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const addresses = useAuthStore((s) => s.addresses)
   const updateProfile = useAuthStore((s) => s.updateProfile)
   const addAddress = useAuthStore((s) => s.addAddress)
@@ -79,11 +84,13 @@ export default function ProfilePage() {
   const openOverlay = useUIStore((s) => s.openOverlay)
   const showToast = useUIStore((s) => s.showToast)
 
+  const [mounted, setMounted] = useState(false)
+
   // Profile details state with fallback matching the mockup
-  const [fullName, setFullName] = useState(user?.name || 'Shaheer')
-  const [email, setEmail] = useState(user?.email || 'shaheer@example.com')
-  const [phone, setPhone] = useState(user?.phone || '+91 98765 43210')
-  const memberSince = '2025'
+  const [fullName, setFullName] = useState(user?.name || '')
+  const [email, setEmail] = useState(user?.email || '')
+  const [phone, setPhone] = useState(user?.phone || '')
+  const memberSince = user?.createdAt ? new Date(user.createdAt).getFullYear() : '2025'
 
   // Edit Modals
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
@@ -95,9 +102,9 @@ export default function ProfilePage() {
   // Address state
   const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0]
   const [addressData, setAddressData] = useState({
-    name: defaultAddr?.fullName || 'Shaheer',
-    line: defaultAddr?.addressLine || '12 Lake View Road',
-    cityStatePin: `${defaultAddr?.city || 'Bengaluru'}, ${defaultAddr?.state || 'Karnataka'} ${defaultAddr?.pincode || '560001'}`,
+    name: defaultAddr?.fullName || user?.name || '',
+    line: defaultAddr?.addressLine || '',
+    cityStatePin: defaultAddr ? `${defaultAddr.city}, ${defaultAddr.state} ${defaultAddr.pincode}` : '',
     country: 'India',
   })
 
@@ -105,10 +112,10 @@ export default function ProfilePage() {
   const [addrForm, setAddrForm] = useState({
     fullName: addressData.name,
     addressLine: addressData.line,
-    city: 'Bengaluru',
-    state: 'Karnataka',
-    pincode: '560001',
-    phone: phone,
+    city: defaultAddr?.city || 'Bengaluru',
+    state: defaultAddr?.state || 'Karnataka',
+    pincode: defaultAddr?.pincode || '560001',
+    phone: phone || defaultAddr?.phone || '',
   })
 
   useEffect(() => {
@@ -116,15 +123,26 @@ export default function ProfilePage() {
     void useFavoriteStore.persist.rehydrate()
     void useCartStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
+    setMounted(true)
   }, [])
 
   useEffect(() => {
+    if (mounted && !isAuthenticated) {
+      router.replace('/login?redirect=/profile')
+    }
+  }, [mounted, isAuthenticated, router])
+
+  useEffect(() => {
     if (user) {
-      if (user.name && user.name !== 'Sameer Joshi') setFullName(user.name)
-      if (user.email && user.email !== 'sameer.joshi@example.com') setEmail(user.email)
+      if (user.name) setFullName(user.name)
+      if (user.email) setEmail(user.email)
       if (user.phone) setPhone(user.phone)
     }
   }, [user])
+
+  if (!mounted || !isAuthenticated || !user) {
+    return <AccountProfileSkeleton />
+  }
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault()
@@ -307,6 +325,22 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Mobile Sign Out Button */}
+        <section className="mb-6">
+          <button
+            type="button"
+            onClick={() => {
+              logout()
+              showToast('Signed out successfully')
+              router.push('/login')
+            }}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-[14px] bg-[#fff1f2] hover:bg-[#ffe4e6] border border-rose-100 text-[#e11d48] font-semibold text-[13.5px] transition-colors active:scale-[0.98] cursor-pointer"
+          >
+            <LogOut className="w-4 h-4 stroke-[2]" />
+            <span>Sign Out</span>
+          </button>
         </section>
       </div>
 

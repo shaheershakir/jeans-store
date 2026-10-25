@@ -38,7 +38,6 @@ export default function Toast() {
 
   const deliveryFee = useMemo(() => {
     if (!savedAddress) return null
-    const subtotal = cartSubtotal(items)
     const state = savedAddress.state?.toLowerCase() || ''
     const pin = savedAddress.pincode?.replace(/\D/g, '') || ''
     const isKerala =
@@ -46,7 +45,11 @@ export default function Toast() {
       pin.startsWith('67') ||
       pin.startsWith('68') ||
       pin.startsWith('69')
-    return subtotal >= 1999 ? 0 : isKerala ? 60 : 100
+    const totalWeight = items.reduce((sum, item) => sum + 350 * item.qty, 0)
+    const baseRate = isKerala ? 60 : 90
+    const addRate = isKerala ? 20 : 30
+    const extraUnits = Math.ceil(Math.max(0, totalWeight - 500) / 500)
+    return baseRate + extraUnits * addRate
   }, [savedAddress, items])
 
   // Auto-dismiss sizePrompt on Escape key
@@ -159,8 +162,8 @@ export default function Toast() {
       </span>
 
       {deliveryFee !== null && (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 whitespace-nowrap shrink-0">
-          {deliveryFee === 0 ? 'Free Delivery' : `Delivery ${formatPrice(deliveryFee)}`}
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white/10 text-white/90 border border-white/20 whitespace-nowrap shrink-0">
+          Delivery {formatPrice(deliveryFee)}
         </span>
       )}
 

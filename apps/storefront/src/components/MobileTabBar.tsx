@@ -27,6 +27,8 @@ export default function MobileTabBar({
 
   useEffect(() => {
     setMounted(true)
+    void useAuthStore.persist.rehydrate()
+    void useCartStore.persist.rehydrate()
   }, [])
 
   const count = mounted ? cartCount(items) : 0
@@ -36,7 +38,11 @@ export default function MobileTabBar({
   const isHomeActive = pathname === '/' && !isSearchOpen && !isBagActive
   const isSearchActive = (isSearchOpen || pathname.startsWith('/search')) && !isBagActive
   const isProfileActive =
-    (pathname.startsWith('/profile') || pathname.startsWith('/orders') || (pathname === '/login' && !isAuthenticated)) &&
+    (pathname.startsWith('/profile') ||
+      pathname.startsWith('/orders') ||
+      pathname.startsWith('/addresses') ||
+      pathname.startsWith('/settings') ||
+      (pathname === '/login' && !isAuthenticated)) &&
     !isSearchOpen &&
     !isBagActive
 
@@ -64,12 +70,15 @@ export default function MobileTabBar({
   }
 
   const handleProfileClick = () => {
-    if (isAuthenticated) {
+    const authState = useAuthStore.getState()
+    if (authState.isAuthenticated && authState.user) {
       router.push('/profile')
     } else {
       router.push('/login')
     }
   }
+
+  const userInitial = (user?.name?.trim()?.charAt(0) || user?.email?.trim()?.charAt(0) || 'U').toUpperCase()
 
   return (
     <nav
@@ -183,15 +192,15 @@ export default function MobileTabBar({
           className="relative flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-transform duration-100 ease-out select-none [-webkit-tap-highlight-color:transparent] touch-manipulation active:scale-[0.92]"
         >
           <div className="relative inline-flex items-center justify-center">
-            {mounted && isAuthenticated && user?.name ? (
+            {mounted && isAuthenticated && user ? (
               <div
-                className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold leading-none ${
+                className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold leading-none transition-colors ${
                   isProfileActive
-                    ? 'border-[#0c0e12] bg-[#0c0e12] text-white'
-                    : 'border-[#71717a] bg-transparent text-[#71717a]'
+                    ? 'bg-[#0c0e12] text-white'
+                    : 'border border-[#71717a] bg-transparent text-[#71717a]'
                 }`}
               >
-                {user.name.charAt(0).toUpperCase()}
+                {userInitial}
               </div>
             ) : (
               <User
