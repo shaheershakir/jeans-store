@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -12,9 +12,11 @@ import {
   ShoppingBag,
   ArrowRight
 } from 'lucide-react'
-import { cartCount, cartSubtotal, useCartStore, useUIStore } from '@/lib/store'
+import { cartCount, cartSubtotal, useCartStore, useUIStore, useAuthStore } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
 import { getProductUrl } from '@/lib/products'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
 export default function CartDrawer() {
   const router = useRouter()
@@ -24,14 +26,92 @@ export default function CartDrawer() {
   const updateQty = useCartStore((state) => state.updateQty)
   const removeItem = useCartStore((state) => state.removeItem)
 
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const user = useAuthStore((state) => state.user)
+  const addresses = useAuthStore((state) => state.addresses)
+
+  const [deliveryQuote, setDeliveryQuote] = useState<{
+    shipping: number
+    total: number
+  } | null>(null)
+  const [isQuoteLoading, setIsQuoteLoading] = useState(false)
+
   useEffect(() => {
     void useCartStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
+    void useAuthStore.persist.rehydrate()
   }, [])
 
   const open = overlay === 'cart'
   const subtotal = cartSubtotal(items)
   const count = cartCount(items)
+
+  const isLoggedIn = Boolean(isAuthenticated || user)
+  const savedAddress = useMemo(() => {
+    if (!isLoggedIn || !addresses || addresses.length === 0) return null
+    return addresses.find((a) => a.isDefault) || addresses[0]
+  }, [isLoggedIn, addresses])
+
+  const hasSavedAddress = Boolean(savedAddress)
+
+  const isKerala = useMemo(() => {
+    if (!savedAddress) return false
+    const state = savedAddress.state?.toLowerCase() || ''
+    const pin = savedAddress.pincode?.replace(/\D/g, '') || ''
+    return state.includes('kerala') || pin.startsWith('67') || pin.startsWith('68') || pin.startsWith('69')
+  }, [savedAddress])
+
+  // Fallback delivery fee
+  const fallbackShipping = subtotal >= 1999 ? 0 : isKerala ? 60 : 100
+  const shippingFee = hasSavedAddress
+    ? (deliveryQuote?.shipping ?? fallbackShipping)
+    : 0
+  const totalWithShipping = subtotal + shippingFee
+
+  // Live delivery quote fetching when open & address available
+  useEffect(() => {
+    if (!open || !hasSavedAddress || !savedAddress || items.length === 0) {
+      setDeliveryQuote(null)
+      setIsQuoteLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    setIsQuoteLoading(true)
+
+    fetch(`${API_URL}/api/orders/quote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        state: savedAddress.state || 'Kerala',
+        pincode: savedAddress.pincode?.replace(/\D/g, '').slice(0, 6) || undefined,
+        items: items.map((item) => ({
+          id: String(item.id),
+          variantId: typeof item.variantId === 'number' && item.variantId > 0 ? item.variantId : undefined,
+          size: String(item.size),
+          quantity: item.qty
+        }))
+      }),
+      signal: controller.signal
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.error || 'Quote failed')
+        setDeliveryQuote({
+          shipping: Number(data.shipping ?? fallbackShipping),
+          total: Number(data.total ?? (subtotal + fallbackShipping))
+        })
+      })
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        // Keep fallback shipping
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsQuoteLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [open, hasSavedAddress, savedAddress, items, subtotal, fallbackShipping])
 
   // Close on Escape key
   useEffect(() => {
@@ -231,22 +311,70 @@ export default function CartDrawer() {
         {/* 3. Sticky Footer */}
         {items.length > 0 && (
           <div className="shrink-0 border-t border-[#f4f4f5] bg-white p-6 pt-4">
-            {/* Subtotal */}
-            <div className="flex items-center justify-between font-ui text-[13px] text-[#6b7280]">
-              <span>Subtotal</span>
-              <span className="font-brand font-bold text-[#111827] tabular-nums">{formatPrice(subtotal)}</span>
-            </div>
+            {hasSavedAddress && savedAddress ? (
+              <div className="flex flex-col gap-2">
+                {/* Subtotal */}
+                <div className="flex items-center justify-between font-ui text-[13px] text-[#6b7280]">
+                  <span>Subtotal</span>
+                  <span className="font-brand font-bold text-[#111827] tabular-nums">{formatPrice(subtotal)}</span>
+                </div>
 
-            {/* Total before delivery */}
-            <div className="mt-2 flex items-center justify-between font-brand">
-              <span className="text-[14.5px] font-bold text-[#111827]">Total before delivery</span>
-              <span className="text-[17px] font-bold text-[#111827] tabular-nums">{formatPrice(subtotal)}</span>
-            </div>
+                {/* Delivery charge */}
+                <div className="flex items-center justify-between font-ui text-[13px] text-[#6b7280]">
+                  <span className="flex items-center gap-1.5">
+                    <span>Delivery</span>
+                    <span className="text-[11.5px] text-[#9ca3af] truncate max-w-[170px]" title={`${savedAddress.city ? `${savedAddress.city}, ` : ''}${savedAddress.state || savedAddress.pincode}`}>
+                      ({savedAddress.city ? `${savedAddress.city}, ` : ''}{savedAddress.state || savedAddress.pincode})
+                    </span>
+                  </span>
+                  <span>
+                    {isQuoteLoading ? (
+                      <span className="text-[11.5px] text-[#9ca3af]">Calculating…</span>
+                    ) : shippingFee === 0 ? (
+                      <strong className="font-bold text-[#059669]">FREE</strong>
+                    ) : (
+                      <span className="font-brand font-bold text-[#111827] tabular-nums">
+                        {formatPrice(shippingFee)}
+                      </span>
+                    )}
+                  </span>
+                </div>
 
-            {/* Subline */}
-            <p className="mt-1 mb-4 font-ui text-[11.5px] text-[#9ca3af]">
-              Delivery calculated at checkout
-            </p>
+                {/* Divider */}
+                <div className="border-t border-[#f4f4f5] my-0.5" />
+
+                {/* Estimated Total */}
+                <div className="flex items-center justify-between font-brand">
+                  <span className="text-[14.5px] font-bold text-[#111827]">Estimated total</span>
+                  <span className="text-[17px] font-bold text-[#111827] tabular-nums">{formatPrice(totalWithShipping)}</span>
+                </div>
+
+                {/* Subline with delivery destination */}
+                <p className="mt-0.5 mb-3 font-ui text-[11px] text-[#059669] flex items-center gap-1">
+                  <span>Delivering to {savedAddress.pincode}</span>
+                  {shippingFee === 0 && <span className="font-medium">• Free delivery unlocked</span>}
+                </p>
+              </div>
+            ) : (
+              <div>
+                {/* Subtotal */}
+                <div className="flex items-center justify-between font-ui text-[13px] text-[#6b7280]">
+                  <span>Subtotal</span>
+                  <span className="font-brand font-bold text-[#111827] tabular-nums">{formatPrice(subtotal)}</span>
+                </div>
+
+                {/* Total before delivery */}
+                <div className="mt-2 flex items-center justify-between font-brand">
+                  <span className="text-[14.5px] font-bold text-[#111827]">Total before delivery</span>
+                  <span className="text-[17px] font-bold text-[#111827] tabular-nums">{formatPrice(subtotal)}</span>
+                </div>
+
+                {/* Subline */}
+                <p className="mt-1 mb-4 font-ui text-[11.5px] text-[#9ca3af]">
+                  Delivery calculated at checkout
+                </p>
+              </div>
+            )}
 
             {/* Primary CTA */}
             <Link

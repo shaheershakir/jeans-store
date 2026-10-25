@@ -3,9 +3,10 @@
 import { useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Check, ShoppingBag, X } from 'lucide-react'
-import { useUIStore, useCartStore } from '@/lib/store'
+import { Check, X } from 'lucide-react'
+import { useUIStore, useCartStore, useAuthStore, cartSubtotal } from '@/lib/store'
 import { getAvailableProductSizes, getProductSizeOptions } from '@/lib/products'
+import { formatPrice } from '@/lib/utils'
 import { trackEvent } from '@/lib/analytics'
 
 export default function Toast() {
@@ -16,12 +17,37 @@ export default function Toast() {
   const closeSizePrompt = useUIStore((state) => state.closeSizePrompt)
   const showToast = useUIStore((state) => state.showToast)
   const openOverlay = useUIStore((state) => state.openOverlay)
+  const items = useCartStore((state) => state.items)
   const addItem = useCartStore((state) => state.addItem)
+
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const user = useAuthStore((state) => state.user)
+  const addresses = useAuthStore((state) => state.addresses)
 
   useEffect(() => {
     void useUIStore.persist.rehydrate()
     void useCartStore.persist.rehydrate()
+    void useAuthStore.persist.rehydrate()
   }, [])
+
+  const isLoggedIn = Boolean(isAuthenticated || user)
+  const savedAddress = useMemo(() => {
+    if (!isLoggedIn || !addresses || addresses.length === 0) return null
+    return addresses.find((a) => a.isDefault) || addresses[0]
+  }, [isLoggedIn, addresses])
+
+  const deliveryFee = useMemo(() => {
+    if (!savedAddress) return null
+    const subtotal = cartSubtotal(items)
+    const state = savedAddress.state?.toLowerCase() || ''
+    const pin = savedAddress.pincode?.replace(/\D/g, '') || ''
+    const isKerala =
+      state.includes('kerala') ||
+      pin.startsWith('67') ||
+      pin.startsWith('68') ||
+      pin.startsWith('69')
+    return subtotal >= 1999 ? 0 : isKerala ? 60 : 100
+  }, [savedAddress, items])
 
   // Auto-dismiss sizePrompt on Escape key
   useEffect(() => {
@@ -71,35 +97,32 @@ export default function Toast() {
     const { product, selectedColor } = sizePrompt
     return (
       <aside
-        className="toast-size-prompt-bar show"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-4 py-2.5 rounded-full bg-[#111111]/95 text-white backdrop-blur-md shadow-[0_12px_32px_rgba(0,0,0,0.25)] border border-white/10 max-w-[95vw] animate-fade-in"
         role="dialog"
         aria-label={`Select size for ${product.name}`}
       >
-        <div className="toast-prompt-inner">
-          <div className="toast-prompt-left">
-            <div className="toast-prompt-thumb-wrap">
-              <Image
-                src={product.img}
-                alt={product.name}
-                width={40}
-                height={40}
-                className="toast-prompt-thumb"
-              />
-            </div>
-            <div className="toast-prompt-meta">
-              <span className="toast-prompt-title" title={product.name}>
-                {product.name}
-              </span>
-              <span className="toast-prompt-hint">Choose your size to add to bag:</span>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white/10 shrink-0">
+            <Image
+              src={product.img}
+              alt={product.name}
+              fill
+              sizes="32px"
+              className="object-cover"
+            />
           </div>
-
-          <div className="toast-prompt-sizes" role="group" aria-label="Available sizes">
+          <div className="hidden sm:flex flex-col">
+            <span className="text-[11px] font-medium text-white/60">Choose size:</span>
+            <span className="text-[12.5px] font-semibold text-white truncate max-w-[140px]" title={product.name}>
+              {product.name}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5" role="group" aria-label="Available sizes">
             {promptSizes.map((size) => (
               <button
                 key={size}
                 type="button"
-                className="toast-size-pill"
+                className="min-w-7 h-7 px-2 rounded-full bg-white/10 hover:bg-white text-white hover:text-black text-[12px] font-medium transition-colors cursor-pointer"
                 onClick={() => handleSelectSize(size)}
                 aria-label={`Add size ${size} to bag`}
               >
@@ -111,7 +134,7 @@ export default function Toast() {
 
         <button
           type="button"
-          className="toast-prompt-close"
+          className="p-1 text-white/60 hover:text-white transition-colors cursor-pointer shrink-0 ml-1"
           onClick={closeSizePrompt}
           aria-label="Dismiss size picker"
         >
@@ -125,33 +148,45 @@ export default function Toast() {
   if (!toast) return null
 
   return (
-    <div className="toast show" role="status" aria-live="polite">
-      <div className="toast-feedback-inner">
-        <Check className="toast-check-icon w-4 h-4 text-emerald-400 stroke-[2.5]" />
-        <span className="toast-message">{toast}</span>
-        <button
-          type="button"
-          className="toast-view-bag-btn"
-          onClick={() => {
-            hideToast()
-            if (typeof window !== 'undefined' && window.innerWidth < 768) {
-              router.push('/bag')
-            } else {
-              openOverlay('cart')
-            }
-          }}
-        >
-          View Bag
-        </button>
-        <button
-          type="button"
-          className="toast-close-btn"
-          aria-label="Dismiss notification"
-          onClick={hideToast}
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
+    <div
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2 rounded-full bg-[#111111]/95 text-white backdrop-blur-md shadow-[0_12px_32px_rgba(0,0,0,0.28)] border border-white/10 max-w-[94vw] transition-all animate-fade-in"
+      role="status"
+      aria-live="polite"
+    >
+      <Check className="w-4 h-4 text-emerald-400 stroke-[2.5] shrink-0" />
+      <span className="text-[12.5px] sm:text-[13px] text-white font-medium truncate max-w-[180px] sm:max-w-[280px]">
+        {toast}
+      </span>
+
+      {deliveryFee !== null && (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 whitespace-nowrap shrink-0">
+          {deliveryFee === 0 ? 'Free Delivery' : `Delivery ${formatPrice(deliveryFee)}`}
+        </span>
+      )}
+
+      <button
+        type="button"
+        className="px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-[12px] font-semibold cursor-pointer transition-colors shrink-0"
+        onClick={() => {
+          hideToast()
+          if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            router.push('/bag')
+          } else {
+            openOverlay('cart')
+          }
+        }}
+      >
+        View Bag
+      </button>
+
+      <button
+        type="button"
+        className="p-1 text-white/60 hover:text-white transition-colors cursor-pointer shrink-0"
+        aria-label="Dismiss notification"
+        onClick={hideToast}
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
     </div>
   )
 }
