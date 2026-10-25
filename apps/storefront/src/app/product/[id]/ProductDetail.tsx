@@ -7,8 +7,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Bookmark,
-  ChevronLeft,
-  ChevronRight,
   Heart,
   ShoppingBag,
   MapPin,
@@ -18,7 +16,7 @@ import {
   X
 } from 'lucide-react'
 import type { Product } from '@/lib/constants'
-import { useCartStore, useUIStore, usePreferencesStore, useFavoriteStore } from '@/lib/store'
+import { useCartStore, useUIStore, usePreferencesStore, useFavoriteStore, useSearchHistoryStore } from '@/lib/store'
 import SizeGuideModal from '@/components/SizeGuideModal'
 import RelatedProducts from '@/components/RelatedProducts'
 import StickyPdpBar from '@/components/StickyPdpBar'
@@ -143,8 +141,10 @@ export default function ProductDetail({ product }: { product: Product }) {
         useUIStore.persist.rehydrate(),
         useCartStore.persist.rehydrate(),
         usePreferencesStore.persist.rehydrate(),
-        useFavoriteStore.persist.rehydrate()
+        useFavoriteStore.persist.rehydrate(),
+        useSearchHistoryStore.persist.rehydrate()
       ])
+      useSearchHistoryStore.getState().addRecentlyViewed(product.id)
       if (isSubscribed) {
         setMounted(true)
         const current = useUIStore.getState().selectedSize
@@ -174,7 +174,7 @@ export default function ProductDetail({ product }: { product: Product }) {
     return () => {
       isSubscribed = false
     }
-  }, [availableSizes, setSelectedSize])
+  }, [availableSizes, setSelectedSize, product.id])
 
   const handleStartEditPin = () => {
     setPinInput(deliveryPin)
@@ -388,32 +388,6 @@ export default function ProductDetail({ product }: { product: Product }) {
               priority
               className="object-cover transition-all duration-300"
             />
-
-            {/* Left Chevron Button */}
-            {images.length > 1 && (
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveImageIdx((prev) => (prev - 1 + images.length) % images.length)
-                }
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-gray-800 hover:bg-gray-50 active:scale-95 transition-all touch-manipulation cursor-pointer"
-                aria-label="Previous view angle"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-800" />
-              </button>
-            )}
-
-            {/* Right Chevron Button */}
-            {images.length > 1 && (
-              <button
-                type="button"
-                onClick={() => setActiveImageIdx((prev) => (prev + 1) % images.length)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-gray-800 hover:bg-gray-50 active:scale-95 transition-all touch-manipulation cursor-pointer"
-                aria-label="Next view angle"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-800" />
-              </button>
-            )}
           </div>
 
           {/* 5 Thumbnails Reel Below Hero */}

@@ -6,16 +6,20 @@ import { Home, Search, ShoppingBag, User } from 'lucide-react'
 import { cartCount, useCartStore, useUIStore, useAuthStore } from '@/lib/store'
 
 interface MobileTabBarProps {
-  onOpenSearch: () => void
+  onOpenSearch?: () => void
   isSearchOpen?: boolean
 }
 
-export default function MobileTabBar({ onOpenSearch, isSearchOpen = false }: MobileTabBarProps) {
+export default function MobileTabBar({
+  onOpenSearch,
+  isSearchOpen: isSearchOpenProp
+}: MobileTabBarProps = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const items = useCartStore((state) => state.items)
   const openOverlay = useUIStore((state) => state.openOverlay)
   const overlay = useUIStore((state) => state.overlay)
+  const isSearchOpen = isSearchOpenProp !== undefined ? isSearchOpenProp : overlay === 'search'
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
 
@@ -46,7 +50,11 @@ export default function MobileTabBar({ onOpenSearch, isSearchOpen = false }: Mob
   }
 
   const handleSearchClick = () => {
-    onOpenSearch()
+    if (onOpenSearch) {
+      onOpenSearch()
+    } else {
+      openOverlay('search')
+    }
   }
 
   const handleCartClick = () => {

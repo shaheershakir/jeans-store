@@ -434,3 +434,47 @@ export function AuthFormSkeleton() {
     </div>
   )
 }
+
+export function SearchSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#faf9f6]">
+      {/* Top Search Bar */}
+      <div className="border-b border-black/8 bg-white/70 backdrop-blur-md sticky top-0 z-30">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 flex-1 max-w-2xl rounded-full skeleton-shimmer" />
+            <div className="h-10 w-24 rounded-full skeleton-shimmer hidden sm:block" />
+          </div>
+          {/* Categories strip shimmer */}
+          <div className="flex gap-2 overflow-hidden mt-3.5 pt-1">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-7 w-20 rounded-full skeleton-shimmer shrink-0" />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Results Container */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Filter / Sort bar */}
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-black/5">
+          <div className="h-4 w-32 rounded-md skeleton-shimmer" />
+          <div className="h-8 w-28 rounded-lg skeleton-shimmer" />
+        </div>
+
+        {/* 4-column 3:4 portrait card grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="space-y-3">
+              <div className="w-full aspect-[3/4] rounded-xl skeleton-shimmer" />
+              <div className="space-y-1.5">
+                <div className="h-4 w-4/5 rounded-md skeleton-shimmer" />
+                <div className="h-3.5 w-1/3 rounded-md skeleton-shimmer" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}

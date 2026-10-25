@@ -65,9 +65,9 @@ function LoginForm() {
 
       const redirect = redirectParam || '/'
       router.push(redirect)
-    } catch (err: any) {
+    } catch (err: unknown) {
       isSubmittingRef.current = false
-      setError(err?.message || 'Invalid email or password. Please try again.')
+      setError(err instanceof Error ? err.message : 'Invalid email or password. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -79,7 +79,7 @@ function LoginForm() {
     const clientId = getGoogleClientId()
     if (!clientId) return
 
-    const handleCredentialResponse = async (response: any) => {
+    const handleCredentialResponse = async (response: { credential?: string }) => {
       if (!response?.credential) return
       setLoading(true)
       try {
@@ -103,9 +103,9 @@ function LoginForm() {
 
         const redirect = redirectParam || '/'
         router.push(redirect)
-      } catch (err: any) {
+      } catch (err: unknown) {
         isSubmittingRef.current = false
-        setError(err?.message || 'Google authentication failed.')
+        setError(err instanceof Error ? err.message : 'Google authentication failed.')
       } finally {
         setLoading(false)
       }
@@ -147,10 +147,10 @@ function LoginForm() {
       isSubmittingRef.current = true
       const oauthUrl = getGoogleOAuthUrl(undefined, redirectParam || '/')
       window.location.href = oauthUrl
-    } catch (err: any) {
+    } catch (err: unknown) {
       isSubmittingRef.current = false
       setLoading(false)
-      setError(err?.message || 'Failed to initiate Google sign in.')
+      setError(err instanceof Error ? err.message : 'Failed to initiate Google sign in.')
     }
   }
 

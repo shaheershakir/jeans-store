@@ -61,19 +61,8 @@ export function filterAndSortProducts(
   let list = [...catalog]
 
   if (searchQuery && searchQuery.trim()) {
-    const clean = searchQuery.trim().toLowerCase()
-    list = list.filter(
-      (p) =>
-        p.name.toLowerCase().includes(clean) ||
-
-
-        (p.color && p.color.toLowerCase().includes(clean)) ||
-        (p.fabric && p.fabric.toLowerCase().includes(clean)) ||
-        (p.material && p.material.toLowerCase().includes(clean)) ||
-        p.desc.toLowerCase().includes(clean) ||
-        (p.category && p.category.toLowerCase().includes(clean)) ||
-        p.price.toLowerCase().includes(clean)
-    )
+    const matchingIds = new Set(searchProducts(searchQuery, list).map((product) => product.id))
+    list = list.filter((product) => matchingIds.has(product.id))
   }
 
   if (category && category !== 'all') {
@@ -258,13 +247,338 @@ export function filterAndSortProducts(
   return list
 }
 
-export function searchProducts(query: string, catalog: Product[] = PRODUCTS): Product[] {
-  const clean = query.trim().toLowerCase()
-  if (!clean) return catalog
-  return catalog.filter(
-    (p) =>
-      p.name.toLowerCase().includes(clean) ||
-      p.desc.toLowerCase().includes(clean) ||
-      p.price.toLowerCase().includes(clean)
+/* ── Search and Recommendation Engine ─────────────────────────────────────
+   Tokenized, weighted, typo-tolerant catalog search, live popular search tags,
+   and personalized recommendation engine.
+   ───────────────────────────────────────────────────────────────────────── */
+
+const SEARCH_SYNONYM_GROUPS: string[][] = [
+  ['tee', 'tees', 'tshirt', 'tshirts'],
+  ['pant', 'pants', 'bottom', 'bottoms', 'trackpants', 'sweatpants'],
+  ['longsleeve', 'fullsleeve'],
+  ['drop', 'dropshoulder', 'drsleeve'],
+  ['thermal', 'honeycomb', 'waffle']
+]
+
+const SYNONYM_MAP: Map<string, string[]> = new Map()
+for (const group of SEARCH_SYNONYM_GROUPS) {
+  for (const word of group) {
+    SYNONYM_MAP.set(word, group)
+  }
+}
+
+const PHRASE_COLLAPSES: [RegExp, string][] = [
+  [/\bfull\s+sleeve\b/g, 'fullsleeve'],
+  [/\bdr\s+sleeve\b/g, 'drsleeve'],
+  [/\bdrop\s+shoulder\b/g, 'dropshoulder'],
+  [/\bt\s+shirt\b/g, 'tshirt'],
+  [/\btrack\s+pant\b/g, 'trackpants'],
+  [/\bsweat\s+pant\b/g, 'sweatpants']
+]
+
+export function normalizeSearchText(value: string): string {
+  let text = value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+
+  for (const [pattern, replacement] of PHRASE_COLLAPSES) {
+    text = text.replace(pattern, replacement)
+  }
+  return text
+}
+
+function expandSearchToken(token: string): string[] {
+  const group = SYNONYM_MAP.get(token)
+  return group ? Array.from(new Set([token, ...group])) : [token]
+}
+
+function isWithinOneEdit(a: string, b: string): boolean {
+  if (a === b) return true
+  const la = a.length
+  const lb = b.length
+  if (Math.abs(la - lb) > 1) return false
+
+  let i = 0
+  let j = 0
+  let edits = 0
+
+  while (i < la && j < lb) {
+    if (a[i] === b[j]) {
+      i++
+      j++
+      continue
+    }
+    edits++
+    if (edits > 1) return false
+    if (la > lb) {
+      i++
+    } else if (lb > la) {
+      j++
+    } else {
+      i++
+      j++
+    }
+  }
+
+  if (i < la || j < lb) edits++
+  return edits <= 1
+}
+
+interface SearchableFields {
+  name: string
+  nameWords: string[]
+  category: string
+  color: string
+  meta: string
+  descAndPrice: string
+  allWords: string[]
+}
+
+function buildSearchableFields(product: Product): SearchableFields {
+  const variantColors = (product.variants ?? [])
+    .map((variant) => variant.color)
+    .filter(Boolean)
+    .join(' ')
+
+  const metaFields = [
+    product.badge,
+    product.fabric,
+    product.material,
+    product.neckType,
+    (product as { neck?: string }).neck,
+    product.sleeveLength
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const descAndPriceFields = [
+    product.desc,
+    product.price,
+    String(product.priceNum ?? '')
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const name = normalizeSearchText(product.name ?? '')
+  const nameWords = name.split(' ').filter(Boolean)
+  const category = normalizeSearchText(product.category ?? '')
+  const color = normalizeSearchText(`${product.color ?? ''} ${variantColors}`)
+  const meta = normalizeSearchText(metaFields)
+  const descAndPrice = normalizeSearchText(descAndPriceFields)
+
+  const combinedWords = Array.from(
+    new Set(`${name} ${category} ${color} ${meta} ${descAndPrice}`.split(' ').filter(Boolean))
   )
+
+  return {
+    name,
+    nameWords,
+    category,
+    color,
+    meta,
+    descAndPrice,
+    allWords: combinedWords
+  }
+}
+
+function scoreTokenAgainstFields(token: string, fields: SearchableFields): number {
+  const aliases = expandSearchToken(token)
+  let score = 0
+
+  // 1. Exact or word-start match in product.name: +100, substring match: +70
+  const hasExactOrWordStartName = aliases.some((alias) =>
+    fields.nameWords.some((word) => word === alias || word.startsWith(alias))
+  )
+  if (hasExactOrWordStartName) {
+    score += 100
+  } else if (aliases.some((alias) => fields.name.includes(alias))) {
+    score += 70
+  }
+
+  // 2. Match in product.category: +65
+  if (aliases.some((alias) => fields.category.includes(alias))) {
+    score += 65
+  }
+
+  // 3. Match in product.color or variants: +55
+  if (aliases.some((alias) => fields.color.includes(alias))) {
+    score += 55
+  }
+
+  // 4. Match in badge, fabric, material, neck, or sleeveLength: +40
+  if (aliases.some((alias) => fields.meta.includes(alias))) {
+    score += 40
+  }
+
+  // 5. Match in desc or price: +20
+  if (aliases.some((alias) => fields.descAndPrice.includes(alias))) {
+    score += 20
+  }
+
+  // 6. Typo-tolerant match (tokens >= 4 chars): +15
+  if (score === 0 && token.length >= 4) {
+    const hasTypoMatch = aliases.some((alias) =>
+      fields.allWords.some((word) => word.length >= 4 && isWithinOneEdit(word, alias))
+    )
+    if (hasTypoMatch) {
+      score += 15
+    }
+  }
+
+  return score
+}
+
+export function searchProducts(query: string, catalog: Product[] = PRODUCTS): Product[] {
+  if (!query.trim()) return [...catalog]
+
+  const normalized = normalizeSearchText(query)
+  if (!normalized) return [...catalog]
+
+  const tokens = normalized.split(' ').filter(Boolean)
+  if (tokens.length === 0) return [...catalog]
+
+  const scored = catalog.flatMap((product) => {
+    const fields = buildSearchableFields(product)
+    let totalScore = 0
+
+    for (const token of tokens) {
+      const tokenScore = scoreTokenAgainstFields(token, fields)
+      if (tokenScore === 0) return []
+      totalScore += tokenScore
+    }
+
+    return [{ product, score: totalScore }]
+  })
+
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score
+    const stockDelta = (b.product.inStock !== false ? 1 : 0) - (a.product.inStock !== false ? 1 : 0)
+    if (stockDelta !== 0) return stockDelta
+    return (b.product.rating ?? 0) - (a.product.rating ?? 0)
+  })
+
+  return scored.map((entry) => entry.product)
+}
+
+export function getPopularSearches(catalog: Product[]): { term: string; count: number }[] {
+  const candidates = [
+    'Waffle',
+    'Stripes',
+    'Printed Tees',
+    'Henley',
+    'Fullsleeve',
+    'Ringer Tees',
+    'Trackpants',
+    'Sweatpants',
+    'Black',
+    'Charcoal'
+  ]
+  return candidates
+    .map((term) => ({
+      term,
+      count: searchProducts(term, catalog).length
+    }))
+    .filter((item) => item.count > 0)
+}
+
+export interface RecommendOptions {
+  favoriteIds?: (string | number)[]
+  recentlyViewedIds?: (string | number)[]
+  recentQueries?: string[]
+  limit?: number
+  excludeId?: string | number
+}
+
+export function getRecommendedProducts(
+  catalog: Product[],
+  options: RecommendOptions = {}
+): Product[] {
+  const {
+    favoriteIds = [],
+    recentlyViewedIds = [],
+    recentQueries = [],
+    limit = 8,
+    excludeId
+  } = options
+
+  const refIds = new Set(
+    [...favoriteIds, ...recentlyViewedIds].map((id) => String(id)).filter(Boolean)
+  )
+  const referenceProducts = catalog.filter((p) => refIds.has(String(p.id)))
+
+  const targetCategories = new Set(
+    referenceProducts
+      .map((p) => p.category?.toLowerCase().trim())
+      .filter((c): c is string => Boolean(c))
+  )
+
+  const targetColors = new Set(
+    referenceProducts.flatMap((p) => {
+      const colors: string[] = []
+      if (p.color) {
+        colors.push(...p.color.toLowerCase().split('/').map((c) => c.trim()))
+      }
+      p.variants?.forEach((v) => {
+        if (v.color) colors.push(v.color.toLowerCase().trim())
+      })
+      return colors.filter(Boolean)
+    })
+  )
+
+  const mostRecentQuery = recentQueries[0]?.trim()
+  const matchingQueryIds = new Set(
+    mostRecentQuery ? searchProducts(mostRecentQuery, catalog).map((p) => p.id) : []
+  )
+
+  const candidates = catalog.filter((p) =>
+    excludeId !== undefined ? String(p.id) !== String(excludeId) : true
+  )
+
+  const scored = candidates.map((product) => {
+    let score = 0
+
+    // +50 if category matches
+    if (product.category && targetCategories.has(product.category.toLowerCase().trim())) {
+      score += 50
+    }
+
+    // +35 if color matches
+    const productColors = [
+      ...(product.color ? product.color.toLowerCase().split('/').map((c) => c.trim()) : []),
+      ...(product.variants?.map((v) => v.color.toLowerCase().trim()).filter(Boolean) ?? [])
+    ]
+    if (productColors.some((c) => targetColors.has(c))) {
+      score += 35
+    }
+
+    // +40 if matches most recent query
+    if (matchingQueryIds.has(product.id)) {
+      score += 40
+    }
+
+    // +25 if bestseller / new / trending
+    const badge = product.badge?.toLowerCase().trim()
+    if (badge === 'bestseller' || badge === 'new' || badge === 'trending') {
+      score += 25
+    }
+
+    // +15 if rating >= 4.6
+    if (product.rating && product.rating >= 4.6) {
+      score += 15
+    }
+
+    return { product, score }
+  })
+
+  scored.sort((a, b) => {
+    const stockDelta = (b.product.inStock !== false ? 1 : 0) - (a.product.inStock !== false ? 1 : 0)
+    if (stockDelta !== 0) return stockDelta
+    if (b.score !== a.score) return b.score - a.score
+    return (b.product.rating ?? 0) - (a.product.rating ?? 0)
+  })
+
+  return scored.slice(0, limit).map((s) => s.product)
 }

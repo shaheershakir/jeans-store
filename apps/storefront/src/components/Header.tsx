@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -11,27 +11,17 @@ import {
   Menu,
   ShoppingBag,
   User,
-  ChevronDown,
   Package,
-  MessageCircle,
   LogOut,
-  Sparkles,
-  ArrowRight,
   Bookmark,
-  Heart,
   Settings,
   ChevronRight,
-  ArrowLeft,
-  TrendingUp,
   MapPin
 } from 'lucide-react'
 import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore, useFavoriteStore } from '@/lib/store'
-import { DEFAULT_NAV_LINKS, type NavigationItem, PRODUCTS } from '@/lib/constants'
-import { searchProducts } from '@/lib/utils'
+import { DEFAULT_NAV_LINKS, type NavigationItem } from '@/lib/constants'
 import UserOrdersModal from '@/components/UserOrdersModal'
 import MobileTabBar from '@/components/MobileTabBar'
-
-const TRENDING_SEARCHES = ['Stripes', 'Printed Tees', 'Henley', 'Waffle', 'Trackpants', 'Oversized', 'Sweatpants']
 
 const HEADER_ACTION_BTN =
   'grid h-[38px] w-[38px] cursor-pointer place-items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#111] no-underline transition-[background-color] duration-150 ease-[ease] hover:bg-[rgba(0,0,0,0.05)]'
@@ -46,6 +36,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const items = useCartStore((state) => state.items)
   const openOverlay = useUIStore((state) => state.openOverlay)
   const closeOverlay = useUIStore((state) => state.closeOverlay)
+  const overlay = useUIStore((state) => state.overlay)
   const setCategory = useFilterStore((state) => state.setCategory)
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -56,10 +47,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [ordersModalOpen, setOrdersModalOpen] = useState(false)
-  // Mobile full-screen search overlay (Flipkart-style)
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
-  const [mobileQuery, setMobileQuery] = useState('')
-  const mobileSearchInputRef = useRef<HTMLInputElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
   const [navLinks, setNavLinks] = useState<NavigationItem[]>(
@@ -112,38 +99,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
       setNavLinks(initialNavItems)
     }
   }, [initialNavItems])
-
-  // Lock body scroll when mobile search overlay is open
-  useEffect(() => {
-    if (mobileSearchOpen) {
-      document.body.style.overflow = 'hidden'
-      const t = setTimeout(() => mobileSearchInputRef.current?.focus(), 80)
-      return () => clearTimeout(t)
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => { document.body.style.overflow = '' }
-  }, [mobileSearchOpen])
-
-  const openMobileSearch = useCallback(() => {
-    setMobileQuery('')
-    setMobileSearchOpen(true)
-  }, [])
-
-  const closeMobileSearch = useCallback(() => {
-    setMobileSearchOpen(false)
-    setMobileQuery('')
-  }, [])
-
-  const handleMobileSearchSubmit = useCallback((q: string) => {
-    const trimmed = q.trim()
-    closeMobileSearch()
-    if (trimmed) {
-      router.push(`/search?q=${encodeURIComponent(trimmed)}`)
-    } else {
-      router.push('/search')
-    }
-  }, [closeMobileSearch, router])
 
   const isLinkActive = (href: string) => {
     if (href === '/shop') {
@@ -201,7 +156,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
   const count = cartCount(items)
   const activeLinks = navLinks.filter((l) => l.isActive)
-  const mobileSuggestions = mobileQuery.trim() ? searchProducts(mobileQuery, PRODUCTS).slice(0, 8) : []
 
   return (
     <>
@@ -517,14 +471,17 @@ export default function Header({ initialNavItems }: HeaderProps) {
         {menuOpen && (
           <div className="block animate-[navPanelSlideIn_var(--dur-base)_var(--ease-out)_both] border-t border-t-[#e4e2dd] bg-[rgba(250,249,246,0.92)] px-[max(20px,env(safe-area-inset-right))] pb-[calc(22px+env(safe-area-inset-bottom))] pl-[max(20px,env(safe-area-inset-left))] pt-3 backdrop-blur-[20px] backdrop-saturate-[1.8] motion-reduce:[animation-duration:0.01ms]">
             <div className="flex flex-col gap-0">
-              <Link
-                href="/search"
-                className="mb-2.5 flex min-h-[46px] items-center justify-between gap-2.5 rounded-[8px] border-b border-b-[#e9e7e1] bg-[#f4f4f5] px-3.5 py-2.5 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
-                onClick={() => setMenuOpen(false)}
+              <button
+                type="button"
+                className="mb-2.5 flex min-h-[46px] w-full cursor-pointer items-center justify-between gap-2.5 rounded-[8px] border-0 border-b border-b-[#e9e7e1] bg-[#f4f4f5] px-3.5 py-2.5 text-left text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
+                onClick={() => {
+                  setMenuOpen(false)
+                  openOverlay('search')
+                }}
               >
                 <Search className="h-4 w-4 text-zinc-500" />
                 <span>Search Garments &amp; Fits...</span>
-              </Link>
+              </button>
 
               <button
                 type="button"
@@ -628,140 +585,10 @@ export default function Header({ initialNavItems }: HeaderProps) {
       </header>
 
       {/* Mobile Bottom Tab Bar Navigation */}
-      <MobileTabBar onOpenSearch={openMobileSearch} isSearchOpen={mobileSearchOpen} />
-
-      {/* ============================================================
-          MOBILE FULL-SCREEN SEARCH OVERLAY (Flipkart-style)
-          ============================================================ */}
-      {mobileSearchOpen && (
-        <div
-          className="fixed inset-0 z-[9999] flex animate-[mobileSearchSlideIn_0.22s_cubic-bezier(0.32,0.72,0,1)_both] flex-col overscroll-contain bg-[#faf9f6]"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Search"
-        >
-          {/* Top bar */}
-          <div className="flex items-center gap-1.5 border-b border-b-[rgba(0,0,0,0.07)] bg-[rgba(250,249,246,0.96)] px-3 pb-2.5 pt-[calc(env(safe-area-inset-top)+10px)] backdrop-blur-[20px] backdrop-saturate-[1.8]">
-            <button
-              type="button"
-              className="flex h-10 w-10 flex-[0_0_40px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] transition-[background] duration-150 ease-[ease] [-webkit-tap-highlight-color:transparent] active:bg-[rgba(0,0,0,0.07)]"
-              onClick={closeMobileSearch}
-              aria-label="Close search"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-
-            <form
-              className="relative flex flex-1 items-center"
-              onSubmit={(e) => { e.preventDefault(); handleMobileSearchSubmit(mobileQuery) }}
-              role="search"
-            >
-              <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[#6b7280]" aria-hidden="true" />
-              <input
-                ref={mobileSearchInputRef}
-                type="search"
-                className="h-[42px] w-full appearance-none rounded-[10px] border-[1.5px] border-transparent bg-[rgba(0,0,0,0.055)] px-10 text-[15px] font-normal text-[#182126] outline-none transition-[background,border-color] duration-150 ease-[ease] placeholder:text-[#9ca3af] focus:border-[rgba(40,72,92,0.25)] focus:bg-white focus:shadow-[0_0_0_3px_rgba(40,72,92,0.08)] [&::-webkit-search-cancel-button]:appearance-none"
-                placeholder="Search garments, fits, styles…"
-                value={mobileQuery}
-                onChange={(e) => setMobileQuery(e.target.value)}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                enterKeyHint="search"
-                aria-label="Search"
-              />
-              {mobileQuery && (
-                <button
-                  type="button"
-                  className="absolute right-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-0 bg-[rgba(0,0,0,0.1)] p-0 text-[#6b7280] [-webkit-tap-highlight-color:transparent]"
-                  onClick={() => { setMobileQuery(''); mobileSearchInputRef.current?.focus() }}
-                  aria-label="Clear"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </form>
-          </div>
-
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
-            {mobileQuery.trim().length === 0 ? (
-              <div className="px-4 py-5">
-                <p className="mb-3.5 flex items-center gap-1.5 text-[10px] font-bold tracking-[0.1em] text-[#9ca3af]">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  TRENDING NOW
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {TRENDING_SEARCHES.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      className="inline-flex cursor-pointer items-center rounded-full border border-[#e4e2dd] bg-[#f0efeb] px-4 py-2 text-[13px] font-medium text-[#182126] transition-[background] duration-150 ease-[ease] [-webkit-tap-highlight-color:transparent] active:bg-[#e4e2dd]"
-                      onClick={() => handleMobileSearchSubmit(t)}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : mobileSuggestions.length === 0 ? (
-              <div className="flex flex-col items-center gap-2.5 px-6 py-12 text-center text-[#9ca3af]">
-                <Search className="h-8 w-8" />
-                <p className="m-0 text-[15px] text-[#182126]">No results for <strong>&ldquo;{mobileQuery}&rdquo;</strong></p>
-                <span className="text-[13px] text-[#6b7280]">Try checking your spelling or different keywords</span>
-              </div>
-            ) : (
-              <ul className="m-0 list-none py-2" role="listbox">
-                <li>
-                  <button
-                    type="button"
-                    className="flex w-full cursor-pointer items-center gap-3 mb-1 border-0 border-b border-b-[rgba(0,0,0,0.05)] bg-transparent px-4 pb-3.5 pt-2.5 text-left text-inherit no-underline transition-[background] duration-[120ms] ease-[ease] [-webkit-tap-highlight-color:transparent] active:bg-[rgba(0,0,0,0.04)]"
-                    onClick={() => handleMobileSearchSubmit(mobileQuery)}
-                    role="option"
-                  >
-                    <span className="flex h-9 w-9 flex-[0_0_36px] items-center justify-center rounded-[8px] bg-[#f0efeb] text-[#6b7280]">
-                      <Search className="h-4 w-4" />
-                    </span>
-                    <span className="flex-1 text-[14px] text-[#182126] [&_strong]:font-semibold">
-                      Search for <strong>&ldquo;{mobileQuery}&rdquo;</strong>
-                    </span>
-                    <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#d1d5db]" />
-                  </button>
-                </li>
-
-                {mobileSuggestions.map((product) => (
-                  <li key={product.id}>
-                    <Link
-                      href={`/product/${product.id}`}
-                      className="flex w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-4 py-2.5 text-left text-inherit no-underline transition-[background] duration-[120ms] ease-[ease] [-webkit-tap-highlight-color:transparent] active:bg-[rgba(0,0,0,0.04)]"
-                      onClick={closeMobileSearch}
-                      role="option"
-                    >
-                      <div className="h-[54px] w-11 flex-[0_0_44px] overflow-hidden rounded-[6px] bg-[#eeede7]">
-                        <Image
-                          src={product.img}
-                          alt={product.name}
-                          width={44}
-                          height={54}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                        <span className="block truncate text-[13.5px] font-semibold text-[#182126]">{product.name}</span>
-                        <span className="text-[12px] text-[#6b7280]">
-                          {product.category || 'Apparel'} · {product.price}
-                        </span>
-                      </div>
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#d1d5db]" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      )}
+      <MobileTabBar
+        onOpenSearch={() => openOverlay('search')}
+        isSearchOpen={overlay === 'search'}
+      />
     </>
   )
 }

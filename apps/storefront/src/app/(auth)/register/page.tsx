@@ -103,9 +103,9 @@ function RegisterForm() {
           : '/onboarding'
 
       router.push(target)
-    } catch (err: any) {
+    } catch (err: unknown) {
       isSubmittingRef.current = false
-      setError(err?.message || 'Registration failed. Please check your credentials.')
+      setError(err instanceof Error ? err.message : 'Registration failed. Please check your credentials.')
     } finally {
       setLoading(false)
     }
@@ -117,7 +117,7 @@ function RegisterForm() {
     const clientId = getGoogleClientId()
     if (!clientId) return
 
-    const handleCredentialResponse = async (response: any) => {
+    const handleCredentialResponse = async (response: { credential?: string }) => {
       if (!response?.credential) return
       setLoading(true)
       try {
@@ -141,9 +141,9 @@ function RegisterForm() {
 
         const redirect = redirectParam || '/'
         router.push(redirect)
-      } catch (err: any) {
+      } catch (err: unknown) {
         isSubmittingRef.current = false
-        setError(err?.message || 'Google authentication failed.')
+        setError(err instanceof Error ? err.message : 'Google authentication failed.')
       } finally {
         setLoading(false)
       }
@@ -185,10 +185,10 @@ function RegisterForm() {
       isSubmittingRef.current = true
       const oauthUrl = getGoogleOAuthUrl(undefined, redirectParam || '/')
       window.location.href = oauthUrl
-    } catch (err: any) {
+    } catch (err: unknown) {
       isSubmittingRef.current = false
       setLoading(false)
-      setError(err?.message || 'Failed to initiate Google sign up.')
+      setError(err instanceof Error ? err.message : 'Failed to initiate Google sign up.')
     }
   }
 

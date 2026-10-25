@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -8,91 +8,196 @@ import {
   Search as SearchIcon,
   X,
   SlidersHorizontal,
-  Sparkles,
   ArrowUpDown,
   ShoppingBag,
   TrendingUp,
+  Clock,
+  Sparkles,
+  Check
 } from 'lucide-react'
 import type { Product } from '@/lib/constants'
 import ProductCard from '@/components/ProductCard'
-import { searchProducts } from '@/lib/utils'
+import {
+  searchProducts,
+  getPopularSearches,
+  getRecommendedProducts
+} from '@/lib/utils'
+import { getColorHex, getAvailableProductSizes } from '@/lib/products'
+import { useSearchHistoryStore, useFavoriteStore } from '@/lib/store'
 import { trackEvent } from '@/lib/analytics'
-
-const POPULAR_TAGS = [
-  'Stripes',
-  'Printed tees',
-  'Henley',
-  'Trackpants',
-  'Sweatpants',
-  'Fullsleeve',
-  'Black',
-  'Oversized',
-]
 
 const QUICK_CATEGORIES = [
   { id: 'all', label: 'All Items' },
   { id: 'stripes', label: 'Stripes' },
-  { id: 'printed-tees', label: 'Printed Tees' },
-  { id: 'henley', label: 'Henley' },
+  { id: 'waffle', label: 'Waffle' },
   { id: 'fullsleeve', label: 'Fullsleeve' },
+  { id: 'drsleeve', label: 'Drsleeve' },
+  { id: 'printed-tees', label: 'Printed Tees' },
+  { id: 'ringer-tees', label: 'Ringer Tees' },
+  { id: 'henley', label: 'Henley' },
   { id: 'trackpants', label: 'Trackpants' },
-  { id: 'sweatpants', label: 'Sweatpants' },
-]
+  { id: 'sweatpants', label: 'Sweatpants' }
+] as const
+
+type CategoryId = (typeof QUICK_CATEGORIES)[number]['id']
+
+const COLOR_PILLS = [
+  'All Colors',
+  'Black',
+  'White',
+  'Charcoal',
+  'Navy',
+  'Grey',
+  'Green',
+  'Beige',
+  'Brown',
+  'Red'
+] as const
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc'
 
 interface SearchClientProps {
   initialProducts: Product[]
   initialQuery?: string
+  initialCategory?: string
+}
+
+function matchesCategory(product: Product, category: string): boolean {
+  if (category === 'all') return true
+  const cat = (product.category ?? '').toLowerCase()
+  if (category === 'waffle') {
+    return (
+      cat === 'waffle' ||
+      (product.fabric ?? '').toLowerCase().includes('waffle') ||
+      (product.name ?? '').toLowerCase().includes('waffle')
+    )
+  }
+  return cat === category.toLowerCase()
+}
+
+function matchesColor(product: Product, selectedColor: string): boolean {
+  if (!selectedColor || selectedColor === 'All Colors') return true
+  const col = selectedColor.toLowerCase()
+  if (product.color && product.color.toLowerCase().includes(col)) return true
+  if (product.variants?.some((v) => v.color?.toLowerCase().includes(col))) return true
+  return false
 }
 
 export default function SearchClient({
   initialProducts,
   initialQuery = '',
+  initialCategory = 'all'
 }: SearchClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const urlQuery = searchParams.get('q') || initialQuery
+  const urlQuery = searchParams.get('q') ?? initialQuery
+  const urlCategory = searchParams.get('category') ?? initialCategory
 
   const [query, setQuery] = useState(urlQuery)
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [selectedCategory, setSelectedCategory] = useState<string>(urlCategory || 'all')
+  const [selectedColor, setSelectedColor] = useState<string>('All Colors')
+  const [inStockOnly, setInStockOnly] = useState<boolean>(false)
   const [sortBy, setSortBy] = useState<SortOption>('relevance')
+
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const recentSearches = useSearchHistoryStore((s) => s.recentSearches)
+  const recentlyViewedIds = useSearchHistoryStore((s) => s.recentlyViewedIds)
+  const addRecentSearch = useSearchHistoryStore((s) => s.addRecentSearch)
+  const removeRecentSearch = useSearchHistoryStore((s) => s.removeRecentSearch)
+  const clearRecentSearches = useSearchHistoryStore((s) => s.clearRecentSearches)
+  const favorites = useFavoriteStore((s) => s.favorites)
+
+  // Hydrate stores on mount
+  useEffect(() => {
+    void useSearchHistoryStore.persist.rehydrate()
+    void useFavoriteStore.persist.rehydrate()
+  }, [])
 
   // Auto-focus input on mount
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus()
-    }
+    inputRef.current?.focus()
   }, [])
 
-  // Sync state if URL query changes
+  // Sync state if URL query changes via browser back/forward
   useEffect(() => {
-    setQuery(urlQuery)
-  }, [urlQuery])
+    const currentQ = searchParams.get('q') ?? ''
+    const currentCat = searchParams.get('category') ?? 'all'
+    setQuery(currentQ)
+    setSelectedCategory(currentCat)
+  }, [searchParams])
 
-  // Update URL search param seamlessly without full page reload
-  const handleQueryChange = (val: string) => {
-    setQuery(val)
-    const params = new URLSearchParams(window.location.search)
-    if (val.trim()) {
-      params.set('q', val.trim())
-    } else {
-      params.delete('q')
+  // Sync q and category to URL using window.history.replaceState debounced by 150ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search)
+      if (query.trim()) {
+        params.set('q', query.trim())
+      } else {
+        params.delete('q')
+      }
+      if (selectedCategory && selectedCategory !== 'all') {
+        params.set('category', selectedCategory)
+      } else {
+        params.delete('category')
+      }
+      const newRelativePath =
+        window.location.pathname + (params.toString() ? '?' + params.toString() : '')
+      window.history.replaceState(null, '', newRelativePath)
+    }, 150)
+
+    return () => clearTimeout(timer)
+  }, [query, selectedCategory])
+
+  // Popular searches with live item counts
+  const popularSearches = useMemo(() => {
+    return getPopularSearches(initialProducts)
+  }, [initialProducts])
+
+  // Filtered & sorted products
+  const searchResults = useMemo(() => {
+    let list = query.trim() ? searchProducts(query, initialProducts) : [...initialProducts]
+
+    // Category filter
+    if (selectedCategory !== 'all') {
+      list = list.filter((p) => matchesCategory(p, selectedCategory))
     }
-    const newRelativePathQuery = window.location.pathname + (params.toString() ? '?' + params.toString() : '')
-    window.history.replaceState(null, '', newRelativePathQuery)
-  }
 
-  const handleTagClick = (tag: string) => {
-    handleQueryChange(tag)
-  }
+    // Color filter
+    if (selectedColor !== 'All Colors') {
+      list = list.filter((p) => matchesColor(p, selectedColor))
+    }
+
+    // In Stock Only
+    if (inStockOnly) {
+      list = list.filter((p) => p.inStock !== false && getAvailableProductSizes(p).length > 0)
+    }
+
+    // Sorting
+    if (sortBy === 'price-asc') {
+      list.sort((a, b) => a.priceNum - b.priceNum)
+    } else if (sortBy === 'price-desc') {
+      list.sort((a, b) => b.priceNum - a.priceNum)
+    }
+
+    return list
+  }, [query, initialProducts, selectedCategory, selectedColor, inStockOnly, sortBy])
+
+  // Recommended products for discovery or zero-result fallback
+  const recommendedProducts = useMemo(() => {
+    return getRecommendedProducts(initialProducts, {
+      favoriteIds: favorites,
+      recentlyViewedIds,
+      recentQueries: recentSearches,
+      limit: 4
+    })
+  }, [initialProducts, favorites, recentlyViewedIds, recentSearches])
+
+  const isDiscovery = query.trim() === '' && selectedCategory === 'all'
 
   const handleClear = () => {
-    handleQueryChange('')
-    if (inputRef.current) {
-      inputRef.current.focus()
-    }
+    setQuery('')
+    inputRef.current?.focus()
   }
 
   const handleBack = () => {
@@ -103,35 +208,18 @@ export default function SearchClient({
     }
   }
 
-  // Filter and sort products
-  const searchResults = useMemo(() => {
-    let list = initialProducts
+  const clearFilters = () => {
+    setQuery('')
+    setSelectedCategory('all')
+    setSelectedColor('All Colors')
+    setInStockOnly(false)
+    setSortBy('relevance')
+  }
 
-    // 1. Text Search query
-    if (query.trim()) {
-      list = searchProducts(query, initialProducts)
-    }
-
-    // 2. Category filter
-    if (selectedCategory !== 'all') {
-      list = list.filter((p) => p.category?.toLowerCase() === selectedCategory.toLowerCase())
-    }
-
-    // 3. Sorting
-    const sorted = [...list]
-    if (sortBy === 'price-asc') {
-      sorted.sort((a, b) => a.priceNum - b.priceNum)
-    } else if (sortBy === 'price-desc') {
-      sorted.sort((a, b) => b.priceNum - a.priceNum)
-    }
-
-    return sorted
-  }, [query, selectedCategory, sortBy, initialProducts])
-
-  // Track search submit
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (query.trim() && searchResults.length > 0) {
+    if (query.trim()) {
+      addRecentSearch(query.trim())
       trackEvent('product_list_viewed', {
         list_id: 'search',
         list_name: `Search: ${query.trim()}`,
@@ -140,35 +228,42 @@ export default function SearchClient({
           product_name: p.name,
           category: p.category,
           price: p.priceNum,
-          position: idx + 1,
-        })),
+          position: idx + 1
+        }))
       })
     }
   }
 
   return (
-    <div className="min-h-[calc(100dvh-120px)] bg-paper pb-[clamp(48px,8vw,96px)]">
-      {/* 1. Mobile & Desktop Sticky Search Bar */}
-      <div className="sticky top-0 z-[35] border-b border-line bg-[rgba(255,255,255,0.96)] pt-[max(8px,env(safe-area-inset-top,0px))]">
-        <div className="mx-auto flex max-w-[1240px] items-center gap-2.5 px-4 py-2.5">
+    <div className="min-h-[calc(100dvh-120px)] bg-[#faf9f6] pb-[clamp(48px,8vw,96px)]">
+      {/* 1. Sticky Search & Filter Header */}
+      <div className="sticky top-0 z-[35] border-b border-black/8 bg-white/95 backdrop-blur-xl pt-[max(8px,env(safe-area-inset-top,0px))]">
+        <div className="mx-auto flex max-w-[1400px] items-center gap-2.5 px-4 sm:px-6 lg:px-8 py-2.5">
           <button
             type="button"
-            className="flex h-10 w-10 min-w-10 cursor-pointer touch-manipulation items-center justify-center rounded-full border border-transparent bg-transparent text-ink transition-all duration-150 ease-[ease] hover:bg-bone"
+            className="flex h-10 w-10 min-w-10 cursor-pointer touch-manipulation items-center justify-center rounded-full border border-transparent bg-transparent text-zinc-900 transition-colors duration-150 hover:bg-zinc-100"
             onClick={handleBack}
             aria-label="Go back"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          <form className="relative flex flex-1 items-center rounded-full border border-transparent bg-bone transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] focus-within:border-ink focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(12,14,18,0.08)]" onSubmit={handleFormSubmit} role="search">
-            <SearchIcon className="pointer-events-none absolute left-3.5 h-[18px] w-[18px] text-[#71717a]" aria-hidden="true" />
+          <form
+            className="relative flex flex-1 items-center rounded-full border border-zinc-200 bg-zinc-50 transition-all duration-200 focus-within:border-zinc-950 focus-within:bg-white focus-within:ring-2 focus-within:ring-zinc-950/10"
+            onSubmit={handleFormSubmit}
+            role="search"
+          >
+            <SearchIcon
+              className="pointer-events-none absolute left-3.5 h-[18px] w-[18px] text-zinc-400"
+              aria-hidden="true"
+            />
             <input
               ref={inputRef}
               type="search"
-              className="h-11 w-full border-0 bg-transparent py-0 pl-[42px] pr-10 font-ui text-base text-ink outline-none placeholder:text-[13.5px] placeholder:text-[#a1a1aa]"
-              placeholder="Search by fit, style, wash, or fabric..."
+              className="h-11 w-full border-0 bg-transparent py-0 pl-[42px] pr-10 font-sans text-sm sm:text-base text-zinc-950 outline-none placeholder:text-zinc-400 font-medium"
+              placeholder="Search heavyweight combed cotton tees, bottomwear, or colors..."
               value={query}
-              onChange={(e) => handleQueryChange(e.target.value)}
+              onChange={(e) => setQuery(e.target.value)}
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="none"
@@ -179,124 +274,275 @@ export default function SearchClient({
             {query && (
               <button
                 type="button"
-                className="absolute right-2.5 flex h-[26px] w-[26px] cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-[#e4e4e7] text-[#52525b]"
+                className="absolute right-2.5 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-zinc-200 text-zinc-600 hover:bg-zinc-300 transition-colors"
                 onClick={handleClear}
                 aria-label="Clear search input"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </form>
         </div>
 
-        {/* 2. Quick Tags Bar */}
-        <div className="mx-auto max-w-[1240px] px-4 pb-2.5">
-          <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden">
-            <span className="inline-flex items-center whitespace-nowrap font-brand text-[10.5px] font-bold tracking-[0.06em] text-ink-muted">
-              <TrendingUp className="w-3.5 h-3.5 mr-1" />
-              POPULAR:
-            </span>
-            {POPULAR_TAGS.map((tag) => {
-              const active = query.toLowerCase() === tag.toLowerCase()
+        {/* Categories Strip */}
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
+            {QUICK_CATEGORIES.map((cat) => {
+              const active = selectedCategory.toLowerCase() === cat.id
               return (
                 <button
-                  key={tag}
+                  key={cat.id}
                   type="button"
-                  className={`cursor-pointer touch-manipulation whitespace-nowrap rounded-2xl border px-3 py-[5px] font-ui text-[11.5px] font-medium transition-all duration-150 ease-[ease] ${active ? 'border-ink bg-ink text-white' : 'border-line bg-paper text-ink-secondary hover:border-ink hover:text-ink'}`}
-                  onClick={() => handleTagClick(tag)}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-3 py-1.5 rounded-full font-medium whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                    active
+                      ? 'bg-zinc-950 text-white shadow-2xs'
+                      : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 hover:text-zinc-950'
+                  }`}
                 >
-                  {tag}
+                  {cat.label}
                 </button>
               )
             })}
           </div>
         </div>
+
+        {/* Popular & Recent Tag Bars */}
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-3 space-y-1.5">
+          {/* Recent Searches Row */}
+          {recentSearches.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+              <span className="inline-flex items-center whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-zinc-500 shrink-0">
+                <Clock className="w-3 h-3 mr-1 text-zinc-400" />
+                RECENT:
+              </span>
+              {recentSearches.map((term) => (
+                <span
+                  key={term}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 hover:border-zinc-950 hover:text-zinc-950 transition-colors cursor-pointer group shrink-0"
+                  onClick={() => {
+                    setQuery(term)
+                    addRecentSearch(term)
+                  }}
+                >
+                  <span>{term}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      removeRecentSearch(term)
+                    }}
+                    className="p-0.5 rounded-full text-zinc-400 hover:text-zinc-950 hover:bg-black/10 transition-colors"
+                    aria-label={`Remove recent search ${term}`}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+              <button
+                type="button"
+                onClick={clearRecentSearches}
+                className="text-[11px] text-zinc-500 hover:text-zinc-950 underline underline-offset-2 ml-1 cursor-pointer whitespace-nowrap shrink-0"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+
+          {/* Popular Searches Row */}
+          {popularSearches.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+              <span className="inline-flex items-center whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-zinc-500 shrink-0">
+                <TrendingUp className="w-3 h-3 mr-1 text-zinc-400" />
+                POPULAR:
+              </span>
+              {popularSearches.map(({ term, count }) => {
+                const active = query.toLowerCase() === term.toLowerCase()
+                return (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => {
+                      setQuery(term)
+                      setSelectedCategory('all')
+                      addRecentSearch(term)
+                    }}
+                    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium transition-all cursor-pointer shrink-0 ${
+                      active
+                        ? 'border-zinc-950 bg-zinc-950 text-white'
+                        : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-950 hover:text-zinc-950'
+                    }`}
+                  >
+                    <span>{term}</span>
+                    <span className={`text-[10px] ${active ? 'text-zinc-300' : 'text-zinc-400'}`}>
+                      · {count}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* 3. Search Body Content */}
-      <div className="mx-auto max-w-[1240px] px-4 py-5">
-        {/* Category Filter Pills & Sort Bar */}
-        <div className="mb-6 flex flex-col gap-3.5 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden">
-            {QUICK_CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                className={`cursor-pointer touch-manipulation whitespace-nowrap rounded-[6px] border border-transparent px-3.5 py-1.5 font-ui text-[12.5px] font-medium transition-all duration-150 ease-[ease] ${selectedCategory === cat.id ? 'bg-ink text-white' : 'bg-bone text-[#52525b]'}`}
-                onClick={() => setSelectedCategory(cat.id)}
-              >
-                {cat.label}
-              </button>
-            ))}
+      {/* 2. Main Search Body */}
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6">
+        {/* Secondary Filter & Sort Bar */}
+        <div className="mb-6 pb-4 border-b border-black/8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          {/* Color Pills & In Stock toggle */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1">
+            {COLOR_PILLS.map((color) => {
+              const active = selectedColor === color
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setSelectedColor(color)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
+                    active
+                      ? 'bg-zinc-950 text-white shadow-2xs'
+                      : 'bg-white border border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:text-zinc-950'
+                  }`}
+                >
+                  {color !== 'All Colors' && (
+                    <span
+                      className="h-2.5 w-2.5 rounded-full border border-black/15 shrink-0"
+                      style={{ backgroundColor: getColorHex(color) }}
+                    />
+                  )}
+                  {color}
+                </button>
+              )
+            })}
+
+            <button
+              type="button"
+              onClick={() => setInStockOnly(!inStockOnly)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-all cursor-pointer ml-1 ${
+                inStockOnly
+                  ? 'bg-emerald-50 border-emerald-500 text-emerald-800'
+                  : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-400'
+              }`}
+            >
+              <Check className={`w-3.5 h-3.5 ${inStockOnly ? 'opacity-100' : 'opacity-30'}`} />
+              In Stock Only
+            </button>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="font-ui text-[13px] text-[#52525b]">
-              {query.trim() ? (
-                <>
-                  Showing <b>{searchResults.length}</b> {searchResults.length === 1 ? 'item' : 'items'} for{' '}
-                  <span className="font-semibold text-ink">“{query}”</span>
-                </>
-              ) : (
-                <>
-                  All Products <b>({searchResults.length})</b>
-                </>
-              )}
+          {/* Result Count and Sort Dropdown */}
+          <div className="flex items-center justify-between md:justify-end gap-3 shrink-0">
+            <span className="text-xs font-medium text-zinc-500">
+              <strong className="text-zinc-950">{searchResults.length}</strong> {searchResults.length === 1 ? 'style' : 'styles'}
             </span>
 
-            <div className="inline-flex items-center rounded-[6px] border border-line bg-bone px-2.5 py-1">
-              <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500 mr-1" />
+            <label className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800">
+              <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500" />
               <select
-                className="cursor-pointer border-0 bg-transparent font-ui text-xs font-medium text-[#18181b] outline-none"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                aria-label="Sort search results"
+                className="bg-transparent border-0 outline-none text-zinc-900 cursor-pointer font-medium"
+                aria-label="Sort products"
               >
                 <option value="relevance">Recommended</option>
                 <option value="price-asc">Price: Low to High</option>
                 <option value="price-desc">Price: High to Low</option>
               </select>
-            </div>
+            </label>
           </div>
         </div>
 
-        {/* 4. Product Grid or Empty State */}
-        {searchResults.length === 0 ? (
-          <div className="mx-auto max-w-[480px] px-5 py-16 text-center">
-            <div className="mb-3 inline-flex h-16 w-16 items-center justify-center rounded-full bg-bone">
-              <SearchIcon className="w-8 h-8 text-zinc-400" />
+        {/* 3. Discovery State: Recommended For You Strip above catalog grid */}
+        {isDiscovery && recommendedProducts.length > 0 && (
+          <section className="mb-10 pb-8 border-b border-black/8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-zinc-700" />
+                <h2 className="text-base sm:text-lg font-bold text-zinc-950 tracking-tight">
+                  Recommended For You
+                </h2>
+              </div>
+              <span className="text-xs text-zinc-500 font-medium">Curated for your preferences</span>
             </div>
-            <h3 className="mb-2 font-brand text-[20px] leading-[26px] font-bold text-ink">No styles found for “{query}”</h3>
-            <p className="mb-6 font-ui text-[13.5px] leading-normal text-ink-muted">
-              Check your spelling or explore our popular everyday heavy cotton fits, stripes, and bottomwear.
-            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+              {recommendedProducts.map((product) => (
+                <ProductCard key={`rec-${product.id}`} product={product} />
+              ))}
+            </div>
+          </section>
+        )}
 
-            <div className="mb-7">
-              <span className="mb-2.5 block font-brand text-[10.5px] font-bold tracking-[0.08em] text-ink-muted">TRY SEARCHING:</span>
-              <div className="flex flex-wrap justify-center gap-2">
-                {POPULAR_TAGS.slice(0, 5).map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    className="cursor-pointer rounded-2xl border border-line bg-white px-3.5 py-1.5 font-ui text-[12px] leading-[18px] font-medium transition-all duration-150 ease-[ease] hover:bg-ink hover:text-white"
-                    onClick={() => handleTagClick(tag)}
-                  >
-                    {tag}
-                  </button>
+        {/* 4. Active Results or Zero-Result State */}
+        {searchResults.length === 0 ? (
+          <div className="space-y-10 py-6">
+            <div className="mx-auto max-w-lg px-4 py-12 text-center rounded-2xl bg-white border border-zinc-200/80 shadow-2xs">
+              <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100">
+                <SearchIcon className="w-7 h-7 text-zinc-400" />
+              </div>
+              <h3 className="mb-1 text-lg font-bold text-zinc-950">
+                No styles found for &ldquo;{query.trim() || selectedCategory}&rdquo;
+              </h3>
+              <p className="mb-6 text-xs text-zinc-500 max-w-sm mx-auto">
+                Check your spelling, or select one of our curated popular tags below.
+              </p>
+
+              {popularSearches.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-2 mb-6">
+                  {popularSearches.slice(0, 6).map(({ term, count }) => (
+                    <button
+                      key={term}
+                      type="button"
+                      onClick={() => {
+                        setQuery(term)
+                        setSelectedCategory('all')
+                        setSelectedColor('All Colors')
+                        setInStockOnly(false)
+                        addRecentSearch(term)
+                      }}
+                      className="px-3 py-1.5 rounded-full border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-xs font-medium text-zinc-800 transition-colors cursor-pointer"
+                    >
+                      {term} · {count}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center justify-center rounded-lg bg-zinc-950 px-5 py-2.5 text-xs font-semibold text-white hover:bg-zinc-800 transition-colors cursor-pointer shadow-xs active:scale-95"
+              >
+                <ShoppingBag className="w-3.5 h-3.5 mr-2" />
+                Browse Entire Collection
+              </button>
+            </div>
+
+            {/* Guaranteed fallback recommended grid */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-zinc-700" />
+                <h3 className="text-base font-bold text-zinc-950">
+                  Recommended Alternatives
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+                {recommendedProducts.map((product) => (
+                  <ProductCard key={`fallback-${product.id}`} product={product} />
                 ))}
               </div>
             </div>
-
-            <Link href="/shop" className="inline-flex h-[46px] items-center justify-center rounded-[6px] bg-ink px-6 font-brand text-[13.5px] font-semibold tracking-[0.03em] text-white no-underline transition-opacity duration-150 ease-[ease] hover:opacity-90">
-              <ShoppingBag className="w-4 h-4 mr-2" />
-              Browse Entire Collection
-            </Link>
           </div>
         ) : (
-          <div className="mt-2.5 grid grid-cols-4 gap-x-4 gap-y-6 [@media(max-width:1200px)]:grid-cols-3 [@media(max-width:768px)]:grid-cols-2 [@media(max-width:768px)]:gap-x-2.5 [@media(max-width:768px)]:gap-y-4">
-            {searchResults.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+          <div>
+            {isDiscovery && (
+              <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4">
+                All Products
+              </h3>
+            )}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+              {searchResults.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </div>
         )}
       </div>

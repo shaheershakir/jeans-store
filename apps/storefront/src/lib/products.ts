@@ -28,6 +28,83 @@ export function isProductAvailable(product: Product): boolean {
   return getAvailableProductSizes(product).length > 0
 }
 
+const PRODUCT_COLOR_HEX: Record<string, string> = {
+  black: '#171717',
+  white: '#f5f3ed',
+  navy: '#1e3157',
+  grey: '#85878b',
+  gray: '#85878b',
+  ash: '#85878b',
+  blue: '#436fa8',
+  green: '#3e7558',
+  olive: '#747947',
+  red: '#a63836',
+  beige: '#d8c7a7',
+  charcoal: '#414347',
+  cream: '#eee9dd',
+  ecru: '#eee9dd',
+  brown: '#5c4033',
+  tan: '#d2b48c',
+  khaki: '#c3b091',
+  sand: '#c2b280',
+  sage: '#9cb071',
+  burgundy: '#800020',
+  maroon: '#681c23',
+  rust: '#b7410e',
+  lavender: '#b57bee',
+  indigo: '#264348',
+  teal: '#008080',
+  coral: '#e07a5f',
+  mustard: '#d4a373',
+  purple: '#6a0dad',
+  pink: '#f4a6b8',
+  mocha: '#8a6240',
+  plum: '#5c2c47',
+  terracotta: '#c85a32',
+  camel: '#c19a6b',
+  taupe: '#b38b6d',
+  mint: '#98ff98',
+  clay: '#b66a50',
+  'washed black': '#1e1e1e',
+  'off white': '#faf9f6'
+}
+
+export function getColorHex(colorName: string): string {
+  const trimmed = colorName.trim()
+  if (!trimmed) return '#171717'
+  if (trimmed.startsWith('#')) return trimmed
+  const hexMatch = trimmed.match(/#(?:[0-9a-fA-F]{3}){1,2}\b/)
+  if (hexMatch) return hexMatch[0]
+  return PRODUCT_COLOR_HEX[trimmed.toLowerCase()] || '#444444'
+}
+
+export function getProductSwatchColors(product: Product, limit = 4): string[] {
+  const resolve = (colorName: string): string => getColorHex(colorName)
+
+  const variantColors = Array.from(
+    new Set(
+      (product.variants ?? [])
+        .map((variant) => variant.color?.trim())
+        .filter((color): color is string => Boolean(color))
+    )
+  )
+
+  if (variantColors.length > 0) {
+    return variantColors.slice(0, limit).map(resolve)
+  }
+
+  if (product.color) {
+    return product.color
+      .split('/')
+      .map((color) => color.trim())
+      .filter(Boolean)
+      .slice(0, limit)
+      .map(resolve)
+  }
+
+  return ['#171717']
+}
+
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000'
 
 export async function getProducts(): Promise<Product[]> {

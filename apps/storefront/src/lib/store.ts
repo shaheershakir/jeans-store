@@ -281,6 +281,61 @@ export const useUIStore = create<UIState>()(
   )
 )
 
+/**
+ * Shared live catalog. The overlay and the /search page both read from here so
+ * the catalog is fetched once per session instead of once per component.
+ */
+interface CatalogState {
+  products: Product[]
+  status: 'idle' | 'loading' | 'ready' | 'error'
+  lastFetchedAt: number
+  hydrateCatalog: (products: Product[]) => void
+  loadCatalog: (options?: { force?: boolean }) => Promise<void>
+}
+
+const CATALOG_TTL_MS = 5 * 60 * 1000
+let catalogInFlight: Promise<void> | null = null
+
+export const useCatalogStore = create<CatalogState>()((set, get) => ({
+  products: PRODUCTS,
+  status: 'idle',
+  lastFetchedAt: 0,
+  hydrateCatalog: (products) => {
+    if (!Array.isArray(products) || products.length === 0) return
+    // A live client fetch already won; don't replace it with a server snapshot.
+    if (get().status === 'ready') return
+    set({ products, status: 'ready', lastFetchedAt: Date.now() })
+  },
+  loadCatalog: async (options) => {
+    const force = options?.force ?? false
+    const { status, lastFetchedAt } = get()
+
+    if (catalogInFlight) return catalogInFlight
+    if (status === 'loading') return
+    if (!force && lastFetchedAt > 0 && Date.now() - lastFetchedAt < CATALOG_TTL_MS) return
+
+    set({ status: 'loading' })
+    catalogInFlight = (async () => {
+      try {
+        const response = await fetch('/api/products', { cache: 'no-store' })
+        if (!response.ok) throw new Error(`Catalog request failed: ${response.status}`)
+        const data = (await response.json()) as { products?: Product[] }
+        if (Array.isArray(data.products) && data.products.length > 0) {
+          set({ products: data.products, status: 'ready', lastFetchedAt: Date.now() })
+        } else {
+          set({ status: 'ready', lastFetchedAt: Date.now() })
+        }
+      } catch {
+        set({ status: 'error' })
+      } finally {
+        catalogInFlight = null
+      }
+    })()
+
+    return catalogInFlight
+  }
+}))
+
 export interface UserAddress {
   id: string
   fullName: string
@@ -631,5 +686,63 @@ export const useOnboardingStore = create<OnboardingState>()(
     }
   )
 )
+
+interface SearchHistoryState {
+  recentSearches: string[]
+  recentlyViewedIds: string[]
+  addRecentSearch: (query: string) => void
+  removeRecentSearch: (query: string) => void
+  clearRecentSearches: () => void
+  addRecentlyViewed: (productId: string | number) => void
+}
+
+export const useSearchHistoryStore = create<SearchHistoryState>()(
+  persist(
+    (set) => ({
+      recentSearches: [],
+      recentlyViewedIds: [],
+
+      addRecentSearch: (query: string) =>
+        set((state) => {
+          const trimmed = query.trim()
+          if (trimmed.length < 2) return state
+          const lower = trimmed.toLowerCase()
+          const filtered = state.recentSearches.filter(
+            (item) => item.toLowerCase() !== lower
+          )
+          return {
+            recentSearches: [trimmed, ...filtered].slice(0, 6)
+          }
+        }),
+
+      removeRecentSearch: (query: string) =>
+        set((state) => {
+          const lower = query.toLowerCase()
+          return {
+            recentSearches: state.recentSearches.filter(
+              (item) => item.toLowerCase() !== lower
+            )
+          }
+        }),
+
+      clearRecentSearches: () => set({ recentSearches: [] }),
+
+      addRecentlyViewed: (productId: string | number) =>
+        set((state) => {
+          const id = String(productId).trim()
+          if (!id) return state
+          const filtered = state.recentlyViewedIds.filter((item) => item !== id)
+          return {
+            recentlyViewedIds: [id, ...filtered].slice(0, 8)
+          }
+        })
+    }),
+    {
+      name: 'teesgarage-search-history',
+      skipHydration: true
+    }
+  )
+)
+
 
 
