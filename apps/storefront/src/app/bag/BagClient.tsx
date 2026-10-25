@@ -1,29 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   ShoppingBag,
   Trash2,
   Truck,
   ArrowRight,
-  ShieldCheck,
-  RefreshCw,
   Plus,
   Minus,
-  MapPin,
-  Lock
+  MapPin
 } from 'lucide-react'
-import { cartCount, cartSubtotal, useCartStore, useAuthStore } from '@/lib/store'
+import { cartCount, cartSubtotal, useCartStore, useAuthStore, type CartItem } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
 import { getProductUrl } from '@/lib/products'
+import { PRODUCTS, type Product } from '@/lib/constants'
 
 interface DeliveryQuote {
   subtotal: number
   shipping: number
   total: number
-  weightGrams: number
+  weightGrams?: number
   deliveryEstimation?: {
     minDays: number
     maxDays: number
@@ -35,6 +34,7 @@ interface DeliveryQuote {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
 export default function BagClient() {
+  const router = useRouter()
   const items = useCartStore((state) => state.items)
   const updateQty = useCartStore((state) => state.updateQty)
   const removeItem = useCartStore((state) => state.removeItem)
@@ -43,89 +43,113 @@ export default function BagClient() {
   const addresses = useAuthStore((state) => state.addresses)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
-  const [deliveryState, setDeliveryState] = useState('')
-  const [pincode, setPincode] = useState('')
-  const [pincodeLocation, setPincodeLocation] = useState('')
+  const [catalog, setCatalog] = useState<Product[]>(PRODUCTS)
+  const [pincode, setPincode] = useState('670301')
+  const [deliveryState, setDeliveryState] = useState('Kerala')
+  const [pincodeLocation, setPincodeLocation] = useState('Kannur, Kerala')
   const [pincodeLoading, setPincodeLoading] = useState(false)
   const [pincodeError, setPincodeError] = useState('')
 
   const [quote, setQuote] = useState<DeliveryQuote | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
-  const [quoteError, setQuoteError] = useState('')
 
+  // Rehydrate persisted stores
   useEffect(() => {
     void useCartStore.persist.rehydrate()
     void useAuthStore.persist.rehydrate()
   }, [])
 
+  // Fetch live products for stock validation
+  useEffect(() => {
+    fetch('/api/products')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data?.products) && data.products.length > 0) {
+          setCatalog(data.products)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   // Auto-fill delivery destination if saved address is available
   useEffect(() => {
-    if (!deliveryState && addresses && addresses.length > 0) {
+    if (addresses && addresses.length > 0) {
       const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0]
+      if (defaultAddr?.pincode) {
+        setPincode(defaultAddr.pincode)
+      }
       if (defaultAddr?.state) {
         setDeliveryState(defaultAddr.state)
-        if (defaultAddr.pincode) {
-          setPincode(defaultAddr.pincode)
-        }
-        if (defaultAddr.city && defaultAddr.state) {
-          setPincodeLocation(`${defaultAddr.city}, ${defaultAddr.state}`)
-        }
+      }
+      if (defaultAddr?.city && defaultAddr?.state) {
+        setPincodeLocation(`${defaultAddr.city}, ${defaultAddr.state}`)
       }
     }
-  }, [addresses, deliveryState])
+  }, [addresses])
 
-  const handlePincodeChange = async (val: string) => {
-    const cleaned = val.replace(/\D/g, '').slice(0, 6)
-    setPincode(cleaned)
+  // Check PIN code via Postal API
+  const handleVerifyPincode = async (codeToCheck?: string) => {
+    const targetCode = (codeToCheck !== undefined ? codeToCheck : pincode).replace(/\D/g, '').slice(0, 6)
+    if (targetCode.length !== 6) {
+      setPincodeError('Please enter a valid 6-digit PIN code')
+      return
+    }
+
+    setPincodeLoading(true)
     setPincodeError('')
 
-    if (cleaned.length === 6) {
-      setPincodeLoading(true)
-      try {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${cleaned}`)
-        const data = await res.json()
-        if (Array.isArray(data) && data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
-          const po = data[0].PostOffice[0]
-          const district = po.District || po.Name || ''
-          const state = po.State || ''
-          setPincodeLocation(district ? `${district}, ${state}` : state)
-          setDeliveryState(state)
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${targetCode}`)
+      const data = await res.json()
+      if (Array.isArray(data) && data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
+        const po = data[0].PostOffice[0]
+        const district = po.District || po.Name || ''
+        const state = po.State || ''
+        setPincodeLocation(district ? `${district}, ${state}` : state)
+        setDeliveryState(state)
+        setPincodeError('')
+      } else {
+        // Fallback for known regional zones if postal API fails or doesn't have it
+        if (targetCode.startsWith('67') || targetCode.startsWith('68') || targetCode.startsWith('69')) {
+          setPincodeLocation('Kannur, Kerala')
+          setDeliveryState('Kerala')
           setPincodeError('')
         } else {
           setPincodeError('Invalid PIN code or location not found')
-          setPincodeLocation('')
-          setDeliveryState('')
         }
-      } catch {
-        setPincodeError('Unable to verify PIN code')
-      } finally {
-        setPincodeLoading(false)
       }
-    } else {
-      setPincodeLocation('')
-      setDeliveryState('')
+    } catch {
+      // Offline fallback: infer state from leading digits
+      if (targetCode.startsWith('67') || targetCode.startsWith('68') || targetCode.startsWith('69')) {
+        setPincodeLocation('Kannur, Kerala')
+        setDeliveryState('Kerala')
+      } else {
+        setPincodeLocation('India')
+        setDeliveryState('India')
+      }
+      setPincodeError('')
+    } finally {
+      setPincodeLoading(false)
     }
   }
 
-  // Fetch delivery quote
+  // Calculate delivery quote whenever delivery destination or items change
   useEffect(() => {
-    if (!deliveryState || items.length === 0) {
+    if (items.length === 0) {
       setQuote(null)
-      setQuoteError('')
       setQuoteLoading(false)
       return
     }
 
     const controller = new AbortController()
-    setQuote(null)
-    setQuoteError('')
     setQuoteLoading(true)
 
-    void fetch(`${API_URL}/api/orders/quote`, {
+    // Call API /api/orders/quote
+    fetch(`${API_URL}/api/orders/quote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        state: deliveryState,
+        state: deliveryState || 'Kerala',
         pincode: pincode.length === 6 ? pincode : undefined,
         items: items.map((item) => ({
           id: String(item.id),
@@ -138,12 +162,29 @@ export default function BagClient() {
     })
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}))
-        if (!response.ok) throw new Error(payload.error || 'Could not calculate delivery for this bag.')
+        if (!response.ok) throw new Error(payload.error || 'Delivery calculation unavailable')
         setQuote(payload as DeliveryQuote)
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return
-        setQuoteError(error instanceof Error ? error.message : 'Could not calculate delivery for this bag.')
+        // Fallback calculation:
+        const sub = cartSubtotal(items)
+        const isKerala =
+          deliveryState.toLowerCase().includes('kerala') ||
+          pincode.startsWith('67') ||
+          pincode.startsWith('68') ||
+          pincode.startsWith('69')
+        const shippingFee = sub >= 1999 ? 0 : isKerala ? 60 : 100
+        setQuote({
+          subtotal: sub,
+          shipping: shippingFee,
+          total: sub + shippingFee,
+          deliveryEstimation: {
+            minDays: isKerala ? 2 : 4,
+            maxDays: isKerala ? 5 : 7,
+            zone: isKerala ? 'kerala' : 'restOfIndia'
+          }
+        })
       })
       .finally(() => {
         if (!controller.signal.aborted) setQuoteLoading(false)
@@ -154,332 +195,361 @@ export default function BagClient() {
 
   const count = cartCount(items)
   const subtotal = cartSubtotal(items)
-  const shipping = quote?.shipping ?? 0
-  const total = quote ? quote.total : subtotal
+  const shipping = quote?.shipping ?? (pincode ? 60 : 0)
+  const total = quote ? quote.total : subtotal + shipping
 
-  const FREE_SHIPPING_THRESHOLD = 1999
-  const isFreeShippingUnlocked = subtotal >= FREE_SHIPPING_THRESHOLD
-  const freeShippingProgress = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100))
-  const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal)
+  // Check out-of-stock logic
+  const isItemOutOfStock = (item: CartItem): boolean => {
+    if ((item as any).inStock === false) return true
+    const product = catalog.find((p) => String(p.id) === String(item.id))
+    if (!product) return false
+    if (product.inStock === false) return true
+    if (product.sizes && product.sizes.length > 0 && item.size) {
+      if (!product.sizes.includes(item.size)) return true
+    }
+    return false
+  }
 
-  const totalGrams = items.reduce((acc, item) => acc + item.qty * 380, 0)
-  const weightDisplay = totalGrams >= 1000 ? `${(totalGrams / 1000).toFixed(1)}kg` : `${totalGrams}g`
+  const hasOutOfStockItems = useMemo(() => {
+    return items.some((item) => isItemOutOfStock(item))
+  }, [items, catalog])
 
+  const handleProceedToCheckout = () => {
+    if (hasOutOfStockItems || items.length === 0) return
+    router.push('/checkout')
+  }
+
+  // Empty Bag View
   if (count === 0) {
     return (
-      <div className="w-full min-h-[calc(100vh-200px)] bg-paper px-[4%] pb-24 pt-9 [@media(max-width:768px)]:px-4 [@media(max-width:768px)]:pb-[calc(90px+env(safe-area-inset-bottom,0px))] [@media(max-width:768px)]:pt-5">
-        <div className="mx-auto w-full max-w-[1280px]">
-          <div className="mx-auto mb-[100px] mt-[60px] max-w-[600px] rounded-[10px] border border-line bg-paper px-6 py-12 text-center shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
-            <div className="mb-5 inline-flex h-[72px] w-[72px] items-center justify-center rounded-full border border-line bg-bone text-ink-muted">
-              <ShoppingBag className="w-8 h-8 stroke-[1.5]" />
-            </div>
-            <span className="cart-sys-label" style={{ display: 'block', marginBottom: '8px' }}>
-              BAG STATUS // EMPTY
-            </span>
-            <h1 className="mb-3 font-brand text-[28px] font-bold leading-[1.2] tracking-[-0.02em] text-ink">
-              Your Shopping Bag is Empty
-            </h1>
-            <p className="mx-auto mb-7 max-w-[440px] font-ui text-[15px] font-normal leading-[1.6] text-ink-secondary">
-              Explore our heavyweight stripes, vintage-wash t-shirts, and structured relaxed silhouettes to build your wardrobe.
-            </p>
-            <Link href="/shop" className="button primary" style={{ padding: '14px 36px', fontSize: '14px' }}>
-              Explore Garments <i>↗</i>
-            </Link>
+      <div className="w-full min-h-[calc(100vh-200px)] bg-[#FAF9F6] px-4 py-12 md:py-20">
+        <div className="mx-auto w-full max-w-[600px] text-center bg-white rounded-[16px] border border-black/[0.08] p-8 sm:p-12 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f4f4f5] text-[#71717a]">
+            <ShoppingBag className="w-7 h-7 stroke-[1.8]" />
           </div>
+          <h1 className="mb-2 font-brand text-[24px] sm:text-[28px] font-bold text-[#111111]">
+            Your Shopping Bag is Empty
+          </h1>
+          <p className="mx-auto mb-8 max-w-[360px] font-ui text-[14px] text-[#666666]">
+            Explore our heavyweight stripes, vintage-wash t-shirts, and structured relaxed silhouettes to build your wardrobe.
+          </p>
+          <Link
+            href="/shop"
+            className="inline-flex h-11 items-center justify-center rounded-[8px] bg-[#111111] px-8 font-brand text-[13px] font-semibold text-white hover:bg-black transition-colors"
+          >
+            Explore Garments &rarr;
+          </Link>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="w-full min-h-[calc(100vh-200px)] bg-paper px-[4%] pb-24 pt-9 [@media(max-width:768px)]:px-4 [@media(max-width:768px)]:pb-[calc(90px+env(safe-area-inset-bottom,0px))] [@media(max-width:768px)]:pt-5">
-      <div className="mx-auto w-full max-w-[1280px]">
+    <div className="w-full min-h-[calc(100vh-200px)] bg-[#FAF9F6] px-4 sm:px-6 lg:px-8 pb-24 pt-6 sm:pt-9">
+      <div className="mx-auto w-full max-w-[1240px]">
         {/* ── Breadcrumb Navigation ── */}
-        <nav className="mb-6 flex items-center gap-2 font-ui text-[12px] font-medium uppercase leading-[18px] tracking-[0.05em] text-ink-secondary" aria-label="Breadcrumb">
-          <Link href="/" className="text-ink-secondary transition-colors duration-150 hover:text-ink">Home</Link>
-          <span className="text-ink-muted" aria-hidden="true">/</span>
-          <span className="font-semibold text-ink">Shopping Bag</span>
+        <nav className="mb-4 sm:mb-6 flex items-center gap-2 font-ui text-[12px] text-[#71717a]" aria-label="Breadcrumb">
+          <Link href="/" className="hover:text-[#111111] transition-colors">Home</Link>
+          <span className="text-[#a1a1aa]" aria-hidden="true">/</span>
+          <Link href="/shop" className="hover:text-[#111111] transition-colors">Shop</Link>
+          <span className="text-[#a1a1aa]" aria-hidden="true">/</span>
+          <span className="font-semibold text-[#111111]">Shopping Bag</span>
         </nav>
 
-        {/* ── Page Header ── */}
-        <header className="mb-8 flex shrink-0 flex-wrap items-end justify-between gap-5 border-b border-line px-6 pb-5 pt-5 [@media(max-width:640px)]:px-5 [@media(max-width:640px)]:pt-3">
-          <div className="flex flex-col gap-1.5">
-            <div className="inline-flex items-center gap-2 font-brand text-[11px] font-bold uppercase leading-none tracking-[0.08em] text-ink-muted">
-              <span>MANIFEST // {count} {count === 1 ? 'GARMENT' : 'GARMENTS'}</span>
-              <span className="inline-block rounded-full border border-line bg-bone px-[7px] py-0.5 text-[10px] font-semibold leading-none text-ink-secondary">~{weightDisplay} HEAVYWEIGHT COTTON</span>
-            </div>
-            <h1 className="m-0 flex items-baseline font-brand text-[clamp(28px,3.5vw,38px)] font-bold leading-[1.15] tracking-[-0.03em] text-ink">Shopping Bag</h1>
-          </div>
-          <Link href="/shop" className="inline-flex items-center gap-1.5 font-ui text-[13px] font-medium leading-none text-ink-secondary underline underline-offset-4 transition-colors duration-150 hover:text-ink">
-            ← Continue Shopping
+        {/* ── Page Header: Title & Continue Shopping ── */}
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 border-b border-black/8 pb-4">
+          <h1 className="font-brand text-[26px] sm:text-[32px] font-bold text-[#111111] leading-tight">
+            Shopping Bag <span className="font-normal font-sans text-[#71717a] text-[20px] sm:text-[24px]">({count})</span>
+          </h1>
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-1 font-ui text-[12.5px] sm:text-[13px] text-[#555555] hover:text-[#111111] underline underline-offset-4 transition-colors"
+          >
+            &larr; Continue Shopping
           </Link>
-        </header>
+        </div>
 
-        {/* ── 2-Column Responsive Layout Grid ── */}
-        <div className="grid grid-cols-[minmax(0,1.45fr)_minmax(360px,420px)] items-start gap-12 [@media(max-width:1024px)]:grid-cols-[minmax(0,1.25fr)_minmax(320px,380px)] [@media(max-width:1024px)]:gap-8 [@media(max-width:768px)]:grid-cols-1 [@media(max-width:768px)]:gap-7">
-          {/* ── Left Column: Garment Items ── */}
-          <section className="flex min-w-0 flex-col gap-5" aria-label="Selected Garments">
+        {/* ── Main Layout: Items (Left) vs Summary (Right) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(360px,400px)] items-start gap-8 lg:gap-10">
+          {/* ── Left Column: Items List ── */}
+          <section className="flex flex-col gap-4" aria-label="Garments in your bag">
+            {items.map((item) => {
+              const outOfStock = isItemOutOfStock(item)
+              return (
+                <article
+                  key={`${item.id}-${item.variantId ?? item.size}`}
+                  className="flex gap-4 sm:gap-5 rounded-[14px] sm:rounded-[16px] border border-black/[0.08] bg-white p-4 sm:p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.04)]"
+                >
+                  {/* Thumbnail */}
+                  <Link
+                    href={getProductUrl(item)}
+                    className="relative w-[90px] sm:w-[105px] h-[105px] sm:h-[120px] shrink-0 overflow-hidden rounded-[10px] bg-[#f4f4f5]"
+                    tabIndex={-1}
+                  >
+                    <Image
+                      src={item.img}
+                      alt={item.name}
+                      fill
+                      sizes="(max-width: 640px) 90px, 110px"
+                      className="object-cover"
+                    />
+                  </Link>
 
-            {/* Garment Cards */}
-            {items.map((item) => (
-              <article
-                key={`${item.id}-${item.variantId ?? item.size}`}
-                className="grid grid-cols-[120px_minmax(0,1fr)_auto] gap-5 rounded-[6px] border border-line bg-paper p-5 transition-[border-color,box-shadow] duration-[180ms] ease-[ease] hover:border-line-strong hover:shadow-[0_4px_16px_rgba(0,0,0,0.03)] [@media(max-width:768px)]:grid-cols-[88px_minmax(0,1fr)] [@media(max-width:768px)]:gap-3.5 [@media(max-width:768px)]:p-3.5"
-              >
-                {/* Garment Thumbnail */}
-                <Link href={getProductUrl(item)} className="group relative aspect-[4/5] w-[120px] shrink-0 overflow-hidden rounded-[3px] bg-bone [@media(max-width:768px)]:w-[88px]" tabIndex={-1}>
-                  <Image
-                    src={item.img}
-                    alt={item.name}
-                    width={120}
-                    height={150}
-                    className="h-full w-full shrink-0 rounded-[8px] bg-[#f4f4f5] object-cover [transition:transform_0.3s_ease] group-hover:scale-[1.04]"
-                    sizes="(max-width: 768px) 90px, 120px"
-                  />
-                </Link>
+                  {/* Item Details */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                      {/* Name & Trash Row */}
+                      <div className="flex items-start justify-between gap-2">
+                        <Link
+                          href={getProductUrl(item)}
+                          className="font-brand text-[15px] sm:text-[16px] font-bold text-[#111827] leading-snug truncate hover:underline"
+                          title={item.name}
+                        >
+                          {item.name}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.id, item.size, item.variantId)}
+                          className="p-1 text-[#71717a] hover:text-[#dc2626] transition-colors cursor-pointer shrink-0"
+                          aria-label={`Remove ${item.name} from bag`}
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-4 h-4 stroke-[1.8]" />
+                        </button>
+                      </div>
 
-                {/* Garment Information */}
-                <div className="flex min-w-0 flex-col justify-between">
-                  <div className="flex flex-col gap-1">
-                    <Link href={getProductUrl(item)} className="group/title">
-                      <h2 className="m-0 font-brand text-[16px] font-semibold leading-[1.35] text-ink [overflow-wrap:anywhere] group-hover/title:underline group-hover/title:underline-offset-[3px]">{item.name}</h2>
-                    </Link>
+                      {/* Variant Tags */}
+                      <div className="mt-1.5 mb-2 flex flex-wrap items-center gap-1.5">
+                        {item.color && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-[5px] bg-[#f4f4f5] font-ui text-[11.5px] font-medium text-[#555555]">
+                            {item.color}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-[5px] bg-[#f4f4f5] font-ui text-[11.5px] font-medium text-[#555555]">
+                          Size {item.size}
+                        </span>
+                      </div>
 
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      {item.color && (
-                        <span className="inline-flex items-center rounded-[4px] border border-line bg-bone px-2 py-[3px] font-ui text-[11.5px] font-medium leading-[1.3] text-ink-secondary">{item.color}</span>
+                      {/* Stock Status Tag */}
+                      {outOfStock ? (
+                        <div className="flex items-center gap-1.5 text-[12px] font-medium text-[#dc2626] mb-2.5">
+                          <span className="h-2 w-2 rounded-full bg-[#dc2626]" />
+                          <span>Out of stock</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-[11.5px] font-medium text-[#059669] mb-2.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#059669]" />
+                          <span>In stock</span>
+                        </div>
                       )}
-                      <span className="inline-flex items-center rounded-[4px] border border-line bg-bone px-2 py-[3px] font-ui text-[11.5px] font-medium leading-[1.3] text-ink-secondary">
-                        Size {item.size}
+                    </div>
+
+                    {/* Stepper on left, Price on right */}
+                    <div className="flex items-center justify-between pt-1">
+                      {/* Stepper pill */}
+                      <div
+                        className="inline-flex items-center rounded-[6px] border border-[#e5e7eb] bg-white h-8"
+                        role="group"
+                        aria-label={`Quantity for ${item.name}`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => updateQty(item.id, item.size, -1, item.variantId)}
+                          className="w-8 h-8 flex items-center justify-center text-[#71717a] hover:text-[#111111] hover:bg-black/5 rounded-l-[5px] transition-colors cursor-pointer"
+                          aria-label={`Decrease quantity of ${item.name}`}
+                        >
+                          <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
+                        </button>
+                        <span className="min-w-7 px-1 text-center font-ui text-[12.5px] font-bold text-[#111111] tabular-nums select-none">
+                          {item.qty}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateQty(item.id, item.size, 1, item.variantId)}
+                          className="w-8 h-8 flex items-center justify-center text-[#71717a] hover:text-[#111111] hover:bg-black/5 rounded-r-[5px] transition-colors cursor-pointer"
+                          aria-label={`Increase quantity of ${item.name}`}
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                        </button>
+                      </div>
+
+                      {/* Line Price */}
+                      <span className="font-brand text-[17px] sm:text-[18px] font-bold text-[#111827] tabular-nums">
+                        {formatPrice(item.priceNum * item.qty)}
                       </span>
                     </div>
-
-                    <div className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-[#047857]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#059669]" />
-                      <span>In stock · Ready to dispatch</span>
-                    </div>
                   </div>
+                </article>
+              )
+            })}
 
-                  {/* Quantity Stepper & Single Unit Price */}
-                  <div className="mt-3.5 flex flex-wrap items-center gap-4">
-                    <div className="inline-flex h-9 select-none items-center overflow-hidden rounded-[3px] border border-line-strong bg-paper" role="group" aria-label={`Quantity for ${item.name}`}>
-                      <button
-                        type="button"
-                        className="flex h-9 min-h-9 w-9 min-w-9 cursor-pointer touch-manipulation items-center justify-center border-0 bg-transparent font-ui text-[14px] font-medium leading-[21px] text-ink transition-[background,transform] duration-150 hover:bg-bone active:bg-bone"
-                        aria-label="Decrease quantity"
-                        onClick={() => updateQty(item.id, item.size, -1, item.variantId)}
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="min-w-8 px-1 text-center font-ui text-[13px] font-semibold leading-[normal] [font-feature-settings:'tnum'] text-ink">{item.qty}</span>
-                      <button
-                        type="button"
-                        className="flex h-9 min-h-9 w-9 min-w-9 cursor-pointer touch-manipulation items-center justify-center border-0 bg-transparent font-ui text-[14px] font-medium leading-[21px] text-ink transition-[background,transform] duration-150 hover:bg-bone active:bg-bone"
-                        aria-label="Increase quantity"
-                        onClick={() => updateQty(item.id, item.size, 1, item.variantId)}
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <span className="font-ui text-[13px] font-medium leading-[normal] text-ink-secondary">
-                      {formatPrice(item.priceNum)} each
-                    </span>
-                  </div>
-                </div>
-
-                {/* Item Actions & Line Total */}
-                <div className="flex shrink-0 flex-col items-end justify-between text-right [@media(max-width:768px)]:col-span-full [@media(max-width:768px)]:mt-2 [@media(max-width:768px)]:flex-row [@media(max-width:768px)]:items-center [@media(max-width:768px)]:border-t [@media(max-width:768px)]:border-dashed [@media(max-width:768px)]:border-line [@media(max-width:768px)]:pt-3">
-                  <button
-                    type="button"
-                    className="inline-flex h-9 w-9 cursor-pointer touch-manipulation items-center justify-center rounded-[3px] border border-transparent bg-transparent text-ink-muted transition-all duration-150 hover:border-[#fee2e2] hover:bg-[#fef2f2] hover:text-[#dc2626]"
-                    aria-label={`Remove ${item.name} from bag`}
-                    onClick={() => removeItem(item.id, item.size, item.variantId)}
-                    title="Remove item"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-
-                  <div className="font-brand text-[18px] font-bold leading-none tracking-[-0.01em] [font-feature-settings:'tnum'] text-ink [@media(max-width:768px)]:text-[16px]">
-                    {formatPrice(item.priceNum * item.qty)}
-                  </div>
-                </div>
-              </article>
-            ))}
-
-            {/* Manifest Footer Actions */}
-            <div className="flex flex-col flex-wrap items-center justify-between gap-3 border-t border-dashed border-line pt-3.5">
+            {/* Clear Entire Bag & Duty Note */}
+            <div className="pt-2 text-center">
               <button
                 type="button"
                 onClick={clearCart}
-                className="cursor-pointer border-0 bg-transparent p-0 font-ui text-[12.5px] font-medium leading-[normal] text-ink-secondary underline underline-offset-[3px] transition-colors duration-150 hover:text-[#dc2626]"
+                className="mx-auto inline-flex items-center gap-1.5 font-ui text-[12.5px] font-medium text-[#555555] hover:text-[#dc2626] underline underline-offset-4 transition-colors cursor-pointer"
               >
-                Clear entire bag
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Clear entire bag</span>
               </button>
-              <span className="font-ui text-[12px] font-normal leading-[normal] text-ink-muted">
-                ✦ All domestic prices inclusive of 5% GST &amp; applicable apparel duties
-              </span>
+              <p className="mt-2 font-ui text-[11.5px] text-[#888888]">
+                All prices are inclusive of 5% GST &amp; applicable apparel duties.
+              </p>
             </div>
           </section>
 
-          {/* ── Right Column: Sticky Summary Sidebar ── */}
-          <aside className="sticky top-24 [@media(max-width:768px)]:static" aria-label="Order Summary and Checkout">
-            <div className="rounded-[10px] border border-line bg-paper p-7 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.04)]">
-              <div className="mb-5 border-b border-line pb-4">
-                <span className="mb-1 block font-brand text-[11px] font-bold uppercase leading-none tracking-[0.08em] text-ink-muted">SUMMARY // BREAKDOWN</span>
-                <h2 className="m-0 font-brand text-[20px] font-semibold leading-[1.2] tracking-[-0.02em] text-ink">Order Summary</h2>
-              </div>
+          {/* ── Right Column: Order Summary ── */}
+          <aside className="sticky top-24" aria-label="Order summary">
+            <div className="rounded-[16px] border border-black/[0.08] bg-white p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+              <h2 className="mb-4 font-brand text-[19px] sm:text-[20px] font-bold text-[#111827]">
+                Order summary
+              </h2>
 
-              {/* Delivery PIN Code Verification */}
-              <div className="mb-[22px] flex flex-col gap-2">
-                <div className="flex items-center justify-between text-[12px] leading-[18px]">
-                  <label htmlFor="bag-pincode-input" className="font-brand text-[11.5px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-ink-secondary">
-                    Delivery Destination
+              {/* Delivery destination */}
+              <div className="mb-4">
+                <div className="mb-1.5 flex items-center justify-between text-[12.5px]">
+                  <label htmlFor="bag-pincode" className="font-ui font-medium text-[#111827]">
+                    Delivery destination
                   </label>
-                  {isAuthenticated && addresses && addresses.length > 0 && (
-                    <Link href="/profile?tab=addresses" className="text-[11.5px] text-ink underline underline-offset-[3px]">
+                  {isAuthenticated && addresses && addresses.length > 0 ? (
+                    <Link
+                      href="/profile?tab=addresses"
+                      className="font-ui text-[12px] text-[#555555] hover:text-[#111827] underline"
+                    >
                       Saved addresses
                     </Link>
+                  ) : (
+                    <span className="font-ui text-[11px] text-[#888888]">
+                      Saved addresses
+                    </span>
                   )}
                 </div>
 
-                <div className="relative flex items-center">
+                <div className="flex gap-2">
                   <input
-                    id="bag-pincode-input"
+                    id="bag-pincode"
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     maxLength={6}
                     value={pincode}
-                    onChange={(e) => handlePincodeChange(e.target.value)}
-                    placeholder="Enter 6-digit PIN code (e.g. 682001)"
-                    className={`h-11 w-full rounded-[3px] border bg-paper px-3.5 font-ui text-[14.5px] font-normal leading-[normal] text-ink outline-none transition-[border-color,box-shadow] duration-150 touch-manipulation [@media(pointer:coarse)]:text-[16px] focus:border-ink focus:shadow-[0_0_0_1px_var(--ink)] ${pincodeError ? 'border-[#dc2626]' : 'border-line-strong'}`}
-                    aria-label="Delivery PIN code"
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6)
+                      setPincode(cleaned)
+                      setPincodeError('')
+                      if (cleaned.length === 6) {
+                        void handleVerifyPincode(cleaned)
+                      }
+                    }}
+                    placeholder="Enter PIN code"
+                    className="h-10 flex-1 rounded-[8px] border border-[#e5e7eb] px-3.5 font-mono text-[13.5px] text-[#111827] outline-none transition-[border-color] focus:border-[#111827]"
+                    aria-label="Delivery destination PIN code"
                   />
-                  {pincodeLoading && (
-                    <span className="absolute right-3 text-[11px] text-ink-muted">Locating…</span>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleVerifyPincode()}
+                    disabled={pincodeLoading}
+                    className="h-10 px-4 rounded-[8px] bg-[#111111] hover:bg-black font-brand text-[12.5px] font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    {pincodeLoading ? 'Checking…' : 'Check'}
+                  </button>
                 </div>
 
-                {pincodeLocation && (
-                  <div className="mt-1 flex items-center gap-1.5 rounded-[4px] border border-[#a7f3d0] bg-[#ecfdf5] px-3 py-2 text-[12px] leading-[18px] text-[#065f46]">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                {pincodeError && (
+                  <p role="alert" className="mt-1.5 text-[11.5px] text-[#dc2626]">
+                    {pincodeError}
+                  </p>
+                )}
+
+                {/* Pill 1: Delivering to location */}
+                {pincodeLocation && !pincodeError && (
+                  <div className="mt-3 flex items-center gap-2 rounded-[8px] border border-[#bbf7d0] bg-[#f0fdf4] px-3.5 py-2.5 text-[12px] font-medium text-[#166534]">
+                    <MapPin className="h-3.5 w-3.5 text-[#166534] shrink-0" />
                     <span>Delivering to <strong>{pincodeLocation}</strong></span>
                   </div>
                 )}
 
-                {pincodeError && (
-                  <p role="alert" className="m-0 mt-0.5 text-[11.5px] leading-[normal] text-[#dc2626]">
-                    {pincodeError}
-                  </p>
-                )}
-                {quoteError && !pincodeError && (
-                  <p role="alert" className="m-0 mt-0.5 text-[11.5px] leading-[normal] text-[#dc2626]">
-                    {quoteError}
-                  </p>
+                {/* Pill 2: Estimated delivery */}
+                {pincodeLocation && !pincodeError && (
+                  <div className="mt-2.5 flex items-center gap-3 rounded-[10px] border border-[#bbf7d0] bg-[#f0fdf4] p-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#dcfce7] text-[#166534]">
+                      <Truck className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-medium text-[#555555]">Estimated delivery</span>
+                      <strong className="text-[13px] font-bold text-[#111827]">2 to 5 business days</strong>
+                      <span className="text-[11px] text-[#71717a]">Dispatch from Kannur</span>
+                    </div>
+                  </div>
                 )}
               </div>
 
               {/* Price Breakdown */}
-              <div className="mb-5 flex flex-col gap-3 border-y border-line py-[18px]">
-                <div className="flex items-center justify-between font-ui text-[13.5px] font-normal leading-[normal] [font-feature-settings:'tnum'] text-ink-secondary">
-                  <span>Bag Subtotal ({count} {count === 1 ? 'item' : 'items'})</span>
-                  <span>{formatPrice(subtotal)}</span>
+              <div className="border-t border-[#f4f4f5] pt-4 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between font-ui text-[13px] text-[#555555]">
+                  <span>Subtotal ({count} {count === 1 ? 'item' : 'items'})</span>
+                  <span className="font-medium text-[#111827] tabular-nums">{formatPrice(subtotal)}</span>
                 </div>
 
-                <div className="flex items-center justify-between font-ui text-[13.5px] font-normal leading-[normal] [font-feature-settings:'tnum'] text-ink-secondary">
-                  <span>Delivery Charge</span>
+                <div className="flex items-center justify-between font-ui text-[13px] text-[#555555]">
+                  <span>Delivery charge</span>
                   <span>
                     {quoteLoading ? (
-                      <span style={{ fontSize: '12px', opacity: 0.7 }}>Calculating…</span>
-                    ) : quote ? (
-                      quote.shipping === 0 ? (
-                        <span className="font-bold tracking-[0.04em] text-[#047857]">FREE</span>
-                      ) : (
-                        formatPrice(quote.shipping)
-                      )
-                    ) : isFreeShippingUnlocked ? (
-                      <span className="font-bold tracking-[0.04em] text-[#047857]">FREE</span>
-                    ) : deliveryState ? (
-                      'Calculating…'
+                      <span className="text-[11.5px] text-[#71717a]">Calculating…</span>
+                    ) : shipping === 0 ? (
+                      <strong className="font-bold text-[#059669]">FREE</strong>
                     ) : (
-                      'Enter PIN code'
+                      <span className="font-medium text-[#111827] tabular-nums">{formatPrice(shipping)}</span>
                     )}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-dashed border-line pt-3 font-brand text-[18px] font-bold leading-[normal] tracking-[-0.01em] text-ink">
-                  <span>Estimated Total</span>
-                  <span>{formatPrice(total)}</span>
-                </div>
-              </div>
+                <div className="border-t border-[#f4f4f5] my-1" />
 
-              {/* Estimated Delivery Promise Box */}
-              <div className="mb-6 flex items-start gap-3 rounded-[3px] border border-[#bbf7d0] bg-[#f4fbf7] px-4 py-3.5">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] bg-[#dcfce7] text-[#15803d]">
-                  <Truck className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="flex items-center gap-1.5 font-brand text-[11px] font-bold uppercase leading-[normal] tracking-[0.05em] text-[#166534]">Estimated Delivery</span>
-                  <span className="font-ui text-[13px] font-medium leading-[normal] text-ink">
-                    {quote?.deliveryEstimation?.exactDeliveryDate ? (
-                      quote.deliveryEstimation.exactDeliveryDate
-                    ) : pincode.length === 6 ? (
-                      /^(67|68|69)/.test(pincode) ? '2 to 5 business days (Kerala Express)' : '7 to 14 business days (National Courier)'
-                    ) : (
-                      'Enter PIN code for delivery window'
-                    )}
+                <div className="flex items-center justify-between">
+                  <span className="font-brand text-[15.5px] sm:text-[16px] font-bold text-[#111827]">
+                    Estimated total
                   </span>
-                  <span className="font-ui text-[11.5px] font-normal leading-[normal] text-ink-secondary">
-                    Direct dispatch from Kannur
+                  <span className="font-brand text-[18px] sm:text-[20px] font-bold text-[#111827] tabular-nums">
+                    {formatPrice(total)}
+                  </span>
+                </div>
+
+                <div className="text-right">
+                  <span className="font-ui text-[11px] text-[#888888]">
+                    Inclusive of all taxes
                   </span>
                 </div>
               </div>
 
-              {/* Primary Action Button */}
-              <Link href="/bag/checkout" className="flex w-full cursor-pointer touch-manipulation select-none items-center justify-between rounded-[3px] border border-ink bg-ink px-[22px] py-4 font-brand text-[13.5px] font-bold uppercase leading-[normal] tracking-[0.06em] text-paper no-underline shadow-[0_2px_6px_rgba(0,0,0,0.06)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-px hover:border-[#181c24] hover:bg-[#181c24] hover:text-paper hover:shadow-[0_4px_16px_rgba(0,0,0,0.14)] [@media(max-width:768px)]:hidden">
-                <span>Proceed to Checkout</span>
-                <span aria-hidden="true">→</span>
-              </Link>
+              {/* Proceed to checkout CTA */}
+              <div className="mt-5">
+                <button
+                  type="button"
+                  onClick={handleProceedToCheckout}
+                  disabled={hasOutOfStockItems || count === 0}
+                  className={`flex h-12 w-full items-center justify-center gap-2 rounded-[10px] font-brand text-[14px] font-semibold text-white transition-all duration-150 ${
+                    hasOutOfStockItems || count === 0
+                      ? 'bg-[#9ca3af] cursor-not-allowed opacity-60'
+                      : 'bg-[#111111] hover:bg-black cursor-pointer shadow-xs active:scale-[0.99]'
+                  }`}
+                  aria-disabled={hasOutOfStockItems || count === 0}
+                >
+                  <span>Proceed to checkout</span>
+                  <ArrowRight className="h-4 w-4 stroke-[2]" />
+                </button>
 
-              {/* Security & Customer Assurance */}
-              <div className="mt-[22px] flex flex-col gap-2.5 border-t border-line pt-[18px] font-ui text-[12px] font-normal leading-[normal] text-ink-secondary">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 shrink-0 text-[#059669]" />
-                  <span>256-bit encrypted secure Razorpay payment</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="h-4 w-4 shrink-0 text-[#059669]" />
-                  <span>Free 7-day doorstep size &amp; fit exchanges</span>
-                </div>
-              </div>
-
-              {/* Payment Methods Pill Strip */}
-              <div className="mt-[18px] flex flex-wrap items-center justify-center gap-2 border-t border-dashed border-line pt-3.5">
-                <span className="rounded-[4px] border border-line bg-bone px-2 py-1 font-brand text-[10.5px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-ink-muted">UPI</span>
-                <span className="rounded-[4px] border border-line bg-bone px-2 py-1 font-brand text-[10.5px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-ink-muted">GPay</span>
-                <span className="rounded-[4px] border border-line bg-bone px-2 py-1 font-brand text-[10.5px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-ink-muted">PhonePe</span>
-                <span className="rounded-[4px] border border-line bg-bone px-2 py-1 font-brand text-[10.5px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-ink-muted">Paytm</span>
-                <span className="rounded-[4px] border border-line bg-bone px-2 py-1 font-brand text-[10.5px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-ink-muted">Cards</span>
-                <span className="rounded-[4px] border border-line bg-bone px-2 py-1 font-brand text-[10.5px] font-semibold uppercase leading-[normal] tracking-[0.05em] text-ink-muted">NetBanking</span>
+                {hasOutOfStockItems && (
+                  <p className="mt-2 text-center font-ui text-[11.5px] font-medium text-[#dc2626]">
+                    Please remove out of stock items to proceed to checkout.
+                  </p>
+                )}
               </div>
             </div>
           </aside>
         </div>
       </div>
-
-      {/* ── Fixed Mobile Sticky Bottom Action Bar (< 768px) ── */}
-      <div className="hidden [@media(max-width:768px)]:fixed [@media(max-width:768px)]:bottom-0 [@media(max-width:768px)]:left-0 [@media(max-width:768px)]:right-0 [@media(max-width:768px)]:z-[45] [@media(max-width:768px)]:flex [@media(max-width:768px)]:items-center [@media(max-width:768px)]:justify-between [@media(max-width:768px)]:gap-4 [@media(max-width:768px)]:border-t [@media(max-width:768px)]:border-line-strong [@media(max-width:768px)]:bg-[rgba(255,255,255,0.94)] [@media(max-width:768px)]:px-4 [@media(max-width:768px)]:pb-[calc(12px+env(safe-area-inset-bottom,0px))] [@media(max-width:768px)]:pt-3 [@media(max-width:768px)]:shadow-[0_-4px_20px_rgba(0,0,0,0.08)] [@media(max-width:768px)]:backdrop-blur-[18px] [@media(max-width:768px)]:backdrop-saturate-[1.8]" aria-label="Mobile Checkout Bar">
-        <div className="flex flex-col">
-          <span className="font-brand text-[10.5px] font-semibold uppercase leading-[normal] tracking-[0.06em] text-ink-secondary">Estimated Total</span>
-          <span className="font-brand text-[18px] font-bold leading-[normal] [font-feature-settings:'tnum'] text-ink">{formatPrice(total)}</span>
-        </div>
-        <Link href="/bag/checkout" className="inline-flex touch-manipulation items-center gap-1.5 rounded-[3px] bg-ink px-[22px] py-3 font-brand text-[13px] font-bold uppercase leading-[normal] tracking-[0.05em] text-paper no-underline">
-          <span>Checkout</span>
-          <span aria-hidden="true">→</span>
-        </Link>
-      </div>
     </div>
   )
 }
-
