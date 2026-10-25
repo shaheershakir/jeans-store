@@ -17,6 +17,7 @@ import {
   LogOut,
   Sparkles,
   ArrowRight,
+  Bookmark,
   Heart,
   Settings,
   ChevronRight,
@@ -282,15 +283,33 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 <Search className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
               </button>
 
-              {/* Wishlist (Visible on mobile & desktop) */}
-              <Link
-                href="/wishlist"
-                className={HEADER_ACTION_BTN}
-                aria-label={favorites.length ? `Wishlist with ${favorites.length} saved items` : 'Wishlist'}
-                title="Wishlist"
+              {/* Desktop Bookmark Drawer Trigger (Opens slide-over drawer) */}
+              <button
+                type="button"
+                onClick={() => openOverlay('bookmark')}
+                className={`hidden md:grid ${HEADER_ACTION_BTN}`}
+                aria-label={favorites.length ? `Bookmarks with ${favorites.length} saved items` : 'Bookmarks'}
+                title="Bookmarks"
               >
                 <div className="relative inline-flex items-center justify-center">
-                  <Heart className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+                  <Bookmark className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+                  {mounted && favorites.length > 0 && (
+                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#0c0e12] px-1 text-[9px] font-bold leading-none text-white tabular-nums shadow-xs">
+                      {favorites.length}
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              {/* Mobile Bookmark Link (Routes directly to dedicated /bookmark page) */}
+              <Link
+                href="/bookmark"
+                className={`grid md:hidden ${HEADER_ACTION_BTN}`}
+                aria-label={favorites.length ? `Bookmarks with ${favorites.length} saved items` : 'Bookmarks'}
+                title="Bookmarks"
+              >
+                <div className="relative inline-flex items-center justify-center">
+                  <Bookmark className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
                   {mounted && favorites.length > 0 && (
                     <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#0c0e12] px-1 text-[9px] font-bold leading-none text-white tabular-nums shadow-xs">
                       {favorites.length}
@@ -424,18 +443,18 @@ export default function Header({ initialNavItems }: HeaderProps) {
                           <ChevronRight className="h-4 w-4 shrink-0 text-[#888888] transition-transform group-hover:translate-x-0.5" />
                         </Link>
 
-                        {/* 3. Wishlist */}
+                        {/* 3. Bookmarks */}
                         <Link
-                          href="/wishlist"
+                          href="/bookmark"
                           onClick={() => setUserMenuOpen(false)}
                           className="group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer"
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-2xs border border-black/5 text-[#111111]">
-                              <Heart className="h-5 w-5 stroke-[1.8]" />
+                              <Bookmark className="h-5 w-5 stroke-[1.8]" />
                             </div>
                             <div className="min-w-0 text-left">
-                              <h4 className="text-[14px] font-bold text-[#111111] leading-tight">Wishlist</h4>
+                              <h4 className="text-[14px] font-bold text-[#111111] leading-tight">Bookmarks</h4>
                               <p className="text-[12px] text-[#777777] mt-0.5 leading-tight truncate">Your saved pieces</p>
                             </div>
                           </div>

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { addDays, format, isValid } from 'date-fns'
-import { AlertCircle, ArrowRight, Check, Copy, Heart, MapPin, Truck } from 'lucide-react'
+import { AlertCircle, ArrowRight, Bookmark, Check, Copy, Heart, MapPin, Truck } from 'lucide-react'
 import { PRODUCTS } from '@/lib/constants'
 import { formatPrice } from '@/lib/utils'
 import { getProductUrl } from '@/lib/products'
@@ -143,17 +143,17 @@ function RecommendationCard({ item }: { item: (typeof RECOMMENDATIONS)[number] }
           onClick={() => {
             if (!favoriteId) return
             toggleFavorite(favoriteId)
-            showToast(saved ? 'Removed from favorites' : `Saved ${item.name} to favorites`)
+            showToast(saved ? 'Removed from bookmarks' : `Saved ${item.name} to bookmarks`)
           }}
           aria-label={
-            saved ? `Remove ${item.name} from favorites` : `Add ${item.name} to favorites`
+            saved ? `Remove ${item.name} from bookmarks` : `Add ${item.name} to bookmarks`
           }
         >
-          <Heart
+          <Bookmark
             className="h-[17px] w-[17px]"
             strokeWidth={1.7}
-            fill={saved ? '#ef4444' : 'none'}
-            stroke={saved ? '#ef4444' : '#111'}
+            fill={saved ? '#111' : 'none'}
+            stroke="#111"
           />
         </button>
       </div>

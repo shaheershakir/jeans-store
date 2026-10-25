@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import CartDrawer from '@/components/CartDrawer'
+import BookmarkDrawer from '@/components/BookmarkDrawer'
 import SearchOverlay from '@/components/SearchOverlay'
 import Toast from '@/components/Toast'
 import OnboardingModal from '@/components/OnboardingModal'
@@ -62,6 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Footer />
           </main>
           <CartDrawer />
+          <BookmarkDrawer />
           <SearchOverlay />
           <Toast />
           <OnboardingModal />

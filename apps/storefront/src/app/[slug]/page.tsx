@@ -7,6 +7,8 @@ const RESERVED_SLUGS = new Set([
   'admin',
   'api',
   'auth',
+  'bookmark',
+  'bookmarks',
   'category',
   'checkout',
   'favorites',
@@ -18,6 +20,7 @@ const RESERVED_SLUGS = new Set([
   'profile',
   'register',
   'shop',
+  'wishlist',
   'bag'
 ])
 

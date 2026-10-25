@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  Heart,
+  Bookmark,
   LogOut,
   MapPin,
   Package,
@@ -27,7 +27,7 @@ export interface AccountSidebarProps {
 export const ACCOUNT_NAV_ITEMS = [
   { label: 'My Account', href: '/profile', Icon: User, id: 'account' as const },
   { label: 'Orders', href: '/orders', Icon: Package, id: 'orders' as const },
-  { label: 'Wishlist', href: '/wishlist', Icon: Heart, id: 'wishlist' as const },
+  { label: 'Bookmarks', href: '/bookmark', Icon: Bookmark, id: 'wishlist' as const },
   { label: 'Addresses', href: '/addresses', Icon: MapPin, id: 'addresses' as const },
   { label: 'Account Settings', href: '/settings', Icon: Settings, id: 'settings' as const },
 ]
@@ -44,7 +44,7 @@ export default function AccountSidebar({ activeTab, className = '' }: AccountSid
     (() => {
       if (!pathname) return 'account'
       if (pathname.startsWith('/orders')) return 'orders'
-      if (pathname.startsWith('/wishlist') || pathname.startsWith('/favorites')) return 'wishlist'
+      if (pathname.startsWith('/wishlist') || pathname.startsWith('/favorites') || pathname.startsWith('/bookmark')) return 'wishlist'
       if (pathname.startsWith('/addresses')) return 'addresses'
       if (pathname.startsWith('/settings')) return 'settings'
       if (pathname.startsWith('/profile')) return 'account'

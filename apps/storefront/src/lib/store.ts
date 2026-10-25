@@ -216,7 +216,7 @@ export const useFilterStore = create<FilterState>()(
   )
 )
 
-export type OverlayKind = 'search' | 'cart' | null
+export type OverlayKind = 'search' | 'cart' | 'bookmark' | null
 
 export interface SizePromptData {
   product: Product

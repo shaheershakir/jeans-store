@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
+  Bookmark,
   Heart,
   Camera,
   Pencil,
@@ -436,13 +437,13 @@ export default function SettingsContent() {
                     {/* Item 3: Wishlist alerts */}
                     <div className="flex items-center justify-between gap-4 py-2.5">
                       <div className="flex items-start gap-3.5 min-w-0">
-                        <Heart className="w-5 h-5 text-[#222222] shrink-0 mt-0.5 stroke-[1.8]" />
+                        <Bookmark className="w-5 h-5 text-[#222222] shrink-0 mt-0.5 stroke-[1.8]" />
                         <div>
                           <h4 className="text-[13px] font-bold text-[#111111] leading-tight">
-                            Wishlist alerts
+                            Bookmark alerts
                           </h4>
                           <p className="text-[11.5px] text-[#777777] mt-0.5">
-                            Get notified when wishlist items are on sale.
+                            Get notified when bookmarked items are on sale.
                           </p>
                         </div>
                       </div>
