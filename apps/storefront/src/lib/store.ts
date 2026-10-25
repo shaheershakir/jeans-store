@@ -12,13 +12,12 @@ export interface CartItem {
   variantId?: number
   color?: string
   name: string
-
-
   price: string
   priceNum: number
   img: string
   size: string
   qty: number
+  weight?: number
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -84,7 +83,18 @@ export const useCartStore = create<CartState>()(
                 priceNum: variant?.price ?? product.priceNum,
                 img: product.img,
                 size,
-                qty: 1
+                qty: 1,
+                weight:
+                  variant?.weight ??
+                  (product as any).weightGrams ??
+                  (product as any).weight ??
+                  ((product.category === "trackpants" ||
+                    product.category === "sweatpants" ||
+                    product.category === "jeans" ||
+                    product.name.toLowerCase().includes("pant") ||
+                    product.name.toLowerCase().includes("jean"))
+                    ? 650
+                    : 350)
               }
             ]
           }

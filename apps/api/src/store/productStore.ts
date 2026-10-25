@@ -589,8 +589,24 @@ export class ProductStore {
   async getById(id: string): Promise<Product | undefined> {
     if (isDatabaseConfigured() && db) {
       const [row] = await db.select().from(productsTable).where(eq(productsTable.id, id))
-      if (!row) return undefined
-      return (await this.hydrateDbRows([row]))[0]
+      if (row) {
+        return (await this.hydrateDbRows([row]))[0]
+      }
+      // If product ID was not found by UUID (e.g. fallback snapshot ID 00000000-0000-4000-8000-000000000001),
+      // match against memory seed products to find corresponding slug/name in DB.
+      const fallbackMemory = this.memoryProducts.find((p) => p.id === id)
+      if (fallbackMemory) {
+        const cleanSlug = ((fallbackMemory as any).slug || slugify(fallbackMemory.name)).toLowerCase()
+        const [dbRowBySlug] = await db.select().from(productsTable).where(eq(productsTable.slug, cleanSlug))
+        if (dbRowBySlug) {
+          return (await this.hydrateDbRows([dbRowBySlug]))[0]
+        }
+        const [dbRowByName] = await db.select().from(productsTable).where(ilike(productsTable.name, fallbackMemory.name))
+        if (dbRowByName) {
+          return (await this.hydrateDbRows([dbRowByName]))[0]
+        }
+      }
+      return undefined
     }
     if (process.env.NODE_ENV === 'production') throw new Error('Product database is not configured.')
     const found = this.memoryProducts.find((p) => p.id === id)

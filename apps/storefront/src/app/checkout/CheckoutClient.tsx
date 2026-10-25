@@ -27,7 +27,7 @@ import {
 import { cartCount, cartSubtotal, useCartStore, useAuthStore, type UserAddress } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
 import type { Order } from '@jeans-store/shared'
-import type { Product } from '@/lib/constants'
+import { PRODUCTS, type Product } from '@/lib/constants'
 import { getProductUrl, getAvailableProductSizes } from '@/lib/products'
 import { trackEvent } from '@/lib/analytics'
 import { FloatingInput, FloatingSelect } from '@/components/ui/FloatingInput'
@@ -98,6 +98,40 @@ interface DeliveryQuote {
   total: number
   weightGrams: number
   deliveryEstimation?: DeliveryEstimation
+}
+
+interface ShippingRate {
+  baseWeightGrams: number
+  baseCharge: number
+  additionalWeightGrams: number
+  additionalCharge: number
+  estimatedDaysMin?: number
+  estimatedDaysMax?: number
+  exactDeliveryDate?: string
+}
+
+interface ShippingRates {
+  kerala: ShippingRate
+  restOfIndia: ShippingRate
+}
+
+const DEFAULT_SHIPPING_RATES: ShippingRates = {
+  kerala: {
+    baseWeightGrams: 500,
+    baseCharge: 60,
+    additionalWeightGrams: 500,
+    additionalCharge: 20,
+    estimatedDaysMin: 2,
+    estimatedDaysMax: 5
+  },
+  restOfIndia: {
+    baseWeightGrams: 500,
+    baseCharge: 90,
+    additionalWeightGrams: 500,
+    additionalCharge: 30,
+    estimatedDaysMin: 7,
+    estimatedDaysMax: 14
+  }
 }
 
 const backendUrl =
@@ -785,6 +819,17 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
   const singleProductItems = useMemo(() => {
     if (!product) return []
+    const itemWeight =
+      matchedVariant?.weight ??
+      (product as any).weightGrams ??
+      (product as any).weight ??
+      ((product.category === "trackpants" ||
+        product.category === "sweatpants" ||
+        product.category === "jeans" ||
+        product.name.toLowerCase().includes("pant") ||
+        product.name.toLowerCase().includes("jean"))
+        ? 650
+        : 350)
     return [
       {
         id: product.id,
@@ -795,7 +840,8 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         img: product.img,
         size: productSize,
         color: productColor,
-        qty: productQty
+        qty: productQty,
+        weight: itemWeight
       }
     ]
   }, [product, matchedVariant, productSize, productColor, productQty])
@@ -818,6 +864,22 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
   const [paymentStage, setPaymentStage] = useState<PaymentStage>('idle')
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuote | null>(null)
+  const [shippingRates, setShippingRates] = useState<ShippingRates>(DEFAULT_SHIPPING_RATES)
+
+  useEffect(() => {
+    let active = true
+    fetch(`${backendUrl}/api/shipping/rates`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data?.rates) {
+          setShippingRates(data.rates)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [pincodeLoading, setPincodeLoading] = useState(false)
@@ -935,8 +997,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
   // Recalculate the delivery quote whenever the destination or basket changes.
   useEffect(() => {
-    const cleanPin = form.pincode.replace(/\D/g, '').slice(0, 6)
-    const hasPin = cleanPin.length === 6
+      const hasPin = cleanPin.length === 6
     const hasState = Boolean(form.state.trim())
 
     if ((!hasPin && !hasState) || items.length === 0) {
@@ -991,17 +1052,50 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     }
   }, [form.pincode, form.state, items])
 
-  const deliveryEstimationInfo = useMemo(() => {
-    const cleanPin = form.pincode.replace(/\D/g, '').slice(0, 6)
-    const hasValidPin = cleanPin.length === 6
-    const isKeralaPin = hasValidPin && /^(67|68|69)/.test(cleanPin)
-    const isKeralaState = form.state.trim().toLowerCase() === 'kerala'
-    const isKerala = isKeralaPin || isKeralaState
+  const cleanPin = form.pincode.replace(/\D/g, '').slice(0, 6)
+  const isKerala = useMemo(() => {
+    if (cleanPin.length === 6) {
+      return /^(67|68|69)/.test(cleanPin)
+    }
+    if (form.state.trim()) {
+      return form.state.trim().toLowerCase() === 'kerala'
+    }
+    return true
+  }, [cleanPin, form.state])
 
+  const totalWeight = useMemo(() => {
+    return items.reduce((sum, item) => {
+      let weight = (item as any).weight
+      if (typeof weight !== 'number' || weight <= 0) {
+        const snap = PRODUCTS.find((p) => String(p.id) === String(item.id) || p.name === item.name)
+        weight = snap?.weight ?? ((snap as any)?.weightGrams)
+      }
+      if (typeof weight !== 'number' || weight <= 0) {
+        const lowerName = (item.name || '').toLowerCase()
+        weight =
+          lowerName.includes('pant') || lowerName.includes('jean') || lowerName.includes('trouser')
+            ? 650
+            : 350
+      }
+      return sum + weight * item.qty
+    }, 0)
+  }, [items])
+
+  const clientCalculatedShipping = useMemo(() => {
+    const rate = isKerala ? shippingRates.kerala : shippingRates.restOfIndia
+    const additionalUnits = Math.ceil(
+      Math.max(0, totalWeight - rate.baseWeightGrams) / rate.additionalWeightGrams
+    )
+    return rate.baseCharge + additionalUnits * rate.additionalCharge
+  }, [isKerala, shippingRates, totalWeight])
+
+  const deliveryEstimationInfo = useMemo(() => {
+    const hasValidPin = cleanPin.length === 6
+    const rate = isKerala ? shippingRates.kerala : shippingRates.restOfIndia
     const estimation = deliveryQuote?.deliveryEstimation
 
-    if (estimation?.exactDeliveryDate?.trim()) {
-      const raw = estimation.exactDeliveryDate.trim()
+    if (estimation?.exactDeliveryDate?.trim() || rate.exactDeliveryDate?.trim()) {
+      const raw = (estimation?.exactDeliveryDate?.trim() || rate.exactDeliveryDate?.trim())!
       return {
         formattedRange: raw,
         deliveryOptionDate: raw,
@@ -1021,8 +1115,8 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       }
     }
 
-    const minDays = estimation?.minDays ?? (isKerala ? 2 : 4)
-    const maxDays = estimation?.maxDays ?? (isKerala ? 4 : 7)
+    const minDays = estimation?.minDays ?? rate.estimatedDaysMin ?? (isKerala ? 2 : 7)
+    const maxDays = estimation?.maxDays ?? rate.estimatedDaysMax ?? (isKerala ? 5 : 14)
 
     const now = new Date()
     const minDate = addDays(now, minDays)
@@ -1035,12 +1129,12 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       hasPin: true,
       isKerala
     }
-  }, [form.pincode, form.state, deliveryQuote?.deliveryEstimation])
+  }, [cleanPin, form.state, isKerala, shippingRates, deliveryQuote?.deliveryEstimation])
 
   const subtotal =
     deliveryQuote?.subtotal ??
     (isProductMode ? (product?.priceNum ?? 0) * productQty : cartSubtotal(cartItems))
-  const shipping = deliveryQuote?.shipping ?? 40
+  const shipping = deliveryQuote?.shipping ?? clientCalculatedShipping
   const total = deliveryQuote?.total ?? subtotal + shipping
   const count = isProductMode ? productQty : cartCount(cartItems)
 
@@ -1079,7 +1173,6 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     return 'S'
   }, [user])
 
-  const cleanPin = form.pincode.replace(/\D/g, '').slice(0, 6)
   const phoneDigits = form.phone.replace(/\D/g, '')
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 
@@ -1118,7 +1211,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       : formatPrice(shipping)
     : quoteLoading
       ? 'Calculating…'
-      : formatPrice(40)
+      : formatPrice(clientCalculatedShipping)
   const arrivalDisplay = deliveryEstimationInfo.hasPin
     ? deliveryEstimationInfo.arrivalDisplayDate
     : 'Add a PIN code'
@@ -1290,8 +1383,18 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     if (step === 0) {
       if (!validate()) return
       if (!deliveryQuote) {
-        setPaymentError(quoteError || 'Enter a valid PIN code and state to calculate delivery.')
-        return
+        setDeliveryQuote({
+          subtotal,
+          shipping: clientCalculatedShipping,
+          total: subtotal + clientCalculatedShipping,
+          weightGrams: totalWeight,
+          deliveryEstimation: {
+            minDays: isKerala ? (shippingRates.kerala.estimatedDaysMin ?? 2) : (shippingRates.restOfIndia.estimatedDaysMin ?? 7),
+            maxDays: isKerala ? (shippingRates.kerala.estimatedDaysMax ?? 5) : (shippingRates.restOfIndia.estimatedDaysMax ?? 14),
+            exactDeliveryDate: (isKerala ? shippingRates.kerala : shippingRates.restOfIndia).exactDeliveryDate,
+            zone: isKerala ? "kerala" : "restOfIndia"
+          }
+        })
       }
       setPaymentError(null)
       goToStep(1)
@@ -1319,8 +1422,18 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     }
 
     if (!deliveryQuote) {
-      setPaymentError(quoteError || 'Enter a valid PIN code and state to calculate delivery.')
-      return
+      setDeliveryQuote({
+        subtotal,
+        shipping: clientCalculatedShipping,
+        total: subtotal + clientCalculatedShipping,
+        weightGrams: totalWeight,
+        deliveryEstimation: {
+          minDays: isKerala ? (shippingRates.kerala.estimatedDaysMin ?? 2) : (shippingRates.restOfIndia.estimatedDaysMin ?? 7),
+          maxDays: isKerala ? (shippingRates.kerala.estimatedDaysMax ?? 5) : (shippingRates.restOfIndia.estimatedDaysMax ?? 14),
+          exactDeliveryDate: (isKerala ? shippingRates.kerala : shippingRates.restOfIndia).exactDeliveryDate,
+          zone: isKerala ? "kerala" : "restOfIndia"
+        }
+      })
     }
 
     const orderId = `TGE-${Date.now().toString().slice(-6)}`

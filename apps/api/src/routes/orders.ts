@@ -126,16 +126,18 @@ async function calculateCheckout(
     )?.status;
     if (productStatus && productStatus !== "Active")
       throw new Error(`${product.name} is not available for purchase.`);
-    const variant = product.variants?.find((candidate) =>
-      requested.variantId
-        ? candidate.id === requested.variantId
-        : String(candidate.size) === requested.size,
-    );
-    if (
-      !variant ||
-      String(variant.size) !== requested.size ||
-      variant.status !== "Active"
-    ) {
+    let variant = requested.variantId
+      ? product.variants?.find((candidate) => candidate.id === requested.variantId)
+      : undefined;
+    if (!variant) {
+      variant = product.variants?.find(
+        (candidate) => String(candidate.size).toLowerCase() === requested.size.toLowerCase()
+      );
+    }
+    if (!variant && product.isFreeSize && product.variants && product.variants.length > 0) {
+      variant = product.variants[0];
+    }
+    if (!variant || variant.status !== "Active") {
       throw new Error(
         `Size ${requested.size} for ${product.name} is no longer available.`,
       );
