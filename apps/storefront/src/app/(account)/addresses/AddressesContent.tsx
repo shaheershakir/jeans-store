@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   MapPin,
@@ -88,12 +89,22 @@ export default function AddressesContent() {
   const [formPhone, setFormPhone] = useState('+91 98765 43210')
   const [formIsDefault, setFormIsDefault] = useState(false)
 
+  const router = useRouter()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const [mounted, setMounted] = useState(false)
   const showToast = useUIStore((s) => s.showToast)
 
   useEffect(() => {
     void useAuthStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
+    setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (mounted && !isAuthenticated) {
+      router.replace('/login?redirect=/addresses')
+    }
+  }, [mounted, isAuthenticated, router])
 
   const handleSetDefault = (id: string) => {
     setAddressList((prev) =>

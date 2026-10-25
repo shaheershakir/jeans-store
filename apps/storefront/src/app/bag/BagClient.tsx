@@ -526,7 +526,7 @@ export default function BagClient() {
                             : '7 to 14 business days'}
                       </strong>
                       <span className="text-[11px] text-[#71717a]">
-                        Dispatch from Kannur · {isKerala ? 'Kerala rate' : 'Outside Kerala rate'} ({quote?.weightGrams ?? totalWeight}g)
+                        Dispatch from Kannur
                       </span>
                     </div>
                   </div>

@@ -359,12 +359,6 @@ export default function CartDrawer() {
                   <span className="text-[14.5px] font-bold text-[#111827]">Estimated total</span>
                   <span className="text-[17px] font-bold text-[#111827] tabular-nums">{formatPrice(totalWithShipping)}</span>
                 </div>
-
-                {/* Subline with delivery destination and parcel weight */}
-                <p className="mt-0.5 mb-3 font-ui text-[11px] text-[#71717a] flex items-center justify-between">
-                  <span>Delivering to {savedAddress.pincode} ({isKerala ? 'Kerala' : 'Outside Kerala'})</span>
-                  <span>{totalWeight}g</span>
-                </p>
               </div>
             ) : (
               <div>

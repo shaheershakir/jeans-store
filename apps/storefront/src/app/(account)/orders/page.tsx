@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -127,13 +128,23 @@ export default function OrdersPage() {
   const addItem = useCartStore((s) => s.addItem)
   const openOverlay = useUIStore((s) => s.openOverlay)
   const showToast = useUIStore((s) => s.showToast)
+  const router = useRouter()
   const token = useAuthStore((s) => s.token)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     void useAuthStore.persist.rehydrate()
     void useCartStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
+    setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (mounted && !isAuthenticated) {
+      router.replace('/login?redirect=/orders')
+    }
+  }, [mounted, isAuthenticated, router])
 
   const handleBuyAgain = (productName?: string) => {
     const product = PRODUCTS.find((entry) => entry.name === productName) ?? PRODUCTS[0]

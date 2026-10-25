@@ -18,12 +18,16 @@ import {
   X
 } from 'lucide-react'
 import { useAuthStore, useUIStore } from '@/lib/store'
+import { useRouter } from 'next/navigation'
 
 export default function SettingsContent() {
   const user = useAuthStore((s) => s.user)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const [mounted, setMounted] = useState(false)
   const updateProfile = useAuthStore((s) => s.updateProfile)
   const logout = useAuthStore((s) => s.logout)
   const showToast = useUIStore((s) => s.showToast)
+  const router = useRouter()
 
   // Profile details state matching mock exactly
   const [fullName, setFullName] = useState(user?.name || 'Shaheer')
@@ -56,9 +60,14 @@ export default function SettingsContent() {
   useEffect(() => {
     void useAuthStore.persist.rehydrate()
     void useUIStore.persist.rehydrate()
+    setMounted(true)
   }, [])
 
   useEffect(() => {
+    if (mounted && !isAuthenticated) {
+      router.replace('/login?redirect=/settings')
+      return
+    }
     if (user) {
       if (user.name && user.name !== 'Sameer Joshi') {
         setFullName(user.name)
@@ -73,7 +82,7 @@ export default function SettingsContent() {
         setEditPhone(user.phone)
       }
     }
-  }, [user])
+  }, [user, mounted, isAuthenticated, router])
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault()

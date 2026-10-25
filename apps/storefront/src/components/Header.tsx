@@ -289,9 +289,9 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 </div>
               </button>
 
-              {/* User Avatar Circle / Login Button */}
+              {/* User Avatar Circle / Login Button (Desktop only; on mobile, profile is in MobileTabBar) */}
               {mounted && isAuthenticated && user ? (
-                <div className="relative" ref={userMenuRef}>
+                <div className="relative hidden md:block" ref={userMenuRef}>
                   <button
                     type="button"
                     onClick={() => setUserMenuOpen((v) => !v)}
@@ -458,7 +458,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
               ) : (
                 <Link
                   href="/login"
-                  className="inline-flex h-[36px] items-center gap-1.5 rounded-full bg-[#182126] px-3.5 text-[12.5px] font-semibold text-white shadow-2xs transition-all duration-150 hover:bg-black hover:shadow-xs active:scale-95 [-webkit-tap-highlight-color:transparent] touch-manipulation"
+                  className="hidden md:inline-flex h-[36px] items-center gap-1.5 rounded-full bg-[#182126] px-3.5 text-[12.5px] font-semibold text-white shadow-2xs transition-all duration-150 hover:bg-black hover:shadow-xs active:scale-95 [-webkit-tap-highlight-color:transparent] touch-manipulation"
                   aria-label="Sign in to your account"
                 >
                   <User className="h-3.5 w-3.5 stroke-[2.2]" />
