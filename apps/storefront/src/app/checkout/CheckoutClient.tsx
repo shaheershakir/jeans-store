@@ -152,6 +152,20 @@ const GUEST_CHECKOUT_KEY = 'teesgarage-guest-checkout'
 
 const UPI_ID_PATTERN = /^[\w.-]{2,256}@[a-zA-Z]{2,64}$/
 
+export function normalizePhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '')
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return digits.slice(2)
+  }
+  if (digits.length === 11 && digits.startsWith('0')) {
+    return digits.slice(1)
+  }
+  if (digits.length > 10) {
+    return digits.slice(-10)
+  }
+  return digits
+}
+
 const INDIAN_STATES = [
   'Andhra Pradesh',
   'Arunachal Pradesh',
@@ -993,11 +1007,13 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         }))
       })
     }
-  }, [items.length, isProductMode])
+  }, [items, isProductMode])
+
+  const cleanPin = form.pincode.replace(/\D/g, '').slice(0, 6)
 
   // Recalculate the delivery quote whenever the destination or basket changes.
   useEffect(() => {
-      const hasPin = cleanPin.length === 6
+    const hasPin = cleanPin.length === 6
     const hasState = Boolean(form.state.trim())
 
     if ((!hasPin && !hasState) || items.length === 0) {
@@ -1050,9 +1066,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       window.clearTimeout(timer)
       controller.abort()
     }
-  }, [form.pincode, form.state, items])
-
-  const cleanPin = form.pincode.replace(/\D/g, '').slice(0, 6)
+  }, [cleanPin, form.state, items])
   const isKerala = useMemo(() => {
     if (cleanPin.length === 6) {
       return /^(67|68|69)/.test(cleanPin)
@@ -1173,20 +1187,23 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     return 'S'
   }, [user])
 
-  const phoneDigits = form.phone.replace(/\D/g, '')
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const phoneDigits = useMemo(() => normalizePhone(form.phone), [form.phone])
+  const emailValid = useMemo(() => {
+    const trimmed = email.trim()
+    return Boolean(trimmed && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed))
+  }, [email])
 
   const isShippingComplete = useMemo(() => {
     return Boolean(
       emailValid &&
       form.name.trim().length >= 2 &&
       phoneDigits.length === 10 &&
-      form.address.trim().length >= 5 &&
+      form.address.trim().length >= 3 &&
       form.district.trim().length >= 2 &&
       form.state.trim().length >= 2 &&
       cleanPin.length === 6
     )
-  }, [emailValid, form, phoneDigits, cleanPin])
+  }, [emailValid, form.name, form.address, form.district, form.state, phoneDigits, cleanPin])
 
   const shippingProgress = useMemo(() => {
     const checks = [
@@ -1194,16 +1211,16 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       form.name.trim().length >= 2,
       phoneDigits.length === 10,
       cleanPin.length === 6,
-      form.address.trim().length >= 5,
+      form.address.trim().length >= 3,
       form.district.trim().length >= 2,
       form.state.trim().length >= 2
     ]
     return checks.filter(Boolean).length / checks.length
   }, [emailValid, form.name, form.address, form.district, form.state, phoneDigits, cleanPin])
 
-  const canContinue = Boolean(isShippingComplete && !quoteLoading)
+  const canContinue = Boolean(!isProcessing)
   const canPay = Boolean(
-    canContinue && !isProcessing && paymentStage === 'idle' && items.length > 0
+    !isProcessing && paymentStage === 'idle' && items.length > 0
   )
   const shippingDisplay = deliveryQuote
     ? shipping === 0
@@ -1260,8 +1277,6 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
           state: undefined,
           district: undefined
         }))
-      } else {
-        setErrors((prev) => ({ ...prev, pincode: 'Invalid PIN code or location not found' }))
       }
     } catch {
       // The quote request still runs with the state the customer selects.
@@ -1272,15 +1287,48 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
   function validate(): boolean {
     const nextErrors: CheckoutErrors = {}
+    const trimmedEmail = email.trim()
+    const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)
+    const normalizedPhone = normalizePhone(form.phone)
+    const pin = form.pincode.replace(/\D/g, '')
 
-    if (!emailValid) nextErrors.email = 'Enter a valid email address'
-    if (form.name.trim().length < 2) nextErrors.name = 'Full name is required'
-    if (phoneDigits.length !== 10) nextErrors.phone = 'Enter a valid 10-digit mobile number'
-    if (form.pincode.replace(/\D/g, '').length !== 6)
+    if (!trimmedEmail) {
+      nextErrors.email = 'Email address is required'
+    } else if (!isEmailValid) {
+      nextErrors.email = 'Enter a valid email address'
+    }
+
+    if (!form.name.trim()) {
+      nextErrors.name = 'Full name is required'
+    } else if (form.name.trim().length < 2) {
+      nextErrors.name = 'Full name must be at least 2 characters'
+    }
+
+    if (!form.phone.trim()) {
+      nextErrors.phone = 'Mobile number is required'
+    } else if (normalizedPhone.length !== 10) {
+      nextErrors.phone = 'Enter a valid 10-digit mobile number'
+    }
+
+    if (!pin) {
+      nextErrors.pincode = 'PIN code is required'
+    } else if (pin.length !== 6) {
       nextErrors.pincode = 'Enter a valid 6-digit PIN code'
-    if (form.address.trim().length < 5) nextErrors.address = 'Address line 1 is required'
-    if (form.district.trim().length < 2) nextErrors.district = 'City is required'
-    if (form.state.trim().length < 2) nextErrors.state = 'State is required'
+    }
+
+    if (!form.address.trim()) {
+      nextErrors.address = 'Address line 1 is required'
+    } else if (form.address.trim().length < 3) {
+      nextErrors.address = 'Please enter a complete street address'
+    }
+
+    if (!form.district.trim()) {
+      nextErrors.district = 'City is required'
+    }
+
+    if (!form.state.trim()) {
+      nextErrors.state = 'State is required'
+    }
 
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
@@ -1354,11 +1402,12 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
   function saveCheckoutAddress() {
     if (!saveAddress) return
+    const normalizedPhone = normalizePhone(form.phone)
 
     if (isAuthenticated) {
       addAddress({
         fullName: form.name.trim(),
-        phone: form.phone.trim(),
+        phone: normalizedPhone,
         addressLine: form.address.trim(),
         place: form.place.trim(),
         district: form.district.trim(),
@@ -1371,7 +1420,16 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     }
 
     try {
-      window.localStorage.setItem(GUEST_CHECKOUT_KEY, JSON.stringify({ email: email.trim(), form }))
+      window.localStorage.setItem(
+        GUEST_CHECKOUT_KEY,
+        JSON.stringify({
+          email: email.trim(),
+          form: {
+            ...form,
+            phone: normalizedPhone
+          }
+        })
+      )
     } catch {
       // Saving details is optional; never block a paid order.
     }
@@ -1437,12 +1495,13 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     }
 
     const orderId = `TGE-${Date.now().toString().slice(-6)}`
+    const normalizedPhone = normalizePhone(form.phone)
 
     const orderPayload: CheckoutOrderPayload = {
       orderNumber: orderId,
       store: 'teesgarage',
       customerName: form.name.trim(),
-      customerPhone: form.phone.trim(),
+      customerPhone: normalizedPhone,
       customerEmail: email.trim(),
       address: form.address.trim(),
       apartment: form.place.trim() || undefined,
@@ -1491,7 +1550,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
           items: orderPayload.items,
           customerName: form.name.trim(),
           customerEmail: email.trim(),
-          customerPhone: form.phone.trim()
+          customerPhone: normalizedPhone
         })
       })
 
@@ -1501,7 +1560,10 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       }
 
       const rzpData = await createRes.json()
-      const activeKey = rzpData.keyId
+      const activeKey =
+        rzpData.keyId ||
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+        'rzp_test_TnN4mtRGLw9wJy'
       if (!activeKey) throw new Error('Online payment is not configured. Please contact support.')
 
       const options = {
@@ -1514,7 +1576,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         prefill: {
           name: form.name.trim(),
           email: email.trim(),
-          contact: form.phone.trim(),
+          contact: normalizedPhone,
           ...(paymentMethod === 'upi'
             ? { method: 'upi', ...(upiId.trim() ? { vpa: upiId.trim() } : {}) }
             : { method: paymentMethod })
@@ -2130,8 +2192,17 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                   disabled={!canContinue}
                   className="mt-1 flex h-[48px] w-full items-center justify-center gap-2 rounded-lg bg-[#141414] hover:bg-black px-5 text-[13.5px] font-medium text-white transition-colors duration-200 cursor-pointer disabled:cursor-not-allowed disabled:bg-[#DCDAD4] disabled:text-[#8B8F8E]"
                 >
-                  <span>{quoteLoading ? 'Calculating delivery…' : 'Continue to payment'}</span>
-                  <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                  {quoteLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Calculating delivery…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Continue to payment</span>
+                      <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                    </>
+                  )}
                 </button>
               </>
             ) : null}
@@ -2406,7 +2477,9 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                   disabled={!canPay}
                   className="flex h-[48px] w-full items-center justify-center gap-2 rounded-lg bg-[#141414] hover:bg-black px-5 text-[13.5px] font-medium text-white transition-colors duration-200 cursor-pointer disabled:cursor-not-allowed disabled:bg-[#DCDAD4] disabled:text-[#8B8F8E]"
                 >
-                  {paymentMethod === 'cod' ? (
+                  {isProcessing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : paymentMethod === 'cod' ? (
                     <Banknote className="h-4 w-4" />
                   ) : (
                     <Lock className="h-3.5 w-3.5" />

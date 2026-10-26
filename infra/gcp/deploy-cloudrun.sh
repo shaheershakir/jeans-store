@@ -26,6 +26,9 @@ deploy_api() {
   docker build -t "${REGISTRY}/backend:${TAG}" -f apps/api/Dockerfile .
   docker push "${REGISTRY}/backend:${TAG}"
 
+  RAZORPAY_KEY_ID="${RAZORPAY_KEY_ID:-rzp_test_TnN4mtRGLw9wJy}"
+  RAZORPAY_KEY_SECRET="${RAZORPAY_KEY_SECRET:-6HCOI0Fg4exVQWYG2AK7KeSf}"
+
   if [[ "${USE_GCP_SECRET_MANAGER:-false}" == "true" ]]; then
     secret_bindings="DATABASE_URL=database-url:latest,ADMIN_PASSWORD=admin-password:latest,ADMIN_SESSION_SECRET=admin-session-secret:latest,JWT_SECRET=customer-jwt-secret:latest"
     if [[ -n "${GOOGLE_CLIENT_ID:-}" ]]; then
@@ -93,6 +96,7 @@ deploy_storefront() {
     --build-arg "NEXT_PUBLIC_WHATSAPP_NUMBER=${WHATSAPP_NUMBER:-}" \
     --build-arg "NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}" \
     --build-arg "NEXT_PUBLIC_SITE_URL=${FRONTEND_URL}" \
+    --build-arg "NEXT_PUBLIC_RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-rzp_test_TnN4mtRGLw9wJy}" \
     -t "${REGISTRY}/frontend:${TAG}" \
     -f apps/storefront/Dockerfile .
   docker push "${REGISTRY}/frontend:${TAG}"

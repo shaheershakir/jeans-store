@@ -37,6 +37,8 @@ function Get-BackendUrl {
 function Deploy-Api {
   if (-not $env:ADMIN_EMAIL) { throw 'Set ADMIN_EMAIL before deploying the API.' }
   if (-not $env:GCS_PRODUCT_IMAGES_BUCKET) { throw 'Set GCS_PRODUCT_IMAGES_BUCKET before deploying the API.' }
+  if (-not $env:RAZORPAY_KEY_ID) { $env:RAZORPAY_KEY_ID = 'rzp_test_TnN4mtRGLw9wJy' }
+  if (-not $env:RAZORPAY_KEY_SECRET) { $env:RAZORPAY_KEY_SECRET = '6HCOI0Fg4exVQWYG2AK7KeSf' }
   $image = "${Registry}/backend:${Tag}"
   docker build -t $image -f apps/api/Dockerfile .
   docker push $image
@@ -97,6 +99,7 @@ function Deploy-Storefront {
     --build-arg "NEXT_PUBLIC_WHATSAPP_NUMBER=$($env:WHATSAPP_NUMBER)" `
     --build-arg "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID)" `
     --build-arg "NEXT_PUBLIC_SITE_URL=$FrontendUrl" `
+    --build-arg "NEXT_PUBLIC_RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID)" `
     -t $image `
     -f apps/storefront/Dockerfile .
   docker push $image

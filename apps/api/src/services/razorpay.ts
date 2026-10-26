@@ -26,6 +26,9 @@ export interface PaymentVerificationParams {
   razorpay_signature: string
 }
 
+const DEFAULT_RAZORPAY_KEY_ID = 'rzp_test_TnN4mtRGLw9wJy'
+const DEFAULT_RAZORPAY_KEY_SECRET = '6HCOI0Fg4exVQWYG2AK7KeSf'
+
 /**
  * Service to handle Razorpay payment gateway integration,
  * order creation, signature verification, and webhooks.
@@ -35,23 +38,24 @@ export class RazorpayService {
   private keySecret: string
 
   constructor() {
-    this.keyId = process.env.RAZORPAY_KEY_ID?.trim() || ''
-    this.keySecret = process.env.RAZORPAY_KEY_SECRET?.trim() || ''
+    this.keyId = process.env.RAZORPAY_KEY_ID?.trim() || DEFAULT_RAZORPAY_KEY_ID
+    this.keySecret = process.env.RAZORPAY_KEY_SECRET?.trim() || DEFAULT_RAZORPAY_KEY_SECRET
   }
 
   public getKeyId(): string {
-    return process.env.RAZORPAY_KEY_ID?.trim() || this.keyId
+    return process.env.RAZORPAY_KEY_ID?.trim() || this.keyId || DEFAULT_RAZORPAY_KEY_ID
   }
 
   public getKeySecret(): string {
-    return process.env.RAZORPAY_KEY_SECRET?.trim() || this.keySecret
+    return process.env.RAZORPAY_KEY_SECRET?.trim() || this.keySecret || DEFAULT_RAZORPAY_KEY_SECRET
   }
 
   public getStatus() {
     const keyId = this.getKeyId()
     return {
       enabled: Boolean(keyId && this.getKeySecret()),
-      keyId: keyId ? `${keyId.substring(0, 8)}...` : undefined
+      keyId: keyId ? `${keyId.substring(0, 8)}...` : undefined,
+      isDefaultFallback: keyId === DEFAULT_RAZORPAY_KEY_ID
     }
   }
 

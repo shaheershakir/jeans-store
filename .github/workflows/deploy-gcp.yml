@@ -156,8 +156,8 @@ jobs:
           fi
           GOOGLE_CLIENT_ID_VAL="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }}"
           GOOGLE_CLIENT_SECRET_VAL="${{ secrets.GOOGLE_CLIENT_SECRET || vars.GOOGLE_CLIENT_SECRET }}"
-          RAZORPAY_KEY_ID_VAL="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID }}"
-          RAZORPAY_KEY_SECRET_VAL="${{ secrets.RAZORPAY_KEY_SECRET || vars.RAZORPAY_KEY_SECRET }}"
+          RAZORPAY_KEY_ID_VAL="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID || 'rzp_test_TnN4mtRGLw9wJy' }}"
+          RAZORPAY_KEY_SECRET_VAL="${{ secrets.RAZORPAY_KEY_SECRET || vars.RAZORPAY_KEY_SECRET || '6HCOI0Fg4exVQWYG2AK7KeSf' }}"
           FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"
           ADMIN_URL_VAL="${{ vars.ADMIN_URL || secrets.ADMIN_URL }}"
 
@@ -309,6 +309,7 @@ jobs:
             --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }}" \
             --build-arg NEXT_PUBLIC_SITE_URL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}" \
             --build-arg NEXT_PUBLIC_ASSET_BASE_URL="${{ vars.NEXT_PUBLIC_ASSET_BASE_URL || secrets.NEXT_PUBLIC_ASSET_BASE_URL || '' }}" \
+            --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID || 'rzp_test_TnN4mtRGLw9wJy' }}" \
             -t "$IMAGE" -t "$LATEST" \
             -f apps/storefront/Dockerfile .
           docker push "$IMAGE"
