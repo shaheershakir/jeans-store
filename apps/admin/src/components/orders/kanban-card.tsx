@@ -7,6 +7,11 @@ import { MapPin, MoreHorizontal, Truck, User } from 'lucide-react'
 import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine'
 import {
+  attachClosestEdge,
+  extractClosestEdge,
+  type Edge,
+} from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -24,6 +29,7 @@ export interface OrderItemCardData {
   id: string | number
   number: string
   productName: string
+  productColor?: string
   variantLabel?: string
   customerName: string
   customerAddress1?: string
@@ -40,17 +46,169 @@ export interface OrderItemCardData {
   state: string
 }
 
+export function getProductColorStyle(
+  productColor?: string,
+  variantLabel?: string,
+  productName?: string
+): { lightBg: string; lightBorder: string; darkBg: string; darkBorder: string } {
+  const combined = `${productColor || ''} ${variantLabel || ''} ${productName || ''}`.toLowerCase()
+
+  if (combined.includes('olive') || combined.includes('army') || combined.includes('khaki green')) {
+    return {
+      lightBg: '#f4f6f0',
+      lightBorder: '#d8e0ce',
+      darkBg: '#1b2218',
+      darkBorder: '#2f3b2a',
+    }
+  }
+
+  if (
+    combined.includes('beige') ||
+    combined.includes('cream') ||
+    combined.includes('sand') ||
+    combined.includes('tan')
+  ) {
+    return {
+      lightBg: '#faf7f2',
+      lightBorder: '#e8dfd3',
+      darkBg: '#231f19',
+      darkBorder: '#3d3429',
+    }
+  }
+
+  if (
+    combined.includes('brown') ||
+    combined.includes('terracotta') ||
+    combined.includes('rust') ||
+    combined.includes('camel')
+  ) {
+    return {
+      lightBg: '#faf4f0',
+      lightBorder: '#ecdcd3',
+      darkBg: '#251b17',
+      darkBorder: '#422e26',
+    }
+  }
+
+  if (combined.includes('navy') || combined.includes('blue') || combined.includes('indigo')) {
+    return {
+      lightBg: '#f3f7fc',
+      lightBorder: '#dbe6f5',
+      darkBg: '#161f2b',
+      darkBorder: '#223447',
+    }
+  }
+
+  if (combined.includes('charcoal') || combined.includes('graphite')) {
+    return {
+      lightBg: '#f5f6f8',
+      lightBorder: '#d9dde3',
+      darkBg: '#1d2228',
+      darkBorder: '#2e3640',
+    }
+  }
+
+  if (combined.includes('sage') || combined.includes('mint')) {
+    return {
+      lightBg: '#f2f7f4',
+      lightBorder: '#d3e5db',
+      darkBg: '#18241e',
+      darkBorder: '#273b31',
+    }
+  }
+
+  if (
+    combined.includes('melange') ||
+    combined.includes('heather') ||
+    combined.includes('grey') ||
+    combined.includes('gray')
+  ) {
+    return {
+      lightBg: '#f6f7f9',
+      lightBorder: '#dadfe5',
+      darkBg: '#1f2429',
+      darkBorder: '#313840',
+    }
+  }
+
+  if (
+    combined.includes('red') ||
+    combined.includes('maroon') ||
+    combined.includes('burgundy') ||
+    combined.includes('crimson')
+  ) {
+    return {
+      lightBg: '#fdf4f4',
+      lightBorder: '#f5d5d5',
+      darkBg: '#261616',
+      darkBorder: '#422424',
+    }
+  }
+
+  if (combined.includes('purple') || combined.includes('lavender') || combined.includes('lilac')) {
+    return {
+      lightBg: '#f8f5fc',
+      lightBorder: '#e6daf5',
+      darkBg: '#21172a',
+      darkBorder: '#382449',
+    }
+  }
+
+  if (combined.includes('yellow') || combined.includes('mustard') || combined.includes('gold')) {
+    return {
+      lightBg: '#fcf9ee',
+      lightBorder: '#f2e8be',
+      darkBg: '#252114',
+      darkBorder: '#423920',
+    }
+  }
+
+  if (combined.includes('orange') || combined.includes('coral') || combined.includes('peach')) {
+    return {
+      lightBg: '#fdf6f0',
+      lightBorder: '#f8dece',
+      darkBg: '#271a14',
+      darkBorder: '#442a1f',
+    }
+  }
+
+  if (combined.includes('white') || combined.includes('natural')) {
+    return {
+      lightBg: '#ffffff',
+      lightBorder: '#e2e8f0',
+      darkBg: '#1a1f26',
+      darkBorder: '#2d3748',
+    }
+  }
+
+  // Black / default dark neutral
+  return {
+    lightBg: '#f8f9fa',
+    lightBorder: '#e2e4e8',
+    darkBg: '#18181b',
+    darkBorder: '#27272a',
+  }
+}
+
 interface KanbanCardProps {
   order: OrderItemCardData
+  index?: number
   onStatusChange: (orderId: string | number, newStatus: FulfillmentStatus) => void
   onPrint?: (order: OrderItemCardData) => void
   onCardClick?: (order: OrderItemCardData) => void
 }
 
-export function KanbanCard({ order, onStatusChange, onPrint, onCardClick }: KanbanCardProps) {
+export function KanbanCard({
+  order,
+  index = 0,
+  onStatusChange,
+  onPrint,
+  onCardClick,
+}: KanbanCardProps) {
   const cardRef = React.useRef<HTMLDivElement | null>(null)
   const [isDragging, setIsDragging] = React.useState(false)
   const [isOver, setIsOver] = React.useState(false)
+  const [closestEdge, setClosestEdge] = React.useState<Edge | null>(null)
 
   React.useEffect(() => {
     const element = cardRef.current
@@ -63,6 +221,7 @@ export function KanbanCard({ order, onStatusChange, onPrint, onCardClick }: Kanb
           type: 'order-card',
           orderId: order.id,
           currentStatus: order.fulfillmentStatus,
+          index,
         }),
         onDragStart: () => setIsDragging(true),
         onDrop: () => setIsDragging(false),
@@ -70,18 +229,38 @@ export function KanbanCard({ order, onStatusChange, onPrint, onCardClick }: Kanb
       dropTargetForElements({
         element,
         canDrop: ({ source }) =>
-          source.data.type === 'order-card' && source.data.orderId !== order.id,
-        getData: () => ({
-          type: 'order-card-target',
-          targetOrderId: order.id,
-          targetStatus: order.fulfillmentStatus,
-        }),
-        onDragEnter: () => setIsOver(true),
-        onDragLeave: () => setIsOver(false),
-        onDrop: () => setIsOver(false),
+          source.data.type === 'order-card' && String(source.data.orderId) !== String(order.id),
+        getData: ({ input, element: el }) => {
+          const data = {
+            type: 'order-card-target',
+            targetOrderId: order.id,
+            targetStatus: order.fulfillmentStatus,
+            index,
+          }
+          return attachClosestEdge(data, {
+            input,
+            element: el,
+            allowedEdges: ['top', 'bottom'],
+          })
+        },
+        onDragEnter: ({ self }) => {
+          setClosestEdge(extractClosestEdge(self.data))
+          setIsOver(true)
+        },
+        onDrag: ({ self }) => {
+          setClosestEdge(extractClosestEdge(self.data))
+        },
+        onDragLeave: () => {
+          setClosestEdge(null)
+          setIsOver(false)
+        },
+        onDrop: () => {
+          setClosestEdge(null)
+          setIsOver(false)
+        },
       })
     )
-  }, [order.id, order.fulfillmentStatus])
+  }, [order.id, order.fulfillmentStatus, index])
 
   const copyOrderNumber = () => {
     void navigator.clipboard?.writeText(order.number)
@@ -89,19 +268,35 @@ export function KanbanCard({ order, onStatusChange, onPrint, onCardClick }: Kanb
   }
 
   const isShipped = order.fulfillmentStatus === 'Shipped'
+  const colorStyle = getProductColorStyle(order.productColor, order.variantLabel, order.productName)
 
   return (
     <div
       ref={cardRef}
       onClick={() => onCardClick?.(order)}
-      className={`group relative rounded-2xl border bg-white dark:bg-card p-4 transition-all duration-150 select-none cursor-grab active:cursor-grabbing ${
+      style={{
+        '--card-bg-light': colorStyle.lightBg,
+        '--card-border-light': colorStyle.lightBorder,
+        '--card-bg-dark': colorStyle.darkBg,
+        '--card-border-dark': colorStyle.darkBorder,
+      } as React.CSSProperties}
+      className={`product-tint-card group relative rounded-2xl border p-4 transition-all duration-150 select-none cursor-grab active:cursor-grabbing ${
         isDragging
           ? 'opacity-40 scale-[0.98] ring-2 ring-blue-500 shadow-md'
           : isOver
-            ? 'border-blue-400 dark:border-blue-500 ring-2 ring-blue-400/20 shadow-md'
-            : 'border-slate-200/80 dark:border-border hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md shadow-xs'
+            ? 'ring-2 ring-blue-400/40 shadow-md'
+            : 'hover:shadow-md shadow-xs'
       }`}
     >
+      {/* Top Reorder Drop Indicator */}
+      {closestEdge === 'top' && (
+        <div className="pointer-events-none absolute -top-1.5 left-2 right-2 h-1 bg-blue-600 rounded-full z-30 shadow-md animate-pulse" />
+      )}
+
+      {/* Bottom Reorder Drop Indicator */}
+      {closestEdge === 'bottom' && (
+        <div className="pointer-events-none absolute -bottom-1.5 left-2 right-2 h-1 bg-blue-600 rounded-full z-30 shadow-md animate-pulse" />
+      )}
       {/* Top Header: Order Number & Items Count */}
       <div className="flex items-center justify-between gap-2">
         <Link

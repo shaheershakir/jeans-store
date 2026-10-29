@@ -235,10 +235,11 @@ export function KanbanColumn({
             </p>
           </div>
         ) : (
-          orders.map((order) => (
+          orders.map((order, cardIndex) => (
             <KanbanCard
               key={order.id}
               order={order}
+              index={cardIndex}
               onStatusChange={onStatusChange}
               onPrint={onPrint}
               onCardClick={onCardClick}

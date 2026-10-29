@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { CheckCircle2, Clock, Cpu, PackageCheck, Truck } from 'lucide-react'
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
+import { extractClosestEdge, type Edge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
 import { KanbanColumn, type KanbanColumnConfig } from './kanban-column'
 import type { OrderItemCardData } from './kanban-card'
 import type { FulfillmentStatus } from '@/lib/types'
@@ -124,39 +124,124 @@ export function KanbanBoard({
   // Columns state for horizontal column reordering
   const [columns, setColumns] = React.useState<KanbanColumnConfig[]>(INITIAL_KANBAN_COLUMNS)
 
-  // Track explicit order sequence per column so that:
-  // "when a item moved to next state it should be at last position"
+  // Track explicit order sequence per column
   const [orderSequenceByColumn, setOrderSequenceByColumn] = React.useState<
     Record<string, Array<string | number>>
   >({})
+
+  // Compute the current order list for a column
+  const getColumnOrders = React.useCallback(
+    (status: FulfillmentStatus): OrderItemCardData[] => {
+      const rawColOrders = orders.filter(
+        (o) => o.fulfillmentStatus.toLowerCase() === status.toLowerCase()
+      )
+
+      let baseOrders = [...rawColOrders]
+      // Increasing date order for Pending (19 Oct at first, then 20 Oct, and so on)
+      if (status.toLowerCase() === 'pending') {
+        baseOrders.sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
+      }
+
+      const sequence = orderSequenceByColumn[status]
+      if (sequence && sequence.length > 0) {
+        baseOrders.sort((a, b) => {
+          const idxA = sequence.findIndex((id) => String(id) === String(a.id))
+          const idxB = sequence.findIndex((id) => String(id) === String(b.id))
+
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB
+          if (idxA !== -1) return idxA - 9999
+          if (idxB !== -1) return 9999 - idxB
+          return 0
+        })
+      }
+
+      return baseOrders
+    },
+    [orders, orderSequenceByColumn]
+  )
+
+  // Reorder a card within the SAME column
+  const handleReorderCardWithinColumn = React.useCallback(
+    (
+      status: FulfillmentStatus,
+      draggedOrderId: string | number,
+      targetOrderId: string | number,
+      closestEdge: Edge | null
+    ) => {
+      const currentOrders = getColumnOrders(status)
+      const sourceIndex = currentOrders.findIndex((o) => String(o.id) === String(draggedOrderId))
+      const targetIndex = currentOrders.findIndex((o) => String(o.id) === String(targetOrderId))
+
+      if (sourceIndex === -1 || targetIndex === -1) return
+
+      const destinationIndex = getReorderDestinationIndex({
+        startIndex: sourceIndex,
+        indexOfTarget: targetIndex,
+        closestEdgeOfTarget: closestEdge,
+        axis: 'vertical',
+      })
+
+      if (destinationIndex === sourceIndex) return
+
+      const reorderedIds = reorder({
+        list: currentOrders.map((o) => o.id),
+        startIndex: sourceIndex,
+        finishIndex: destinationIndex,
+      })
+
+      setOrderSequenceByColumn((prev) => ({
+        ...prev,
+        [status]: reorderedIds,
+      }))
+    },
+    [getColumnOrders]
+  )
+
+  // Move a card across columns to a SPECIFIC target position
+  const handleMoveOrderToStateWithPosition = React.useCallback(
+    (
+      draggedOrderId: string | number,
+      targetStatus: FulfillmentStatus,
+      targetOrderId: string | number,
+      closestEdge: Edge | null
+    ) => {
+      const destOrders = getColumnOrders(targetStatus).filter(
+        (o) => String(o.id) !== String(draggedOrderId)
+      )
+      const targetIndex = destOrders.findIndex((o) => String(o.id) === String(targetOrderId))
+
+      let insertIndex = destOrders.length
+      if (targetIndex !== -1) {
+        insertIndex = closestEdge === 'bottom' ? targetIndex + 1 : targetIndex
+      }
+
+      const newSequence = destOrders.map((o) => o.id)
+      newSequence.splice(insertIndex, 0, draggedOrderId)
+
+      setOrderSequenceByColumn((prev) => {
+        const updated = { ...prev }
+        for (const key of Object.keys(updated)) {
+          updated[key] = (updated[key] || []).filter((id) => String(id) !== String(draggedOrderId))
+        }
+        updated[targetStatus] = newSequence
+        return updated
+      })
+
+      onMoveOrder(draggedOrderId, targetStatus)
+    },
+    [getColumnOrders, onMoveOrder]
+  )
 
   // Move order across columns (places moved card at the LAST position)
   const handleMoveOrderToState = React.useCallback(
     (orderId: string | number, newStatus: FulfillmentStatus) => {
       setOrderSequenceByColumn((prev) => {
-        // Find existing orders currently in the destination status
-        const existingInDest = orders
-          .filter((o) => o.fulfillmentStatus.toLowerCase() === newStatus.toLowerCase())
-          .map((o) => o.id)
-          .filter((id) => String(id) !== String(orderId))
-
-        // Get previously known sequence or fallback to existing orders
-        const baseSequence = prev[newStatus]
-          ? prev[newStatus].filter((id) => String(id) !== String(orderId))
-          : existingInDest
-
-        // Ensure all currently visible orders in destination are preserved in sequence
-        for (const existingId of existingInDest) {
-          if (!baseSequence.some((id) => String(id) === String(existingId))) {
-            baseSequence.push(existingId)
-          }
-        }
-
-        // Place the moved orderId at the VERY LAST position
-        const updatedDestSequence = [...baseSequence, orderId]
+        const destOrders = getColumnOrders(newStatus).filter(
+          (o) => String(o.id) !== String(orderId)
+        )
+        const updatedDestSequence = [...destOrders.map((o) => o.id), orderId]
 
         const updated = { ...prev }
-        // Remove orderId from any other column sequence
         for (const key of Object.keys(updated)) {
           updated[key] = (updated[key] || []).filter((id) => String(id) !== String(orderId))
         }
@@ -164,10 +249,9 @@ export function KanbanBoard({
         return updated
       })
 
-      // Notify parent
       onMoveOrder(orderId, newStatus)
     },
-    [orders, onMoveOrder]
+    [getColumnOrders, onMoveOrder]
   )
 
   // Pragmatic Drag and Drop monitor for both horizontal column reorder and card movement
@@ -212,25 +296,41 @@ export function KanbanBoard({
           const cardTarget = dropTargets.find((t) => t.data.type === 'order-card-target')
           const columnTarget = dropTargets.find((t) => t.data.type === 'column-target')
 
-          let destinationStatus: FulfillmentStatus | undefined
-
-          // Prefer specific card target's status, fallback to column target
           if (cardTarget) {
-            destinationStatus = cardTarget.data.targetStatus as FulfillmentStatus
-          } else if (columnTarget) {
-            destinationStatus = columnTarget.data.columnStatus as FulfillmentStatus
-          }
+            const targetOrderId = cardTarget.data.targetOrderId as string | number
+            const targetStatus = cardTarget.data.targetStatus as FulfillmentStatus
+            const closestEdge = extractClosestEdge(cardTarget.data)
 
-          if (destinationStatus) {
-            // When moved to next / different state, ensure it lands at the LAST position:
-            if (destinationStatus.toLowerCase() !== sourceStatus.toLowerCase()) {
+            if (sourceStatus.toLowerCase() === targetStatus.toLowerCase()) {
+              // 2a. Reordering within the SAME column
+              handleReorderCardWithinColumn(targetStatus, draggedOrderId, targetOrderId, closestEdge)
+              return
+            } else {
+              // 2b. Moving to a DIFFERENT column at a specific card position
+              handleMoveOrderToStateWithPosition(
+                draggedOrderId,
+                targetStatus,
+                targetOrderId,
+                closestEdge
+              )
+              return
+            }
+          } else if (columnTarget) {
+            const destinationStatus = columnTarget.data.columnStatus as FulfillmentStatus
+            if (destinationStatus && destinationStatus.toLowerCase() !== sourceStatus.toLowerCase()) {
+              // 2c. Dropped onto column body -> place at LAST position
               handleMoveOrderToState(draggedOrderId, destinationStatus)
             }
           }
         }
       },
     })
-  }, [columns, handleMoveOrderToState])
+  }, [
+    columns,
+    handleReorderCardWithinColumn,
+    handleMoveOrderToStateWithPosition,
+    handleMoveOrderToState,
+  ])
 
   // Smooth auto-scroll while dragging a card near viewport top/bottom
   React.useEffect(() => {
@@ -291,29 +391,7 @@ export function KanbanBoard({
     <div className="w-full overflow-x-auto pb-6 scrollbar-thin">
       <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5 sm:gap-4.5 snap-x snap-mandatory scrollbar-none pb-2 items-stretch min-h-[calc(100vh-280px)]">
         {columns.map((col, index) => {
-          // Filter all orders for this column
-          const rawColOrders = orders.filter(
-            (o) => o.fulfillmentStatus.toLowerCase() === col.status.toLowerCase()
-          )
-
-          // Sort orders according to orderSequenceByColumn so moved orders are at the LAST position
-          const sequence = orderSequenceByColumn[col.status]
-          let sortedOrders = rawColOrders
-
-          if (sequence && sequence.length > 0) {
-            sortedOrders = [...rawColOrders].sort((a, b) => {
-              const idxA = sequence.findIndex((id) => String(id) === String(a.id))
-              const idxB = sequence.findIndex((id) => String(id) === String(b.id))
-
-              // If both are found in the sequence, follow sequence order
-              if (idxA !== -1 && idxB !== -1) return idxA - idxB
-              // If only one is in sequence, placed items go to their sequence position
-              if (idxA !== -1) return idxA - 9999
-              if (idxB !== -1) return 9999 - idxB
-              return 0
-            })
-          }
-
+          const sortedOrders = getColumnOrders(col.status)
           const totalCount = countsByStatus[col.status] ?? sortedOrders.length
 
           return (
