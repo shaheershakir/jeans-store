@@ -70,7 +70,7 @@ export type PaymentStage =
 type CheckoutErrors = Partial<Record<keyof CheckoutForm | 'email', string>>
 
 interface CheckoutOrderPayload {
-  orderNumber: string
+  orderNumber?: string
   store: string
   customerName: string
   customerPhone: string
@@ -1494,11 +1494,9 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       })
     }
 
-    const orderId = `TGE-${Date.now().toString().slice(-6)}`
     const normalizedPhone = normalizePhone(form.phone)
 
     const orderPayload: CheckoutOrderPayload = {
-      orderNumber: orderId,
       store: 'teesgarage',
       customerName: form.name.trim(),
       customerPhone: normalizedPhone,
@@ -1522,7 +1520,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     }
 
     if (paymentMethod === 'cod') {
-      await placeCashOnDeliveryOrder(orderPayload, orderId)
+      await placeCashOnDeliveryOrder(orderPayload)
       return
     }
 
@@ -1544,7 +1542,6 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currency: 'INR',
-          orderNumber: orderId,
           state: form.state.trim(),
           pincode: form.pincode.trim(),
           items: orderPayload.items,
@@ -1570,7 +1567,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         amount: rzpData.amount,
         currency: rzpData.currency || 'INR',
         name: 'TEESGARAGE',
-        description: `Order ${orderId}`,
+        description: `Order ${rzpData.orderNumber}`,
         order_id: rzpData.razorpayOrderId,
         prefill: {
           name: form.name.trim(),
@@ -1581,7 +1578,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
             : { method: paymentMethod })
         },
         notes: {
-          orderNumber: orderId,
+          orderNumber: rzpData.orderNumber,
           address: `${form.address.trim()}, ${form.place.trim()}, ${form.district.trim()}, ${form.state.trim()} - ${form.pincode.trim()}`,
           estimatedDelivery: deliveryEstimationInfo.formattedRange
         },
@@ -1619,6 +1616,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                     razorpay_signature: response.razorpay_signature,
                     order: {
                       ...orderPayload,
+                      orderNumber: rzpData.orderNumber,
                       status: 'paid',
                       handoffType: 'razorpay'
                     }
@@ -1657,7 +1655,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
             saveCheckoutAddress()
 
             const confirmedOrder = verifyData.order
-            const finalOrderNumber = confirmedOrder?.orderNumber || orderId
+            const finalOrderNumber = confirmedOrder?.orderNumber || rzpData.orderNumber
             const guestToken = verifyData.guestToken || ''
 
             try {
@@ -1832,7 +1830,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     }
   }
 
-  async function placeCashOnDeliveryOrder(orderPayload: CheckoutOrderPayload, orderId: string) {
+  async function placeCashOnDeliveryOrder(orderPayload: CheckoutOrderPayload) {
     setIsProcessing(true)
     setPaymentStage('creating_order')
     setPaymentError(null)
@@ -1858,7 +1856,10 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       saveCheckoutAddress()
 
       const confirmedOrder = (data.order || {}) as Record<string, any>
-      const finalOrderNumber = confirmedOrder.orderNumber || orderId
+      const finalOrderNumber = confirmedOrder.orderNumber
+      if (!finalOrderNumber) {
+        throw new Error('Order placed but server did not return an order number.')
+      }
       const guestToken = data.guestToken || ''
 
       try {

@@ -18,6 +18,9 @@ REGISTRY="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}"
 require_api_configuration() {
   : "${ADMIN_EMAIL:?Set ADMIN_EMAIL}"
   : "${GCS_PRODUCT_IMAGES_BUCKET:?Set GCS_PRODUCT_IMAGES_BUCKET}"
+  : "${RAZORPAY_KEY_ID:?Set RAZORPAY_KEY_ID before deploying the API}"
+  : "${RAZORPAY_KEY_SECRET:?Set RAZORPAY_KEY_SECRET before deploying the API}"
+  : "${RAZORPAY_WEBHOOK_SECRET:?Set RAZORPAY_WEBHOOK_SECRET before deploying the API}"
 }
 
 deploy_api() {
@@ -26,16 +29,13 @@ deploy_api() {
   docker build -t "${REGISTRY}/backend:${TAG}" -f apps/api/Dockerfile .
   docker push "${REGISTRY}/backend:${TAG}"
 
-  RAZORPAY_KEY_ID="${RAZORPAY_KEY_ID:-rzp_test_TnN4mtRGLw9wJy}"
-  RAZORPAY_KEY_SECRET="${RAZORPAY_KEY_SECRET:-6HCOI0Fg4exVQWYG2AK7KeSf}"
-
   if [[ "${USE_GCP_SECRET_MANAGER:-false}" == "true" ]]; then
     secret_bindings="DATABASE_URL=database-url:latest,ADMIN_PASSWORD=admin-password:latest,ADMIN_SESSION_SECRET=admin-session-secret:latest,JWT_SECRET=customer-jwt-secret:latest"
     if [[ -n "${GOOGLE_CLIENT_ID:-}" ]]; then
       secret_bindings+=",GOOGLE_CLIENT_SECRET=google-client-secret:latest"
     fi
     if [[ -n "${RAZORPAY_KEY_ID:-}" ]]; then
-      secret_bindings+=",RAZORPAY_KEY_SECRET=razorpay-key-secret:latest"
+      secret_bindings+=",RAZORPAY_KEY_SECRET=razorpay-key-secret:latest,RAZORPAY_WEBHOOK_SECRET=razorpay-webhook-secret:latest"
     fi
 
     gcloud run deploy teesgarage-backend \
@@ -57,6 +57,7 @@ deploy_api() {
     if [[ -n "${GOOGLE_CLIENT_SECRET:-}" ]]; then env_vars+=";GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}"; fi
     if [[ -n "${RAZORPAY_KEY_ID:-}" ]]; then env_vars+=";RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}"; fi
     if [[ -n "${RAZORPAY_KEY_SECRET:-}" ]]; then env_vars+=";RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}"; fi
+    if [[ -n "${RAZORPAY_WEBHOOK_SECRET:-}" ]]; then env_vars+=";RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET}"; fi
 
     if gcloud run services describe teesgarage-backend --project="${PROJECT}" --region="${REGION}" >/dev/null 2>&1; then
       latest_ready=$(gcloud run services describe teesgarage-backend --project="${PROJECT}" --region="${REGION}" --format='value(status.latestReadyRevisionName)' 2>/dev/null || true)
@@ -96,7 +97,7 @@ deploy_storefront() {
     --build-arg "NEXT_PUBLIC_WHATSAPP_NUMBER=${WHATSAPP_NUMBER:-}" \
     --build-arg "NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}" \
     --build-arg "NEXT_PUBLIC_SITE_URL=${FRONTEND_URL}" \
-    --build-arg "NEXT_PUBLIC_RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-rzp_test_TnN4mtRGLw9wJy}" \
+    --build-arg "NEXT_PUBLIC_RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}" \
     -t "${REGISTRY}/frontend:${TAG}" \
     -f apps/storefront/Dockerfile .
   docker push "${REGISTRY}/frontend:${TAG}"

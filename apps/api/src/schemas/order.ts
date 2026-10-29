@@ -23,7 +23,7 @@ export const orderItemSchema = z.object({
 
 export const createOrderSchema = z.object({
   userId: z.number().int().positive().nullable().optional(),
-  orderNumber: z.string().min(1),
+  orderNumber: z.string().min(1).optional(),
   store: z.string().default("teesgarage"),
   customerName: z.string().min(1),
   customerPhone: z.string().min(10),
@@ -59,8 +59,9 @@ export type CreateOrder = z.infer<typeof createOrderSchema>;
 
 export type CalculatedOrder = Omit<
   CreateOrder,
-  "items" | "subtotal" | "discountTotal" | "shipping" | "total"
+  "items" | "subtotal" | "discountTotal" | "shipping" | "total" | "orderNumber"
 > & {
+  orderNumber: string;
   userId?: number | null;
   items: Array<
     z.infer<typeof orderItemSchema> & {
@@ -82,8 +83,31 @@ export type CalculatedOrder = Omit<
   weightGrams?: number;
 };
 
-export interface Order extends CreateOrder {
+export const createRazorpayOrderItemSchema = z.object({
+  id: z.string().uuid(),
+  variantId: z.number().int().positive().nullable().optional(),
+  designId: z.number().int().positive().nullable().optional(),
+  size: z.string().min(1),
+  quantity: z.number().int().positive().max(50),
+});
+
+export const createRazorpayOrderSchema = z.object({
+  currency: z.string().default("INR"),
+  orderNumber: z.string().min(1).optional(),
+  state: z.string().default(""),
+  pincode: z.string().optional(),
+  items: z.array(createRazorpayOrderItemSchema).min(1),
+  customerName: z.string().optional(),
+  customerEmail: z.string().optional(),
+  customerPhone: z.string().optional(),
+  couponCode: z.string().trim().min(1).max(60).optional(),
+});
+
+export type CreateRazorpayOrder = z.infer<typeof createRazorpayOrderSchema>;
+
+export interface Order extends Omit<CreateOrder, "orderNumber"> {
   id: number;
+  orderNumber: string;
   userId?: number | null;
   status: string;
   paymentStatus: "Pending" | "Paid" | "Failed" | "Refunded";

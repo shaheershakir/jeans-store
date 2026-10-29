@@ -3,7 +3,8 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { orderRateLimiter } from "../middleware/rateLimit.js";
 import { orderStore } from "../store/orderStore.js";
-import { createOrderSchema } from "../schemas/order.js";
+import { createOrderSchema, createRazorpayOrderSchema } from "../schemas/order.js";
+import { generateOrderNumber, shouldGenerateServerOrderNumber } from "../utils/orderNumber.js";
 import { verifyAdminAuth } from "../middleware/auth.js";
 import { razorpayService } from "../services/razorpay.js";
 import { logger } from "../lib/logger.js";
@@ -39,7 +40,7 @@ import {
   createPaymentAttempt,
   findAttemptByGatewayOrderId,
 } from "../services/payments.js";
-import type { CalculatedOrder, CreateOrder } from "../schemas/order.js";
+import type { CalculatedOrder, CreateOrder, Order } from "../schemas/order.js";
 
 export const orderRouter = Router();
 
@@ -80,19 +81,6 @@ const orderItemInputSchema = z.object({
   designId: z.number().int().positive().nullable().optional(),
   size: z.string().min(1),
   quantity: z.number().int().positive().max(50),
-});
-
-// Public: Create Razorpay checkout order
-const createRazorpayOrderSchema = z.object({
-  currency: z.string().default("INR"),
-  orderNumber: z.string().min(1),
-  state: z.string().default(""),
-  pincode: z.string().optional(),
-  items: z.array(orderItemInputSchema).min(1),
-  customerName: z.string().optional(),
-  customerEmail: z.string().optional(),
-  customerPhone: z.string().optional(),
-  couponCode: z.string().trim().min(1).max(60).optional(),
 });
 
 async function calculateCheckout(
@@ -290,6 +278,7 @@ async function calculateOrder(
   return {
     ...input,
     ...calculated,
+    orderNumber: input.orderNumber || generateOrderNumber(),
     couponCode: input.couponCode
       ? normalizeCouponCode(input.couponCode)
       : undefined,
@@ -407,7 +396,7 @@ orderRouter.post(
     try {
       const {
         currency,
-        orderNumber,
+        orderNumber: clientOrderNumber,
         customerName,
         customerEmail,
         customerPhone,
@@ -416,6 +405,20 @@ orderRouter.post(
         items,
         couponCode,
       } = parsed.data;
+
+      let orderNumber: string;
+      if (shouldGenerateServerOrderNumber(clientOrderNumber)) {
+        orderNumber = generateOrderNumber();
+        let retries = 0;
+        while (await orderStore.getByOrderNumber(orderNumber)) {
+          orderNumber = generateOrderNumber();
+          retries++;
+          if (retries > 5) break;
+        }
+      } else {
+        orderNumber = clientOrderNumber!;
+      }
+
       const quote = await calculateCheckout(items, state, pincode, couponCode);
       const amountInPaise = Math.round(quote.total * 100);
 
@@ -982,23 +985,55 @@ orderRouter.post("/api/orders", orderRateLimiter, async (req: Request, res: Resp
     if (user) userId = user.id;
   }
 
+  const shouldGenerate = shouldGenerateServerOrderNumber(parsed.data.orderNumber);
+
   try {
-    const existingOrder = await orderStore.getByOrderNumber(
-      parsed.data.orderNumber,
-    );
-    if (existingOrder) {
-      res.status(409).json({
-        error:
-          "This order number has already been recorded. Please contact support if you need help with an existing order.",
-      });
-      return;
+    let order: Order | undefined;
+    let calculatedOrder: CalculatedOrder | undefined;
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    while (attempts < maxAttempts) {
+      attempts++;
+      const currentOrderNumber =
+        attempts === 1 && !shouldGenerate
+          ? parsed.data.orderNumber!
+          : generateOrderNumber();
+
+      const existingOrder = await orderStore.getByOrderNumber(currentOrderNumber);
+      if (existingOrder) {
+        if (!shouldGenerate) {
+          res.status(409).json({
+            error:
+              "This order number has already been recorded. Please contact support if you need help with an existing order.",
+          });
+          return;
+        }
+        continue;
+      }
+
+      try {
+        calculatedOrder = await calculateOrder({
+          ...parsed.data,
+          orderNumber: currentOrderNumber,
+        });
+        order = await orderStore.create({
+          ...calculatedOrder,
+          userId,
+        });
+        break;
+      } catch (err) {
+        if (isUniqueConstraintViolation(err) && shouldGenerate && attempts < maxAttempts) {
+          continue;
+        }
+        throw err;
+      }
     }
 
-    const calculatedOrder = await calculateOrder(parsed.data);
-    const order = await orderStore.create({
-      ...calculatedOrder,
-      userId,
-    });
+    if (!order || !calculatedOrder) {
+      res.status(500).json({ error: "Failed to process order" });
+      return;
+    }
 
     trackServerEvent(
       order.customerEmail || order.orderNumber,
@@ -1126,14 +1161,6 @@ async function handleOrderConfirmationLookup(
     (req.query.token as string) || (req.headers["x-guest-token"] as string);
   if (!isAuthorized && token) {
     if (verifyGuestOrderToken(order.orderNumber, token)) {
-      isAuthorized = true;
-    }
-  }
-
-  // 4. Check guest email match if explicitly passed as a verification fallback
-  const emailQuery = req.query.email as string;
-  if (!isAuthorized && emailQuery) {
-    if (order.customerEmail.toLowerCase() === emailQuery.trim().toLowerCase()) {
       isAuthorized = true;
     }
   }

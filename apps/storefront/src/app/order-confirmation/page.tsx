@@ -293,9 +293,6 @@ function OrderConfirmationContent() {
         if (effectiveToken) {
           fetchUrl.searchParams.set('token', effectiveToken)
         }
-        if (cached?.email) {
-          fetchUrl.searchParams.set('email', cached.email)
-        }
 
         const authToken = useAuthStore.getState().token
         const headers: Record<string, string> = { Accept: 'application/json' }

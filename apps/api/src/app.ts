@@ -49,6 +49,8 @@ export function buildApp(options: BuildAppOptions = {}): Application {
       standardHeaders: true,
       legacyHeaders: false,
       skip: (req) => {
+        if (process.env.NODE_ENV === 'test') return true
+        if (process.env.NODE_ENV === 'production') return false
         const ip = req.ip || req.socket.remoteAddress || ''
         return ip === '127.0.0.1' || ip === '::1' || ip === 'localhost'
       }

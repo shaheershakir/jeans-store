@@ -217,8 +217,12 @@ export function verifyGuestOrderToken(orderNumber: string, token: string): boole
     const candidateSecrets = [
       jwtSecret(),
       process.env.JWT_SECRET?.trim(),
-      'local-dev-customer-jwt-secret-change-me',
-      'local-development-only-jwt-secret-not-for-production'
+      ...(process.env.NODE_ENV !== 'production'
+        ? [
+            'local-dev-customer-jwt-secret-change-me',
+            'local-development-only-jwt-secret-not-for-production'
+          ]
+        : [])
     ].filter((s): s is string => Boolean(s && s.length > 0))
 
     let signatureValid = false

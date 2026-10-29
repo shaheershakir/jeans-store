@@ -154,6 +154,76 @@ describe('Catalog & Orders Unified Brand Seams', () => {
     }
   })
 
+  test('POST /api/orders and /razorpay/create-order generate server-assigned order numbers when omitted', async () => {
+    const originalCreateOrder = razorpayService.createOrder
+    razorpayService.createOrder = async (options: any) => ({
+      id: `order_fake_${Date.now()}`,
+      entity: 'order',
+      amount: options.amount,
+      amount_paid: 0,
+      amount_due: options.amount,
+      currency: options.currency ?? 'INR',
+      receipt: options.receipt,
+      status: 'created',
+      created_at: Math.floor(Date.now() / 1000)
+    })
+
+    try {
+      const [{ product, variant }] = await pickSellableProducts(1)
+      const rzpRes = await request(app)
+        .post('/api/orders/razorpay/create-order')
+        .send({
+          currency: 'INR',
+          state: 'Kerala',
+          pincode: '682001',
+          items: [
+            {
+              id: product.id,
+              variantId: variant.id,
+              size: String(variant.size),
+              quantity: 1
+            }
+          ],
+          customerName: 'Server Assigned',
+          customerEmail: 'server@teesgarage.in'
+        })
+
+      assert.equal(rzpRes.status, 201)
+      assert.ok(rzpRes.body.orderNumber)
+      assert.match(rzpRes.body.orderNumber, /^TGE-[A-Z0-9]+-[A-Z0-9]+$/)
+
+      const codRes = await request(app)
+        .post('/api/orders')
+        .send({
+          store: 'teesgarage',
+          customerName: 'Server Assigned COD',
+          customerPhone: '9820144521',
+          customerEmail: 'server-cod@teesgarage.in',
+          address: '42 Marine Drive',
+          city: 'Kochi',
+          state: 'Kerala',
+          pincode: '682001',
+          items: [
+            {
+              id: product.id,
+              variantId: variant.id,
+              name: product.name,
+              size: String(variant.size),
+              quantity: 1
+            }
+          ],
+          handoffType: 'cod',
+          paymentMethod: 'COD'
+        })
+
+      assert.equal(codRes.status, 201)
+      assert.ok(codRes.body.order.orderNumber)
+      assert.match(codRes.body.order.orderNumber, /^TGE-[A-Z0-9]+-[A-Z0-9]+$/)
+    } finally {
+      razorpayService.createOrder = originalCreateOrder
+    }
+  })
+
   test('POST /api/orders/razorpay/verify validates signature and commits order', async () => {
     const crypto = await import('node:crypto')
     const keySecret = razorpayService.getKeySecret()
@@ -291,6 +361,10 @@ describe('Catalog & Orders Unified Brand Seams', () => {
     // 1. Without authorization or token -> 403
     const unauthRes = await request(app).get(`/api/orders/confirmation/${orderNumber}`)
     assert.equal(unauthRes.status, 403)
+
+    // Requesting with matching customer email but without a valid token or auth header -> 403
+    const emailOnlyRes = await request(app).get(`/api/orders/confirmation/${orderNumber}?email=customer@example.com`)
+    assert.equal(emailOnlyRes.status, 403)
 
     // 2. With invalid token -> 403
     const invalidTokenRes = await request(app).get(`/api/orders/confirmation/${orderNumber}?token=invalid.token`)

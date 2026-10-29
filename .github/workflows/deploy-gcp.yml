@@ -109,6 +109,21 @@ jobs:
             exit 1
           fi
 
+      - name: Validate Required Production Secrets
+        run: |
+          if [ -z "${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID }}" ]; then
+            echo "::error::Missing RAZORPAY_KEY_ID for production deployment!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.RAZORPAY_KEY_SECRET || vars.RAZORPAY_KEY_SECRET }}" ]; then
+            echo "::error::Missing RAZORPAY_KEY_SECRET for production deployment!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.RAZORPAY_WEBHOOK_SECRET || vars.RAZORPAY_WEBHOOK_SECRET }}" ]; then
+            echo "::error::Missing RAZORPAY_WEBHOOK_SECRET for production deployment!"
+            exit 1
+          fi
+
       - name: Authenticate to Google Cloud (Workload Identity Federation)
         if: env.WIF_PROVIDER != '' && env.WIF_SERVICE_ACCOUNT != ''
         uses: google-github-actions/auth@v2
@@ -154,10 +169,11 @@ jobs:
           if [ -z "$ASSET_BASE_VAL" ]; then
             ASSET_BASE_VAL="https://storage.googleapis.com/${BUCKET_VAL}"
           fi
-          GOOGLE_CLIENT_ID_VAL="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }}"
+          GOOGLE_CLIENT_ID_VAL="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}"
           GOOGLE_CLIENT_SECRET_VAL="${{ secrets.GOOGLE_CLIENT_SECRET || vars.GOOGLE_CLIENT_SECRET }}"
-          RAZORPAY_KEY_ID_VAL="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID || 'rzp_test_TnN4mtRGLw9wJy' }}"
-          RAZORPAY_KEY_SECRET_VAL="${{ secrets.RAZORPAY_KEY_SECRET || vars.RAZORPAY_KEY_SECRET || '6HCOI0Fg4exVQWYG2AK7KeSf' }}"
+          RAZORPAY_KEY_ID_VAL="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID }}"
+          RAZORPAY_KEY_SECRET_VAL="${{ secrets.RAZORPAY_KEY_SECRET || vars.RAZORPAY_KEY_SECRET }}"
+          RAZORPAY_WEBHOOK_SECRET_VAL="${{ secrets.RAZORPAY_WEBHOOK_SECRET || vars.RAZORPAY_WEBHOOK_SECRET }}"
           FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"
           ADMIN_URL_VAL="${{ vars.ADMIN_URL || secrets.ADMIN_URL }}"
 
@@ -178,7 +194,7 @@ jobs:
               SECRET_BINDINGS="$SECRET_BINDINGS,GOOGLE_CLIENT_SECRET=google-client-secret:latest"
             fi
             if [ -n "$RAZORPAY_KEY_ID_VAL" ]; then
-              SECRET_BINDINGS="$SECRET_BINDINGS,RAZORPAY_KEY_SECRET=razorpay-key-secret:latest"
+              SECRET_BINDINGS="$SECRET_BINDINGS,RAZORPAY_KEY_SECRET=razorpay-key-secret:latest,RAZORPAY_WEBHOOK_SECRET=razorpay-webhook-secret:latest"
             fi
             gcloud run deploy ${{ env.BACKEND_SERVICE }} \
               --project="${{ env.GCP_PROJECT_ID }}" \
@@ -228,6 +244,9 @@ jobs:
             fi
             if [ -n "$RAZORPAY_KEY_SECRET_VAL" ]; then
               ENV_VARS="${ENV_VARS};RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET_VAL}"
+            fi
+            if [ -n "$RAZORPAY_WEBHOOK_SECRET_VAL" ]; then
+              ENV_VARS="${ENV_VARS};RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET_VAL}"
             fi
 
             gcloud run deploy ${{ env.BACKEND_SERVICE }} \
@@ -306,10 +325,10 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_API_URL="${{ steps.backend_url.outputs.url }}" \
             --build-arg NEXT_PUBLIC_WHATSAPP_NUMBER="${{ vars.WHATSAPP_NUMBER || secrets.WHATSAPP_NUMBER }}" \
-            --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }}" \
+            --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '' }}" \
             --build-arg NEXT_PUBLIC_SITE_URL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}" \
             --build-arg NEXT_PUBLIC_ASSET_BASE_URL="${{ vars.NEXT_PUBLIC_ASSET_BASE_URL || secrets.NEXT_PUBLIC_ASSET_BASE_URL || '' }}" \
-            --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID || 'rzp_test_TnN4mtRGLw9wJy' }}" \
+            --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID || '' }}" \
             -t "$IMAGE" -t "$LATEST" \
             -f apps/storefront/Dockerfile .
           docker push "$IMAGE"
@@ -329,7 +348,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=3000 \
-            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_ASSET_BASE_URL=${{ vars.NEXT_PUBLIC_ASSET_BASE_URL || secrets.NEXT_PUBLIC_ASSET_BASE_URL || '' }};NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '777430238035-cl896fklpijq4cqlstm1d6h3s07q63ke.apps.googleusercontent.com' }};NEXT_PUBLIC_SITE_URL=${FRONTEND_URL_VAL}"
+            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_ASSET_BASE_URL=${{ vars.NEXT_PUBLIC_ASSET_BASE_URL || secrets.NEXT_PUBLIC_ASSET_BASE_URL || '' }};NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '' }};NEXT_PUBLIC_SITE_URL=${FRONTEND_URL_VAL}"
 
   # -------------------------------------------------------------
   # 3. Admin Dashboard Service (Next.js 15)

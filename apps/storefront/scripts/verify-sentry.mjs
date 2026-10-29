@@ -1,8 +1,14 @@
 import pkg from '@sentry/nextjs'
 const { init, captureException, flush } = pkg
 
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN
+if (!dsn) {
+  console.error('Error: NEXT_PUBLIC_SENTRY_DSN or SENTRY_DSN environment variable must be set.')
+  process.exit(1)
+}
+
 init({
-  dsn: 'https://877d0aa41054671d270bf2d7f93c7c9d@o4509651505905664.ingest.us.sentry.io/4512273758814208',
+  dsn,
   environment: 'development',
   debug: true,
 })

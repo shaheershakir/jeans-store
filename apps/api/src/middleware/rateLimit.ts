@@ -1,7 +1,8 @@
 import rateLimit from 'express-rate-limit'
 
-const isLocalOrTest = (ip?: string) => {
+const isLocalOrTest = (ip?: string): boolean => {
   if (process.env.NODE_ENV === 'test') return true
+  if (process.env.NODE_ENV === 'production') return false
   return ip === '127.0.0.1' || ip === '::1' || ip === 'localhost'
 }
 
