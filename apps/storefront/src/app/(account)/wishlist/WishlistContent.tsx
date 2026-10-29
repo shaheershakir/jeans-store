@@ -15,7 +15,8 @@ import {
 import { useCartStore, useUIStore, useAuthStore, useFavoriteStore } from '@/lib/store'
 import type { Product } from '@/lib/constants'
 import { PRODUCTS } from '@/lib/constants'
-import { getProductUrl } from '@/lib/products'
+import { getProductUrl, getProductSlug } from '@/lib/products'
+import { trackEvent } from '@/lib/analytics'
 
 interface WishlistProduct {
   id: string
@@ -149,6 +150,21 @@ export default function WishlistContent() {
     addItem(product.id, size, catalogProduct)
     showToast(`Added ${product.name} to bag`)
     openOverlay('cart')
+
+    const cartPayload = {
+      product_id: product.id,
+      product_name: product.name,
+      product_slug: catalogProduct ? getProductSlug(catalogProduct) : undefined,
+      category: product.category,
+      price: product.priceNum,
+      currency: 'INR',
+      size,
+      quantity: 1,
+      source_location: 'wishlist',
+      in_stock: true
+    }
+    trackEvent('add_to_cart', cartPayload)
+    trackEvent('product_added_to_cart', cartPayload)
   }
 
   const sortedItems = [...items].sort((a, b) => {

@@ -5,10 +5,11 @@ import { logger } from '../lib/logger.js'
 const POSTHOG_KEY = process.env.POSTHOG_API_KEY || process.env.NEXT_PUBLIC_POSTHOG_KEY
 const POSTHOG_HOST = process.env.POSTHOG_HOST || 'https://us.i.posthog.com'
 const isDev = process.env.NODE_ENV === 'development'
+const isProd = process.env.NODE_ENV === 'production'
 
 let client: PostHog | null = null
 
-if (POSTHOG_KEY) {
+if (POSTHOG_KEY && isProd) {
   try {
     client = new PostHog(POSTHOG_KEY, {
       host: POSTHOG_HOST,
@@ -19,7 +20,9 @@ if (POSTHOG_KEY) {
   } catch (err) {
     logger.error({ err }, 'Failed to initialize PostHog server client')
   }
-} else if (isDev) {
+} else if (!isProd) {
+  logger.info('PostHog server client running in no-op mode (NODE_ENV !== production)')
+} else {
   logger.info('No POSTHOG_API_KEY provided; PostHog server client running in no-op mode')
 }
 
@@ -32,7 +35,7 @@ export function trackServerEvent<E extends AnalyticsEventName>(
     logger.debug({ event, distinctId, properties }, '[PostHog Server Track]')
   }
 
-  if (!client) return
+  if (!client || !isProd) return
 
   try {
     client.capture({

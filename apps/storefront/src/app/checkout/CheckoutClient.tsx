@@ -1698,6 +1698,24 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
               // The order is verified; the receipt page can recover via the order number.
             }
 
+            trackEvent('payment_succeeded', {
+              order_id: finalOrderNumber,
+              order_number: finalOrderNumber,
+              payment_id: response.razorpay_payment_id,
+              gateway: 'razorpay',
+              amount: Number(verifyData.order?.total ?? rzpData.total ?? total),
+              currency: 'INR',
+              item_count: items.reduce((sum, item) => sum + item.qty, 0),
+              items: items.map((item) => ({
+                product_id: item.id,
+                product_name: item.name,
+                size: item.size,
+                color: item.color,
+                price: item.priceNum,
+                quantity: item.qty
+              }))
+            })
+
             trackEvent('order_completed', {
               order_id: finalOrderNumber,
               order_number: finalOrderNumber,
@@ -1741,6 +1759,16 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
               err instanceof Error
                 ? err.message
                 : 'Payment verification encountered an issue. Please contact support.'
+            trackEvent('payment_failed', {
+              order_number: rzpData.orderNumber,
+              payment_id: response.razorpay_payment_id,
+              gateway: 'razorpay',
+              amount: total,
+              currency: 'INR',
+              error_code: 'VERIFICATION_FAILED',
+              error_description: msg,
+              step: 'verification'
+            })
             setPaymentError(
               response.razorpay_payment_id
                 ? `${msg} (Payment ID: ${response.razorpay_payment_id})`
@@ -1752,6 +1780,15 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
           ondismiss: function () {
             setIsProcessing(false)
             setPaymentStage('idle')
+            trackEvent('payment_failed', {
+              order_number: rzpData.orderNumber,
+              gateway: 'razorpay',
+              amount: total,
+              currency: 'INR',
+              error_code: 'MODAL_DISMISSED',
+              error_description: 'Payment window was closed by the user.',
+              step: 'modal'
+            })
             setPaymentError(
               'Payment window was closed. You can retry payment whenever you are ready.'
             )
@@ -1763,6 +1800,16 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       rzp.on('payment.failed', function (resp: any) {
         setIsProcessing(false)
         setPaymentStage('idle')
+        trackEvent('payment_failed', {
+          order_number: rzpData.orderNumber,
+          payment_id: resp.error?.metadata?.payment_id,
+          gateway: 'razorpay',
+          amount: total,
+          currency: 'INR',
+          error_code: resp.error?.code || 'PAYMENT_DECLINED',
+          error_description: resp.error?.description || 'Payment was declined.',
+          step: 'gateway'
+        })
         setPaymentError(
           resp.error?.description || 'Payment was declined. Please try another card or UPI account.'
         )
@@ -1773,6 +1820,14 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     } catch (err: any) {
       setIsProcessing(false)
       setPaymentStage('idle')
+      trackEvent('payment_failed', {
+        gateway: 'razorpay',
+        amount: total,
+        currency: 'INR',
+        error_code: 'GATEWAY_INIT_FAILED',
+        error_description: err?.message || 'Failed to initialize payment gateway',
+        step: 'initialization'
+      })
       setPaymentError(err.message || 'Failed to initialize payment gateway')
     }
   }
@@ -1844,6 +1899,24 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
         // The order is recorded; the receipt page can recover via the order number.
       }
 
+      trackEvent('payment_succeeded', {
+        order_id: finalOrderNumber,
+        order_number: finalOrderNumber,
+        payment_id: `cod_${finalOrderNumber}`,
+        gateway: 'cod',
+        amount: Number(confirmedOrder.total ?? total),
+        currency: 'INR',
+        item_count: items.reduce((sum, item) => sum + item.qty, 0),
+        items: items.map((item) => ({
+          product_id: item.id,
+          product_name: item.name,
+          size: item.size,
+          color: item.color,
+          price: item.priceNum,
+          quantity: item.qty
+        }))
+      })
+
       trackEvent('order_completed', {
         order_id: finalOrderNumber,
         order_number: finalOrderNumber,
@@ -1883,6 +1956,15 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
     } catch (err) {
       setIsProcessing(false)
       setPaymentStage('idle')
+      trackEvent('payment_failed', {
+        gateway: 'cod',
+        amount: total,
+        currency: 'INR',
+        error_code: 'COD_ORDER_CREATION_FAILED',
+        error_description:
+          err instanceof Error ? err.message : 'Could not place your order. Please try again.',
+        step: 'order_placement'
+      })
       setPaymentError(
         err instanceof Error ? err.message : 'Could not place your order. Please try again.'
       )
@@ -2002,11 +2084,11 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_430px] items-start">
           {/* Left column */}
-          <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
+          <form className="flex flex-col gap-5 ph-no-capture ph-mask" onSubmit={handleSubmit} noValidate>
             {step === 0 ? (
               <>
                 {/* Contact information */}
-                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none">
+                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none ph-no-capture ph-mask">
                   <h2 className="text-[16px] font-bold tracking-[-0.01em] text-[#111]">
                     Contact information
                   </h2>
@@ -2031,7 +2113,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
                 </section>
 
                 {/* Shipping address */}
-                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none">
+                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none ph-no-capture ph-mask">
                   <h2 className="text-[16px] font-bold tracking-[-0.01em] text-[#111]">
                     Shipping address
                   </h2>
@@ -2363,7 +2445,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
 
             {step === 2 ? (
               <>
-                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none">
+                <section className="rounded-xl border border-[#E5E5DF] bg-white p-6 shadow-none ph-no-capture ph-mask">
                   <h2 className="text-[16px] font-bold tracking-[-0.01em] text-[#111]">
                     Review order
                   </h2>

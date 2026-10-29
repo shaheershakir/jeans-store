@@ -22,7 +22,8 @@ import {
   getPopularSearches,
   getRecommendedProducts
 } from '@/lib/utils'
-import { getAvailableProductSizes, getProductUrl } from '@/lib/products'
+import { getAvailableProductSizes, getProductUrl, getProductSlug } from '@/lib/products'
+import { trackEvent } from '@/lib/analytics'
 import {
   useUIStore,
   useCartStore,
@@ -186,6 +187,22 @@ export default function SearchOverlay() {
       const size = sizes.includes('L') ? 'L' : sizes[0] || 'M'
       addItem(product.id, size, product, product.color)
       showToast(`Added ${product.name} (${size}) to bag`)
+
+      const cartPayload = {
+        product_id: product.id,
+        product_name: product.name,
+        product_slug: getProductSlug(product),
+        category: product.category,
+        price: product.priceNum,
+        currency: 'INR',
+        color: product.color,
+        size,
+        quantity: 1,
+        source_location: 'quick_add',
+        in_stock: true
+      }
+      trackEvent('add_to_cart', cartPayload)
+      trackEvent('product_added_to_cart', cartPayload)
 
       setAddedIds((prev) => new Set(prev).add(product.id))
       setTimeout(() => {

@@ -550,6 +550,18 @@ orderRouter.post(
         { razorpay_order_id, razorpay_payment_id },
         "Payment signature verification failed",
       );
+      trackServerEvent(
+        order?.customerEmail || order?.orderNumber || razorpay_order_id,
+        "payment_failed",
+        {
+          order_number: order?.orderNumber,
+          payment_id: razorpay_payment_id,
+          gateway: "razorpay",
+          error_code: "INVALID_SIGNATURE",
+          error_description: "Payment signature verification failed.",
+          step: "signature_verification",
+        },
+      );
       res
         .status(400)
         .json({ error: "Invalid payment signature. Verification failed." });
@@ -743,6 +755,32 @@ orderRouter.post(
             status: "Paid",
             expectedAmount: calculatedOrder.total,
           },
+        },
+      );
+
+      trackServerEvent(
+        finalOrder.customerEmail || finalOrder.orderNumber,
+        "payment_succeeded",
+        {
+          order_id: finalOrder.id || finalOrder.orderNumber,
+          order_number: finalOrder.orderNumber,
+          payment_id: razorpay_payment_id,
+          gateway: "razorpay",
+          amount: Number(finalOrder.total ?? calculatedOrder.total ?? 0),
+          currency: "INR",
+          item_count: finalOrder.items.reduce(
+            (sum, item) => sum + item.quantity,
+            0,
+          ),
+          items: finalOrder.items.map((item) => ({
+            product_id: item.id,
+            product_name: item.name || `Product #${item.id}`,
+            size: item.size,
+            price: Number(
+              item.priceNum ?? (parseFloat(item.price || "0") || 0),
+            ),
+            quantity: item.quantity,
+          })),
         },
       );
 
@@ -959,6 +997,27 @@ orderRouter.post("/api/orders", async (req: Request, res: Response) => {
       ...calculatedOrder,
       userId,
     });
+
+    trackServerEvent(
+      order.customerEmail || order.orderNumber,
+      "payment_succeeded",
+      {
+        order_id: order.id || order.orderNumber,
+        order_number: order.orderNumber,
+        payment_id: `cod_${order.orderNumber}`,
+        gateway: "cod",
+        amount: Number(order.total ?? calculatedOrder.total ?? 0),
+        currency: "INR",
+        item_count: order.items.reduce((sum, item) => sum + item.quantity, 0),
+        items: order.items.map((item) => ({
+          product_id: item.id,
+          product_name: item.name || `Product #${item.id}`,
+          size: item.size,
+          price: Number(item.priceNum ?? (parseFloat(item.price || "0") || 0)),
+          quantity: item.quantity,
+        })),
+      },
+    );
 
     trackServerEvent(
       order.customerEmail || order.orderNumber,

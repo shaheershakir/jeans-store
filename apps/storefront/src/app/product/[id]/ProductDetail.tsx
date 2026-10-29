@@ -422,7 +422,7 @@ function ProductDetailContent({ product }: { product: Product }) {
       openOverlay('cart')
     }, 320)
 
-    trackEvent('product_added_to_cart', {
+    const cartPayload = {
       product_id: product.id,
       product_name: product.name,
       product_slug: getProductSlug(product),
@@ -436,7 +436,9 @@ function ProductDetailContent({ product }: { product: Product }) {
       quantity: 1,
       source_location: sourceLocation,
       in_stock: true
-    })
+    }
+    trackEvent('add_to_cart', cartPayload)
+    trackEvent('product_added_to_cart', cartPayload)
   }
 
   function handleBuyNow(sourceLocation: 'pdp' | 'sticky_bar' = 'pdp') {

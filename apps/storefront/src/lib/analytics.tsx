@@ -11,6 +11,7 @@ import type {
 
 const isClient = typeof window !== 'undefined'
 const isDev = process.env.NODE_ENV === 'development'
+const isProd = process.env.NODE_ENV === 'production'
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY
 const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || '/ingest'
 
@@ -29,12 +30,30 @@ export function initPostHog(): boolean {
       api_host: POSTHOG_HOST,
       ui_host: 'https://us.posthog.com',
       capture_pageview: false, // Handled manually by PostHogPageView in Next.js 15
-      capture_pageleave: true,
-      autocapture: false, // As decided: explicit custom events only
-      person_profiles: 'identified_only',
+      capture_pageleave: isProd,
+      autocapture: false, // Explicit custom events only; never autocapture
+      disable_session_recording: !isProd, // Strictly disable session recording in non-production
+      opt_out_capturing_by_default: !isProd, // Disable automatic capture in non-production to keep funnels clean
+      person_profiles: isProd ? 'identified_only' : 'never',
       session_recording: {
         maskAllInputs: true,
-        maskTextSelector: '.ph-mask',
+        maskTextSelector: '.ph-mask, .ph-no-capture, [data-ph-mask]',
+        maskInputOptions: {
+          password: true,
+          color: true,
+          date: true,
+          'datetime-local': true,
+          email: true,
+          month: true,
+          number: true,
+          range: true,
+          search: true,
+          tel: true,
+          text: true,
+          time: true,
+          url: true,
+          week: true
+        }
       }
     })
     isInitialized = true
@@ -56,7 +75,7 @@ export function trackEvent<E extends AnalyticsEventName>(
 ): void {
   if (!isClient) return
 
-  if (isInitialized && POSTHOG_KEY) {
+  if (isInitialized && POSTHOG_KEY && isProd) {
     try {
       posthog.capture(event, properties as unknown as Record<string, unknown>)
     } catch {
@@ -74,7 +93,7 @@ export function identifyUser(
 ): void {
   if (!isClient) return
 
-  if (isInitialized && POSTHOG_KEY) {
+  if (isInitialized && POSTHOG_KEY && isProd) {
     try {
       posthog.identify(String(userId), traits as unknown as Record<string, unknown>)
     } catch {
@@ -89,7 +108,7 @@ export function identifyUser(
 export function resetUser(): void {
   if (!isClient) return
 
-  if (isInitialized && POSTHOG_KEY) {
+  if (isInitialized && POSTHOG_KEY && isProd) {
     try {
       posthog.reset()
     } catch {
@@ -113,7 +132,7 @@ function PostHogPageViewInner() {
       url = `${url}?${searchParams.toString()}`
     }
 
-    if (isInitialized && POSTHOG_KEY) {
+    if (isInitialized && POSTHOG_KEY && isProd) {
       posthog.capture('$pageview', {
         $current_url: url
       })

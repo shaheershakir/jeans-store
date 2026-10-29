@@ -83,8 +83,10 @@ export interface ProductAddedToCartProperties extends BaseProductProperties {
   quantity: number
   design_id?: number
   design_name?: string
-  source_location: 'pdp' | 'sticky_bar' | 'product_card' | 'quick_add'
+  source_location?: 'pdp' | 'sticky_bar' | 'product_card' | 'quick_add' | string
 }
+
+export type AddToCartProperties = ProductAddedToCartProperties
 
 export interface ProductBuyNowClickedProperties extends BaseProductProperties {
   currency: string
@@ -113,6 +115,28 @@ export interface CheckoutStartedProperties {
   currency: string
   direct_buy: boolean
   items: CartItemSummary[]
+}
+
+export interface PaymentSucceededProperties {
+  order_id: string | number
+  order_number: string
+  payment_id: string
+  gateway: 'razorpay' | 'cod' | string
+  amount: number
+  currency: string
+  item_count: number
+  items?: CartItemSummary[]
+}
+
+export interface PaymentFailedProperties {
+  order_number?: string
+  payment_id?: string
+  gateway: 'razorpay' | 'cod' | string
+  amount?: number
+  currency?: string
+  error_code?: string
+  error_description?: string
+  step?: 'initialization' | 'gateway' | 'verification' | 'order_placement' | string
 }
 
 export interface OrderCompletedProperties {
@@ -145,9 +169,12 @@ export type AnalyticsEventMap = {
   product_size_guide_opened: ProductSizeGuideOpenedProperties
   product_favorited: ProductFavoritedProperties
   product_unfavorited: ProductUnfavoritedProperties
+  add_to_cart: AddToCartProperties
   product_added_to_cart: ProductAddedToCartProperties
   product_buy_now_clicked: ProductBuyNowClickedProperties
   checkout_started: CheckoutStartedProperties
+  payment_succeeded: PaymentSucceededProperties
+  payment_failed: PaymentFailedProperties
   order_completed: OrderCompletedProperties
 }
 

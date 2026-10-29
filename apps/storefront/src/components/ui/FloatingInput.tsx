@@ -31,6 +31,7 @@ export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputPro
           <input
             ref={ref}
             id={id}
+            data-ph-mask="true"
             {...props}
             placeholder=" "
             aria-invalid={error ? true : undefined}
@@ -82,6 +83,7 @@ export const FloatingSelect = React.forwardRef<HTMLSelectElement, FloatingSelect
           <select
             ref={ref}
             id={id}
+            data-ph-mask="true"
             {...props}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? `${id}-error` : undefined}

@@ -168,6 +168,19 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
       showToast(`Added ${product.name} (${singleSize}) to bag`)
       openOverlay('cart')
 
+      trackEvent('add_to_cart', {
+        product_id: product.id,
+        product_name: product.name,
+        product_slug: getProductSlug(product),
+        category: product.category,
+        price: product.priceNum,
+        currency: 'INR',
+        color: activeColor,
+        size: singleSize,
+        quantity: 1,
+        source_location: 'product_card',
+        in_stock: true
+      })
       trackEvent('product_added_to_cart', {
         product_id: product.id,
         product_name: product.name,

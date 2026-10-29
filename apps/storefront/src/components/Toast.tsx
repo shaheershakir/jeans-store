@@ -81,6 +81,18 @@ export default function Toast() {
     showToast(`Added ${product.name} (${size}) to your bag`)
     openOverlay('cart')
 
+    trackEvent('add_to_cart', {
+      product_id: product.id,
+      product_name: product.name,
+      category: product.category,
+      price: product.priceNum,
+      currency: 'INR',
+      color: selectedColor || product.color,
+      size,
+      quantity: 1,
+      source_location: 'product_card',
+      in_stock: true
+    })
     trackEvent('product_added_to_cart', {
       product_id: product.id,
       product_name: product.name,

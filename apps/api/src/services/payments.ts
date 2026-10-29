@@ -3,6 +3,7 @@ import { payments } from '@jeans-store/db'
 import { db, isDatabaseConfigured } from '../db/index.js'
 import type { DbExecutor } from '../db/types.js'
 import { confirmReservations } from './inventory.js'
+import { trackServerEvent } from './posthog.js'
 
 export class PaymentError extends Error {
   readonly statusCode: number
@@ -368,6 +369,13 @@ export async function processRazorpayWebhook(
               gatewayOrderId,
               gatewayPaymentId,
               reason: asString(paymentEntity.error_description) ?? 'Razorpay reported the payment as failed.'
+            })
+            trackServerEvent(gatewayOrderId || gatewayPaymentId || 'anonymous_webhook', 'payment_failed', {
+              payment_id: gatewayPaymentId,
+              gateway: 'razorpay',
+              error_code: asString(paymentEntity.error_code) ?? 'WEBHOOK_PAYMENT_FAILED',
+              error_description: asString(paymentEntity.error_description) ?? 'Razorpay reported the payment as failed.',
+              step: 'webhook'
             })
             if (gatewayOrderId) {
               await executor.execute(sql`
