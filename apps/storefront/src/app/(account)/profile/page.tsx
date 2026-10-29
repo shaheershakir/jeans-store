@@ -21,55 +21,10 @@ import {
 import { useCartStore, useUIStore, useAuthStore, useFavoriteStore } from '@/lib/store'
 import { PRODUCTS } from '@/lib/constants'
 import { AccountProfileSkeleton } from '@/components/skeletons/StorefrontSkeletons'
+import { fetchCustomerOrders, type CustomerOrder } from '@/lib/customerOrders'
+import { formatPrice } from '@/lib/utils'
 
-// ─── Mock Recent Orders for Profile Overview ─────────────────────────────────
 
-interface ProfileRecentOrder {
-  orderId: string
-  date: string
-  status: 'Delivered' | 'Shipped'
-  productName: string
-  variant: string
-  price: string
-  deliveryStatus: string
-  deliverySubtext: string
-  deliveryIcon: 'package' | 'truck'
-  thumbnail: string
-  primaryAction: {
-    label: string
-    variant: 'solid'
-    actionType: 'buy-again' | 'track'
-  }
-}
-
-const PROFILE_RECENT_ORDERS: ProfileRecentOrder[] = [
-  {
-    orderId: 'TG128450',
-    date: '12 Oct 2026',
-    status: 'Delivered',
-    productName: 'Vintage Skate Micro-Stripe Tee',
-    variant: 'Washed Black / Ash  •  L  •  1 × ₹1,249',
-    price: '₹1,249',
-    deliveryStatus: 'Delivered on 15 Oct 2026',
-    deliverySubtext: 'Your order has been delivered.',
-    deliveryIcon: 'package',
-    thumbnail: '/mock-assets/product-vintage-skate-clean.jpg',
-    primaryAction: { label: 'Buy Again', variant: 'solid', actionType: 'buy-again' },
-  },
-  {
-    orderId: 'TG128312',
-    date: '05 Oct 2026',
-    status: 'Shipped',
-    productName: 'Doodle Archive Oversized Tee',
-    variant: 'Off White  •  XL  •  1 × ₹1,099',
-    price: '₹1,099',
-    deliveryStatus: 'Shipped on 07 Oct 2026',
-    deliverySubtext: 'Arriving by 10 Oct 2026',
-    deliveryIcon: 'truck',
-    thumbnail: '/mock-assets/product-doodle-archive-clean.jpg',
-    primaryAction: { label: 'Track Order', variant: 'solid', actionType: 'track' },
-  },
-]
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -97,7 +52,10 @@ export default function ProfilePage() {
   const [isEditDetailsOpen, setIsEditDetailsOpen] = useState(false)
   const [isEditAddressOpen, setIsEditAddressOpen] = useState(false)
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false)
-  const [selectedOrderDetails, setSelectedOrderDetails] = useState<ProfileRecentOrder | null>(null)
+  const token = useAuthStore((s) => s.token)
+  const [recentOrders, setRecentOrders] = useState<CustomerOrder[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(true)
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<CustomerOrder | null>(null)
 
   // Address state
   const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0]
@@ -140,19 +98,56 @@ export default function ProfilePage() {
     }
   }, [user])
 
+  useEffect(() => {
+    let active = true
+    if (mounted && isAuthenticated && token) {
+      setOrdersLoading(true)
+      fetchCustomerOrders(token)
+        .then((orders) => {
+          if (active) setRecentOrders(orders.slice(0, 3))
+        })
+        .catch(() => {
+          if (active) setRecentOrders([])
+        })
+        .finally(() => {
+          if (active) setOrdersLoading(false)
+        })
+    } else if (mounted) {
+      setOrdersLoading(false)
+    }
+    return () => {
+      active = false
+    }
+  }, [mounted, isAuthenticated, token])
+
   if (!mounted || !isAuthenticated || !user) {
     return <AccountProfileSkeleton />
   }
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (token) {
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : '')
+        await fetch(`${apiBase}/api/auth/me`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ name: fullName.trim(), phone: phone.trim() })
+        })
+      } catch {
+        // ignore
+      }
+    }
     updateProfile({ name: fullName, email, phone })
     showToast('Profile updated successfully')
     setIsEditProfileOpen(false)
     setIsEditDetailsOpen(false)
   }
 
-  const handleSaveAddress = (e: React.FormEvent) => {
+  const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault()
     setAddressData({
       name: addrForm.fullName,
@@ -160,6 +155,29 @@ export default function ProfilePage() {
       cityStatePin: `${addrForm.city}, ${addrForm.state} ${addrForm.pincode}`,
       country: 'India',
     })
+    if (token) {
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : '')
+        await fetch(`${apiBase}/api/auth/addresses`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            name: addrForm.fullName.trim(),
+            line1: addrForm.addressLine.trim(),
+            city: addrForm.city.trim(),
+            state: addrForm.state.trim(),
+            pincode: addrForm.pincode.trim(),
+            phone: (addrForm.phone || phone).trim(),
+            isDefault: true
+          })
+        })
+      } catch {
+        // ignore
+      }
+    }
     addAddress({
       fullName: addrForm.fullName,
       addressLine: addrForm.addressLine,
@@ -541,9 +559,43 @@ export default function ProfilePage() {
 
               {/* Order Cards Stack */}
               <div className="space-y-4">
-                {PROFILE_RECENT_ORDERS.map((order) => {
-                  const isDelivered = order.status === 'Delivered'
-                  const isShipped = order.status === 'Shipped'
+                {ordersLoading && (
+                  <div className="space-y-3">
+                    {[1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="rounded-[20px] bg-white border border-black/8 p-5 animate-pulse space-y-3"
+                      >
+                        <div className="h-4 w-32 bg-neutral-200 rounded-md" />
+                        <div className="h-4 w-56 bg-neutral-100 rounded-md" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!ordersLoading && recentOrders.length === 0 && (
+                  <div className="rounded-[20px] bg-white border border-black/8 p-8 text-center flex flex-col items-center justify-center">
+                    <div className="w-14 h-14 rounded-full bg-[#FAF9F6] border border-black/6 flex items-center justify-center mb-3 text-[#666]">
+                      <Package className="w-7 h-7 stroke-[1.5]" />
+                    </div>
+                    <h4 className="text-[16px] font-bold text-[#111111]">No recent orders</h4>
+                    <p className="mt-1 text-[13px] text-[#666666] max-w-xs">
+                      Explore our latest collection and place your first order.
+                    </p>
+                    <Link
+                      href="/shop"
+                      className="mt-4 inline-flex items-center justify-center px-5 py-2 rounded-[10px] bg-[#141414] hover:bg-[#262626] text-white text-[13px] font-semibold transition-all duration-150 active:scale-[0.98] shadow-xs cursor-pointer"
+                    >
+                      Shop Now
+                    </Link>
+                  </div>
+                )}
+
+                {!ordersLoading && recentOrders.map((order) => {
+                  const sLower = (order.status || '').toLowerCase()
+                  const isDelivered = sLower === 'delivered'
+                  const isShipped = ['shipped', 'dispatched', 'out for delivery'].includes(sLower)
+                  const firstItem = order.items[0]
 
                   return (
                     <article
@@ -555,8 +607,8 @@ export default function ProfilePage() {
                         <div className="flex items-center gap-4 sm:gap-5 flex-1 min-w-0">
                           <div className="relative w-[84px] h-[84px] sm:w-[96px] sm:h-[96px] rounded-[14px] overflow-hidden bg-[#eeece6] shrink-0 border border-black/6">
                             <Image
-                              src={order.thumbnail}
-                              alt={order.productName}
+                              src={firstItem?.img || '/featured-collection.jpg'}
+                              alt={firstItem?.name || 'Order item'}
                               fill
                               sizes="96px"
                               className="object-cover"
@@ -575,15 +627,15 @@ export default function ProfilePage() {
                             </div>
 
                             <h4 className="text-[14.5px] font-bold text-[#111111] truncate leading-snug mt-0.5">
-                              {order.productName}
+                              {firstItem?.name || 'TEESGARAGE product'}
                             </h4>
 
                             <p className="text-[12px] text-[#666666] mt-0.5 truncate">
-                              {order.variant}
+                              {firstItem?.size ? `Size ${firstItem.size}  •  ${order.items.length > 1 ? `+${order.items.length - 1} more items` : `1 × ${firstItem.price}`}` : 'Standard'}
                             </p>
 
                             <strong className="text-[16px] font-extrabold text-[#111111] mt-1 tracking-tight">
-                              {order.price}
+                              {formatPrice(order.total)}
                             </strong>
                           </div>
                         </div>
@@ -602,19 +654,25 @@ export default function ProfilePage() {
                               Shipped
                             </span>
                           )}
+                          {!isDelivered && !isShipped && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11.5px] font-semibold bg-[#fef5e7] text-[#c05621] mb-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#c05621]" />
+                              {order.status}
+                            </span>
+                          )}
 
                           <div className="flex items-start gap-2.5">
-                            {order.deliveryIcon === 'package' ? (
-                              <Package className="w-4 h-4 text-[#222222] shrink-0 mt-0.5 stroke-[1.8]" />
-                            ) : (
+                            {isShipped ? (
                               <Truck className="w-4 h-4 text-[#222222] shrink-0 mt-0.5 stroke-[1.8]" />
+                            ) : (
+                              <Package className="w-4 h-4 text-[#222222] shrink-0 mt-0.5 stroke-[1.8]" />
                             )}
                             <div className="flex flex-col">
                               <span className="text-[12.5px] font-bold text-[#111111] leading-tight">
-                                {order.deliveryStatus}
+                                {order.status}
                               </span>
                               <span className="text-[11.5px] text-[#777777] leading-tight mt-0.5">
-                                {order.deliverySubtext}
+                                {order.expectedDelivery}
                               </span>
                             </div>
                           </div>
@@ -622,19 +680,25 @@ export default function ProfilePage() {
 
                         {/* Right: Action Buttons */}
                         <div className="w-[145px] shrink-0 flex flex-col gap-2 max-[768px]:w-full max-[768px]:flex-row">
-                          <button
-                            type="button"
-                            className="w-full py-2 px-3 rounded-[9px] text-[12.5px] font-semibold text-center bg-[#141414] hover:bg-[#262626] text-white shadow-2xs transition-all duration-150 active:scale-[0.98] cursor-pointer max-[768px]:flex-1"
-                            onClick={() => {
-                              if (order.primaryAction.actionType === 'buy-again') {
-                                handleBuyAgain(order.productName)
-                              } else {
-                                handleTrackOrder(order.orderId)
-                              }
-                            }}
-                          >
-                            {order.primaryAction.label}
-                          </button>
+                          {isDelivered && (
+                            <button
+                              type="button"
+                              className="w-full py-2 px-3 rounded-[9px] text-[12.5px] font-semibold text-center bg-[#141414] hover:bg-[#262626] text-white shadow-2xs transition-all duration-150 active:scale-[0.98] cursor-pointer max-[768px]:flex-1"
+                              onClick={() => handleBuyAgain(firstItem?.name || '')}
+                            >
+                              Buy Again
+                            </button>
+                          )}
+
+                          {isShipped && (
+                            <button
+                              type="button"
+                              className="w-full py-2 px-3 rounded-[9px] text-[12.5px] font-semibold text-center bg-[#141414] hover:bg-[#262626] text-white shadow-2xs transition-all duration-150 active:scale-[0.98] cursor-pointer max-[768px]:flex-1"
+                              onClick={() => handleTrackOrder(order.orderId)}
+                            >
+                              Track Order
+                            </button>
+                          )}
 
                           <button
                             type="button"
@@ -900,17 +964,20 @@ export default function ProfilePage() {
                 <span className="font-semibold text-[#111]">{selectedOrderDetails.status}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-[#666]">Product</span>
-                <span className="font-semibold text-[#111] text-right">{selectedOrderDetails.productName}</span>
+                <span className="text-[#666]">Items</span>
+                <span className="font-semibold text-[#111] text-right">
+                  {selectedOrderDetails.items.length > 0 ? selectedOrderDetails.items[0].name : 'Order items'}
+                  {selectedOrderDetails.items.length > 1 ? ` (+${selectedOrderDetails.items.length - 1} more)` : ''}
+                </span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-[#666]">Total Amount</span>
-                <span className="font-extrabold text-[#111]">{selectedOrderDetails.price}</span>
+                <span className="font-extrabold text-[#111]">{formatPrice(selectedOrderDetails.total)}</span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-[#666]">Delivery Address</span>
                 <span className="font-medium text-[#111] text-right max-w-[240px]">
-                  {addressData.line}, {addressData.cityStatePin}
+                  {selectedOrderDetails.shippingAddress || (addressData.line ? `${addressData.line}, ${addressData.cityStatePin}` : 'Address on file')}
                 </span>
               </div>
               <div className="flex justify-between py-1">

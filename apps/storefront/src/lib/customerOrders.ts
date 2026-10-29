@@ -9,6 +9,7 @@ export interface CustomerOrderItem {
 }
 
 export interface CustomerOrder {
+  id?: number
   orderId: string
   date: string
   status: string
@@ -23,6 +24,7 @@ export interface CustomerOrder {
 }
 
 interface ApiOrder {
+  id?: number
   orderNumber: string
   createdAt: string
   status: string
@@ -79,6 +81,7 @@ function mapOrder(order: ApiOrder): CustomerOrder {
       : 'Delivery updates appear after dispatch'
 
   return {
+    id: order.id,
     orderId: order.orderNumber,
     date: formatDate(order.createdAt),
     status,
@@ -129,4 +132,21 @@ export async function fetchCustomerOrders(token: string, signal?: AbortSignal): 
   const payload = (await response.json().catch(() => ({}))) as { orders?: ApiOrder[]; error?: string }
   if (!response.ok) throw new Error(payload.error || 'Could not load your order history.')
   return Array.isArray(payload.orders) ? payload.orders.map(mapOrder) : []
+}
+
+export async function cancelCustomerOrder(token: string, orderIdOrNumber: string | number): Promise<void> {
+  if (!API_BASE) throw new Error('Order service is not configured for this storefront.')
+
+  const response = await fetch(`${API_BASE}/api/orders/${orderIdOrNumber}/cancel`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as { error?: string }
+    throw new Error(payload.error || 'Failed to cancel order.')
+  }
 }

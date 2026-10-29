@@ -1149,6 +1149,7 @@ orderRouter.get("/api/orders/mine", async (req: Request, res: Response) => {
     res.json({
       count: orders.length,
       orders: orders.map((order) => ({
+        id: order.id,
         orderNumber: order.orderNumber,
         createdAt: order.createdAt,
         status: order.status,
@@ -1174,6 +1175,49 @@ orderRouter.get("/api/orders/mine", async (req: Request, res: Response) => {
       .json({ error: "Order history is temporarily unavailable." });
   }
 });
+// Customer: Cancel order
+orderRouter.post("/api/orders/:id/cancel", async (req: Request, res: Response) => {
+  const customer = await getOptionalCustomerClaims(req);
+  if (!customer) {
+    res.status(401).json({ error: "Sign in to manage your orders." });
+    return;
+  }
+
+  const idParam = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id || "");
+  const numericId = /^\d+$/.test(idParam) ? Number(idParam) : null;
+  const order = numericId !== null ? await orderStore.getById(numericId) : await orderStore.getByOrderNumber(idParam);
+
+  if (!order) {
+    res.status(404).json({ error: "Order not found." });
+    return;
+  }
+
+  const user = await userStore.findByEmail(customer.email);
+  const ownsOrder =
+    (order.customerEmail && order.customerEmail.toLowerCase() === customer.email.toLowerCase()) ||
+    (user && order.userId === user.id);
+
+  if (!ownsOrder) {
+    res.status(403).json({ error: "You do not have permission to cancel this order." });
+    return;
+  }
+
+  if (order.status !== "Pending" && order.status !== "Confirmed") {
+    res.status(400).json({
+      error: `Orders with status "${order.status}" cannot be cancelled. Only Pending or Confirmed orders can be cancelled.`,
+    });
+    return;
+  }
+
+  try {
+    const updated = await orderStore.updateAdmin(order.id, { status: "Cancelled" }, "Customer");
+    res.json({ success: true, order: updated });
+  } catch (err) {
+    logger.error({ err, orderId: order.id }, "Failed to cancel order");
+    res.status(500).json({ error: "Failed to cancel order. Please try again." });
+  }
+});
+
 
 orderRouter.get(
   "/api/orders",

@@ -26,6 +26,9 @@ const databaseUrl = getDatabaseUrl()
 export const pool: Pool | null = databaseUrl
   ? new Pool({
       connectionString: databaseUrl,
+      max: 10,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 5_000,
       ssl: databaseUrl.includes('neon.tech') ? { rejectUnauthorized: false } : undefined
     })
   : null

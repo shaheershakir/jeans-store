@@ -22,6 +22,7 @@ import { useRouter } from 'next/navigation'
 
 export default function SettingsContent() {
   const user = useAuthStore((s) => s.user)
+  const token = useAuthStore((s) => s.token)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [mounted, setMounted] = useState(false)
   const updateProfile = useAuthStore((s) => s.updateProfile)
@@ -84,12 +85,47 @@ export default function SettingsContent() {
     }
   }, [user, mounted, isAuthenticated, router])
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    setFullName(editName)
-    setEmail(editEmail)
-    setPhone(editPhone)
-    updateProfile({ name: editName, email: editEmail, phone: editPhone })
+    const trimmedName = editName.trim()
+    const trimmedPhone = editPhone.trim()
+
+    if (token) {
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : '')
+        const res = await fetch(`${apiBase}/api/auth/me`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ name: trimmedName, phone: trimmedPhone })
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          showToast(data.error || 'Failed to update profile')
+          return
+        }
+        if (data.user) {
+          updateProfile({ name: data.user.name, phone: data.user.phone })
+          setFullName(data.user.name || trimmedName)
+          if (data.user.phone) setPhone(data.user.phone)
+        } else {
+          updateProfile({ name: trimmedName, phone: trimmedPhone })
+          setFullName(trimmedName)
+          setPhone(trimmedPhone)
+        }
+      } catch {
+        updateProfile({ name: trimmedName, phone: trimmedPhone })
+        setFullName(trimmedName)
+        setPhone(trimmedPhone)
+      }
+    } else {
+      updateProfile({ name: trimmedName, phone: trimmedPhone })
+      setFullName(trimmedName)
+      setPhone(trimmedPhone)
+    }
+
     showToast('Personal details updated successfully')
     setIsEditModalOpen(false)
   }

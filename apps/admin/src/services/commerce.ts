@@ -35,6 +35,10 @@ export async function transitionOrder(orderId: number, to: FulfillmentStatus): P
   await patchBackendOrder(orderId, { status: to })
 }
 
+export async function updateOrderStatus(orderId: number, newStatus: FulfillmentStatus): Promise<void> {
+  await patchBackendOrder(orderId, { status: newStatus })
+}
+
 export async function setOrderPaymentStatus(orderId: number, status: PaymentStatus): Promise<void> {
   await patchBackendOrder(orderId, { paymentStatus: status })
 }

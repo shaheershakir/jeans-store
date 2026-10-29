@@ -32,6 +32,8 @@ export interface OrderItemCardData {
   productColor?: string
   variantLabel?: string
   customerName: string
+  customerEmail?: string
+  customerPhone?: string
   customerAddress1?: string
   customerAddress2?: string
   locationShort: string
@@ -40,6 +42,11 @@ export interface OrderItemCardData {
   paymentStatus: string
   paymentMethod: string
   fulfillmentStatus: FulfillmentStatus
+  subtotal?: number
+  shippingFee?: number
+  discount?: number
+  paymentId?: string | null
+  trackingNumber?: string | null
   total: number
   itemsCount: number
   images: string[]

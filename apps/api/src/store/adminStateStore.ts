@@ -1,4 +1,4 @@
-import { desc, eq, inArray, sql } from 'drizzle-orm'
+import { desc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../db/index.js'
 import {
   auditLog,
@@ -91,9 +91,9 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
     db.select().from(sizeCharts).orderBy(sizeCharts.id),
     db.select().from(sizeChartMeasurements),
     db.select().from(shipments).orderBy(desc(shipments.createdAt)),
-    db.select().from(inventoryMovements).orderBy(desc(inventoryMovements.createdAt)),
-    db.select().from(auditLog).orderBy(desc(auditLog.createdAt)),
-    db.select().from(notifications).orderBy(desc(notifications.createdAt)),
+    db.select().from(inventoryMovements).orderBy(desc(inventoryMovements.createdAt)).limit(200),
+    db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(200),
+    db.select().from(notifications).orderBy(desc(notifications.createdAt)).limit(200),
     db.select().from(refunds).orderBy(desc(refunds.createdAt)),
     getSettings()
   ])
@@ -323,6 +323,17 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
     const variantProductById = new Map(variantRows.map((row) => [row.id, row.productId]))
     const variantIds = new Set(variantRows.map((row) => row.id))
 
+    if (Array.isArray(data.collections)) {
+      const incomingCollectionIds = arrays('collections')
+        .map((c) => numberOrZero(c.id))
+        .filter((id) => id > 0)
+      if (incomingCollectionIds.length > 0) {
+        await tx.delete(collections).where(notInArray(collections.id, incomingCollectionIds))
+      } else {
+        await tx.delete(collections)
+      }
+    }
+
     const collectionValues = arrays('collections').map((collection, index) => ({
       id: numberOrZero(collection.id),
       name: stringOrEmpty(collection.name),
@@ -368,6 +379,17 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         } else {
           await tx.insert(collections).values(colWithoutId)
         }
+      }
+    }
+
+    if (Array.isArray(data.coupons)) {
+      const incomingCouponIds = arrays('coupons')
+        .map((c) => numberOrZero(c.id))
+        .filter((id) => id > 0)
+      if (incomingCouponIds.length > 0) {
+        await tx.delete(coupons).where(notInArray(coupons.id, incomingCouponIds))
+      } else {
+        await tx.delete(coupons)
       }
     }
 
@@ -477,7 +499,18 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
       }
     }
 
-    // Reviews: upsert
+    // Reviews: sync deletions, upsert, and recompute products rating & review count
+    if (Array.isArray(data.reviews)) {
+      const incomingReviewIds = arrays('reviews')
+        .map((r) => numberOrZero(r.id))
+        .filter((id) => id > 0)
+      if (incomingReviewIds.length > 0) {
+        await tx.delete(productReviews).where(notInArray(productReviews.id, incomingReviewIds))
+      } else {
+        await tx.delete(productReviews)
+      }
+    }
+
     for (const review of arrays('reviews')) {
       const productId = stringOrEmpty(review.productId)
       if (!productIds.has(productId)) continue
@@ -518,6 +551,25 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
       } else {
         await tx.insert(productReviews).values(reviewData)
       }
+    }
+
+    if (Array.isArray(data.reviews)) {
+      await tx.execute(sql`
+        UPDATE products p
+        SET
+          review_count = stats.cnt,
+          rating_average = stats.avg_rating
+        FROM (
+          SELECT
+            p2.id AS product_id,
+            COUNT(pr.id)::int AS cnt,
+            COALESCE(ROUND(AVG(pr.rating)::numeric, 2)::real, 0) AS avg_rating
+          FROM products p2
+          LEFT JOIN product_reviews pr ON pr.product_id = p2.id AND pr.status = 'Approved'
+          GROUP BY p2.id
+        ) stats
+        WHERE p.id = stats.product_id
+      `)
     }
 
     // Size charts: upsert chart, replace scoped measurements

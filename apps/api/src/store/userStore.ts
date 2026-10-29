@@ -90,6 +90,30 @@ class UserStore {
     return this.memoryUsers.find((u) => u.googleSub === googleSub)
   }
 
+  async update(id: number, patch: { name?: string }): Promise<DbUser | undefined> {
+    const now = new Date()
+    const updateData: Partial<typeof usersTable.$inferInsert> = { updatedAt: now }
+    if (patch.name !== undefined) {
+      updateData.name = patch.name
+    }
+    if (isDatabaseConfigured() && db) {
+      const [row] = await db
+        .update(usersTable)
+        .set(updateData)
+        .where(eq(usersTable.id, id))
+        .returning()
+      return row
+    }
+    const user = this.memoryUsers.find((u) => u.id === id)
+    if (user) {
+      if (patch.name !== undefined) {
+        user.name = patch.name
+      }
+      user.updatedAt = now
+    }
+    return user
+  }
+
   async updateGoogleSub(id: number, googleSub: string): Promise<DbUser | undefined> {
     const now = new Date()
     if (isDatabaseConfigured() && db) {

@@ -251,6 +251,111 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
     }
   })
 
+  test('free-size shared stock is scoped by design_id', { skip }, async () => {
+    const { db } = await import('@jeans-store/db')
+    const { sql } = await import('drizzle-orm')
+    const { reserveInventory, releaseReservations } = await import('../src/services/inventory.js')
+    const executor = db as unknown as import('../src/db/types.js').DbExecutor
+
+    const suffix = unique('free-size-design')
+    const category = await db.execute(sql`INSERT INTO categories (slug, name) VALUES (${suffix}, ${suffix}) RETURNING id`)
+    const categoryId = Number((category.rows[0] as { id: number }).id)
+    const product = await db.execute(sql`
+      INSERT INTO products (category_id, slug, name, description, price, weight_grams, is_free_size)
+      VALUES (${categoryId}, ${suffix}, ${'Free Size Multi-Design Tee'}, ${'Test fixture'}, ${999}, ${200}, ${true})
+      RETURNING id
+    `)
+    const productId = String((product.rows[0] as { id: string }).id)
+
+    const designA = await db.execute(sql`
+      INSERT INTO product_designs (product_id, name, slug)
+      VALUES (${productId}, 'Design A', ${suffix + '-a'})
+      RETURNING id
+    `)
+    const designAId = Number((designA.rows[0] as { id: number }).id)
+
+    const designB = await db.execute(sql`
+      INSERT INTO product_designs (product_id, name, slug)
+      VALUES (${productId}, 'Design B', ${suffix + '-b'})
+      RETURNING id
+    `)
+    const designBId = Number((designB.rows[0] as { id: number }).id)
+
+    const variantA1 = await db.execute(sql`
+      INSERT INTO product_variants (product_id, design_id, sku, size, color, stock, status)
+      VALUES (${productId}, ${designAId}, ${suffix + '-a1'}, ${'Free'}, ${'Black'}, ${10}, ${'Active'})
+      RETURNING id
+    `)
+    const variantA2 = await db.execute(sql`
+      INSERT INTO product_variants (product_id, design_id, sku, size, color, stock, status)
+      VALUES (${productId}, ${designAId}, ${suffix + '-a2'}, ${'Free-2'}, ${'Black'}, ${10}, ${'Active'})
+      RETURNING id
+    `)
+    const variantB1 = await db.execute(sql`
+      INSERT INTO product_variants (product_id, design_id, sku, size, color, stock, status)
+      VALUES (${productId}, ${designBId}, ${suffix + '-b1'}, ${'Free'}, ${'White'}, ${10}, ${'Active'})
+      RETURNING id
+    `)
+    const variantB2 = await db.execute(sql`
+      INSERT INTO product_variants (product_id, design_id, sku, size, color, stock, status)
+      VALUES (${productId}, ${designBId}, ${suffix + '-b2'}, ${'Free-2'}, ${'White'}, ${10}, ${'Active'})
+      RETURNING id
+    `)
+
+    const variantA1Id = Number((variantA1.rows[0] as { id: number }).id)
+    const variantB1Id = Number((variantB1.rows[0] as { id: number }).id)
+
+    try {
+      // Reserve a free-size variant on Design A
+      await reserveInventory(executor, {
+        gatewayOrderId: `${suffix}-gw-1`,
+        reservationKeyPrefix: `${suffix}-res-1`,
+        items: [{ productId, variantId: variantA1Id, quantity: 2, isFreeSize: true }],
+        ttlSeconds: 60
+      })
+
+      const rowsA = await db.execute(sql`
+        SELECT id, stock, reserved FROM product_variants
+        WHERE product_id = ${productId} AND design_id = ${designAId}
+        ORDER BY id
+      `)
+      const rowsB = await db.execute(sql`
+        SELECT id, stock, reserved FROM product_variants
+        WHERE product_id = ${productId} AND design_id = ${designBId}
+        ORDER BY id
+      `)
+
+      // Design A variants should both have reserved = 2
+      assert.deepEqual(
+        rowsA.rows.map((r) => Number((r as { reserved: number }).reserved)),
+        [2, 2],
+        'reserving variant on Design A reserves stock across Design A variants'
+      )
+
+      // Design B variants should have reserved = 0 and stock = 10 (unaffected)
+      assert.deepEqual(
+        rowsB.rows.map((r) => ({
+          stock: Number((r as { stock: number }).stock),
+          reserved: Number((r as { reserved: number }).reserved)
+        })),
+        [
+          { stock: 10, reserved: 0 },
+          { stock: 10, reserved: 0 }
+        ],
+        'reserving variant on Design A does not decrement or reserve stock on Design B'
+      )
+
+      await releaseReservations(executor, { gatewayOrderId: `${suffix}-gw-1`, reason: 'test release' })
+    } finally {
+      await db.execute(sql`DELETE FROM inventory_movements WHERE product_id = ${productId}`)
+      await db.execute(sql`DELETE FROM inventory_reservations WHERE product_id = ${productId}`)
+      await db.execute(sql`DELETE FROM product_variants WHERE product_id = ${productId}`)
+      await db.execute(sql`DELETE FROM product_designs WHERE product_id = ${productId}`)
+      await db.execute(sql`DELETE FROM products WHERE id = ${productId}`)
+      await db.execute(sql`DELETE FROM categories WHERE id = ${categoryId}`)
+    }
+  })
+
   test('cancelling a pending hold does not inflate stock, while a confirmed sale restocks once', { skip }, async () => {
     const { db } = await import('@jeans-store/db')
     const { sql } = await import('drizzle-orm')

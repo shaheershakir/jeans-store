@@ -6,11 +6,11 @@ import { useAdminStore } from '@/store/admin-store'
 import { toastError } from '@/components/ui/toast'
 import type { DbState } from '@/lib/types'
 
-type OperationalData = Partial<Pick<DbState, 'collections' | 'returns' | 'refunds' | 'coupons' | 'promotions' | 'banners' | 'reviews' | 'sizeCharts' | 'shipments' | 'inventoryMovements' | 'auditLog' | 'notifications' | 'settings' | 'roles'>>
+type OperationalData = Partial<Pick<DbState, 'collections' | 'returns' | 'refunds' | 'coupons' | 'promotions' | 'banners' | 'reviews' | 'sizeCharts' | 'shipments' | 'notifications' | 'settings' | 'roles'>>
 
 const PERSISTED_KEYS = [
   'collections', 'returns', 'refunds', 'coupons', 'promotions', 'banners', 'reviews',
-  'sizeCharts', 'shipments', 'inventoryMovements', 'auditLog', 'notifications', 'settings', 'roles'
+  'sizeCharts', 'shipments', 'notifications', 'settings', 'roles'
 ] as const
 
 function selectOperationalData(data: ReturnType<typeof useAdminStore.getState>['data']) {

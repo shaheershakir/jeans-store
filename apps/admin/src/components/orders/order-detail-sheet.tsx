@@ -120,11 +120,11 @@ export function OrderDetailSheet({
               </p>
               <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                 <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <span>shaheer@example.com</span>
+                <span>{order.customerEmail || 'No email provided'}</span>
               </div>
               <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                 <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <span>+91 98765 43210</span>
+                <span>{order.customerPhone || 'No phone provided'}</span>
               </div>
               <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                 <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
@@ -177,15 +177,15 @@ export function OrderDetailSheet({
             <div className="space-y-1.5 pt-1 text-xs">
               <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Subtotal</span>
-                <span>{formatINR(order.total)}</span>
+                <span>{formatINR(order.subtotal ?? order.total)}</span>
               </div>
               <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Shipping</span>
-                <span>₹0</span>
+                <span>{formatINR(order.shippingFee ?? 0)}</span>
               </div>
               <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Discount</span>
-                <span>- ₹0</span>
+                <span>{order.discount ? `- ${formatINR(order.discount)}` : '₹0'}</span>
               </div>
               <div className="border-t border-slate-200/70 dark:border-border/60 pt-2 flex justify-between font-bold text-slate-900 dark:text-foreground text-sm">
                 <span>Total Paid</span>
@@ -210,7 +210,7 @@ export function OrderDetailSheet({
                 {order.paymentMethod || 'Razorpay'}
               </span>
               <div className="text-right">
-                <p className="text-[11px] font-mono text-slate-500">pay_9a8s7d6f5g</p>
+                <p className="text-[11px] font-mono text-slate-500">{order.paymentId || 'N/A'}</p>
                 <p className="text-[10px] text-slate-400">{order.date}</p>
               </div>
             </div>
@@ -230,7 +230,7 @@ export function OrderDetailSheet({
             <div className="space-y-1 pt-1 text-xs text-slate-600 dark:text-slate-400">
               <div className="flex justify-between">
                 <span>Standard Delivery</span>
-                <span className="font-mono text-[11px] text-slate-500">AWB: TRK-987654</span>
+                <span className="font-mono text-[11px] text-slate-500">{order.trackingNumber ? `AWB: ${order.trackingNumber}` : 'AWB: Pending'}</span>
               </div>
               <p className="text-[11px] text-slate-400">Estimated delivery: 27–28 Oct</p>
             </div>

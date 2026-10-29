@@ -66,3 +66,6 @@ CREATE INDEX IF NOT EXISTS "categories_sort_idx" ON "categories" USING btree ("s
 ALTER TABLE "collections" DROP COLUMN IF EXISTS "image_url";--> statement-breakpoint
 ALTER TABLE "size_chart_measurements" DROP COLUMN IF EXISTS "shoulder";--> statement-breakpoint
 ALTER TABLE "users" DROP COLUMN IF EXISTS "onboarding_completed_at";
+--> statement-breakpoint
+DROP TRIGGER IF EXISTS trg_product_designs_updated_at ON "product_designs";--> statement-breakpoint
+CREATE TRIGGER trg_product_designs_updated_at BEFORE UPDATE ON "product_designs" FOR EACH ROW EXECUTE FUNCTION set_updated_at();
