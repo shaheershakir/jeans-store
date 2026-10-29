@@ -1562,8 +1562,7 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
       const rzpData = await createRes.json()
       const activeKey =
         rzpData.keyId ||
-        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-        'rzp_test_TnN4mtRGLw9wJy'
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
       if (!activeKey) throw new Error('Online payment is not configured. Please contact support.')
 
       const options = {

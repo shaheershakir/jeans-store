@@ -16,7 +16,7 @@ type RawBodyRequest = Request & { rawBody?: Buffer }
  * trusted. Every event is persisted under a unique provider event id, so
  * duplicate and out-of-order deliveries cannot repeat side effects.
  */
-paymentsRouter.post('/api/payments/razorpay/webhook', async (req: Request, res: Response) => {
+paymentsRouter.post(['/api/payments/razorpay/webhook', '/api/orders/razorpay/webhook'], async (req: Request, res: Response) => {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET?.trim()
   if (!secret) {
     logger.error('RAZORPAY_WEBHOOK_SECRET is not configured; rejecting webhook')

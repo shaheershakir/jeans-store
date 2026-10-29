@@ -2,6 +2,7 @@ import { asc, eq } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../db/index.js'
 import { navigationItems as navTable, type DbNavigationItem } from '@jeans-store/db'
 import type { NavigationItem, NavItemType } from '../schemas/navigation.js'
+import { logger } from '../lib/logger.js'
 
 export const DEFAULT_NAV_ITEMS: NavigationItem[] = [
   {
@@ -136,7 +137,7 @@ class NavigationStore {
           return includeInactive ? seeded : seeded.filter((item) => item.isActive)
         }
       } catch (err) {
-        console.error('[NavigationStore] Failed to query database, serving fallback cache/memory items:', err)
+        logger.error({ err }, 'NavigationStore: Failed to query database, serving fallback cache/memory items')
       }
     }
 

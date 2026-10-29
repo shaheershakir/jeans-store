@@ -21,9 +21,6 @@ export function initPostHog(): boolean {
   if (isInitialized) return true
 
   if (!POSTHOG_KEY) {
-    if (isDev) {
-      console.debug('[PostHog] No NEXT_PUBLIC_POSTHOG_KEY set. Running in development no-op mode.')
-    }
     return false
   }
 
@@ -38,18 +35,14 @@ export function initPostHog(): boolean {
       session_recording: {
         maskAllInputs: true,
         maskTextSelector: '.ph-mask',
-      },
-      loaded: (ph) => {
-        if (isDev) {
-          ph.debug()
-          console.debug('[PostHog] Loaded successfully.')
-        }
       }
     })
     isInitialized = true
     return true
   } catch (err) {
-    console.error('[PostHog] Failed to initialize:', err)
+    if (isDev) {
+      console.warn('[PostHog] Failed to initialize analytics client.')
+    }
     return false
   }
 }
@@ -61,17 +54,13 @@ export function trackEvent<E extends AnalyticsEventName>(
   event: E,
   properties: AnalyticsEventMap[E]
 ): void {
-  if (isDev) {
-    console.debug(`[PostHog Track] ${event}:`, properties)
-  }
-
   if (!isClient) return
 
   if (isInitialized && POSTHOG_KEY) {
     try {
       posthog.capture(event, properties as unknown as Record<string, unknown>)
-    } catch (err) {
-      console.warn(`[PostHog] Error capturing event "${event}":`, err)
+    } catch {
+      // Fail silently to never interrupt checkout or browsing UX
     }
   }
 }
@@ -83,17 +72,13 @@ export function identifyUser(
   userId: string | number,
   traits?: AnalyticsUserTraits
 ): void {
-  if (isDev) {
-    console.debug(`[PostHog Identify] User ${userId}:`, traits)
-  }
-
   if (!isClient) return
 
   if (isInitialized && POSTHOG_KEY) {
     try {
       posthog.identify(String(userId), traits as unknown as Record<string, unknown>)
-    } catch (err) {
-      console.warn(`[PostHog] Error identifying user "${userId}":`, err)
+    } catch {
+      // Fail silently to never interrupt user flows
     }
   }
 }
@@ -102,17 +87,13 @@ export function identifyUser(
  * Reset PostHog distinct ID upon logout
  */
 export function resetUser(): void {
-  if (isDev) {
-    console.debug('[PostHog Reset] User session reset')
-  }
-
   if (!isClient) return
 
   if (isInitialized && POSTHOG_KEY) {
     try {
       posthog.reset()
-    } catch (err) {
-      console.warn('[PostHog] Error resetting user:', err)
+    } catch {
+      // Fail silently
     }
   }
 }
@@ -130,10 +111,6 @@ function PostHogPageViewInner() {
     let url = window.origin + pathname
     if (searchParams && searchParams.toString()) {
       url = `${url}?${searchParams.toString()}`
-    }
-
-    if (isDev) {
-      console.debug('[PostHog PageView]', url)
     }
 
     if (isInitialized && POSTHOG_KEY) {

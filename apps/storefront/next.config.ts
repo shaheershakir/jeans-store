@@ -1,6 +1,6 @@
 import path from 'node:path'
 import type { NextConfig } from 'next'
-import { withSentryConfig } from '@sentry/nextjs'
+import { withSentryConfig } from '@sentry/nextjs/config'
 
 function getAssetRemotePattern(): { protocol: 'http' | 'https'; hostname: string; port?: string } | null {
   const raw = process.env.NEXT_PUBLIC_ASSET_BASE_URL || process.env.ASSET_BASE_URL
@@ -84,6 +84,14 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  webpack: (config) => {
+    config.resolve = config.resolve || {}
+    config.resolve.extensionAlias = {
+      '.js': ['.ts', '.tsx', '.js'],
+      '.mjs': ['.mts', '.mjs']
+    }
+    return config
+  },
 }
 
 export default withSentryConfig(nextConfig, {
@@ -91,5 +99,4 @@ export default withSentryConfig(nextConfig, {
   project: 'teesgarage-storefront',
   silent: !process.env.CI,
   widenClientFileUpload: true,
-  disableLogger: true,
 })

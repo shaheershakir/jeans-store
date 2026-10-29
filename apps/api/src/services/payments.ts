@@ -322,12 +322,26 @@ export async function processRazorpayWebhook(
             if (amountPaise !== undefined && Math.round(attempt.amount * 100) !== amountPaise) {
               throw new PaymentError('Webhook amount does not match the recorded payment attempt.')
             }
+            let resolvedOrderId = attempt.orderId
+            if (!resolvedOrderId && attempt.orderNumber) {
+              const orderLookup = await executor.execute(sql`
+                SELECT id FROM orders WHERE order_number = ${attempt.orderNumber} LIMIT 1
+              `)
+              const foundRow = orderLookup.rows[0] as { id: number } | undefined
+              if (foundRow) {
+                resolvedOrderId = Number(foundRow.id)
+                await executor.execute(sql`
+                  UPDATE payments SET order_id = ${resolvedOrderId} WHERE id = ${attempt.id}
+                `)
+              }
+            }
+
             if (!gatewayPaymentId) {
               status = 'Unmatched'
               message = 'Captured payment event is missing the gateway payment id.'
-            } else if (attempt.orderId) {
+            } else if (resolvedOrderId) {
               await confirmOrderPayment(executor, {
-                orderId: attempt.orderId,
+                orderId: resolvedOrderId,
                 amount: attempt.amount,
                 gatewayOrderId,
                 gatewayPaymentId,
@@ -355,6 +369,16 @@ export async function processRazorpayWebhook(
               gatewayPaymentId,
               reason: asString(paymentEntity.error_description) ?? 'Razorpay reported the payment as failed.'
             })
+            if (gatewayOrderId) {
+              await executor.execute(sql`
+                UPDATE orders
+                SET payment_status = 'Failed', updated_at = now()
+                WHERE id IN (
+                  SELECT order_id FROM payments
+                  WHERE gateway = 'razorpay' AND gateway_order_id = ${gatewayOrderId} AND order_id IS NOT NULL
+                ) AND payment_status = 'Pending'
+              `)
+            }
             status = 'Processed'
           }
         } else if (eventType === 'payment.authorized') {

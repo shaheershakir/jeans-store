@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { validateApiEnv } from '@jeans-store/validators'
 import { buildApp } from './app.js'
 import { seedIfEmpty } from './db/seed.js'
 import { db, isDatabaseConfigured } from './db/index.js'
@@ -22,29 +23,17 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN
 
 const app = buildApp({ corsOrigin: CORS_ORIGIN })
 
-if (process.env.NODE_ENV === 'production') {
-  const missing = [
-    !isDatabaseConfigured() && 'DATABASE_URL',
-    !process.env.ADMIN_EMAIL?.trim() && 'ADMIN_EMAIL',
-    !process.env.ADMIN_PASSWORD?.trim() && 'ADMIN_PASSWORD',
-    (!process.env.ADMIN_SESSION_SECRET?.trim() || process.env.ADMIN_SESSION_SECRET.trim().length < 32) && 'ADMIN_SESSION_SECRET (32+ characters)',
-    (!process.env.JWT_SECRET?.trim() || process.env.JWT_SECRET.trim().length < 32) && 'JWT_SECRET (32+ characters)',
-    !process.env.GCP_PROJECT_ID?.trim() && 'GCP_PROJECT_ID',
-    !process.env.GCS_PRODUCT_IMAGES_BUCKET?.trim() && 'GCS_PRODUCT_IMAGES_BUCKET',
-    !process.env.FRONTEND_URL?.trim() && 'FRONTEND_URL',
-    !process.env.CORS_ORIGIN?.trim() && 'CORS_ORIGIN'
-  ].filter(Boolean)
-  if (missing.length) {
-    throw new Error(`Missing production configuration: ${missing.join(', ')}`)
-  }
-} else {
+// Validate environment on startup
+validateApiEnv(process.env)
+
+if (process.env.NODE_ENV !== 'production') {
   void seedIfEmpty().catch((err) => {
     logger.warn({ err }, 'Initial database seed check failed')
   })
 }
 
 const server = app.listen(PORT, HOST, () => {
-  console.log(`✓ TEESGARAGE backend listening at http://${HOST}:${PORT}`)
+  logger.info({ host: HOST, port: PORT }, 'TEESGARAGE backend listening')
 })
 
 // Release abandoned checkout holds even when no new checkout arrives. The

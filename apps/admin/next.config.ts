@@ -1,6 +1,9 @@
 import path from 'node:path'
 import type { NextConfig } from 'next'
 
+
+
+
 function getAssetRemotePattern(): { protocol: 'http' | 'https'; hostname: string; port?: string } | null {
   const raw = process.env.NEXT_PUBLIC_ASSET_BASE_URL || process.env.ASSET_BASE_URL
   if (!raw) return null
@@ -41,6 +44,14 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
     cpus: 1,
+  },
+  webpack: (config) => {
+    config.resolve = config.resolve || {}
+    config.resolve.extensionAlias = {
+      '.js': ['.ts', '.tsx', '.js'],
+      '.mjs': ['.mts', '.mjs']
+    }
+    return config
   },
 }
 

@@ -26,36 +26,25 @@ export interface PaymentVerificationParams {
   razorpay_signature: string
 }
 
-const DEFAULT_RAZORPAY_KEY_ID = 'rzp_test_TnN4mtRGLw9wJy'
-const DEFAULT_RAZORPAY_KEY_SECRET = '6HCOI0Fg4exVQWYG2AK7KeSf'
-
 /**
  * Service to handle Razorpay payment gateway integration,
  * order creation, signature verification, and webhooks.
  */
 export class RazorpayService {
-  private keyId: string
-  private keySecret: string
-
-  constructor() {
-    this.keyId = process.env.RAZORPAY_KEY_ID?.trim() || DEFAULT_RAZORPAY_KEY_ID
-    this.keySecret = process.env.RAZORPAY_KEY_SECRET?.trim() || DEFAULT_RAZORPAY_KEY_SECRET
-  }
-
   public getKeyId(): string {
-    return process.env.RAZORPAY_KEY_ID?.trim() || this.keyId || DEFAULT_RAZORPAY_KEY_ID
+    return process.env.RAZORPAY_KEY_ID?.trim() || ''
   }
 
   public getKeySecret(): string {
-    return process.env.RAZORPAY_KEY_SECRET?.trim() || this.keySecret || DEFAULT_RAZORPAY_KEY_SECRET
+    return process.env.RAZORPAY_KEY_SECRET?.trim() || ''
   }
 
   public getStatus() {
     const keyId = this.getKeyId()
+    const keySecret = this.getKeySecret()
     return {
-      enabled: Boolean(keyId && this.getKeySecret()),
-      keyId: keyId ? `${keyId.substring(0, 8)}...` : undefined,
-      isDefaultFallback: keyId === DEFAULT_RAZORPAY_KEY_ID
+      enabled: Boolean(keyId && keySecret),
+      keyId: keyId ? `${keyId.substring(0, 8)}...` : undefined
     }
   }
 
@@ -95,13 +84,20 @@ export class RazorpayService {
   }
 
   /**
-   * Verifies the HMAC SHA256 signature returned by Razorpay Checkout.
+   * Verifies the HMAC SHA256 signature returned by Razorpay Checkout using constant-time comparison.
    */
   public verifyPaymentSignature(params: PaymentVerificationParams): boolean {
     const keySecret = this.getKeySecret()
-    if (!keySecret) return false
+    if (!keySecret) {
+      logger.error('RAZORPAY_KEY_SECRET is not configured; cannot verify payment signature')
+      return false
+    }
 
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = params
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return false
+    }
+
     const body = `${razorpay_order_id}|${razorpay_payment_id}`
 
     const expectedSignature = crypto
@@ -109,8 +105,8 @@ export class RazorpayService {
       .update(body)
       .digest('hex')
 
-    const received = Buffer.from(razorpay_signature)
-    const expected = Buffer.from(expectedSignature)
+    const received = Buffer.from(razorpay_signature, 'utf8')
+    const expected = Buffer.from(expectedSignature, 'utf8')
     return received.length === expected.length && crypto.timingSafeEqual(received, expected)
   }
 
@@ -135,17 +131,17 @@ export class RazorpayService {
   }
 
   /**
-   * Verifies a Razorpay Webhook signature against raw body payload.
+   * Verifies a Razorpay Webhook signature against raw body payload using constant-time comparison.
    */
   public verifyWebhookSignature(body: string, receivedSignature: string, webhookSecret: string): boolean {
-    if (!webhookSecret || !receivedSignature) return false
+    if (!webhookSecret || !receivedSignature || !body) return false
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
       .update(body)
       .digest('hex')
 
-    const received = Buffer.from(receivedSignature)
-    const expected = Buffer.from(expectedSignature)
+    const received = Buffer.from(receivedSignature, 'utf8')
+    const expected = Buffer.from(expectedSignature, 'utf8')
     return received.length === expected.length && crypto.timingSafeEqual(received, expected)
   }
 }
