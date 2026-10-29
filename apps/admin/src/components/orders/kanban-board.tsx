@@ -231,7 +231,7 @@ export function KanbanBoard({
 
   return (
     <div className="w-full overflow-x-auto pb-4 scrollbar-thin">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-4.5 min-w-[320px] xl:min-w-[1280px]">
+      <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5 sm:gap-4.5 snap-x snap-mandatory scrollbar-none pb-2">
         {columns.map((col, index) => {
           // Filter all orders for this column
           const rawColOrders = orders.filter(
@@ -259,15 +259,19 @@ export function KanbanBoard({
           const totalCount = countsByStatus[col.status] ?? sortedOrders.length
 
           return (
-            <KanbanColumn
+            <div
               key={col.status}
-              column={col}
-              index={index}
-              orders={sortedOrders}
-              totalCount={totalCount}
-              onStatusChange={handleMoveOrderToState}
-              onPrint={onPrint}
-            />
+              className="w-[82vw] sm:w-[320px] md:w-auto shrink-0 snap-center"
+            >
+              <KanbanColumn
+                column={col}
+                index={index}
+                orders={sortedOrders}
+                totalCount={totalCount}
+                onStatusChange={handleMoveOrderToState}
+                onPrint={onPrint}
+              />
+            </div>
           )
         })}
       </div>

@@ -13,6 +13,7 @@ import {
   Eye,
   Kanban as KanbanIcon,
   LayoutList,
+  MapPin,
   MoreHorizontal,
   Package,
   Plus,
@@ -42,6 +43,7 @@ import type { FulfillmentStatus, Order } from '@/lib/types'
 import { fetchBackendOrders } from '@/services/commerce'
 import { KanbanBoard } from '@/components/orders/kanban-board'
 import type { OrderItemCardData } from '@/components/orders/kanban-card'
+import { OrderDetailSheet } from '@/components/orders/order-detail-sheet'
 
 // Reference product images for apparel items
 const ORDER_PRODUCT_IMAGES: Record<string, string> = {
@@ -877,6 +879,10 @@ export default function OrdersPage() {
   const [printQueue, setPrintQueue] = React.useState<Order[]>([])
   const [loading, setLoading] = React.useState(true)
 
+  // Order Detail Sheet state for mobile
+  const [selectedDetailOrder, setSelectedDetailOrder] = React.useState<OrderItemCardData | null>(null)
+  const [detailSheetOpen, setDetailSheetOpen] = React.useState(false)
+
   // Create Order Dialog state
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false)
   const [newCustomerName, setNewCustomerName] = React.useState('')
@@ -1233,15 +1239,18 @@ export default function OrdersPage() {
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-foreground">
           Orders
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-muted-foreground">
+        <p className="mt-1 text-sm text-slate-500 dark:text-muted-foreground hidden md:block">
           Track, manage, and fulfill customer orders
+        </p>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-muted-foreground md:hidden">
+          Manage customer orders ({tabCounts.all} total)
         </p>
       </div>
 
       {/* ========================================================================= */}
       {/* 2. Top Metric KPI Stat Cards                                              */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {/* Card 1: Total orders */}
         <div className="rounded-2xl border border-slate-200/80 dark:border-border bg-white dark:bg-card p-5 shadow-xs">
           <div className="flex items-center gap-3">
@@ -1344,9 +1353,187 @@ export default function OrdersPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. View Switcher and Kanban / List Control Bar                            */}
+      {/* 3a. Mobile View Switcher, Filter Pills & Search Bar (Screen 1 & 2)        */}
       {/* ========================================================================= */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pt-2">
+      <div className="md:hidden space-y-3">
+        {/* View Switcher Tabs (Equal Width) */}
+        <div className="grid grid-cols-2 border-b border-slate-200 dark:border-border text-center">
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            className={`relative flex items-center justify-center gap-2 pb-2.5 text-xs font-semibold transition-colors ${
+              viewMode === 'list'
+                ? 'text-blue-600 dark:text-blue-400 font-bold'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-foreground'
+            }`}
+          >
+            <LayoutList className="h-4 w-4" />
+            <span>List View</span>
+            {viewMode === 'list' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('kanban')}
+            className={`relative flex items-center justify-center gap-2 pb-2.5 text-xs font-semibold transition-colors ${
+              viewMode === 'kanban'
+                ? 'text-blue-600 dark:text-blue-400 font-bold'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-foreground'
+            }`}
+          >
+            <KanbanIcon className="h-4 w-4" />
+            <span>Kanban View</span>
+            {viewMode === 'kanban' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full" />
+            )}
+          </button>
+        </div>
+
+        {/* Filter Pills Row */}
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5">
+          {/* Status / All Orders Pill */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/90 dark:border-border bg-white dark:bg-card px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-2xs whitespace-nowrap"
+              >
+                <span>{activeTab === 'all' ? (viewMode === 'kanban' ? 'All Orders' : `All (${tabCounts.all})`) : activeTab}</span>
+                <ChevronDown className="h-3 w-3 text-slate-400" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44 rounded-xl p-1 shadow-md">
+              <DropdownMenuItem onClick={() => setActiveTab('all')}>All ({tabCounts.all})</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab('Pending')}>Pending ({tabCounts.Pending})</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab('Confirmed')}>Confirmed ({tabCounts.Confirmed})</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab('Processing')}>Processing ({tabCounts.Processing})</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab('Shipped')}>Shipped ({tabCounts.Shipped})</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab('Delivered')}>Delivered ({tabCounts.Delivered})</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Payment Pill */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/90 dark:border-border bg-white dark:bg-card px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-2xs whitespace-nowrap"
+              >
+                <span>{paymentFilter === 'all' ? 'Payment' : paymentFilter}</span>
+                <ChevronDown className="h-3 w-3 text-slate-400" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40 rounded-xl p-1 shadow-md">
+              <DropdownMenuItem onClick={() => setPaymentFilter('all')}>All Payments</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPaymentFilter('Paid')}>Paid</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Region Pill */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/90 dark:border-border bg-white dark:bg-card px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-2xs whitespace-nowrap"
+              >
+                <span>{regionFilter === 'all' ? 'Region' : regionFilter === 'kerala' ? 'Kerala' : 'Other'}</span>
+                <ChevronDown className="h-3 w-3 text-slate-400" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40 rounded-xl p-1 shadow-md">
+              <DropdownMenuItem onClick={() => setRegionFilter('all')}>All Regions</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setRegionFilter('kerala')}>Kerala</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setRegionFilter('other')}>Other States</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* In List View: Calendar Icon; In Kanban View: Sort Icon */}
+          {viewMode === 'list' ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-slate-200/90 dark:border-border bg-white dark:bg-card text-slate-600 dark:text-slate-400 shadow-2xs shrink-0"
+                  aria-label="Date filter"
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-md">
+                <DropdownMenuItem onClick={() => setDateFilter('all')}>All dates</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDateFilter('Today (25 Oct)')}>Today (25 Oct)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDateFilter('Last 7 days')}>Last 7 days</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-slate-200/90 dark:border-border bg-white dark:bg-card text-slate-600 dark:text-slate-400 shadow-2xs shrink-0"
+                  aria-label="Sort orders"
+                >
+                  <ArrowUpDown className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-md">
+                <DropdownMenuItem onClick={() => setSortBy('date-desc')}>Date (Newest)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('date-asc')}>Date (Oldest)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('amount-desc')}>Amount (High to Low)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('amount-asc')}>Amount (Low to High)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+
+        {/* Search Bar + Action Row */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={viewMode === 'list' ? 'Search orders, customers...' : 'Search orders...'}
+              className="w-full rounded-xl border border-slate-200/90 dark:border-border bg-white dark:bg-card pl-9 pr-3.5 py-2 text-xs font-medium text-slate-900 dark:text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
+            />
+          </div>
+          {viewMode === 'list' ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center h-9 w-9 rounded-xl border border-slate-200/90 dark:border-border bg-white dark:bg-card text-slate-700 dark:text-slate-300 shadow-2xs shrink-0"
+                  aria-label="Sort orders"
+                >
+                  <ArrowUpDown className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-md">
+                <DropdownMenuItem onClick={() => setSortBy('date-desc')}>Date (Newest)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('date-asc')}>Date (Oldest)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('amount-desc')}>Amount (High to Low)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('amount-asc')}>Amount (Low to High)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCreateDialogOpen(true)}
+              className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-2xs shrink-0"
+              aria-label="Create Order"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3b. Desktop View Switcher and Kanban / List Control Bar                   */}
+      {/* ========================================================================= */}
+      <div className="hidden md:flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pt-2">
         {/* Left: View Switcher Tabs (List View / Kanban View) */}
         <div className="flex items-center gap-6 border-b lg:border-b-0 border-slate-200 dark:border-border pb-2 lg:pb-0">
           {/* List View Toggle */}
@@ -1611,8 +1798,109 @@ export default function OrdersPage() {
       {/* ========================================================================= */}
       {viewMode === 'list' && (
         <div className="space-y-4">
-          {/* Status Tabs for List View (DO NOT REMOVE THESE TABS - User Request) */}
-          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-border overflow-x-auto scrollbar-thin">
+          {/* Mobile Order Cards List (Screen 1) */}
+          <div className="md:hidden space-y-3">
+            {filteredOrders.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200/80 dark:border-border bg-white dark:bg-card p-8 text-center text-xs text-slate-400">
+                No orders match your filters.
+              </div>
+            ) : (
+              filteredOrders.map((order) => (
+                <div
+                  key={order.id}
+                  onClick={() => {
+                    setSelectedDetailOrder(order)
+                    setDetailSheetOpen(true)
+                  }}
+                  className="rounded-2xl border border-slate-200/80 dark:border-border bg-white dark:bg-card p-3.5 shadow-2xs active:scale-[0.99] transition-transform cursor-pointer"
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Square Thumbnail */}
+                    <div className="relative h-16 w-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/70 dark:border-slate-700">
+                      <Image
+                        src={order.images[0] || FALLBACK_IMAGE}
+                        alt={order.productName}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    </div>
+
+                    {/* Middle Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-xs text-slate-900 dark:text-foreground">
+                          {order.number}
+                        </span>
+                        <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 px-1.5 py-0.5 text-[10px] font-bold">
+                          Paid
+                        </span>
+                        <span
+                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                            order.fulfillmentStatus === 'Confirmed'
+                              ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60'
+                              : order.fulfillmentStatus === 'Processing'
+                                ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-800/60'
+                                : order.fulfillmentStatus === 'Shipped'
+                                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60'
+                                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60'
+                          }`}
+                        >
+                          {order.fulfillmentStatus}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-slate-400 dark:text-muted-foreground mt-0.5 truncate">
+                        {order.itemsCount} item • {order.variantLabel ? order.variantLabel.split('•')[0].trim() : 'Standard'}
+                      </p>
+
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">
+                        {order.customerName}
+                      </p>
+
+                      <div className="flex items-center gap-1 text-[11px] text-slate-400 dark:text-muted-foreground mt-0.5 truncate">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{order.customerAddress2 || order.locationShort}</span>
+                      </div>
+                    </div>
+
+                    {/* Right Price & Date */}
+                    <div className="text-right shrink-0 flex flex-col items-end justify-between self-stretch">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedDetailOrder(order)
+                          setDetailSheetOpen(true)
+                        }}
+                        className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                        aria-label="Options"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+
+                      <div className="mt-auto">
+                        <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-foreground tnum">
+                          {formatINR(order.total)}
+                        </p>
+                        <p className="text-[10px] text-slate-400 dark:text-muted-foreground">
+                          {order.paymentMethod || 'Razorpay'}
+                        </p>
+                        <p className="text-[10px] text-slate-400 dark:text-muted-foreground whitespace-nowrap mt-0.5">
+                          {order.date}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Status Tabs, Action Buttons & Full Table (DO NOT REMOVE TABS OR TABLE) */}
+          <div className="hidden md:block space-y-4">
+            {/* Status Tabs for List View (DO NOT REMOVE THESE TABS - User Request) */}
+            <div className="flex items-center gap-2 border-b border-slate-200 dark:border-border overflow-x-auto scrollbar-thin">
             {[
               { label: 'All Orders', value: 'all', count: tabCounts.all },
               { label: 'Pending', value: 'Pending', count: tabCounts.Pending },
@@ -1957,7 +2245,8 @@ export default function OrdersPage() {
             </div>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* Print Slip Styles */}
       <style jsx global>{`
@@ -2022,6 +2311,14 @@ export default function OrdersPage() {
           }
         }
       `}</style>
+      {/* Order Detail Bottom Sheet for Mobile (Screen 3) */}
+      <OrderDetailSheet
+        order={selectedDetailOrder}
+        open={detailSheetOpen}
+        onOpenChange={setDetailSheetOpen}
+        onStatusChange={handleMoveOrder}
+        onPrint={(o) => triggerPrintOrders([o])}
+      />
     </div>
   )
 }

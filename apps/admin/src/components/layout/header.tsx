@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Bell, Check } from 'lucide-react'
+import { Bell, Check, Search as LucideSearch } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -49,16 +49,37 @@ export function Header({ className, fixed = true, children, ...props }: HeaderPr
       {...props}
     >
       <div className="flex h-full items-center gap-3 px-4 sm:gap-4 sm:px-6">
-        <SidebarTrigger variant="outline" className="h-8 w-8" />
-        <Separator orientation="vertical" className="h-6" />
+        <SidebarTrigger variant="outline" className="h-8 w-8 shrink-0" />
+        <div className="flex flex-col min-w-0 md:hidden">
+          <span className="font-bold text-xs tracking-tight text-slate-900 dark:text-foreground truncate leading-tight">
+            TEESGARAGE Admin
+          </span>
+          <span className="text-[10px] text-slate-400 dark:text-muted-foreground truncate leading-tight">
+            Apparel Store Operations
+          </span>
+        </div>
+        <Separator orientation="vertical" className="h-6 hidden md:block" />
 
-        <div className="flex-1 max-w-md">
+        <div className="flex-1 max-w-md hidden md:block">
           <Search placeholder="Search products, orders, commands..." />
         </div>
 
         {children}
 
         <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full md:hidden"
+            aria-label="Search"
+            onClick={() => {
+              const el = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement
+              el?.focus()
+            }}
+          >
+            <LucideSearch className="h-4 w-4 text-muted-foreground" />
+          </Button>
+
           {/* Notifications Dropdown */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
@@ -123,7 +144,7 @@ export function Header({ className, fixed = true, children, ...props }: HeaderPr
           {/* Theme switcher */}
           <ThemeSwitch />
 
-          <Separator orientation="vertical" className="h-6" />
+          <Separator orientation="vertical" className="h-6 hidden md:block" />
 
           {/* User Profile */}
           <ProfileDropdown />

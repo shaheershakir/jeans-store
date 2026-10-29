@@ -11,6 +11,7 @@ import { ThemeProvider } from '@/context/theme-provider'
 import { LayoutProvider } from '@/context/layout-provider'
 import { SearchProvider } from '@/context/search-provider'
 import { AdminStateSync } from './admin-state-sync'
+import { MobileBottomNav } from './mobile-bottom-nav'
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -76,11 +77,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <SidebarProvider>
             <AppSidebar />
             <AdminStateSync />
-            <SidebarInset className="overflow-x-hidden min-h-screen flex flex-col">
+            <SidebarInset className="overflow-x-hidden min-h-screen flex flex-col pb-16 lg:pb-0">
               <Header />
               <div className="flex-1 overflow-y-auto">
                 {children}
               </div>
+              <MobileBottomNav />
             </SidebarInset>
           </SidebarProvider>
         </SearchProvider>
