@@ -1,5 +1,6 @@
-import { validateAdminEnv } from '@jeans-store/validators'
-
 export async function register() {
-  validateAdminEnv(process.env)
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { validateAdminEnv } = await import('@jeans-store/validators/env')
+    validateAdminEnv(process.env)
+  }
 }

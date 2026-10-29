@@ -1,10 +1,9 @@
 import * as Sentry from '@sentry/nextjs'
-import { validateStorefrontEnv } from '@jeans-store/validators'
 
 export async function register() {
-  validateStorefrontEnv(process.env)
-
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { validateStorefrontEnv } = await import('@jeans-store/validators/env')
+    validateStorefrontEnv(process.env)
     await import('../sentry.server.config')
   }
 
