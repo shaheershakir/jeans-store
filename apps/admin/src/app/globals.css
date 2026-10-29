@@ -214,6 +214,8 @@
 
   body[data-scroll-locked] {
     overflow: unset !important;
+    margin-right: 0 !important;
+    padding-right: 0 !important;
   }
 
   button:not(:disabled),
