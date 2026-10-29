@@ -329,10 +329,6 @@ export default function OrderDetailPage({
                     {formatINR(order.shippingFee)}
                   </span>
                 </div>
-                <div className="flex justify-between text-ink-2">
-                  <span>Estimated Tax (12% GST)</span>
-                  <span className="tnum font-medium text-ink">{formatINR(order.tax)}</span>
-                </div>
                 <div className="border-t border-divider pt-2 flex justify-between text-sm font-bold text-ink">
                   <span>Total Amount</span>
                   <span className="tnum text-primary">{formatINR(order.total)}</span>

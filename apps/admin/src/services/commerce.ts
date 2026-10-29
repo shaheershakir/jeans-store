@@ -157,7 +157,6 @@ export async function fetchBackendOrders(): Promise<Order[]> {
       subtotal: remote.subtotal,
       discount: 0,
       shippingFee: remote.shipping,
-      tax: 0,
       total: remote.total,
       paymentMethod,
       paymentStatus,

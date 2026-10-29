@@ -84,15 +84,15 @@ const COLOR_CODE: Record<string, string> = {
 }
 
 const CATEGORIES: Category[] = [
-  { id: 1, name: 'Stripes', slug: 'stripes', description: 'Classic horizontal and vertical striped t-shirts.', parentId: null },
-  { id: 2, name: 'Fullsleeve', slug: 'fullsleeve', description: 'Full sleeve heavyweight and ribbed t-shirts.', parentId: null },
-  { id: 3, name: 'Drsleeve', slug: 'drsleeve', description: 'Drop shoulder loose and boxy cut tees.', parentId: null },
-  { id: 4, name: 'Printed tees', slug: 'printed-tees', description: 'Screen printed and graphic streetwear tees.', parentId: null },
-  { id: 5, name: 'Ringer tees', slug: 'ringer-tees', description: 'Vintage style contrast rib collar and cuff tees.', parentId: null },
-  { id: 6, name: 'Henley', slug: 'henley', description: 'Button placket waffle and jersey knit tees.', parentId: null },
-  { id: 7, name: 'Waffle', slug: 'waffle', description: 'Thermal waffle knit tees and long sleeves with textured honeycomb weave.', parentId: null },
-  { id: 8, name: 'Trackpants', slug: 'trackpants', description: 'Athletic, training and tapered trackpants.', parentId: null },
-  { id: 9, name: 'Sweatpants', slug: 'sweatpants', description: 'Heavyweight fleece and French terry sweatpants.', parentId: null },
+  { id: 1, name: 'Stripes', slug: 'stripes', description: 'Classic horizontal and vertical striped t-shirts.' },
+  { id: 2, name: 'Fullsleeve', slug: 'fullsleeve', description: 'Full sleeve heavyweight and ribbed t-shirts.' },
+  { id: 3, name: 'Drsleeve', slug: 'drsleeve', description: 'Drop shoulder loose and boxy cut tees.' },
+  { id: 4, name: 'Printed tees', slug: 'printed-tees', description: 'Screen printed and graphic streetwear tees.' },
+  { id: 5, name: 'Ringer tees', slug: 'ringer-tees', description: 'Vintage style contrast rib collar and cuff tees.' },
+  { id: 6, name: 'Henley', slug: 'henley', description: 'Button placket waffle and jersey knit tees.' },
+  { id: 7, name: 'Waffle', slug: 'waffle', description: 'Thermal waffle knit tees and long sleeves with textured honeycomb weave.' },
+  { id: 8, name: 'Trackpants', slug: 'trackpants', description: 'Athletic, training and tapered trackpants.' },
+  { id: 9, name: 'Sweatpants', slug: 'sweatpants', description: 'Heavyweight fleece and French terry sweatpants.' },
 ]
 
 const COLLECTIONS: Collection[] = [
@@ -155,9 +155,7 @@ function buildProduct(
         price,
         stock,
         reserved: stock > 0 ? randInt(rand, 0, Math.min(4, stock)) : 0,
-        reorderPoint: randInt(rand, 6, 14),
         weight: spec.category === 'trackpants' || spec.category === 'sweatpants' ? randInt(rand, 600, 800) : randInt(rand, 250, 450),
-        barcode: `890${String(10000000000 + id * 7919).slice(0, 11)}`,
         status: status === 'Active' ? 'Active' : 'Active',
       })
     }
@@ -177,7 +175,7 @@ function buildProduct(
     brand: spec.brand,
     categoryId,
 
-    collectionId: index % 7 === 0 ? 2 : index % 4 === 0 ? 4 : index % 5 === 0 ? 5 : 1,
+    collectionIds: [index % 7 === 0 ? 2 : index % 4 === 0 ? 4 : index % 5 === 0 ? 5 : 1],
     fit: spec.fit,
     gender: spec.gender,
     rise: spec.rise,
@@ -187,7 +185,6 @@ function buildProduct(
     price: spec.basePrice,
     compareAtPrice,
     costPrice: Math.round(spec.basePrice * 0.52),
-    taxRate: 18,
     status,
     featured: index % 7 === 0,
     weightGrams: spec.category === 'trackpants' || spec.category === 'sweatpants' ? 650 : 350,
@@ -304,8 +301,7 @@ function buildOneOrder(
   const useCoupon = rand() < 0.18
   const discount = useCoupon && subtotal >= 1499 ? Math.round(subtotal * (rand() < 0.5 ? 0.1 : 0.15)) : 0
   const shippingFee = 99
-  const tax = Math.round((subtotal - discount) * 0.18)
-  const total = subtotal - discount + shippingFee + tax
+  const total = subtotal - discount + shippingFee
 
   const address = customer.addresses[0]
   if (!address) {
@@ -419,7 +415,6 @@ function buildOneOrder(
     subtotal,
     discount,
     shippingFee,
-    tax,
     total,
     paymentMethod,
     paymentStatus,
@@ -860,12 +855,7 @@ function buildOpsSeed(): {
     supportPhone: '+91 73900 12345',
     address: 'TEESGARAGE Studio, Marine Drive, Kochi, Kerala 682031',
     currency: 'INR',
-    taxRate: 18,
     orderPrefix: 'TG',
-    returnWindowDays: 7,
-    cancellationAllowedAfter: 'Processing',
-    defaultShippingMethod: 'Standard',
-    notify: { email: true, orderUpdates: true, inventoryAlerts: true, reviewAlerts: true },
   }
 
   return { adminUsers, auditLog, notifications, settings }
@@ -997,9 +987,7 @@ export function createDbState(): DbState {
       auditLog: [], notifications: [],
       settings: {
         storeName: 'TEESGARAGE', supportEmail: 'support@teesgarage.in', supportPhone: '', address: '', currency: 'INR',
-        taxRate: 18, orderPrefix: 'TG', returnWindowDays: 7, cancellationAllowedAfter: 'Processing',
-        defaultShippingMethod: 'Standard',
-        notify: { email: true, orderUpdates: true, inventoryAlerts: true, reviewAlerts: true }
+        orderPrefix: 'TG'
       },
       navigation: DEFAULT_NAVIGATION_ITEMS.map((item) => ({ ...item })),
       homepage: JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG)),

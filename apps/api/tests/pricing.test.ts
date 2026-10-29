@@ -15,8 +15,7 @@ const tee: PricedLineInput = {
   size: 'M',
   quantity: 2,
   unitPrice: 999,
-  weightGrams: 220,
-  taxRate: 0.05
+  weightGrams: 220
 }
 
 const trouser: PricedLineInput = {
@@ -26,8 +25,7 @@ const trouser: PricedLineInput = {
   size: 'L',
   quantity: 1,
   unitPrice: 1499,
-  weightGrams: 450,
-  taxRate: 0.12
+  weightGrams: 450
 }
 
 describe('Server-side pricing contract', () => {
@@ -37,8 +35,7 @@ describe('Server-side pricing contract', () => {
     assert.equal(pricing.subtotal, 999 * 2 + 1499)
     assert.equal(pricing.lines[0].lineTotal, 1998)
     assert.equal(pricing.lines[1].lineTotal, 1499)
-    assert.equal(pricing.taxTotal, Math.round(1998 * 0.05) + Math.round(1499 * 0.12))
-    assert.equal(pricing.total, pricing.subtotal - pricing.discountTotal + pricing.shipping + pricing.taxTotal)
+    assert.equal(pricing.total, pricing.subtotal - pricing.discountTotal + pricing.shipping)
     assert.equal(pricing.weightGrams, 220 * 2 + 450)
     assert.ok(reconcileOrderTotal(pricing))
   })
@@ -48,7 +45,6 @@ describe('Server-side pricing contract', () => {
       subtotal: 999,
       discountTotal: 0,
       shipping: 0,
-      taxTotal: 0,
       total: 1,
       items: [{ ...tee, unitPrice: 1, lineTotal: 1 }]
     }
@@ -57,7 +53,7 @@ describe('Server-side pricing contract', () => {
 
     assert.notEqual(priced.total, tamperedOrder.total)
     assert.equal(priced.lines[0].unitPrice, 999)
-    assert.equal(priced.total, 1998 + 49 + Math.round(1998 * 0.05))
+    assert.equal(priced.total, 1998 + 49)
     assert.equal(reconcileOrderTotal(tamperedOrder), false, 'tampered snapshots fail the invariant')
   })
 
@@ -68,8 +64,6 @@ describe('Server-side pricing contract', () => {
     const allocated = discounted.reduce((sum, line) => sum + line.discountAmount, 0)
     assert.equal(allocated, 350)
     for (const line of discounted) {
-      assert.equal(line.taxableAmount, line.lineTotal - line.discountAmount)
-      assert.equal(line.taxAmount, Math.round(line.taxableAmount * line.taxRate))
       assert.ok(line.discountAmount >= 0)
       assert.ok(line.discountAmount <= line.lineTotal)
     }
@@ -79,8 +73,6 @@ describe('Server-side pricing contract', () => {
     const pricing = calculatePricing([tee], { discount: 1_000_000 })
 
     assert.equal(pricing.discountTotal, 1998)
-    assert.equal(pricing.lines[0].taxableAmount, 0)
-    assert.equal(pricing.lines[0].taxAmount, 0)
     assert.equal(pricing.total, pricing.shipping)
   })
 
@@ -89,43 +81,32 @@ describe('Server-side pricing contract', () => {
 
     assert.equal(pricing.discountTotal, 0)
     assert.equal(pricing.shipping, 0)
-    assert.equal(pricing.total, 1998 + Math.round(1998 * 0.05))
-  })
-
-  test('normalizes both fractional and legacy percentage tax rates', () => {
-    const fractional = calculatePricing([{ ...tee, quantity: 1, taxRate: 0.05 }])
-    const legacyPercentage = calculatePricing([{ ...tee, quantity: 1, taxRate: 5 }])
-    const outOfRange = calculatePricing([{ ...tee, quantity: 1, taxRate: 500 }])
-
-    assert.equal(fractional.lines[0].taxAmount, 50)
-    assert.equal(legacyPercentage.lines[0].taxAmount, 50)
-    assert.equal(outOfRange.lines[0].taxAmount, 999, 'rates above 100% are clamped to 100%')
+    assert.equal(pricing.total, 1998)
   })
 
   test('keeps all persisted money as integer rupees', () => {
-    const pricing = calculatePricing([{ ...tee, unitPrice: 100.6, quantity: 3, taxRate: 0.075 }])
+    const pricing = calculatePricing([{ ...tee, unitPrice: 100.6, quantity: 3 }])
 
     assert.ok(Number.isInteger(pricing.lines[0].unitPrice))
     assert.ok(Number.isInteger(pricing.lines[0].lineTotal))
-    assert.ok(Number.isInteger(pricing.taxTotal))
     assert.ok(Number.isInteger(pricing.total))
   })
 
   test('an empty cart prices to zero without throwing', () => {
     const pricing = calculatePricing([])
     assert.deepEqual(
-      { subtotal: pricing.subtotal, tax: pricing.taxTotal, total: pricing.total, weight: pricing.weightGrams },
-      { subtotal: 0, tax: 0, total: 0, weight: 0 }
+      { subtotal: pricing.subtotal, total: pricing.total, weight: pricing.weightGrams },
+      { subtotal: 0, total: 0, weight: 0 }
     )
   })
 
   test('reconciliation rejects a snapshot whose total drifted', () => {
     assert.equal(
-      reconcileOrderTotal({ subtotal: 1998, discountTotal: 100, shipping: 49, taxTotal: 95, total: 2042 }),
+      reconcileOrderTotal({ subtotal: 1998, discountTotal: 100, shipping: 49, total: 1947 }),
       true
     )
     assert.equal(
-      reconcileOrderTotal({ subtotal: 1998, discountTotal: 100, shipping: 49, taxTotal: 95, total: 2000 }),
+      reconcileOrderTotal({ subtotal: 1998, discountTotal: 100, shipping: 49, total: 2000 }),
       false
     )
   })

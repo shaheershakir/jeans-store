@@ -15,10 +15,7 @@ export const orderItemSchema = z.object({
   weightGrams: z.number().int().nonnegative().optional(),
   img: z.string().optional(),
   lineTotal: z.number().int().nonnegative().optional(),
-  taxRate: z.number().min(0).max(1).optional(),
-  taxAmount: z.number().int().nonnegative().optional(),
   discountAmount: z.number().int().nonnegative().optional(),
-  taxableAmount: z.number().int().nonnegative().optional(),
   variantLabel: z.string().optional(),
   categoryId: z.number().int().positive().optional(),
   isFreeSize: z.boolean().optional(),
@@ -44,7 +41,6 @@ export const createOrderSchema = z.object({
   subtotal: z.number().nonnegative().optional(),
   discountTotal: z.number().nonnegative().optional(),
   shipping: z.number().nonnegative().optional(),
-  taxTotal: z.number().nonnegative().optional(),
   total: z.number().nonnegative().optional(),
   weightGrams: z.number().nonnegative().optional(),
   couponCode: z.string().trim().min(1).max(60).optional(),
@@ -63,7 +59,7 @@ export type CreateOrder = z.infer<typeof createOrderSchema>;
 
 export type CalculatedOrder = Omit<
   CreateOrder,
-  "items" | "subtotal" | "discountTotal" | "shipping" | "taxTotal" | "total"
+  "items" | "subtotal" | "discountTotal" | "shipping" | "total"
 > & {
   userId?: number | null;
   items: Array<
@@ -74,10 +70,7 @@ export type CalculatedOrder = Omit<
       priceNum: number;
       img?: string;
       lineTotal: number;
-      taxRate: number;
-      taxAmount: number;
       discountAmount: number;
-      taxableAmount: number;
       variantLabel: string;
       isFreeSize: boolean;
     }
@@ -85,7 +78,6 @@ export type CalculatedOrder = Omit<
   subtotal: number;
   discountTotal: number;
   shipping: number;
-  taxTotal: number;
   total: number;
   weightGrams?: number;
 };

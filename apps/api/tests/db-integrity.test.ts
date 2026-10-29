@@ -292,8 +292,8 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
     `)
     const orderId = Number((order.rows[0] as { id: number }).id)
     await db.execute(sql`
-      INSERT INTO order_items (order_id, product_id, variant_id, name, size, unit_price, quantity, line_total, taxable_amount)
-      VALUES (${orderId}, ${productId}, ${variantId}, ${'Restock Tee'}, ${'M'}, ${999}, ${2}, ${1998}, ${1998})
+      INSERT INTO order_items (order_id, product_id, variant_id, name, size, unit_price, quantity, line_total)
+      VALUES (${orderId}, ${productId}, ${variantId}, ${'Restock Tee'}, ${'M'}, ${999}, ${2}, ${1998})
     `)
 
     try {
@@ -536,8 +536,8 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
     )
     const categoryId = Number((category.rows[0] as { id: number }).id)
     const product = await db.execute(sql`
-      INSERT INTO products (category_id, slug, name, description, price, tax_rate, weight_grams, status)
-      VALUES (${categoryId}, ${suffix}, ${'Price Snapshot Tee'}, ${'Test fixture'}, ${1500}, ${0.05}, ${200}, ${'active'})
+      INSERT INTO products (category_id, slug, name, description, price, weight_grams, status)
+      VALUES (${categoryId}, ${suffix}, ${'Price Snapshot Tee'}, ${'Test fixture'}, ${1500}, ${200}, ${'active'})
       RETURNING id
     `)
     const productId = String((product.rows[0] as { id: string }).id)
@@ -571,10 +571,7 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
             priceNum: 1,
             quantity: 1,
             lineTotal: 1,
-            taxRate: 0,
-            taxAmount: 0,
             discountAmount: 0,
-            taxableAmount: 1,
             variantLabel: 'Black / M',
             isFreeSize: false
           }
@@ -582,14 +579,13 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
         subtotal: 1,
         discountTotal: 0,
         shipping: 0,
-        taxTotal: 0,
         total: 1
       })
 
       orderId = created.id
       assert.equal(created.items[0].priceNum, 1500, 'catalog price replaces the tampered browser price')
       assert.equal(created.items[0].lineTotal, 1500)
-      assert.equal(created.total, 1575, 'total is rebuilt from catalog price and catalog tax rate')
+      assert.equal(created.total, 1500, 'total is rebuilt from catalog price')
 
       const customer = await db.execute(sql`SELECT customer_id FROM orders WHERE id = ${orderId}`)
       customerId = Number((customer.rows[0] as { customer_id: number }).customer_id)
@@ -597,7 +593,7 @@ describe('Database integrity (requires TEST_DATABASE_URL)', () => {
       await db.execute(sql`UPDATE products SET price = ${2000} WHERE id = ${productId}`)
       const reloaded = await orderStore.getById(orderId)
       assert.equal(reloaded?.items[0].priceNum, 1500, 'historical order items keep their snapshot price')
-      assert.equal(reloaded?.total, 1575)
+      assert.equal(reloaded?.total, 1500)
     } finally {
       if (orderId !== null) {
         await db.execute(sql`DELETE FROM inventory_movements WHERE order_id = ${orderId}`)

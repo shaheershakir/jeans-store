@@ -109,7 +109,7 @@ async function calculateCheckout(
 ): Promise<
   Pick<
     CalculatedOrder,
-    "items" | "subtotal" | "discountTotal" | "shipping" | "taxTotal" | "total"
+    "items" | "subtotal" | "discountTotal" | "shipping" | "total"
   > & {
     weightGrams: number;
     deliveryEstimation: ReturnType<typeof getDeliveryEstimation>;
@@ -201,7 +201,6 @@ async function calculateCheckout(
       img: lineImg,
       categoryId: product.categoryId,
       isFreeSize: Boolean(product.isFreeSize),
-      taxRate: product.taxRate ?? 0,
       variantLabel,
       designId: variant.designId ?? undefined,
       designName,
@@ -259,10 +258,7 @@ async function calculateCheckout(
     weightGrams: line.weightGrams,
     img: line.img,
     lineTotal: line.lineTotal,
-    taxRate: line.taxRate,
-    taxAmount: line.taxAmount,
     discountAmount: line.discountAmount,
-    taxableAmount: line.taxableAmount,
     variantLabel: line.variantLabel,
     categoryId: line.categoryId,
     isFreeSize: Boolean(line.isFreeSize),
@@ -273,7 +269,6 @@ async function calculateCheckout(
     subtotal: pricing.subtotal,
     discountTotal: pricing.discountTotal,
     shipping: pricing.shipping,
-    taxTotal: pricing.taxTotal,
     total: pricing.total,
     weightGrams: pricing.weightGrams,
     deliveryEstimation,
@@ -336,7 +331,6 @@ orderRouter.post("/api/orders/quote", async (req: Request, res: Response) => {
       subtotal: quote.subtotal,
       discountTotal: quote.discountTotal,
       shipping: quote.shipping,
-      taxTotal: quote.taxTotal,
       total: quote.total,
       weightGrams: quote.weightGrams,
       deliveryEstimation: quote.deliveryEstimation,
@@ -383,7 +377,6 @@ orderRouter.post(
         discountTotal: quote.discountTotal,
         subtotal: quote.subtotal,
         shipping: quote.shipping,
-        taxTotal: quote.taxTotal,
         total: quote.total,
       });
     } catch (err) {
@@ -431,7 +424,6 @@ orderRouter.post(
         notes: {
           orderNumber,
           shipping: String(quote.shipping),
-          taxTotal: String(quote.taxTotal),
           discountTotal: String(quote.discountTotal),
           weightGrams: String(quote.weightGrams),
           customerName: customerName || "",
@@ -497,7 +489,6 @@ orderRouter.post(
         subtotal: quote.subtotal,
         discountTotal: quote.discountTotal,
         shipping: quote.shipping,
-        taxTotal: quote.taxTotal,
         total: quote.total,
       });
     } catch (err: unknown) {

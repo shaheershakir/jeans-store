@@ -41,9 +41,7 @@ export interface Variant {
   price?: number
   stock: number
   reserved: number
-  reorderPoint?: number
   weight: number
-  barcode?: string
   status: 'Active' | 'Inactive'
 }
 
@@ -71,22 +69,13 @@ export interface Product {
   weightGrams?: number
   compareAtPrice?: number | null
   costPrice?: number | null
-  taxRate?: number
-  hsnCode?: string
   isFeatured?: boolean
   isFreeSize?: boolean
   trackInventory?: boolean
   continueSelling?: boolean
-  lengthCm?: number | null
-  widthCm?: number | null
-  heightCm?: number | null
-  seoTitle?: string
-  seoDescription?: string
-  careInstructions?: string
   img: string
   img2: string
   images?: string[]
-  badge?: string
   desc: string
   color?: string
   sizes?: string[]
@@ -98,7 +87,6 @@ export interface Product {
   inStock?: boolean
   collection?: string
   categoryId?: number
-  collectionId?: number | null
   slug?: string
   status?: string
   attributes?: Record<string, unknown>
@@ -121,9 +109,6 @@ export interface OrderItem {
   img?: string
   lineTotal?: number
   discountAmount?: number
-  taxRate?: number
-  taxAmount?: number
-  taxableAmount?: number
   variantLabel?: string
 }
 
@@ -145,7 +130,6 @@ export interface Order {
   subtotal: number
   discountTotal?: number
   shipping: number
-  taxTotal?: number
   total: number
   weightGrams?: number
   couponCode?: string
@@ -183,7 +167,6 @@ export interface CreateOrderInput {
   subtotal: number
   discountTotal?: number
   shipping: number
-  taxTotal?: number
   total: number
   weightGrams?: number
   couponCode?: string
@@ -204,7 +187,6 @@ export interface UserProfile {
   name: string
   provider: string
   googleSub?: string | null
-  onboardingCompleted?: boolean
   createdAt: Date | string
 }
 

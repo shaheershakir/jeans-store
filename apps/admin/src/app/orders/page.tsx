@@ -1211,7 +1211,6 @@ export default function OrdersPage() {
         subtotal: item.total,
         discount: 0,
         shippingFee: 0,
-        tax: 0,
         total: item.total,
         paymentMethod: (item.paymentMethod as any) || 'Razorpay',
         paymentStatus: (item.paymentStatus as any) || 'Paid',

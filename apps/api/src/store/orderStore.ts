@@ -81,6 +81,10 @@ function toOrder(
       img = (item as any).imageUrl ?? undefined;
     }
 
+    const variantLabel = [item.designName ?? item.color, item.size]
+      .filter(Boolean)
+      .join(" / ");
+
     return {
       id: item.productId ?? "",
       variantId: item.variantId ?? undefined,
@@ -94,10 +98,7 @@ function toOrder(
       img,
       lineTotal: item.lineTotal,
       discountAmount: item.discountAmount,
-      taxRate: item.taxRate,
-      taxAmount: item.taxAmount,
-      taxableAmount: item.taxableAmount,
-      variantLabel: item.variantLabel ?? undefined,
+      variantLabel,
       designId: item.designId ?? undefined,
       designName: item.designName ?? undefined,
     };
@@ -141,10 +142,8 @@ function toOrder(
     subtotal: row.subtotal,
     discountTotal: row.discountTotal,
     shipping: row.shipping,
-    taxTotal: row.taxTotal,
     total: row.total,
     weightGrams: row.weightGrams,
-    couponCode: row.couponCode ?? undefined,
     status: row.status,
     paymentStatus: row.paymentStatus as Order["paymentStatus"],
     handoffType: row.handoffType as Order["handoffType"],
@@ -650,7 +649,6 @@ class OrderStore {
         isFreeSize: Boolean(row.is_free_size),
         trackInventory: row.track_inventory !== false,
         continueSelling: Boolean(row.continue_selling),
-        taxRate: Number(row.tax_rate ?? 0),
         variantLabel,
       };
     });
@@ -672,7 +670,6 @@ class OrderStore {
         const catalogLines = await this.loadCatalogLines(executor, input.items);
 
         let couponId: number | null = null;
-        let couponCode: string | null = null;
         let discount = 0;
         if (input.couponCode) {
           try {
@@ -691,7 +688,6 @@ class OrderStore {
               forUpdate: true,
             });
             couponId = resolved.coupon.id;
-            couponCode = resolved.code;
             discount = resolved.discount;
           } catch (error) {
             if (error instanceof CouponError) throw error;
@@ -721,7 +717,6 @@ class OrderStore {
             isFreeSize: line.isFreeSize,
             trackInventory: line.trackInventory,
             continueSelling: line.continueSelling,
-            taxRate: line.taxRate,
             variantLabel: line.variantLabel,
           })),
           { discount, shipping: input.shipping },
@@ -753,11 +748,9 @@ class OrderStore {
             subtotal: pricing.subtotal,
             discountTotal: pricing.discountTotal,
             shipping: pricing.shipping,
-            taxTotal: pricing.taxTotal,
             total: pricing.total,
             weightGrams: pricing.weightGrams,
             couponId,
-            couponCode,
             status,
             paymentStatus,
             handoffType: input.handoffType,
@@ -779,10 +772,6 @@ class OrderStore {
             quantity: line.quantity,
             lineTotal: line.lineTotal,
             discountAmount: line.discountAmount,
-            taxableAmount: line.taxableAmount,
-            taxRate: line.taxRate,
-            taxAmount: line.taxAmount,
-            variantLabel: line.variantLabel || null,
             weightGrams: line.weightGrams,
             imageKey: line.img ?? null,
           });
@@ -928,7 +917,6 @@ class OrderStore {
         unitPrice: item.priceNum,
         weightGrams: item.weightGrams ?? 0,
         img: item.img,
-        taxRate: item.taxRate,
         variantLabel: item.variantLabel,
       })),
       { shipping: input.shipping },
@@ -948,9 +936,6 @@ class OrderStore {
       img: line.img,
       lineTotal: line.lineTotal,
       discountAmount: line.discountAmount,
-      taxRate: line.taxRate,
-      taxAmount: line.taxAmount,
-      taxableAmount: line.taxableAmount,
       variantLabel: line.variantLabel,
     }));
     const order: Order = {
@@ -961,7 +946,6 @@ class OrderStore {
       subtotal: priced.subtotal,
       discountTotal: priced.discountTotal,
       shipping: priced.shipping,
-      taxTotal: priced.taxTotal,
       total: priced.total,
       weightGrams: priced.weightGrams,
       store: input.store || "teesgarage",

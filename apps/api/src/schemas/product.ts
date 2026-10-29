@@ -31,9 +31,7 @@ export const variantSchema = z.object({
   price: z.number().nonnegative().optional(),
   stock: z.number().int().nonnegative().default(0),
   reserved: z.number().int().nonnegative().default(0),
-  reorderPoint: z.number().int().nonnegative().default(5).optional(),
   weight: z.number().int().positive().max(100_000).default(350),
-  barcode: z.string().optional(),
   status: z.enum(['Active', 'Inactive']).default('Active')
 })
 
@@ -61,7 +59,6 @@ export const productSchema = z.object({
   store: z.string().default('teesgarage'),
   category: z.string().min(1).default('printed-tees'),
   categoryId: z.number().int().optional(),
-  collectionId: z.number().int().positive().nullable().optional(),
   collectionIds: z.array(z.number().int().positive()).optional(),
   tags: z.array(z.string().min(1)).optional(),
   slug: z.string().optional(),
@@ -73,24 +70,15 @@ export const productSchema = z.object({
   price: z.string().min(1),
   priceNum: z.number().nonnegative(),
   weightGrams: z.number().int().positive().max(100_000).optional(),
-  lengthCm: z.number().positive().nullable().optional(),
-  widthCm: z.number().positive().nullable().optional(),
-  heightCm: z.number().positive().nullable().optional(),
-  seoTitle: z.string().max(70).optional(),
-  seoDescription: z.string().max(170).optional(),
   compareAtPrice: z.number().int().nonnegative().nullable().optional(),
   costPrice: z.number().int().nonnegative().nullable().optional(),
-  taxRate: z.number().min(0).max(1).optional(),
-  hsnCode: z.string().max(12).optional(),
   isFeatured: z.boolean().optional(),
   isFreeSize: z.boolean().optional(),
   trackInventory: z.boolean().default(true).optional(),
   continueSelling: z.boolean().default(false).optional(),
-  careInstructions: z.string().optional(),
   img: z.string().url(),
   img2: z.string().url(),
   images: z.array(z.string()).optional(),
-  badge: z.string().min(1).optional(),
   desc: z.string().min(1),
   color: z.string().optional(),
   sizes: z.array(z.string()).optional(),
@@ -112,4 +100,3 @@ export const updateProductSchema = productSchema
 export type Product = z.infer<typeof productSchema>
 export type CreateProduct = z.infer<typeof createProductSchema>
 export type UpdateProduct = z.infer<typeof updateProductSchema>
-

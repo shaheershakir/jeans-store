@@ -4,7 +4,6 @@ import {
   categories,
   products,
   productVariants,
-  roles,
   storeSettings
 } from '@jeans-store/db'
 import { PRODUCTS } from '../data/products.js'
@@ -26,57 +25,6 @@ const CATEGORY_SEED = [
   { slug: 'sweatpants', name: 'Sweatpants', description: 'Heavyweight fleece sweatpants with a clean silhouette.', sortOrder: 9 }
 ]
 
-const ROLE_SEED = [
-  {
-    name: 'Owner',
-    description: 'Full access to every admin domain and setting.',
-    permissions: ['*']
-  },
-  {
-    name: 'Administrator',
-    description: 'Manage catalog, orders, customers, marketing and operations.',
-    permissions: [
-      'products:read',
-      'products:write',
-      'orders:read',
-      'orders:write',
-      'customers:read',
-      'customers:write',
-      'marketing:read',
-      'marketing:write',
-      'inventory:read',
-      'inventory:write',
-      'settings:read',
-      'settings:write'
-    ]
-  },
-  {
-    name: 'Catalog Manager',
-    description: 'Manage products, variants, collections and inventory.',
-    permissions: ['products:read', 'products:write', 'inventory:read', 'inventory:write']
-  },
-  {
-    name: 'Order Manager',
-    description: 'Manage orders, shipments, returns and refunds.',
-    permissions: ['orders:read', 'orders:write', 'customers:read']
-  },
-  {
-    name: 'Support',
-    description: 'View orders and respond to customer reviews.',
-    permissions: ['orders:read', 'customers:read', 'reviews:read', 'reviews:write']
-  },
-  {
-    name: 'Analyst',
-    description: 'Read-only access to catalog, orders and operations data.',
-    permissions: ['products:read', 'orders:read', 'customers:read', 'inventory:read', 'marketing:read']
-  },
-  {
-    name: 'Viewer',
-    description: 'Read-only dashboard access.',
-    permissions: ['products:read', 'orders:read']
-  }
-]
-
 export async function seedIfEmpty(): Promise<boolean> {
   if (!isDatabaseConfigured() || !db) {
     return false
@@ -90,9 +38,6 @@ export async function seedIfEmpty(): Promise<boolean> {
   console.log(`Seeding ${CATEGORY_SEED.length} categories...`)
   await db.insert(categories).values(CATEGORY_SEED).onConflictDoNothing()
 
-  console.log(`Seeding ${ROLE_SEED.length} admin roles...`)
-  await db.insert(roles).values(ROLE_SEED).onConflictDoNothing()
-
   console.log('Seeding store settings...')
   await db
     .insert(storeSettings)
@@ -103,15 +48,7 @@ export async function seedIfEmpty(): Promise<boolean> {
       supportPhone: '+91 98765 43210',
       address: 'Kochi, Kerala, India',
       currency: 'INR',
-      taxRate: 0,
-      orderPrefix: 'TG',
-      returnWindowDays: 7,
-      cancellationAllowedAfter: 'Processing',
-      defaultShippingMethod: 'Standard',
-      notifyEmail: true,
-      notifyOrderUpdates: true,
-      notifyInventoryAlerts: true,
-      notifyReviewAlerts: true
+      orderPrefix: 'TG'
     })
     .onConflictDoNothing({ target: storeSettings.id })
 
@@ -140,9 +77,6 @@ export async function seedIfEmpty(): Promise<boolean> {
   )
   await db.execute(
     sql`SELECT setval(pg_get_serial_sequence('product_variants', 'id'), COALESCE((SELECT MAX(id) FROM product_variants), 1), true)`
-  )
-  await db.execute(
-    sql`SELECT setval(pg_get_serial_sequence('roles', 'id'), COALESCE((SELECT MAX(id) FROM roles), 1), true)`
   )
 
   console.log('Database seeded successfully.')

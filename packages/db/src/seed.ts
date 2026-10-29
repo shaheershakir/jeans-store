@@ -1,5 +1,5 @@
 import { db, isDatabaseConfigured } from './index.js'
-import { categories, roles, storeSettings } from './schema.js'
+import { categories, storeSettings } from './schema.js'
 
 const CATEGORY_SEED = [
   { slug: 'stripes', name: 'Stripes', description: 'Breton, micro and block striped heavyweight tees.', sortOrder: 1 },
@@ -13,57 +13,6 @@ const CATEGORY_SEED = [
   { slug: 'sweatpants', name: 'Sweatpants', description: 'Heavyweight fleece sweatpants with a clean silhouette.', sortOrder: 9 }
 ]
 
-const ROLE_SEED = [
-  {
-    name: 'Owner',
-    description: 'Full access to every admin domain and setting.',
-    permissions: ['*']
-  },
-  {
-    name: 'Administrator',
-    description: 'Manage catalog, orders, customers, marketing and operations.',
-    permissions: [
-      'products:read',
-      'products:write',
-      'orders:read',
-      'orders:write',
-      'customers:read',
-      'customers:write',
-      'marketing:read',
-      'marketing:write',
-      'inventory:read',
-      'inventory:write',
-      'settings:read',
-      'settings:write'
-    ]
-  },
-  {
-    name: 'Catalog Manager',
-    description: 'Manage products, variants, collections and inventory.',
-    permissions: ['products:read', 'products:write', 'inventory:read', 'inventory:write']
-  },
-  {
-    name: 'Order Manager',
-    description: 'Manage orders, shipments, returns and refunds.',
-    permissions: ['orders:read', 'orders:write', 'customers:read']
-  },
-  {
-    name: 'Support',
-    description: 'View orders and respond to customer reviews.',
-    permissions: ['orders:read', 'customers:read', 'reviews:read', 'reviews:write']
-  },
-  {
-    name: 'Analyst',
-    description: 'Read-only access to catalog, orders and operations data.',
-    permissions: ['products:read', 'orders:read', 'customers:read', 'inventory:read', 'marketing:read']
-  },
-  {
-    name: 'Viewer',
-    description: 'Read-only dashboard access.',
-    permissions: ['products:read', 'orders:read']
-  }
-]
-
 /**
  * Seeds the reference/configuration tables only. The canonical product seed
  * lives in apps/api/src/db/seed.ts because it imports the source catalog.
@@ -74,7 +23,6 @@ export async function seedIfEmpty(): Promise<boolean> {
   }
 
   await db.insert(categories).values(CATEGORY_SEED).onConflictDoNothing({ target: categories.slug })
-  await db.insert(roles).values(ROLE_SEED).onConflictDoNothing({ target: roles.name })
   await db
     .insert(storeSettings)
     .values({
@@ -84,11 +32,7 @@ export async function seedIfEmpty(): Promise<boolean> {
       supportPhone: '+91 98765 43210',
       address: 'Kochi, Kerala, India',
       currency: 'INR',
-      taxRate: 0,
-      orderPrefix: 'TG',
-      returnWindowDays: 7,
-      cancellationAllowedAfter: 'Processing',
-      defaultShippingMethod: 'Standard'
+      orderPrefix: 'TG'
     })
     .onConflictDoNothing({ target: storeSettings.id })
 

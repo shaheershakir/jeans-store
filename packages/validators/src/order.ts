@@ -14,10 +14,7 @@ export const orderItemSchema = z.object({
   weightGrams: z.number().int().nonnegative().optional(),
   img: z.string().optional(),
   lineTotal: z.number().int().nonnegative().optional(),
-  taxRate: z.number().min(0).max(1).optional(),
-  taxAmount: z.number().int().nonnegative().optional(),
   discountAmount: z.number().int().nonnegative().optional(),
-  taxableAmount: z.number().int().nonnegative().optional(),
   variantLabel: z.string().optional(),
 });
 
@@ -38,7 +35,6 @@ export const createOrderSchema = z.object({
   subtotal: z.number().nonnegative(),
   discountTotal: z.number().nonnegative().optional(),
   shipping: z.number().nonnegative(),
-  taxTotal: z.number().nonnegative().optional(),
   total: z.number().nonnegative(),
   weightGrams: z.number().int().nonnegative().optional(),
   couponCode: z.string().trim().min(1).max(60).optional(),

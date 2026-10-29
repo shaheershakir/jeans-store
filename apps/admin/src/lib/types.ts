@@ -69,7 +69,6 @@ export interface Product {
   shortDescription?: string
   brand?: string
   categoryId: number
-  collectionId: number
   collectionIds?: number[]
   tags?: string[]
   fit?: Fit
@@ -82,18 +81,12 @@ export interface Product {
   price: number
   compareAtPrice: number | null
   costPrice: number
-  taxRate: number
   status: ProductStatus
   featured: boolean
   isFreeSize?: boolean
   trackInventory?: boolean
   continueSelling?: boolean
   weightGrams?: number
-  lengthCm?: number | null
-  widthCm?: number | null
-  heightCm?: number | null
-  seoTitle?: string
-  seoDescription?: string
   views: number
   wishlists: number
   image: string
@@ -121,9 +114,7 @@ export interface Variant {
   price: number
   stock: number
   reserved: number
-  reorderPoint: number
   weight: number
-  barcode: string
   status: 'Active' | 'Inactive'
 }
 
@@ -133,7 +124,6 @@ export interface Category {
   name: string
   slug: string
   description: string
-  parentId: number | null
 }
 
 export interface Collection {
@@ -205,7 +195,6 @@ export interface Order {
   subtotal: number
   discount: number
   shippingFee: number
-  tax: number
   total: number
   paymentMethod: PaymentMethod
   paymentStatus: PaymentStatus
@@ -445,17 +434,7 @@ export interface StoreSettings {
   supportPhone: string
   address: string
   currency: string
-  taxRate: number
   orderPrefix: string
-  returnWindowDays: number
-  cancellationAllowedAfter: string
-  defaultShippingMethod: string
-  notify: {
-    email: boolean
-    orderUpdates: boolean
-    inventoryAlerts: boolean
-    reviewAlerts: boolean
-  }
 }
 
 export type MovementType = 'PURCHASE' | 'SALE' | 'ADJUSTMENT' | 'RETURN' | 'RESERVATION' | 'RELEASE'

@@ -45,7 +45,6 @@ export async function createRefund(input: {
   amount: number
   reason?: string
   method?: string
-  returnId?: number | null
   gatewayRefundId?: string | null
   idempotencyKey?: string | null
   actorName?: string
@@ -112,10 +111,10 @@ export async function createRefund(input: {
 
     const inserted = await executor.execute(sql`
       INSERT INTO refunds
-        (number, order_id, return_id, customer_id, payment_id, amount, reason, method, status,
+        (number, order_id, customer_id, payment_id, amount, reason, method, status,
          gateway_refund_id, idempotency_key, created_at, updated_at)
       VALUES
-        (${number}, ${input.orderId}, ${input.returnId ?? null}, ${order.customer_id},
+        (${number}, ${input.orderId}, ${order.customer_id},
          ${payment ? Number(payment.id) : null}, ${amount}, ${input.reason ?? null},
          ${input.method ?? 'Manual'}, 'Pending', ${input.gatewayRefundId ?? null},
          ${input.idempotencyKey ?? null}, now(), now())

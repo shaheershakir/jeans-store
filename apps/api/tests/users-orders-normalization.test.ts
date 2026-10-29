@@ -30,7 +30,7 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
   }
 
   describe('User Store & Auth Endpoints', () => {
-    test('userStore supports googleSub and onboardingCompletedAt', async () => {
+    test('userStore supports googleSub', async () => {
       const email = `test-user-${Date.now()}@example.com`
       const googleSub = `googlesub-${Date.now()}`
 
@@ -43,20 +43,14 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
 
       assert.equal(created.email, email.toLowerCase())
       assert.equal(created.googleSub, googleSub)
-      assert.equal(created.onboardingCompletedAt, null)
 
       // Query by google sub
       const foundByGoogle = await userStore.findByGoogleSub(googleSub)
       assert.ok(foundByGoogle)
       assert.equal(foundByGoogle.id, created.id)
-
-      // Complete onboarding
-      const completed = await userStore.completeOnboarding(created.id)
-      assert.ok(completed)
-      assert.ok(completed.onboardingCompletedAt instanceof Date)
     })
 
-    test('POST /api/auth/onboarding/complete requires auth and marks onboarding complete', async () => {
+    test('POST /api/auth/onboarding/complete requires auth and succeeds', async () => {
       // 1. Without auth -> 401
       const unauthRes = await request(app).post('/api/auth/onboarding/complete')
       assert.equal(unauthRes.status, 401)
@@ -82,16 +76,6 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
 
       assert.equal(res.status, 200)
       assert.equal(res.body.success, true)
-      assert.equal(res.body.onboardingCompleted, true)
-      assert.equal(res.body.user.onboardingCompleted, true)
-
-      // 4. Verify /api/auth/me also reflects onboardingCompleted: true
-      const meRes = await request(app)
-        .get('/api/auth/me')
-        .set('Authorization', `Bearer ${token}`)
-
-      assert.equal(meRes.status, 200)
-      assert.equal(meRes.body.user.onboardingCompleted, true)
     })
   })
 

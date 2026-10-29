@@ -92,6 +92,13 @@
       "when": 1793234681413,
       "tag": "0012_product_designs_and_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793268800000,
+      "tag": "0013_prune_tax_and_redundant",
+      "breakpoints": true
     }
   ]
 }

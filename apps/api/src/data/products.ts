@@ -28,7 +28,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       '/mock-assets/pdp/like_high_3.png'
     ],
-    badge: 'Bestseller',
     desc: '260 GSM combed cotton featuring traditional Breton nautical stripes, sturdy 1.25" ribbed collar, and relaxed drop-shoulder drape.',
     color: 'Navy',
     sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
@@ -48,7 +47,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'New',
     desc: 'Fine gauge horizontal micro-stripes knit from yarn-dyed ring-spun cotton. Pre-shrunk with a soft vintage silicone wash.',
     color: 'Black',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -93,7 +91,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
       '/mock-assets/pdp/gallery_4.png',
       '/mock-assets/pdp/gallery_5.png'
     ],
-    badge: 'Essential',
     desc: 'Heavyweight 320 GSM honeycomb waffle knit providing natural warmth, stretch recovery, and ribbed storm cuffs.',
     color: 'Charcoal',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -113,7 +110,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       '/mock-assets/pdp/like_high_1.png'
     ],
-    badge: 'Core',
     desc: 'Clean, dense 260 GSM single jersey full sleeve tee with thick 1.25" neck ribbing and tapered wrist cuffs.',
     color: 'Black',
     sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
@@ -154,7 +150,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'Bestseller',
     desc: 'Dropped shoulder seams with elbow-length sleeves, wide boxy body, and subtle raw-edge bottom hem details.',
     color: 'Grey',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -174,7 +169,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'Hot',
     desc: 'Ultra-relaxed drape with extended 12" drop shoulder sleeves, tight mock neck ribbing, and 260 GSM combed cotton.',
     color: 'Grey',
     sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
@@ -215,7 +209,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       '/mock-assets/pdp/like_high_2.png'
     ],
-    badge: 'Trending',
     desc: 'High-density puff screen print featuring distressed garage typography and cyber automotive mechanics graphics.',
     color: 'Black',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -254,7 +247,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'New',
     desc: 'Heritage motor club back graphic with subtle front chest crest, enzyme washed for an authentic vintage soft-hand feel.',
     color: 'Red',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -276,7 +268,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1503342394128-c104d54dba01?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'Classic',
     desc: 'Timeless retro ringer silhouette with contrast 1" binding along neck and sleeve cuffs. 100% fine combed cotton.',
     color: 'White',
     sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
@@ -296,7 +287,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'New',
     desc: 'Vintage varsity styling with heavyweight two-tone ribbing and an engineered tailored drape.',
     color: 'Green',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -337,7 +327,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'Bestseller',
     desc: 'Authentic 3-button placket featuring real corozo nut buttons, slub texture, and durable flatlock seam detailing.',
     color: 'Grey',
     sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
@@ -357,7 +346,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'Warm',
     desc: 'Heavyweight 280 GSM cotton jersey with garment mineral wash, double-layer front placket, and raw-cut hem finish.',
     color: 'Black',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -398,7 +386,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'Hot',
     desc: 'Durable nylon-cotton blend trackpants with dual bellowed cargo pockets, bungee adjustable ankle toggles, and elastic drawcord waistband.',
     color: 'Black',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -418,7 +405,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'Classic',
     desc: 'Classic poly-tricot trackpants with contrast side seam piping, zippered hand pockets, and zippered leg gussets for clean sneaker stacking.',
     color: 'Navy',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -438,7 +424,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'New',
     desc: 'Wide skate-inspired volume cut from crinkled matte taslan nylon with breathable mesh lining and articulated knee darting.',
     color: 'Grey',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -460,7 +445,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'Heavyweight',
     desc: 'Ultra-heavy 450 GSM combed cotton French terry with thick elastic waistband, hidden drawstrings, and deep slash pockets.',
     color: 'Black',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -480,7 +464,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       '/mock-assets/pdp/like_high_4.png'
     ],
-    badge: 'Essential',
     desc: 'Enzyme sun-faded wash on fleece back jersey with ribbed ankle cuffs and heavy cotton flat-braided drawcords.',
     color: 'Beige',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
@@ -500,7 +483,6 @@ const SEED_PRODUCTS: Array<Omit<Product, 'id'> & { id: number }> = [
     images: [
       'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80'
     ],
-    badge: 'New',
     desc: 'Relaxed open bottom hem designed to stack cleanly over sneakers, crafted from 400 GSM brushed organic fleece.',
     color: 'Grey',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],

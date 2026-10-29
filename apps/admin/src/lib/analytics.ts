@@ -371,7 +371,7 @@ export function inventoryAlerts(data: DbState): { low: StockAlert[]; out: StockA
   for (const product of data.products) {
     if (product.status === 'Archived') continue
     for (const variant of product.variants) {
-      const status = variant.stock <= 0 ? 'Out of Stock' : variant.stock <= variant.reorderPoint ? 'Low Stock' : 'Healthy'
+      const status = variant.stock <= 0 ? 'Out of Stock' : variant.stock <= 5 ? 'Low Stock' : 'Healthy'
       if (status === 'Out of Stock') out.push({ product, variant, daysLeft: null })
       else if (status === 'Low Stock') low.push({ product, variant, daysLeft: null })
     }
@@ -387,7 +387,7 @@ export function inventoryAlerts(data: DbState): { low: StockAlert[]; out: StockA
     for (const variant of product.variants) {
       if (variant.stock === 0) continue
       const rate = (soldByVariant.get(variant.id) ?? 0) / 30
-      if (rate > 0 && variant.stock > variant.reorderPoint && variant.stock / rate < 14) {
+      if (rate > 0 && variant.stock > 5 && variant.stock / rate < 14) {
         predicted.push({ product, variant, daysLeft: variant.stock / rate })
       }
     }

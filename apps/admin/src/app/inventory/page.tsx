@@ -50,7 +50,7 @@ export default function InventoryPage() {
       product.variants.map((v) => {
         let stockStatus: StockStatus = 'Healthy'
         if (v.stock === 0) stockStatus = 'Out of Stock'
-        else if (v.stock <= v.reorderPoint) stockStatus = 'Low Stock'
+        else if (v.stock <= 5) stockStatus = 'Low Stock'
 
         return {
           ...v,
@@ -70,12 +70,11 @@ export default function InventoryPage() {
       const matchesQuery =
         !q ||
         v.productName.toLowerCase().includes(q) ||
-        (v.sku && v.sku.toLowerCase().includes(q)) ||
-        (v.barcode && v.barcode.toLowerCase().includes(q))
+        (v.sku && v.sku.toLowerCase().includes(q))
 
       const matchesStatus =
         filterStatus === 'all' ||
-        (filterStatus === 'low' && v.stock <= v.reorderPoint) ||
+        (filterStatus === 'low' && v.stock <= 5) ||
         (filterStatus === 'out' && v.stock === 0)
 
       return matchesQuery && matchesStatus
@@ -212,11 +211,10 @@ export default function InventoryPage() {
               <thead className="border-b border-divider bg-surface-subtle text-ink-3">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Product & Fit</th>
-                  <th className="px-4 py-3 font-semibold">SKU / Barcode</th>
+                  <th className="px-4 py-3 font-semibold">SKU</th>
                   <th className="px-4 py-3 font-semibold">Size & Color</th>
                   <th className="px-4 py-3 font-semibold text-center">Available</th>
                   <th className="px-4 py-3 font-semibold text-center">Reserved</th>
-                  <th className="px-4 py-3 font-semibold text-center">Reorder Point</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold text-right">Quick Adjust</th>
                 </tr>
@@ -224,7 +222,7 @@ export default function InventoryPage() {
               <tbody className="divide-y divide-divider">
                 {filteredVariants.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-ink-3">
+                    <td colSpan={7} className="py-8 text-center text-ink-3">
                       No inventory variants found matching criteria.
                     </td>
                   </tr>
@@ -250,7 +248,6 @@ export default function InventoryPage() {
                       </td>
                       <td className="px-4 py-3 font-mono text-ink-2">
                         {v.sku}
-                        <span className="block text-[10px] text-ink-4 font-sans">{v.barcode}</span>
                       </td>
                       <td className="px-4 py-3 text-ink">
                         {typeof v.size === 'number' || /^\d+$/.test(String(v.size)) ? `W${v.size}` : v.size} &bull; {v.color}
@@ -260,9 +257,6 @@ export default function InventoryPage() {
                       </td>
                       <td className="px-4 py-3 text-center tnum text-ink-3">
                         {v.reserved}
-                      </td>
-                      <td className="px-4 py-3 text-center tnum text-ink-3">
-                        {v.reorderPoint}
                       </td>
                       <td className="px-4 py-3">
                         <StockBadge status={v.stockStatus} />

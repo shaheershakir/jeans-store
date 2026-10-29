@@ -11,7 +11,6 @@ export interface CreateUserInput {
   uid?: string
   provider?: string
   googleSub?: string
-  onboardingCompletedAt?: Date
 }
 
 class UserStore {
@@ -23,7 +22,6 @@ class UserStore {
     const passwordHash = input.password ? hashPassword(input.password) : null
     const provider = input.provider || 'cloud-iam'
     const googleSub = input.googleSub ?? null
-    const onboardingCompletedAt = input.onboardingCompletedAt ?? null
 
     if (isDatabaseConfigured() && db) {
       const [row] = await db
@@ -34,8 +32,7 @@ class UserStore {
           name: input.name.trim(),
           passwordHash,
           provider,
-          googleSub,
-          onboardingCompletedAt
+          googleSub
         })
         .returning()
       return row
@@ -49,7 +46,6 @@ class UserStore {
       passwordHash,
       provider,
       googleSub,
-      onboardingCompletedAt,
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -117,14 +113,13 @@ class UserStore {
     if (isDatabaseConfigured() && db) {
       const [row] = await db
         .update(usersTable)
-        .set({ onboardingCompletedAt: now, updatedAt: now })
+        .set({ updatedAt: now })
         .where(eq(usersTable.id, id))
         .returning()
       return row
     }
     const user = this.memoryUsers.find((u) => u.id === id)
     if (user) {
-      user.onboardingCompletedAt = now
       user.updatedAt = now
     }
     return user

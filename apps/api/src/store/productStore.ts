@@ -174,18 +174,13 @@ function variantFromRow(row: DbProductVariant, product?: DbProduct): Variant {
     price: row.price ?? product?.price,
     stock: row.stock,
     reserved: row.reserved,
-    reorderPoint: row.reorderPoint,
     weight: row.weightGrams ?? product?.weightGrams ?? 350,
-    barcode: row.barcode ?? undefined,
     status: (row.status as 'Active' | 'Inactive') || 'Active'
   }
 }
 
-function attributesFromRow(row: DbProduct): Record<string, unknown> {
-  const entries: Record<string, unknown> = {
-    careInstructions: row.careInstructions
-  }
-  return Object.fromEntries(Object.entries(entries).filter(([, value]) => value !== null && value !== undefined))
+function attributesFromRow(_row: DbProduct): Record<string, unknown> {
+  return {}
 }
 
 export function toProduct(
@@ -223,24 +218,16 @@ export function toProduct(
   const firstVariant = variants[0]
   const adminData: Record<string, unknown> = {
     status: adminStatus(normalizeStatus(row.status)),
-    collectionId: row.collectionId,
-    collectionIds: collectionIds.length > 0 ? collectionIds : (row.collectionId ? [row.collectionId] : []),
+    collectionIds: collectionIds.length > 0 ? collectionIds : [],
     tags,
     weightGrams: row.weightGrams,
-    lengthCm: row.lengthCm,
-    widthCm: row.widthCm,
-    heightCm: row.heightCm,
     trackInventory: row.trackInventory,
     continueSelling: row.continueSelling,
-    seoTitle: row.seoTitle,
-    seoDescription: row.seoDescription,
     shortDescription: row.shortDescription,
     isFeatured: row.isFeatured,
     isFreeSize: row.isFreeSize,
     compareAtPrice: row.compareAtPrice,
     costPrice: row.costPrice,
-    taxRate: row.taxRate,
-    hsnCode: row.hsnCode,
     ratingAverage: row.ratingAverage,
     reviewCount: row.reviewCount
   }
@@ -250,8 +237,7 @@ export function toProduct(
     store: 'teesgarage' as StoreType,
     category: categorySlug as Category,
     categoryId: row.categoryId,
-    collectionId: row.collectionId ?? undefined,
-    collectionIds: collectionIds.length > 0 ? collectionIds : (row.collectionId ? [row.collectionId] : undefined),
+    collectionIds: collectionIds.length > 0 ? collectionIds : undefined,
     tags: tags.length > 0 ? tags : undefined,
     slug: row.slug,
     status: normalizeStatus(row.status),
@@ -261,25 +247,16 @@ export function toProduct(
     price: `₹${row.price.toLocaleString('en-IN')}`,
     priceNum: row.price,
     weightGrams: row.weightGrams,
-    lengthCm: row.lengthCm ?? undefined,
-    widthCm: row.widthCm ?? undefined,
-    heightCm: row.heightCm ?? undefined,
     trackInventory: row.trackInventory ?? true,
     continueSelling: row.continueSelling ?? false,
-    seoTitle: row.seoTitle ?? undefined,
-    seoDescription: row.seoDescription ?? undefined,
     shortDescription: row.shortDescription ?? undefined,
     compareAtPrice: row.compareAtPrice,
     costPrice: row.costPrice,
-    taxRate: row.taxRate,
-    hsnCode: row.hsnCode ?? undefined,
     isFeatured: row.isFeatured,
     isFreeSize: row.isFreeSize,
-    careInstructions: row.careInstructions ?? undefined,
     img: allUrls[0] ?? FALLBACK_IMAGE,
     img2: allUrls[1] ?? allUrls[0] ?? FALLBACK_IMAGE,
     images: allUrls.length > 0 ? allUrls : undefined,
-    badge: row.badge ?? undefined,
     desc: row.description,
     color: firstVariant?.color,
     sizes: variants.length > 0 ? [...new Set(variants.map((variant) => String(variant.size)))] : undefined,
@@ -301,9 +278,7 @@ interface RawVariantInput {
   price?: number
   stock?: number
   reserved?: number
-  reorderPoint?: number
   weight?: number
-  barcode?: string
   status?: 'Active' | 'Inactive'
 }
 
@@ -316,9 +291,7 @@ interface ReadyVariant {
   price: number
   stock: number
   reserved: number
-  reorderPoint: number
   weight: number
-  barcode: string
   status: 'Active' | 'Inactive'
 }
 
@@ -362,7 +335,6 @@ export class ProductStore {
               id: this.memoryProductImages.length + 1,
               productId: p.id,
               designId: null,
-              color: null,
               storageKey: img.storageKey,
               externalUrl: img.externalUrl,
               position: img.position,
@@ -393,9 +365,7 @@ export class ProductStore {
                 price: p.priceNum,
                 stock: 20,
                 reserved: 0,
-                reorderPoint: 5,
                 weight: p.weightGrams ?? 350,
-                barcode: String(8900000000000 + variantCounter * 1000),
                 status: 'Active' as const
               }
             })
@@ -606,8 +576,7 @@ export class ProductStore {
         conditions.push(
           or(
             ilike(productsTable.name, term),
-            ilike(productsTable.description, term),
-            ilike(productsTable.badge, term)
+            ilike(productsTable.description, term)
           ) as any
         )
       }
@@ -815,34 +784,14 @@ export class ProductStore {
 
   private productColumns(input: CreateProduct, _attributes: Record<string, unknown>, weightGrams: number) {
     const adminData = (input.adminData ?? {}) as Record<string, any>
-    const rawTaxRate = Number(input.taxRate ?? adminData.taxRate ?? 0)
-    const taxRate = Number.isFinite(rawTaxRate)
-      ? Math.min(1, Math.max(0, rawTaxRate > 1 ? rawTaxRate / 100 : rawTaxRate))
-      : 0
     const optionalMoney = (value: unknown): number | null => {
       const parsed = Number(value)
       return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed) : null
     }
-    const optionalDimension = (value: unknown): number | null => {
-      const parsed = Number(value)
-      return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-    }
-    const primaryCollectionId =
-      input.collectionIds?.[0] ??
-      input.collectionId ??
-      adminData.collectionIds?.[0] ??
-      adminData.collectionId ??
-      null
     return {
-      ...(primaryCollectionId !== null && primaryCollectionId !== undefined
-        ? { collectionId: primaryCollectionId }
-        : {}),
       price: Math.max(0, Math.round(Number(input.priceNum) || 0)),
       compareAtPrice: optionalMoney(input.compareAtPrice ?? adminData.compareAtPrice ?? null),
       costPrice: optionalMoney(input.costPrice ?? adminData.costPrice ?? null),
-      taxRate,
-      hsnCode: input.hsnCode ?? adminData.hsnCode ?? null,
-      badge: input.badge ?? null,
       isFeatured: input.isFeatured ?? Boolean(adminData.featured) ?? false,
       isFreeSize: input.isFreeSize ?? Boolean(adminData.isFreeSize),
       weightGrams,
@@ -856,13 +805,7 @@ export class ProductStore {
       continueSelling:
         input.continueSelling !== undefined
           ? Boolean(input.continueSelling)
-          : Boolean(adminData.continueSelling) ?? false,
-      lengthCm: optionalDimension(input.lengthCm ?? adminData.lengthCm),
-      widthCm: optionalDimension(input.widthCm ?? adminData.widthCm),
-      heightCm: optionalDimension(input.heightCm ?? adminData.heightCm),
-      seoTitle: input.seoTitle ?? adminData.seoTitle ?? null,
-      seoDescription: input.seoDescription ?? adminData.seoDescription ?? null,
-      careInstructions: input.careInstructions ?? (adminData.careInstructions as string) ?? null
+          : Boolean(adminData.continueSelling) ?? false
     }
   }
 
@@ -947,7 +890,6 @@ export class ProductStore {
             price: input.priceNum,
             stock: 20,
             reserved: 0,
-            reorderPoint: 5,
             weight: weightGrams,
             status: 'Active' as const
           }))
@@ -969,8 +911,7 @@ export class ProductStore {
         const tags = input.tags ?? ((input.adminData as any)?.tags as string[] | undefined)
         const rawCollectionIds =
           input.collectionIds ??
-          ((input.adminData as any)?.collectionIds as (number | null | undefined)[] | undefined) ??
-          (input.collectionId ? [input.collectionId] : undefined)
+          ((input.adminData as any)?.collectionIds as (number | null | undefined)[] | undefined)
         const collectionIds =
           rawCollectionIds !== undefined
             ? rawCollectionIds.filter(
@@ -1064,9 +1005,7 @@ export class ProductStore {
                   price: price !== input.priceNum ? price : null,
                   stock: Math.max(0, Math.round(Number(v.stock ?? 20))),
                   reserved: 0,
-                  reorderPoint: Math.max(0, Math.round(Number(v.reorderPoint ?? 5))),
                   weightGrams: v.weight && v.weight !== weightGrams ? Math.round(Number(v.weight)) : null,
-                  barcode: v.barcode || null,
                   status: v.status || 'Active'
                 })
                 .returning()
@@ -1087,9 +1026,7 @@ export class ProductStore {
                 price: variant.price !== input.priceNum ? variant.price : null,
                 stock: variant.stock,
                 reserved: variant.reserved,
-                reorderPoint: variant.reorderPoint,
                 weightGrams: variant.weight !== weightGrams ? variant.weight : null,
-                barcode: variant.barcode || null,
                 status: variant.status
               })
               .returning()
@@ -1109,7 +1046,6 @@ export class ProductStore {
           id: this.memoryProductImages.length + 1,
           productId: newProductId,
           designId: null,
-          color: null,
           storageKey: norm.storageKey,
           externalUrl: norm.externalUrl,
           position: norm.position,
@@ -1130,11 +1066,6 @@ export class ProductStore {
         shortDescription: input.shortDescription,
         trackInventory: input.trackInventory ?? true,
         continueSelling: input.continueSelling ?? false,
-        lengthCm: input.lengthCm,
-        widthCm: input.widthCm,
-        heightCm: input.heightCm,
-        seoTitle: input.seoTitle,
-        seoDescription: input.seoDescription,
         designs: input.designs,
         tags: input.tags,
         collectionIds: input.collectionIds,
@@ -1201,11 +1132,7 @@ export class ProductStore {
         price,
         stock,
         reserved,
-        reorderPoint: Math.max(0, Math.round(variant.reorderPoint ?? 5)),
         weight: variant.weight ?? productWeight,
-        barcode:
-          variant.barcode ||
-          `890${Math.abs(Array.from(productId).reduce((acc, c) => ((acc << 5) - acc + c.charCodeAt(0)) | 0, 0)).toString().padEnd(9, '0').slice(0, 9)}${String(variantsToInsert.length).padStart(2, '0')}`,
         status: variant.status || 'Active'
       })
     }
@@ -1283,31 +1210,21 @@ export class ProductStore {
       }
       if (patch.name !== undefined) updateData.name = patch.name
       if (patch.desc !== undefined) updateData.description = patch.desc
-      if (patch.badge !== undefined) updateData.badge = patch.badge
       const moneyOrNull = (value: unknown): number | null => {
         const parsed = Number(value)
         return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed) : null
       }
       if (patch.compareAtPrice !== undefined) updateData.compareAtPrice = moneyOrNull(patch.compareAtPrice)
       if (patch.costPrice !== undefined) updateData.costPrice = moneyOrNull(patch.costPrice)
-      if (patch.taxRate !== undefined) {
-        const parsed = Number(patch.taxRate)
-        updateData.taxRate = Number.isFinite(parsed)
-          ? Math.min(1, Math.max(0, parsed > 1 ? parsed / 100 : parsed))
-          : 0
-      }
-      if (patch.hsnCode !== undefined) updateData.hsnCode = patch.hsnCode
       if (patch.isFeatured !== undefined) updateData.isFeatured = patch.isFeatured
       if (patch.isFreeSize !== undefined) updateData.isFreeSize = patch.isFreeSize
-      if (patch.careInstructions !== undefined) updateData.careInstructions = patch.careInstructions
 
       await db.update(productsTable).set(updateData).where(eq(productsTable.id, id))
 
       const tags = patch.tags ?? ((patch.adminData as any)?.tags as string[] | undefined)
       const rawCollectionIds =
         patch.collectionIds ??
-        ((patch.adminData as any)?.collectionIds as (number | null | undefined)[] | undefined) ??
-        (patch.collectionId !== undefined && patch.collectionId !== null ? [patch.collectionId] : undefined)
+        ((patch.adminData as any)?.collectionIds as (number | null | undefined)[] | undefined)
       const collectionIds =
         rawCollectionIds !== undefined
           ? rawCollectionIds.filter(
@@ -1362,11 +1279,6 @@ export class ProductStore {
       shortDescription: patch.shortDescription ?? existing.shortDescription,
       trackInventory: patch.trackInventory ?? existing.trackInventory,
       continueSelling: patch.continueSelling ?? existing.continueSelling,
-      lengthCm: patch.lengthCm ?? existing.lengthCm,
-      widthCm: patch.widthCm ?? existing.widthCm,
-      heightCm: patch.heightCm ?? existing.heightCm,
-      seoTitle: patch.seoTitle ?? existing.seoTitle,
-      seoDescription: patch.seoDescription ?? existing.seoDescription,
       designs: patch.designs ?? existing.designs,
       tags: patch.tags ?? existing.tags,
       collectionIds: patch.collectionIds ?? existing.collectionIds,
@@ -1435,9 +1347,7 @@ export class ProductStore {
             price: variant.price ?? patch.priceNum ?? existing.priceNum,
             stock: sharedStock ?? variant.stock ?? 20,
             reserved: 0,
-            reorderPoint: variant.reorderPoint ?? 5,
             weight: variant.weight ?? existing.weightGrams ?? 350,
-            barcode: variant.barcode,
             status: variant.status || 'Active'
           })
         }
@@ -1461,7 +1371,6 @@ export class ProductStore {
           id: this.memoryProductImages.length + 1,
           productId: id,
           designId: null,
-          color: null,
           storageKey: norm.storageKey,
           externalUrl: norm.externalUrl,
           position: norm.position,
@@ -1592,9 +1501,7 @@ export class ProductStore {
                 color,
                 price: price !== basePrice ? price : null,
                 stock: Math.max(current.reserved, stock),
-                reorderPoint: Math.max(0, Math.round(Number(v.reorderPoint ?? current.reorderPoint ?? 5))),
                 weightGrams: weight,
-                barcode: v.barcode ?? current.barcode,
                 status: v.status || current.status || 'Active',
                 updatedAt: new Date()
               })
@@ -1630,9 +1537,7 @@ export class ProductStore {
                 price: price !== basePrice ? price : null,
                 stock,
                 reserved: 0,
-                reorderPoint: Math.max(0, Math.round(Number(v.reorderPoint ?? 5))),
                 weightGrams: weight,
-                barcode: v.barcode || null,
                 status: v.status || 'Active'
               })
               .returning({ id: productVariantsTable.id })
@@ -1715,9 +1620,7 @@ export class ProductStore {
             color,
             price: Math.max(0, Math.round(price)) !== newProductPrice ? Math.max(0, Math.round(price)) : null,
             stock: nextStock,
-            reorderPoint: Math.max(0, Math.round(variant.reorderPoint ?? current.reorderPoint)),
             weightGrams: weight !== productWeight ? weight : null,
-            barcode: variant.barcode ?? current.barcode,
             status: variant.status ?? current.status,
             updatedAt: new Date()
           })
@@ -1740,9 +1643,7 @@ export class ProductStore {
             price: Math.max(0, Math.round(price)) !== newProductPrice ? Math.max(0, Math.round(price)) : null,
             stock: Math.max(0, Math.round(sharedStock ?? variant.stock ?? 20)),
             reserved: 0,
-            reorderPoint: Math.max(0, Math.round(variant.reorderPoint ?? 5)),
             weightGrams: weight !== productWeight ? weight : null,
-            barcode: variant.barcode || null,
             status: variant.status || 'Active'
           })
           .returning({ id: productVariantsTable.id })

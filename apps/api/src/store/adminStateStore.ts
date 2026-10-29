@@ -1,9 +1,7 @@
 import { desc, eq, inArray, sql } from 'drizzle-orm'
 import { db, isDatabaseConfigured } from '../db/index.js'
 import {
-  adminUsers,
   auditLog,
-  banners,
   categories,
   collections,
   couponCategories,
@@ -17,12 +15,7 @@ import {
   productReviews,
   productVariants,
   products,
-  promotions,
   refunds,
-  returnItems,
-  returnRequests,
-  reviewImages,
-  roles,
   shipments,
   sizeChartMeasurements,
   sizeCharts,
@@ -53,12 +46,6 @@ function numberOrZero(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-function normalizeTaxRate(value: unknown): number {
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed) || parsed <= 0) return 0
-  return Math.min(1, Math.max(0, parsed > 1 ? parsed / 100 : parsed))
-}
-
 function stringOrEmpty(value: unknown): string {
   return value === null || value === undefined ? '' : String(value)
 }
@@ -71,17 +58,7 @@ async function getSettings(): Promise<Record<string, unknown>> {
     supportPhone: row?.supportPhone ?? '',
     address: row?.address ?? '',
     currency: row?.currency ?? 'INR',
-    taxRate: row?.taxRate ?? 0,
-    orderPrefix: row?.orderPrefix ?? 'TG',
-    returnWindowDays: row?.returnWindowDays ?? 7,
-    cancellationAllowedAfter: row?.cancellationAllowedAfter ?? 'Processing',
-    defaultShippingMethod: row?.defaultShippingMethod ?? 'Standard',
-    notify: {
-      email: row?.notifyEmail ?? true,
-      orderUpdates: row?.notifyOrderUpdates ?? true,
-      inventoryAlerts: row?.notifyInventoryAlerts ?? true,
-      reviewAlerts: row?.notifyReviewAlerts ?? true
-    }
+    orderPrefix: row?.orderPrefix ?? 'TG'
   }
 }
 
@@ -93,12 +70,9 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
 
   const [
     collectionRows,
-    roleRows,
     couponRows,
     couponProductRows,
     couponCategoryRows,
-    promotionRows,
-    bannerRows,
     reviewRows,
     sizeChartRows,
     measurementRows,
@@ -106,18 +80,13 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
     movementRows,
     auditRows,
     notificationRows,
-    returnRows,
-    returnItemRows,
     refundRows,
     settings
   ] = await Promise.all([
     db.select().from(collections).orderBy(collections.sortOrder),
-    db.select().from(roles).orderBy(roles.id),
     db.select().from(coupons).orderBy(coupons.id),
     db.select().from(couponProducts),
     db.select().from(couponCategories),
-    db.select().from(promotions).orderBy(promotions.id),
-    db.select().from(banners).orderBy(banners.sortOrder),
     db.select().from(productReviews).orderBy(desc(productReviews.createdAt)),
     db.select().from(sizeCharts).orderBy(sizeCharts.id),
     db.select().from(sizeChartMeasurements),
@@ -125,8 +94,6 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
     db.select().from(inventoryMovements).orderBy(desc(inventoryMovements.createdAt)),
     db.select().from(auditLog).orderBy(desc(auditLog.createdAt)),
     db.select().from(notifications).orderBy(desc(notifications.createdAt)),
-    db.select().from(returnRequests).orderBy(desc(returnRequests.requestedAt)),
-    db.select().from(returnItems),
     db.select().from(refunds).orderBy(desc(refunds.createdAt)),
     getSettings()
   ])
@@ -151,13 +118,6 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
     measurementsByChart.set(row.sizeChartId, list)
   }
 
-  const itemsByReturn = new Map<number, typeof returnItemRows>()
-  for (const row of returnItemRows) {
-    const list = itemsByReturn.get(row.returnId) ?? []
-    list.push(row)
-    itemsByReturn.set(row.returnId, list)
-  }
-
   return {
     collections: collectionRows.map((row) => ({
       id: row.id,
@@ -166,34 +126,11 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
       description: row.description ?? '',
       status: row.status
     })),
-    returns: returnRows.map((row) => ({
-      id: row.id,
-      number: row.number,
-      orderId: row.orderId,
-      customerId: row.customerId,
-      items: (itemsByReturn.get(row.id) ?? []).map((item) => ({
-        id: item.id,
-        productId: item.productId ?? '',
-        variantId: item.variantId ?? 0,
-        productName: item.productName,
-        variantLabel: item.variantLabel ?? '',
-        sku: item.sku ?? '',
-        quantity: item.quantity,
-        price: item.unitPrice,
-        total: item.lineTotal
-      })),
-      reason: row.reason,
-      details: row.details ?? '',
-      status: row.status,
-      amount: row.amount,
-      requestedAt: iso(row.requestedAt),
-      updatedAt: iso(row.updatedAt)
-    })),
+    returns: [],
     refunds: refundRows.map((row) => ({
       id: row.id,
       number: row.number,
       orderId: row.orderId,
-      returnId: row.returnId,
       customerId: row.customerId ?? 0,
       amount: row.amount,
       reason: row.reason ?? '',
@@ -218,30 +155,8 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
       isActive: row.isActive,
       timesUsed: (row as any).timesUsed ?? 0
     })),
-    promotions: promotionRows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      target: row.target,
-      targetId: row.targetId ?? '',
-      discountType: row.discountType,
-      discountValue: row.discountValue,
-      startsAt: iso(row.startsAt),
-      endsAt: iso(row.endsAt),
-      status: row.status,
-      createdAt: iso(row.createdAt)
-    })),
-    banners: bannerRows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      subtitle: row.subtitle ?? '',
-      ctaLabel: row.ctaLabel ?? '',
-      link: row.link ?? '',
-      image: row.imageUrl ?? '',
-      startsAt: iso(row.startsAt),
-      endsAt: iso(row.endsAt),
-      status: row.status,
-      order: row.sortOrder
-    })),
+    promotions: [],
+    banners: [],
     reviews: reviewRows.map((row) => ({
       id: row.id,
       customerId: row.customerId ?? 0,
@@ -287,13 +202,13 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
       after: row.after,
       reason: row.reason ?? '',
       reference: row.reference ?? '',
-      userId: row.actorAdminId,
+      userId: 0,
       userName: row.actorName ?? '',
       createdAt: iso(row.createdAt)
     })),
     auditLog: auditRows.map((row) => ({
       id: row.id,
-      userId: row.adminUserId ?? 0,
+      userId: 0,
       userName: row.actorName ?? '',
       action: row.action,
       entity: row.entity ?? '',
@@ -310,12 +225,7 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
       read: row.isRead
     })),
     settings,
-    roles: roleRows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      description: row.description ?? '',
-      permissions: row.permissions
-    }))
+    roles: []
   }
 }
 
@@ -323,16 +233,12 @@ async function resetSequences(client: any = db): Promise<void> {
   const tables = [
     'collections',
     'coupons',
-    'promotions',
-    'banners',
     'product_reviews',
     'size_charts',
     'shipments',
     'inventory_movements',
     'audit_log',
     'notifications',
-    'roles',
-    'return_requests',
     'refunds'
   ]
   for (const table of tables) {
@@ -383,13 +289,9 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
 
     mergeOperational('collections')
     mergeOperational('coupons')
-    mergeOperational('promotions')
-    mergeOperational('banners')
     mergeOperational('reviews')
     mergeOperational('shipments')
-    mergeOperational('returns')
     mergeOperational('refunds')
-    mergeOperational('roles')
     mergeOperational('sizeCharts', 'categoryId')
 
     memoryState = next
@@ -406,15 +308,13 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
       customerRows,
       productRows,
       categoryRows,
-      variantRows,
-      adminUserRows
+      variantRows
     ] = await Promise.all([
       tx.select({ id: orders.id, customerId: orders.customerId }).from(orders),
       tx.select({ id: customers.id }).from(customers),
       tx.select({ id: products.id }).from(products),
       tx.select({ id: categories.id }).from(categories),
-      tx.select({ id: productVariants.id, productId: productVariants.productId }).from(productVariants),
-      tx.select({ id: adminUsers.id }).from(adminUsers)
+      tx.select({ id: productVariants.id, productId: productVariants.productId }).from(productVariants)
     ])
     const orderById = new Map(orderRows.map((row) => [row.id, row]))
     const customerIds = new Set(customerRows.map((row) => row.id))
@@ -422,41 +322,6 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
     const categoryIds = new Set(categoryRows.map((row) => row.id))
     const variantProductById = new Map(variantRows.map((row) => [row.id, row.productId]))
     const variantIds = new Set(variantRows.map((row) => row.id))
-    const adminUserIds = new Set(adminUserRows.map((row) => row.id))
-
-    // Operational entities: upsert by id / unique key
-    const roleValues = arrays('roles').map((role) => ({
-      id: numberOrZero(role.id),
-      name: stringOrEmpty(role.name),
-      description: stringOrEmpty(role.description) || null,
-      permissions: Array.isArray(role.permissions) ? role.permissions.map(String) : []
-    }))
-    for (const role of roleValues) {
-      if (!role.name) continue
-      if (role.id > 0) {
-        await tx
-          .insert(roles)
-          .values(role)
-          .onConflictDoUpdate({
-            target: roles.id,
-            set: { name: role.name, description: role.description, permissions: role.permissions, updatedAt: new Date() }
-          })
-      } else {
-        const { id: _ignored, ...roleWithoutId } = role
-        const [existingRole] = await tx
-          .select({ id: roles.id })
-          .from(roles)
-          .where(eq(sql`lower(${roles.name})`, role.name.toLowerCase()))
-        if (existingRole) {
-          await tx
-            .update(roles)
-            .set({ description: role.description, permissions: role.permissions, updatedAt: new Date() })
-            .where(eq(roles.id, existingRole.id))
-        } else {
-          await tx.insert(roles).values(roleWithoutId)
-        }
-      }
-    }
 
     const collectionValues = arrays('collections').map((collection, index) => ({
       id: numberOrZero(collection.id),
@@ -602,85 +467,17 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         if (productLinks.length > 0) await tx.insert(couponProducts).values(productLinks)
 
         const categoryLinks: Array<{ couponId: number; categoryId: number }> = []
-        for (const categoryId of Array.isArray(coupon.categoryIds) ? coupon.categoryIds : []) {
-          if (categoryIds.has(Number(categoryId))) categoryLinks.push({ couponId: effectiveCouponId, categoryId: Number(categoryId) })
+        for (const catId of Array.isArray(coupon.categoryIds) ? coupon.categoryIds : []) {
+          const normalizedCatId = Number(catId)
+          if (categoryIds.has(normalizedCatId)) {
+            categoryLinks.push({ couponId: effectiveCouponId, categoryId: normalizedCatId })
+          }
         }
         if (categoryLinks.length > 0) await tx.insert(couponCategories).values(categoryLinks)
       }
     }
 
-    for (const promotion of arrays('promotions')) {
-      const promoId = numberOrZero(promotion.id)
-      const title = stringOrEmpty(promotion.title)
-      if (!title) continue
-      const discountType = promotion.discountType === 'fixed' ? ('fixed' as const) : ('percentage' as const)
-      const rawDiscountValue = Math.round(numberOrZero(promotion.discountValue))
-      const discountValue = discountType === 'percentage' ? Math.min(100, rawDiscountValue) : rawDiscountValue
-      if (discountValue <= 0) continue
-      const startsAt = dateOrNull(promotion.startsAt)
-      let endsAt = dateOrNull(promotion.endsAt)
-      if (startsAt && endsAt && endsAt <= startsAt) endsAt = null
-
-      const promoData = {
-        title,
-        target: stringOrEmpty(promotion.target) || 'Product',
-        targetId: promotion.targetId === null || promotion.targetId === undefined ? null : String(promotion.targetId),
-        discountType,
-        discountValue,
-        startsAt,
-        endsAt,
-        status: stringOrEmpty(promotion.status) || 'Scheduled'
-      }
-      if (promoId > 0) {
-        await tx
-          .insert(promotions)
-          .values({ id: promoId, ...promoData })
-          .onConflictDoUpdate({
-            target: promotions.id,
-            set: {
-              ...promoData,
-              updatedAt: new Date()
-            }
-          })
-      } else {
-        await tx.insert(promotions).values(promoData)
-      }
-    }
-
-    for (const banner of arrays('banners')) {
-      const bannerId = numberOrZero(banner.id)
-      const title = stringOrEmpty(banner.title)
-      if (!title) continue
-      const startsAt = dateOrNull(banner.startsAt)
-      let endsAt = dateOrNull(banner.endsAt)
-      if (startsAt && endsAt && endsAt <= startsAt) endsAt = null
-      const bannerData = {
-        title,
-        subtitle: stringOrEmpty(banner.subtitle) || null,
-        ctaLabel: stringOrEmpty(banner.ctaLabel) || null,
-        link: stringOrEmpty(banner.link) || null,
-        imageUrl: stringOrEmpty(banner.image) || null,
-        startsAt,
-        endsAt,
-        status: stringOrEmpty(banner.status) || 'Scheduled',
-        sortOrder: Math.max(0, Math.floor(numberOrZero(banner.order)))
-      }
-      if (bannerId > 0) {
-        await tx
-          .insert(banners)
-          .values({ id: bannerId, ...bannerData })
-          .onConflictDoUpdate({
-            target: banners.id,
-            set: {
-              ...bannerData,
-              updatedAt: new Date()
-            }
-          })
-      } else {
-        await tx.insert(banners).values(bannerData)
-      }
-    }
-
+    // Reviews: upsert
     for (const review of arrays('reviews')) {
       const productId = stringOrEmpty(review.productId)
       if (!productIds.has(productId)) continue
@@ -690,55 +487,43 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         customerId: customerIds.has(Number(review.customerId)) ? Number(review.customerId) : null,
         reviewerName: stringOrEmpty(review.reviewerName) || 'Customer',
         reviewerEmail: stringOrEmpty(review.reviewerEmail) || null,
-        rating: Math.min(5, Math.max(1, numberOrZero(review.rating) || 5)),
+        rating: Math.min(5, Math.max(1, Math.round(numberOrZero(review.rating)) || 5)),
         title: stringOrEmpty(review.title) || null,
-        content: stringOrEmpty(review.content),
-        isVerifiedPurchase: Boolean(review.verified),
-        status: stringOrEmpty(review.status) || 'Pending',
-        merchantResponse: review.response ? String(review.response) : null,
-        respondedAt: dateOrNull(review.respondedAt)
+        content: stringOrEmpty(review.content) || 'Great purchase!',
+        isVerifiedPurchase: Boolean(review.verified ?? review.isVerifiedPurchase),
+        status: ['Pending', 'Approved', 'Rejected', 'Hidden'].includes(review.status)
+          ? review.status
+          : 'Approved',
+        merchantResponse: stringOrEmpty(review.response ?? review.merchantResponse) || null,
+        respondedAt: dateOrNull(review.respondedAt),
+        createdAt: dateOrNull(review.createdAt) ?? new Date()
       }
+
       if (reviewId > 0) {
         await tx
           .insert(productReviews)
-          .values({
-            id: reviewId,
-            ...reviewData,
-            createdAt: dateOrNull(review.createdAt) ?? new Date()
-          })
+          .values({ id: reviewId, ...reviewData })
           .onConflictDoUpdate({
             target: productReviews.id,
             set: {
-              ...reviewData,
+              rating: reviewData.rating,
+              title: reviewData.title,
+              content: reviewData.content,
+              status: reviewData.status,
+              merchantResponse: reviewData.merchantResponse,
+              respondedAt: reviewData.respondedAt,
               updatedAt: new Date()
             }
           })
       } else {
-        await tx.insert(productReviews).values({
-          ...reviewData,
-          createdAt: dateOrNull(review.createdAt) ?? new Date()
-        })
+        await tx.insert(productReviews).values(reviewData)
       }
     }
 
-    await tx.execute(sql`
-      UPDATE products p
-      SET
-        rating_average = COALESCE((
-          SELECT AVG(r.rating)::real
-          FROM product_reviews r
-          WHERE r.product_id = p.id AND r.status = 'Approved'
-        ), 0),
-        review_count = (
-          SELECT COUNT(*)::int
-          FROM product_reviews r
-          WHERE r.product_id = p.id AND r.status = 'Approved'
-        )
-    `)
-
+    // Size charts: upsert chart, replace scoped measurements
     for (const chart of arrays('sizeCharts')) {
-      const categoryId = numberOrZero(chart.categoryId)
-      if (!categoryId || !categoryIds.has(categoryId)) continue
+      const categoryId = Number(chart.categoryId)
+      if (!categoryIds.has(categoryId)) continue
       const [chartRow] = await tx
         .insert(sizeCharts)
         .values({
@@ -767,8 +552,7 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
               hip: numberOrZero(measurement.hip),
               inseam: numberOrZero(measurement.inseam),
               thigh: numberOrZero(measurement.thigh),
-              length: measurement.length === undefined ? null : numberOrZero(measurement.length),
-              shoulder: measurement.shoulder === undefined ? null : numberOrZero(measurement.shoulder)
+              length: measurement.length === undefined ? null : numberOrZero(measurement.length)
             }))
           )
         }
@@ -804,7 +588,6 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         after,
         reason: stringOrEmpty(movement.reason) || null,
         reference: stringOrEmpty(movement.reference) || null,
-        actorAdminId: adminUserIds.has(Number(movement.userId)) ? Number(movement.userId) : null,
         actorName: stringOrEmpty(movement.userName) || null,
         createdAt: dateOrNull(movement.createdAt) ?? new Date()
       }
@@ -823,7 +606,6 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
     for (const entry of arrays('auditLog')) {
       const auditId = numberOrZero(entry.id)
       const auditData = {
-        adminUserId: adminUserIds.has(Number(entry.userId)) ? Number(entry.userId) : null,
         actorName: stringOrEmpty(entry.userName) || null,
         action: stringOrEmpty(entry.action) || 'action',
         entity: stringOrEmpty(entry.entity) || null,
@@ -846,7 +628,6 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
     for (const notification of arrays('notifications')) {
       const notifId = numberOrZero(notification.id)
       const notifData = {
-        adminUserId: null,
         type: ['low-stock', 'order', 'payment', 'review', 'system'].includes(notification.type)
           ? notification.type
           : 'system',
@@ -910,90 +691,15 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
       }
     }
 
-    // Return requests & return items: upsert return request, replace scoped items
-    const returnIds = new Set<number>()
-    for (const request of arrays('returns')) {
-      const orderId = Number(request.orderId)
-      if (!orderById.has(orderId)) continue
-      const returnId = numberOrZero(request.id)
-      const order = orderById.get(orderId)!
-      const reqData = {
-        number: stringOrEmpty(request.number) || `RET-${request.id || Date.now()}`,
-        orderId: order.id,
-        customerId: customerIds.has(Number(request.customerId)) ? Number(request.customerId) : order.customerId,
-        reason: stringOrEmpty(request.reason) || 'Return requested',
-        details: stringOrEmpty(request.details) || null,
-        status: stringOrEmpty(request.status) || 'Requested',
-        amount: numberOrZero(request.amount),
-        requestedAt: dateOrNull(request.requestedAt) ?? new Date(),
-        updatedAt: dateOrNull(request.updatedAt) ?? new Date()
-      }
-
-      let effectiveReturnId = returnId
-      if (returnId > 0) {
-        const [upserted] = await tx
-          .insert(returnRequests)
-          .values({ id: returnId, ...reqData })
-          .onConflictDoUpdate({
-            target: returnRequests.id,
-            set: {
-              reason: reqData.reason,
-              details: reqData.details,
-              status: reqData.status,
-              amount: reqData.amount,
-              updatedAt: new Date()
-            }
-          })
-          .returning({ id: returnRequests.id })
-        if (upserted?.id) effectiveReturnId = upserted.id
-      } else {
-        const [created] = await tx
-          .insert(returnRequests)
-          .values(reqData)
-          .returning({ id: returnRequests.id })
-        if (created?.id) effectiveReturnId = created.id
-      }
-
-      if (effectiveReturnId > 0) {
-        returnIds.add(effectiveReturnId)
-        await tx.delete(returnItems).where(eq(returnItems.returnId, effectiveReturnId))
-
-        const itemValues: Array<typeof returnItems.$inferInsert> = []
-        for (const item of Array.isArray(request.items) ? request.items : []) {
-          const requestedVariantId = Number(item.variantId)
-          const variantId = variantIds.has(requestedVariantId) ? requestedVariantId : null
-          const requestedProductId = stringOrEmpty(item.productId)
-          const productId =
-            (variantId ? variantProductById.get(variantId) ?? null : null) ??
-            (productIds.has(requestedProductId) ? requestedProductId : null)
-          itemValues.push({
-            returnId: effectiveReturnId,
-            productId,
-            variantId,
-            sku: stringOrEmpty(item.sku) || null,
-            productName: stringOrEmpty(item.productName) || 'Item',
-            variantLabel: stringOrEmpty(item.variantLabel) || null,
-            unitPrice: numberOrZero(item.price),
-            quantity: numberOrZero(item.quantity) || 1,
-            lineTotal: numberOrZero(item.total),
-            reason: stringOrEmpty(request.reason) || null
-          })
-        }
-        if (itemValues.length > 0) await tx.insert(returnItems).values(itemValues)
-      }
-    }
-
     // Refunds: upsert
     for (const refund of arrays('refunds')) {
       const orderId = Number(refund.orderId)
       if (!orderById.has(orderId)) continue
       const refundId = numberOrZero(refund.id)
       const order = orderById.get(orderId)!
-      const returnId = Number(refund.returnId)
       const refData = {
         number: stringOrEmpty(refund.number) || `REF-${refund.id || Date.now()}`,
         orderId: order.id,
-        returnId: returnId && returnIds.has(returnId) ? returnId : null,
         customerId: customerIds.has(Number(refund.customerId)) ? Number(refund.customerId) : order.customerId,
         amount: numberOrZero(refund.amount),
         reason: stringOrEmpty(refund.reason) || null,
@@ -1011,7 +717,6 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
             target: refunds.id,
             set: {
               orderId: refData.orderId,
-              returnId: refData.returnId,
               customerId: refData.customerId,
               amount: refData.amount,
               reason: refData.reason,
@@ -1034,15 +739,7 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
         supportPhone: stringOrEmpty(settings.supportPhone) || null,
         address: stringOrEmpty(settings.address) || null,
         currency: stringOrEmpty(settings.currency) || 'INR',
-        taxRate: normalizeTaxRate(settings.taxRate),
         orderPrefix: stringOrEmpty(settings.orderPrefix) || 'TG',
-        returnWindowDays: numberOrZero(settings.returnWindowDays) || 7,
-        cancellationAllowedAfter: stringOrEmpty(settings.cancellationAllowedAfter) || 'Processing',
-        defaultShippingMethod: stringOrEmpty(settings.defaultShippingMethod) || 'Standard',
-        notifyEmail: settings.notify?.email !== false,
-        notifyOrderUpdates: settings.notify?.orderUpdates !== false,
-        notifyInventoryAlerts: settings.notify?.inventoryAlerts !== false,
-        notifyReviewAlerts: settings.notify?.reviewAlerts !== false,
         updatedAt: new Date()
       })
       .onConflictDoUpdate({
@@ -1053,15 +750,7 @@ export async function saveAdminState(data: Record<string, unknown>): Promise<voi
           supportPhone: stringOrEmpty(settings.supportPhone) || null,
           address: stringOrEmpty(settings.address) || null,
           currency: stringOrEmpty(settings.currency) || 'INR',
-          taxRate: normalizeTaxRate(settings.taxRate),
           orderPrefix: stringOrEmpty(settings.orderPrefix) || 'TG',
-          returnWindowDays: numberOrZero(settings.returnWindowDays) || 7,
-          cancellationAllowedAfter: stringOrEmpty(settings.cancellationAllowedAfter) || 'Processing',
-          defaultShippingMethod: stringOrEmpty(settings.defaultShippingMethod) || 'Standard',
-          notifyEmail: settings.notify?.email !== false,
-          notifyOrderUpdates: settings.notify?.orderUpdates !== false,
-          notifyInventoryAlerts: settings.notify?.inventoryAlerts !== false,
-          notifyReviewAlerts: settings.notify?.reviewAlerts !== false,
           updatedAt: new Date()
         }
       })

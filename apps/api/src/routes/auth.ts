@@ -31,7 +31,6 @@ function formatProfile(user: DbUser): UserProfile {
     name: user.name,
     provider: user.provider,
     googleSub: user.googleSub ?? undefined,
-    onboardingCompleted: Boolean(user.onboardingCompletedAt),
     createdAt: user.createdAt,
   };
 }
@@ -330,8 +329,6 @@ authRouter.post("/api/auth/onboarding/complete", async (req: Request, res: Respo
   const updatedUser = await userStore.completeOnboarding(user.id);
   res.json({
     success: true,
-    onboardingCompleted: true,
     user: formatProfile(updatedUser || user)
   });
 });
-

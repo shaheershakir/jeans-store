@@ -59,10 +59,7 @@ export interface VariantInput {
   sku: string
   price: number
   stock: number
-
-  reorderPoint: number
   weight: number
-  barcode: string
   status?: 'Active' | 'Inactive'
 }
 
@@ -75,7 +72,6 @@ export interface ProductInput {
   shortDescription?: string
   brand?: string
   categoryId: number
-  collectionId: number
   collectionIds?: number[]
   tags?: string[]
   fit?: Fit
@@ -88,18 +84,12 @@ export interface ProductInput {
   price: number
   compareAtPrice: number | null
   costPrice: number
-  taxRate: number
   status: ProductStatus
   featured: boolean
   isFreeSize?: boolean
   trackInventory?: boolean
   continueSelling?: boolean
   weightGrams?: number
-  lengthCm?: number | null
-  widthCm?: number | null
-  heightCm?: number | null
-  seoTitle?: string
-  seoDescription?: string
   image: string
   images: Array<{ url: string; alt: string; id?: number; order?: number }>
   variants: VariantInput[]
@@ -463,9 +453,7 @@ export const useAdminStore = create<AdminState>()(
                 price: v.price,
                 stock: v.stock,
                 reserved: 0,
-                reorderPoint: v.reorderPoint,
                 weight: v.weight,
-                barcode: v.barcode || `890${Math.floor(10000000000 + Math.random() * 89999999999)}`,
                 status: v.status ?? 'Active',
               }
             })
@@ -510,9 +498,7 @@ export const useAdminStore = create<AdminState>()(
               price: v.price,
               stock: v.stock,
               reserved: 0,
-              reorderPoint: v.reorderPoint,
               weight: v.weight,
-              barcode: v.barcode || `890${Math.floor(10000000000 + Math.random() * 89999999999)}`,
               status: v.status ?? 'Active',
             }
           })
@@ -525,7 +511,7 @@ export const useAdminStore = create<AdminState>()(
             description: input.description,
             brand: input.brand,
             categoryId: input.categoryId,
-            collectionId: input.collectionId,
+            collectionIds: input.collectionIds,
             fit: input.fit,
             gender: input.gender,
             rise: input.rise,
@@ -535,7 +521,6 @@ export const useAdminStore = create<AdminState>()(
             price: input.price,
             compareAtPrice: input.compareAtPrice,
             costPrice: input.costPrice,
-            taxRate: input.taxRate,
             status: input.status,
             featured: input.featured,
             isFreeSize: input.isFreeSize ?? false,
@@ -598,7 +583,6 @@ export const useAdminStore = create<AdminState>()(
               name: c.name,
               slug: slugFromName(c.name),
               description: c.description,
-              parentId: c.parentId ?? null,
             }
             set({
               data: {
@@ -615,7 +599,6 @@ export const useAdminStore = create<AdminState>()(
             name: c.name,
             slug: slugFromName(c.name),
             description: c.description,
-            parentId: c.parentId ?? null,
           }
           set({ data: { ...get().data, categories: [...get().data.categories, created] } })
           get().log('Created category', 'Category', created.name, `Added category ${created.name}`)
@@ -710,7 +693,7 @@ export const useAdminStore = create<AdminState>()(
             target.variant.sku,
             `SKU ${target.variant.sku}: ${before} → ${before + delta} (${reason})`
           )
-          if (before + delta <= target.variant.reorderPoint) {
+          if (before + delta <= 5) {
             get().pushNotification({
               type: 'low-stock',
               title: 'Low stock alert',
@@ -839,7 +822,7 @@ export const useAdminStore = create<AdminState>()(
           })
           const subtotal = items.reduce((sum, i) => sum + i.total, 0)
           const discount = Math.min(input.discount, subtotal)
-          const { shippingFee, tax, total } = computeTotals(subtotal, discount, 99)
+          const { shippingFee, total } = computeTotals(subtotal, discount, 99)
           const id = nextId(get().data.orders)
           let maxSeq = 2000
           for (const o of get().data.orders) {
@@ -854,7 +837,6 @@ export const useAdminStore = create<AdminState>()(
             subtotal,
             discount,
             shippingFee,
-            tax,
             total,
             paymentMethod: input.paymentMethod,
             paymentStatus: 'Pending',

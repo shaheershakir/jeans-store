@@ -18,13 +18,11 @@ import {
   coupons,
   customers,
   storeSettings,
-  roles,
   productReviews,
   inventoryMovements,
   auditLog,
   notifications,
   shipments,
-  returnRequests,
   refunds,
   payments,
   paymentEvents,
@@ -63,7 +61,8 @@ test('Single source of truth in @jeans-store/db (Phase 5)', async (t) => {
       '0009_material_shen.sql',
       '0010_useful_leech.sql',
       '0011_schema_cleanup.sql',
-      '0012_product_designs_and_metadata.sql'
+      '0012_product_designs_and_metadata.sql',
+      '0013_prune_tax_and_redundant.sql'
     ]
 
     const sqlFiles = fs.readdirSync(pkgDrizzle).filter((f) => f.endsWith('.sql'))
@@ -90,13 +89,11 @@ test('Single source of truth in @jeans-store/db (Phase 5)', async (t) => {
     assert.ok(coupons, 'coupons table exported')
     assert.ok(customers, 'customers table exported')
     assert.ok(storeSettings, 'storeSettings table exported')
-    assert.ok(roles, 'roles table exported')
     assert.ok(productReviews, 'productReviews table exported')
     assert.ok(inventoryMovements, 'inventoryMovements table exported')
     assert.ok(auditLog, 'auditLog table exported')
     assert.ok(notifications, 'notifications table exported')
     assert.ok(shipments, 'shipments table exported')
-    assert.ok(returnRequests, 'returnRequests table exported')
     assert.ok(refunds, 'refunds table exported')
     assert.ok(payments, 'payments table exported')
     assert.ok(paymentEvents, 'paymentEvents table exported')

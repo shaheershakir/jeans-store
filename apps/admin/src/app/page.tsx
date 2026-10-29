@@ -97,7 +97,7 @@ export default function DashboardOverviewPage() {
 
   const lowStockCount = products
     .flatMap((p) => p.variants)
-    .filter((v) => v.stock <= (v.reorderPoint || 10)).length || 8
+    .filter((v) => v.stock <= 10).length || 8
 
   const pendingReturnsCount = returns.filter((r) => r.status === 'Requested').length || 4
   const paymentIssuesCount = payments.filter((p) => p.status === 'Failed').length || 3

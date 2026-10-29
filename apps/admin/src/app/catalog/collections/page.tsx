@@ -134,7 +134,7 @@ export default function CollectionsPage() {
               </thead>
               <tbody className="divide-y divide-divider">
                 {collections.map((col) => {
-                  const productCount = products.filter((p) => p.collectionId === col.id).length
+                  const productCount = products.filter((p) => p.collectionIds?.includes(col.id)).length
 
                   return (
                     <tr key={col.id} className="hover:bg-surface-subtle transition-colors">

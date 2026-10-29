@@ -14,9 +14,7 @@ interface ApiVariant {
   price?: number
   stock: number
   reserved?: number
-  reorderPoint?: number
   weight?: number
-  barcode?: string
   status?: 'Active' | 'Inactive'
 }
 
@@ -36,11 +34,6 @@ interface ApiProduct {
   isFreeSize?: boolean
   trackInventory?: boolean
   continueSelling?: boolean
-  lengthCm?: number | null
-  widthCm?: number | null
-  heightCm?: number | null
-  seoTitle?: string
-  seoDescription?: string
   badge?: string
   desc: string
   wash?: string
@@ -55,7 +48,6 @@ interface ApiProduct {
 function fromApiProduct(value: ApiProduct): Product {
   const metadata = value.adminData ?? {}
   const categories = useAdminStore.getState().data.categories
-  const collections = useAdminStore.getState().data.collections
   const imageUrls = value.images?.length ? value.images : [value.img, value.img2].filter(Boolean)
   const numeric = (key: string, fallback: number) => Number(metadata[key] ?? fallback)
   const text = (key: string, fallback: string) => String(metadata[key] ?? fallback)
@@ -72,7 +64,6 @@ function fromApiProduct(value: ApiProduct): Product {
     shortDescription: value.shortDescription ?? (metadata.shortDescription as string) ?? undefined,
     brand: text('brand', 'TEESGARAGE'),
     categoryId: numeric('categoryId', categories.find((category) => category.slug === value.category)?.id ?? categories.find((category) => category.slug === 'printed-tees')?.id ?? 1),
-    collectionId: collectionIds[0] ?? numeric('collectionId', collections[0]?.id ?? 1),
     collectionIds: collectionIds.length > 0 ? collectionIds : undefined,
     tags: tags.length > 0 ? tags : undefined,
     fit: (value.fit ?? 'Regular') as Product['fit'],
@@ -85,18 +76,12 @@ function fromApiProduct(value: ApiProduct): Product {
     price: value.priceNum,
     compareAtPrice: metadata.compareAtPrice == null ? null : numeric('compareAtPrice', value.priceNum),
     costPrice: numeric('costPrice', 0),
-    taxRate: numeric('taxRate', 0.12),
     status: text('status', value.badge === 'Draft' ? 'Draft' : 'Active') as ProductStatus,
     featured: Boolean(metadata.featured ?? false),
     isFreeSize: value.isFreeSize ?? Boolean(metadata.isFreeSize ?? false),
     trackInventory: value.trackInventory ?? (metadata.trackInventory !== undefined ? Boolean(metadata.trackInventory) : true),
     continueSelling: value.continueSelling ?? Boolean(metadata.continueSelling ?? false),
     weightGrams: numeric('weightGrams', value.variants?.[0]?.weight ?? 350),
-    lengthCm: value.lengthCm ?? (metadata.lengthCm as number | null) ?? null,
-    widthCm: value.widthCm ?? (metadata.widthCm as number | null) ?? null,
-    heightCm: value.heightCm ?? (metadata.heightCm as number | null) ?? null,
-    seoTitle: value.seoTitle ?? (metadata.seoTitle as string) ?? undefined,
-    seoDescription: value.seoDescription ?? (metadata.seoDescription as string) ?? undefined,
     views: numeric('views', 0),
     wishlists: numeric('wishlists', 0),
     image: value.img,
@@ -111,9 +96,7 @@ function fromApiProduct(value: ApiProduct): Product {
       price: variant.price ?? value.priceNum,
       stock: variant.stock,
       reserved: variant.reserved ?? 0,
-      reorderPoint: variant.reorderPoint ?? 5,
       weight: variant.weight ?? 350,
-      barcode: variant.barcode ?? '',
       status: variant.status ?? 'Active'
     })),
     designs: value.designs,
@@ -125,7 +108,6 @@ function fromApiProduct(value: ApiProduct): Product {
 function toApiProduct(input: ProductInput) {
   const state = useAdminStore.getState().data
   const category = state.categories.find((item) => item.id === input.categoryId)
-  const collection = state.collections.find((item) => item.id === input.collectionId)
   const images = input.images.map((image) => image.url).filter(Boolean)
 
   return {
@@ -134,7 +116,6 @@ function toApiProduct(input: ProductInput) {
     name: input.name,
     shortDescription: input.shortDescription,
     isFreeSize: input.isFreeSize ?? false,
-    collectionId: input.collectionId || null,
     collectionIds: input.collectionIds,
     tags: input.tags,
     fit: input.fit,
@@ -150,11 +131,6 @@ function toApiProduct(input: ProductInput) {
     sizes: [...new Set(input.variants.map((variant) => String(variant.size)))],
     trackInventory: input.trackInventory ?? true,
     continueSelling: input.continueSelling ?? false,
-    lengthCm: input.lengthCm,
-    widthCm: input.widthCm,
-    heightCm: input.heightCm,
-    seoTitle: input.seoTitle,
-    seoDescription: input.seoDescription,
     designs: input.designs,
     variants: input.variants.map((variant) => ({
       id: variant.id,
@@ -164,19 +140,15 @@ function toApiProduct(input: ProductInput) {
       color: variant.color,
       price: variant.price,
       stock: variant.stock,
-      reorderPoint: variant.reorderPoint,
       weight: variant.weight,
-      barcode: variant.barcode,
       status: variant.status ?? 'Active'
     })),
     adminData: {
       slug: input.slug,
       brand: input.brand,
       categoryId: input.categoryId,
-      collectionId: input.collectionId,
       collectionIds: input.collectionIds,
       tags: input.tags,
-      collection: collection?.name,
       gender: input.gender,
       rise: input.rise,
       material: input.material,
@@ -184,16 +156,10 @@ function toApiProduct(input: ProductInput) {
       inseam: input.inseam,
       compareAtPrice: input.compareAtPrice,
       costPrice: input.costPrice,
-      taxRate: input.taxRate,
       status: input.status,
       featured: input.featured,
       isFreeSize: input.isFreeSize ?? false,
       weightGrams: input.weightGrams ?? input.variants[0]?.weight ?? 350,
-      lengthCm: input.lengthCm,
-      widthCm: input.widthCm,
-      heightCm: input.heightCm,
-      seoTitle: input.seoTitle,
-      seoDescription: input.seoDescription,
       shortDescription: input.shortDescription,
       trackInventory: input.trackInventory ?? true,
       continueSelling: input.continueSelling ?? false
@@ -260,8 +226,8 @@ export async function saveSizeChart(chart: SizeChart): Promise<void> {
   useAdminStore.getState().saveSizeChart(chart)
 }
 
-export async function saveCategory(input: { id?: number; name: string; description: string; parentId?: number | null }) {
-  return useAdminStore.getState().saveCategory({ ...input, parentId: input.parentId ?? null })
+export async function saveCategory(input: { id?: number; name: string; description: string }) {
+  return useAdminStore.getState().saveCategory(input)
 }
 
 export async function deleteCategory(id: number): Promise<void> {

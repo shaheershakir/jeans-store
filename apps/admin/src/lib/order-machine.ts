@@ -66,8 +66,7 @@ export function computeTotals(
   subtotal: number,
   discount: number,
   shippingFee: number
-): { shippingFee: number; tax: number; total: number } {
-  const tax = Math.round((subtotal - discount) * 0.18)
-  const total = subtotal - discount + shippingFee + tax
-  return { shippingFee, tax, total }
+): { shippingFee: number; total: number } {
+  const total = subtotal - discount + shippingFee
+  return { shippingFee, total }
 }

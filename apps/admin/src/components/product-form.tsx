@@ -193,7 +193,6 @@ export function ProductForm({ product }: { product?: Product }) {
   // 3. Organization
   const [selectedCollectionIds, setSelectedCollectionIds] = React.useState<number[]>(() => {
     if (product?.collectionIds?.length) return product.collectionIds
-    if (product?.collectionId) return [product.collectionId]
     return collections[0]?.id ? [collections[0].id] : []
   })
   const [tags, setTags] = React.useState<string[]>(
@@ -219,24 +218,8 @@ export function ProductForm({ product }: { product?: Product }) {
   const [weightGrams, setWeightGrams] = React.useState<number>(
     product?.weightGrams ?? 250
   )
-  const [lengthCm, setLengthCm] = React.useState<number | ''>(
-    product?.lengthCm ?? 30
-  )
-  const [widthCm, setWidthCm] = React.useState<number | ''>(
-    product?.widthCm ?? 25
-  )
-  const [heightCm, setHeightCm] = React.useState<number | ''>(
-    product?.heightCm ?? 2
-  )
 
   // 7. Search Engine / SEO
-  const [seoTitle, setSeoTitle] = React.useState(
-    product?.seoTitle ?? 'Dr Sleeve Tee | Teesgarage'
-  )
-  const [seoDescription, setSeoDescription] = React.useState(
-    product?.seoDescription ??
-      'Layered sleeve t-shirts with unique graphic designs. Premium cotton blend. Shop exclusive Dr Sleeve Tee designs at Teesgarage.'
-  )
   const [urlSlug, setUrlSlug] = React.useState(
     product?.slug ?? (product?.name ? slugify(product.name) : 'dr-sleeve-tee')
   )
@@ -251,7 +234,6 @@ export function ProductForm({ product }: { product?: Product }) {
     if (!isEdit && !product) {
       const generated = slugify(val)
       setUrlSlug(generated)
-      setSeoTitle(`${val} | Teesgarage`)
     }
   }
 
@@ -432,9 +414,7 @@ export function ProductForm({ product }: { product?: Product }) {
                 : price,
             stock: Number(s.stock || 0),
             reserved: 0,
-            reorderPoint: 5,
             weight: Number(weightGrams || 250),
-            barcode: `890${Math.floor(10000000000 + Math.random() * 89999999999)}`,
             status: 'Active',
           })
         })
@@ -468,24 +448,17 @@ export function ProductForm({ product }: { product?: Product }) {
         description: description || name,
         shortDescription: shortDescription || undefined,
         categoryId: activeCategoryId,
-        collectionId: selectedCollectionIds[0] ?? 1,
         collectionIds: selectedCollectionIds,
         tags,
         price,
         compareAtPrice: compareAtPrice === '' ? null : Number(compareAtPrice),
         costPrice: 0,
-        taxRate: 0.05,
         status: resolvedStatus,
         featured: false,
         isFreeSize: false,
         trackInventory,
         continueSelling,
         weightGrams: Number(weightGrams || 250),
-        lengthCm: lengthCm === '' ? null : Number(lengthCm),
-        widthCm: widthCm === '' ? null : Number(widthCm),
-        heightCm: heightCm === '' ? null : Number(heightCm),
-        seoTitle: seoTitle || undefined,
-        seoDescription: seoDescription || undefined,
         image: primaryCover,
         images: allImages.map((u, i) => ({ url: u, alt: `${name} ${i + 1}` })),
         variants,
@@ -1117,44 +1090,6 @@ export function ProductForm({ product }: { product?: Product }) {
                   className="h-9 text-xs sm:text-sm"
                 />
               </Field>
-
-              <div>
-                <span className="text-xs font-semibold text-foreground block mb-1.5">
-                  Dimensions (cm) <span className="font-normal text-muted-foreground">(Optional)</span>
-                </span>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="flex items-center rounded-md border border-input bg-background px-2">
-                    <span className="text-[11px] text-muted-foreground font-semibold mr-1.5">L</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={lengthCm}
-                      onChange={(e) => setLengthCm(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="w-full bg-transparent text-xs h-8 outline-none"
-                    />
-                  </div>
-                  <div className="flex items-center rounded-md border border-input bg-background px-2">
-                    <span className="text-[11px] text-muted-foreground font-semibold mr-1.5">W</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={widthCm}
-                      onChange={(e) => setWidthCm(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="w-full bg-transparent text-xs h-8 outline-none"
-                    />
-                  </div>
-                  <div className="flex items-center rounded-md border border-input bg-background px-2">
-                    <span className="text-[11px] text-muted-foreground font-semibold mr-1.5">H</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={heightCm}
-                      onChange={(e) => setHeightCm(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="w-full bg-transparent text-xs h-8 outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
           </Card>
 
@@ -1166,25 +1101,6 @@ export function ProductForm({ product }: { product?: Product }) {
             </div>
 
             <div className="space-y-3">
-              <Field label="SEO Title" hint={`${seoTitle.length}/60`}>
-                <Input
-                  maxLength={60}
-                  value={seoTitle}
-                  onChange={(e) => setSeoTitle(e.target.value)}
-                  className="h-9 text-xs sm:text-sm"
-                />
-              </Field>
-
-              <Field label="SEO Description" hint={`${seoDescription.length}/160`}>
-                <Textarea
-                  rows={3}
-                  maxLength={160}
-                  value={seoDescription}
-                  onChange={(e) => setSeoDescription(e.target.value)}
-                  className="text-xs sm:text-sm p-2.5 resize-none"
-                />
-              </Field>
-
               <Field label="URL Slug">
                 <Input
                   value={urlSlug}
