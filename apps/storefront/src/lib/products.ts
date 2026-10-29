@@ -163,13 +163,14 @@ export function getProductUrl(product: { id: number | string; name: string }): s
 
 export function getProductCheckoutUrl(
   product: { id: number | string; name: string },
-  options?: { size?: string; color?: string; qty?: number }
+  options?: { size?: string; color?: string; qty?: number; design?: string }
 ): string {
   const base = `/${getProductSlug(product)}/checkout`
   if (!options) return base
   const params = new URLSearchParams()
   if (options.size) params.set('size', options.size)
   if (options.color) params.set('color', options.color)
+  if (options.design) params.set('design', options.design)
   if (options.qty && options.qty > 1) params.set('qty', String(options.qty))
   const qs = params.toString()
   return qs ? `${base}?${qs}` : base

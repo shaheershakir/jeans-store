@@ -34,16 +34,29 @@ export type Category = (typeof CATEGORIES)[number]
 export interface Variant {
   id?: number
   productId?: string
+  designId?: number | null
   sku?: string
   size: string | number
   color: string
   price?: number
-  stock?: number
-  reserved?: number
+  stock: number
+  reserved: number
   reorderPoint?: number
-  weight?: number
+  weight: number
   barcode?: string
+  status: 'Active' | 'Inactive'
+}
+
+export interface ProductDesign {
+  id?: number
+  productId?: string
+  name: string
+  slug: string
+  priceOverride?: number | null
+  sortOrder?: number
   status?: 'Active' | 'Inactive'
+  images?: string[]
+  variants?: Variant[]
 }
 
 export interface Product {
@@ -51,6 +64,7 @@ export interface Product {
   store?: string
   category?: string
   name: string
+  shortDescription?: string
   sku?: string
   price: string
   priceNum: number
@@ -61,6 +75,13 @@ export interface Product {
   hsnCode?: string
   isFeatured?: boolean
   isFreeSize?: boolean
+  trackInventory?: boolean
+  continueSelling?: boolean
+  lengthCm?: number | null
+  widthCm?: number | null
+  heightCm?: number | null
+  seoTitle?: string
+  seoDescription?: string
   careInstructions?: string
   img: string
   img2: string
@@ -70,10 +91,14 @@ export interface Product {
   color?: string
   sizes?: string[]
   variants?: Variant[]
+  designs?: ProductDesign[]
+  tags?: string[]
+  collectionIds?: number[]
   rating?: number
   inStock?: boolean
   collection?: string
   categoryId?: number
+  collectionId?: number | null
   slug?: string
   status?: string
   attributes?: Record<string, unknown>
@@ -84,6 +109,8 @@ export interface Product {
 export interface OrderItem {
   id: string
   variantId?: number
+  designId?: number
+  designName?: string
   name: string
   size: string
   price: string

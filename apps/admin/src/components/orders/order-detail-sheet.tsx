@@ -140,12 +140,12 @@ export function OrderDetailSheet({
               <span>Items ({order.itemsCount})</span>
             </div>
             <div className="flex items-center gap-3 pt-1">
-              <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-white dark:bg-card border border-slate-200/80 dark:border-slate-700 shrink-0">
+              <div className="relative h-16 w-16 rounded-xl overflow-hidden bg-white dark:bg-card border border-slate-200/80 dark:border-slate-700 shrink-0">
                 <Image
-                  src={order.images[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=120&q=80'}
+                  src={order.images[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=160&q=80'}
                   alt={order.productName}
                   fill
-                  sizes="56px"
+                  sizes="64px"
                   className="object-cover"
                 />
               </div>
@@ -265,6 +265,10 @@ export function OrderDetailSheet({
                 <DropdownMenuItem
                   key={status}
                   disabled={order.fulfillmentStatus === status}
+                  onSelect={() => {
+                    onStatusChange(order.id, status)
+                    toastSuccess(`Order updated to ${status}`)
+                  }}
                   onClick={() => {
                     onStatusChange(order.id, status)
                     toastSuccess(`Order updated to ${status}`)

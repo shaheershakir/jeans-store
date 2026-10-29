@@ -111,6 +111,7 @@ interface KanbanBoardProps {
   countsByStatus: Record<string, number>
   onMoveOrder: (orderId: string | number, newStatus: FulfillmentStatus) => void
   onPrint?: (order: OrderItemCardData) => void
+  onCardClick?: (order: OrderItemCardData) => void
 }
 
 export function KanbanBoard({
@@ -118,6 +119,7 @@ export function KanbanBoard({
   countsByStatus,
   onMoveOrder,
   onPrint,
+  onCardClick,
 }: KanbanBoardProps) {
   // Columns state for horizontal column reordering
   const [columns, setColumns] = React.useState<KanbanColumnConfig[]>(INITIAL_KANBAN_COLUMNS)
@@ -205,22 +207,23 @@ export function KanbanBoard({
         // 2. Order Card Drag & Drop
         if (source.data.type === 'order-card') {
           const draggedOrderId = source.data.orderId as string | number
-          const sourceStatus = source.data.currentStatus as FulfillmentStatus
+          const sourceStatus = (source.data.currentStatus as FulfillmentStatus) || ''
 
           const cardTarget = dropTargets.find((t) => t.data.type === 'order-card-target')
           const columnTarget = dropTargets.find((t) => t.data.type === 'column-target')
 
           let destinationStatus: FulfillmentStatus | undefined
 
-          if (columnTarget) {
-            destinationStatus = columnTarget.data.columnStatus as FulfillmentStatus
-          } else if (cardTarget) {
+          // Prefer specific card target's status, fallback to column target
+          if (cardTarget) {
             destinationStatus = cardTarget.data.targetStatus as FulfillmentStatus
+          } else if (columnTarget) {
+            destinationStatus = columnTarget.data.columnStatus as FulfillmentStatus
           }
 
           if (destinationStatus) {
             // When moved to next / different state, ensure it lands at the LAST position:
-            if (destinationStatus !== sourceStatus) {
+            if (destinationStatus.toLowerCase() !== sourceStatus.toLowerCase()) {
               handleMoveOrderToState(draggedOrderId, destinationStatus)
             }
           }
@@ -229,9 +232,64 @@ export function KanbanBoard({
     })
   }, [columns, handleMoveOrderToState])
 
+  // Smooth auto-scroll while dragging a card near viewport top/bottom
+  React.useEffect(() => {
+    let animId: number | null = null
+    let scrollDirection = 0
+
+    const scrollLoop = () => {
+      if (scrollDirection !== 0) {
+        const container = document.querySelector('.overflow-y-auto') as HTMLElement | null
+        if (container) {
+          container.scrollBy({ top: scrollDirection * 14, behavior: 'auto' })
+        } else {
+          window.scrollBy({ top: scrollDirection * 14, behavior: 'auto' })
+        }
+        animId = requestAnimationFrame(scrollLoop)
+      } else {
+        animId = null
+      }
+    }
+
+    const handleDragOver = (e: DragEvent) => {
+      const topThreshold = 100
+      const bottomThreshold = window.innerHeight - 100
+
+      if (e.clientY < topThreshold) {
+        scrollDirection = -1
+        if (!animId) animId = requestAnimationFrame(scrollLoop)
+      } else if (e.clientY > bottomThreshold) {
+        scrollDirection = 1
+        if (!animId) animId = requestAnimationFrame(scrollLoop)
+      } else {
+        scrollDirection = 0
+      }
+    }
+
+    const handleDragEnd = () => {
+      scrollDirection = 0
+      if (animId) {
+        cancelAnimationFrame(animId)
+        animId = null
+      }
+    }
+
+    window.addEventListener('dragover', handleDragOver)
+    window.addEventListener('dragend', handleDragEnd)
+    window.addEventListener('drop', handleDragEnd)
+
+    return () => {
+      scrollDirection = 0
+      if (animId) cancelAnimationFrame(animId)
+      window.removeEventListener('dragover', handleDragOver)
+      window.removeEventListener('dragend', handleDragEnd)
+      window.removeEventListener('drop', handleDragEnd)
+    }
+  }, [])
+
   return (
-    <div className="w-full overflow-x-auto pb-4 scrollbar-thin">
-      <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5 sm:gap-4.5 snap-x snap-mandatory scrollbar-none pb-2">
+    <div className="w-full overflow-x-auto pb-6 scrollbar-thin">
+      <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5 sm:gap-4.5 snap-x snap-mandatory scrollbar-none pb-2 items-stretch min-h-[calc(100vh-280px)]">
         {columns.map((col, index) => {
           // Filter all orders for this column
           const rawColOrders = orders.filter(
@@ -261,7 +319,7 @@ export function KanbanBoard({
           return (
             <div
               key={col.status}
-              className="w-[82vw] sm:w-[320px] md:w-auto shrink-0 snap-center"
+              className="w-[82vw] sm:w-[320px] md:w-auto shrink-0 snap-center flex flex-col h-full"
             >
               <KanbanColumn
                 column={col}
@@ -270,6 +328,7 @@ export function KanbanBoard({
                 totalCount={totalCount}
                 onStatusChange={handleMoveOrderToState}
                 onPrint={onPrint}
+                onCardClick={onCardClick}
               />
             </div>
           )

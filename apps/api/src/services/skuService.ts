@@ -259,6 +259,47 @@ export function generateProductScopedSku(components: SkuComponents): string {
   return `${cat}-${type}-${prod}-${col}-${sz}`.toUpperCase()
 }
 
+export function getDesignCategoryCode(category?: string | null): string {
+  if (!category) return 'PRT'
+  const clean = category.trim().toLowerCase()
+  if (clean.includes('drsleeve') || clean.includes('dr-sleeve')) return 'DRS'
+  return getCategoryCode(category)
+}
+
+export function extractDesignCode(designNameOrSlug?: string | null): string {
+  if (!designNameOrSlug) return 'DSG'
+  const trimmed = designNameOrSlug.trim()
+  const firstWord = trimmed.split(/[-_\s]+/)[0]
+  const clean = firstWord.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+  return clean.slice(0, 8) || 'DSG'
+}
+
+export function generateDesignSku(
+  categoryOrParams:
+    | string
+    | {
+        category: string
+        designSlug?: string
+        designName?: string
+        size: string | number
+      },
+  designNameOrSlug?: string,
+  size?: string | number
+): string {
+  if (typeof categoryOrParams === 'object') {
+    const cat = getDesignCategoryCode(categoryOrParams.category)
+    const dsg = extractDesignCode(
+      categoryOrParams.designSlug || categoryOrParams.designName || ''
+    )
+    const sz = getSizeCode(categoryOrParams.size)
+    return `${cat}-${dsg}-${sz}`.toUpperCase()
+  }
+  const cat = getDesignCategoryCode(categoryOrParams)
+  const dsg = extractDesignCode(designNameOrSlug || '')
+  const sz = getSizeCode(size ?? 'M')
+  return `${cat}-${dsg}-${sz}`.toUpperCase()
+}
+
 /**
  * Checks if a candidate SKU is already claimed by any other product.
  * Returns the final SKU (either 4-part, or 5-part if collision occurs).

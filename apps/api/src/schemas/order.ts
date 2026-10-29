@@ -2,10 +2,9 @@ import { z } from "zod";
 
 export const orderItemSchema = z.object({
   id: z.string().uuid(),
-  variantId: z
-    .union([z.number().int().positive(), z.null()])
-    .optional()
-    .transform((v) => v ?? undefined),
+  variantId: z.number().int().positive().nullable().optional(),
+  designId: z.number().int().positive().nullable().optional(),
+  designName: z.string().optional(),
   name: z.string().optional(),
 
   size: z.string().min(1),

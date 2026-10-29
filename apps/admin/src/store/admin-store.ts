@@ -27,6 +27,7 @@ import type {
   PaymentMethod,
   PaymentStatus,
   Product,
+  ProductDesign,
   ProductStatus,
   Promotion,
   Refund,
@@ -52,6 +53,7 @@ import { generateBaseSku, generateProductScopedSku } from '@/lib/sku'
 /** Shape accepted by saveProduct — create (no id) or update (with id). */
 export interface VariantInput {
   id?: number
+  designId?: number | null
   size: number | string
   color: Color | string
   sku: string
@@ -70,9 +72,12 @@ export interface ProductInput {
   slug: string
   sku: string
   description: string
+  shortDescription?: string
   brand?: string
   categoryId: number
   collectionId: number
+  collectionIds?: number[]
+  tags?: string[]
   fit?: Fit
   gender?: Gender
   rise?: Rise
@@ -87,10 +92,18 @@ export interface ProductInput {
   status: ProductStatus
   featured: boolean
   isFreeSize?: boolean
+  trackInventory?: boolean
+  continueSelling?: boolean
   weightGrams?: number
+  lengthCm?: number | null
+  widthCm?: number | null
+  heightCm?: number | null
+  seoTitle?: string
+  seoDescription?: string
   image: string
   images: Array<{ url: string; alt: string; id?: number; order?: number }>
   variants: VariantInput[]
+  designs?: ProductDesign[]
 }
 
 export interface Session {

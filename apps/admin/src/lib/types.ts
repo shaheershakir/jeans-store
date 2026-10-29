@@ -49,15 +49,29 @@ export type Material = 'Cotton' | 'Cotton Stretch' | 'French Terry' | 'Fleece' |
 export type ProductStatus = 'Active' | 'Draft' | 'Archived'
 export type StockStatus = 'Healthy' | 'Low Stock' | 'Out of Stock'
 
+export interface ProductDesign {
+  id?: number
+  name: string
+  slug: string
+  priceOverride?: number | null
+  sortOrder?: number
+  status?: 'Active' | 'Inactive'
+  images: string[]
+  variants?: Variant[]
+}
+
 export interface Product {
   id: string
   name: string
   slug: string
   sku: string
   description: string
+  shortDescription?: string
   brand?: string
   categoryId: number
   collectionId: number
+  collectionIds?: number[]
+  tags?: string[]
   fit?: Fit
   gender?: Gender
   rise?: Rise
@@ -72,12 +86,20 @@ export interface Product {
   status: ProductStatus
   featured: boolean
   isFreeSize?: boolean
+  trackInventory?: boolean
+  continueSelling?: boolean
   weightGrams?: number
+  lengthCm?: number | null
+  widthCm?: number | null
+  heightCm?: number | null
+  seoTitle?: string
+  seoDescription?: string
   views: number
   wishlists: number
   image: string
   images: ProductImage[]
   variants: Variant[]
+  designs?: ProductDesign[]
   createdAt: string
   updatedAt: string
 }
@@ -92,6 +114,7 @@ export interface ProductImage {
 export interface Variant {
   id: number
   productId: string
+  designId?: number | null
   sku: string
   size: number | string
   color: Color

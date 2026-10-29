@@ -2,11 +2,12 @@
 
 import { apiFetch } from './api'
 import { useAdminStore, type ProductInput } from '@/store/admin-store'
-import type { Collection, Product, ProductStatus, SizeChart } from '@/lib/types'
+import type { Collection, Product, ProductDesign, ProductStatus, SizeChart } from '@/lib/types'
 
 interface ApiVariant {
   id?: number
   productId?: string
+  designId?: number | null
   sku?: string
   size: number | string
   color: string
@@ -24,6 +25,7 @@ interface ApiProduct {
   store?: string
   category?: string
   name: string
+  shortDescription?: string
   sku?: string
   fit?: string
   price: string
@@ -32,10 +34,20 @@ interface ApiProduct {
   img2: string
   images?: string[]
   isFreeSize?: boolean
+  trackInventory?: boolean
+  continueSelling?: boolean
+  lengthCm?: number | null
+  widthCm?: number | null
+  heightCm?: number | null
+  seoTitle?: string
+  seoDescription?: string
   badge?: string
   desc: string
   wash?: string
   variants?: ApiVariant[]
+  designs?: ProductDesign[]
+  tags?: string[]
+  collectionIds?: number[]
   adminData?: Record<string, unknown>
   createdAt?: string
 }
@@ -48,15 +60,21 @@ function fromApiProduct(value: ApiProduct): Product {
   const numeric = (key: string, fallback: number) => Number(metadata[key] ?? fallback)
   const text = (key: string, fallback: string) => String(metadata[key] ?? fallback)
 
+  const tags = value.tags ?? (metadata.tags as string[] | undefined) ?? []
+  const collectionIds = value.collectionIds ?? (metadata.collectionIds as number[] | undefined) ?? []
+
   return {
     id: value.id,
     name: value.name,
     slug: text('slug', value.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')),
     sku: text('sku', value.sku ?? value.variants?.[0]?.sku ?? ''),
     description: value.desc,
+    shortDescription: value.shortDescription ?? (metadata.shortDescription as string) ?? undefined,
     brand: text('brand', 'TEESGARAGE'),
     categoryId: numeric('categoryId', categories.find((category) => category.slug === value.category)?.id ?? categories.find((category) => category.slug === 'printed-tees')?.id ?? 1),
-    collectionId: numeric('collectionId', collections[0]?.id ?? 1),
+    collectionId: collectionIds[0] ?? numeric('collectionId', collections[0]?.id ?? 1),
+    collectionIds: collectionIds.length > 0 ? collectionIds : undefined,
+    tags: tags.length > 0 ? tags : undefined,
     fit: (value.fit ?? 'Regular') as Product['fit'],
     gender: text('gender', 'Men') as Product['gender'],
     rise: text('rise', 'Mid') as Product['rise'],
@@ -71,7 +89,14 @@ function fromApiProduct(value: ApiProduct): Product {
     status: text('status', value.badge === 'Draft' ? 'Draft' : 'Active') as ProductStatus,
     featured: Boolean(metadata.featured ?? false),
     isFreeSize: value.isFreeSize ?? Boolean(metadata.isFreeSize ?? false),
+    trackInventory: value.trackInventory ?? (metadata.trackInventory !== undefined ? Boolean(metadata.trackInventory) : true),
+    continueSelling: value.continueSelling ?? Boolean(metadata.continueSelling ?? false),
     weightGrams: numeric('weightGrams', value.variants?.[0]?.weight ?? 350),
+    lengthCm: value.lengthCm ?? (metadata.lengthCm as number | null) ?? null,
+    widthCm: value.widthCm ?? (metadata.widthCm as number | null) ?? null,
+    heightCm: value.heightCm ?? (metadata.heightCm as number | null) ?? null,
+    seoTitle: value.seoTitle ?? (metadata.seoTitle as string) ?? undefined,
+    seoDescription: value.seoDescription ?? (metadata.seoDescription as string) ?? undefined,
     views: numeric('views', 0),
     wishlists: numeric('wishlists', 0),
     image: value.img,
@@ -79,6 +104,7 @@ function fromApiProduct(value: ApiProduct): Product {
     variants: (value.variants ?? []).map((variant) => ({
       id: variant.id ?? 0,
       productId: value.id,
+      designId: variant.designId ?? null,
       sku: variant.sku ?? '',
       size: variant.size,
       color: variant.color,
@@ -90,6 +116,7 @@ function fromApiProduct(value: ApiProduct): Product {
       barcode: variant.barcode ?? '',
       status: variant.status ?? 'Active'
     })),
+    designs: value.designs,
     createdAt: value.createdAt ?? new Date().toISOString(),
     updatedAt: value.createdAt ?? new Date().toISOString()
   }
@@ -105,8 +132,11 @@ function toApiProduct(input: ProductInput) {
     store: 'teesgarage',
     category: category?.slug ?? 'printed-tees',
     name: input.name,
+    shortDescription: input.shortDescription,
     isFreeSize: input.isFreeSize ?? false,
     collectionId: input.collectionId || null,
+    collectionIds: input.collectionIds,
+    tags: input.tags,
     fit: input.fit,
     price: `₹${input.price.toLocaleString('en-IN')}`,
     priceNum: input.price,
@@ -118,8 +148,17 @@ function toApiProduct(input: ProductInput) {
     wash: input.wash,
     color: String(input.variants[0]?.color ?? 'Blue'),
     sizes: [...new Set(input.variants.map((variant) => String(variant.size)))],
+    trackInventory: input.trackInventory ?? true,
+    continueSelling: input.continueSelling ?? false,
+    lengthCm: input.lengthCm,
+    widthCm: input.widthCm,
+    heightCm: input.heightCm,
+    seoTitle: input.seoTitle,
+    seoDescription: input.seoDescription,
+    designs: input.designs,
     variants: input.variants.map((variant) => ({
       id: variant.id,
+      designId: variant.designId ?? null,
       sku: variant.sku,
       size: variant.size,
       color: variant.color,
@@ -135,6 +174,8 @@ function toApiProduct(input: ProductInput) {
       brand: input.brand,
       categoryId: input.categoryId,
       collectionId: input.collectionId,
+      collectionIds: input.collectionIds,
+      tags: input.tags,
       collection: collection?.name,
       gender: input.gender,
       rise: input.rise,
@@ -147,7 +188,15 @@ function toApiProduct(input: ProductInput) {
       status: input.status,
       featured: input.featured,
       isFreeSize: input.isFreeSize ?? false,
-      weightGrams: input.weightGrams ?? input.variants[0]?.weight ?? 350
+      weightGrams: input.weightGrams ?? input.variants[0]?.weight ?? 350,
+      lengthCm: input.lengthCm,
+      widthCm: input.widthCm,
+      heightCm: input.heightCm,
+      seoTitle: input.seoTitle,
+      seoDescription: input.seoDescription,
+      shortDescription: input.shortDescription,
+      trackInventory: input.trackInventory ?? true,
+      continueSelling: input.continueSelling ?? false
     }
   }
 }

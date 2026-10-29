@@ -1050,17 +1050,14 @@ export default function OrdersPage() {
       }))
 
       // Sync to store if it exists
-      const numId = Number(orderId)
-      if (!isNaN(numId)) {
-        useAdminStore.setState((state) => ({
-          data: {
-            ...state.data,
-            orders: state.data.orders.map((o) =>
-              o.id === numId ? { ...o, fulfillmentStatus: newStatus } : o
-            ),
-          },
-        }))
-      }
+      useAdminStore.setState((state) => ({
+        data: {
+          ...state.data,
+          orders: state.data.orders.map((o) =>
+            String(o.id) === strId ? { ...o, fulfillmentStatus: newStatus } : o
+          ),
+        },
+      }))
 
       const targetOrder = displayOrders.find((o) => String(o.id) === strId)
       const orderLabel = targetOrder?.number || `Order #${strId}`
@@ -1790,6 +1787,10 @@ export default function OrdersPage() {
           countsByStatus={tabCounts}
           onMoveOrder={handleMoveOrder}
           onPrint={(order) => triggerPrintOrders([order])}
+          onCardClick={(order) => {
+            setSelectedDetailOrder(order)
+            setDetailSheetOpen(true)
+          }}
         />
       )}
 
@@ -2106,12 +2107,12 @@ export default function OrdersPage() {
                           {/* Product */}
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-3">
-                              <div className="h-12 w-12 relative overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/70 dark:border-slate-700">
+                              <div className="h-14 w-14 relative overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/70 dark:border-slate-700">
                                 <Image
                                   src={order.images[0] || FALLBACK_IMAGE}
                                   alt={order.productName}
                                   fill
-                                  sizes="48px"
+                                  sizes="56px"
                                   className="object-cover"
                                 />
                               </div>

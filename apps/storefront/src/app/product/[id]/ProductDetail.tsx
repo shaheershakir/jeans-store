@@ -1,10 +1,10 @@
 'use client'
 
 import type { MouseEvent } from 'react'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Heart,
   ShoppingBag,
@@ -14,13 +14,14 @@ import {
   Check,
   X
 } from 'lucide-react'
-import type { Product } from '@/lib/constants'
+import type { Product, ProductDesign } from '@/lib/constants'
 import { useCartStore, useUIStore, usePreferencesStore, useFavoriteStore, useSearchHistoryStore } from '@/lib/store'
 import SizeGuideModal from '@/components/SizeGuideModal'
 import RelatedProducts from '@/components/RelatedProducts'
 import StickyPdpBar from '@/components/StickyPdpBar'
-import { getAvailableProductSizes, getProductCheckoutUrl, getProductSlug } from '@/lib/products'
+import { getAvailableProductSizes, getProductCheckoutUrl, getProductSlug, slugify } from '@/lib/products'
 import { trackEvent } from '@/lib/analytics'
+import { ProductDetailSkeleton } from '@/components/skeletons/StorefrontSkeletons'
 
 // Map category ID → breadcrumb label + route
 const CATEGORY_META: Record<string, { label: string; href: string }> = {
@@ -48,8 +49,9 @@ const PDP_SWATCHES = [
   { name: 'Red', hex: '#a93226' }
 ]
 
-export default function ProductDetail({ product }: { product: Product }) {
+function ProductDetailContent({ product }: { product: Product }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const addItem = useCartStore((state) => state.addItem)
   const selectedSize = useUIStore((state) => state.selectedSize)
   const setSelectedSize = useUIStore((state) => state.setSelectedSize)
@@ -66,6 +68,44 @@ export default function ProductDetail({ product }: { product: Product }) {
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState<boolean>(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [selectedColor, setSelectedColor] = useState<string>('Charcoal')
+
+  // Filter active designs
+  const designs = useMemo(() => {
+    return (product.designs || []).filter((d) => d.status !== 'Inactive')
+  }, [product.designs])
+
+  const initialDesignSlug = searchParams.get('design')?.toLowerCase() || null
+
+  const [selectedDesignSlug, setSelectedDesignSlug] = useState<string | null>(() => {
+    if (initialDesignSlug) return initialDesignSlug
+    if (typeof window !== 'undefined') {
+      const q = new URLSearchParams(window.location.search).get('design')
+      if (q) return q.toLowerCase()
+    }
+    return designs[0]?.slug?.toLowerCase() || null
+  })
+
+  // Sync state if searchParams updates
+  useEffect(() => {
+    const q = searchParams.get('design')?.toLowerCase()
+    if (q && q !== selectedDesignSlug) {
+      setSelectedDesignSlug(q)
+    }
+  }, [searchParams, selectedDesignSlug])
+
+  // Active design object
+  const selectedDesign = useMemo(() => {
+    if (designs.length === 0) return null
+    if (selectedDesignSlug) {
+      const match = designs.find(
+        (d) =>
+          d.slug.toLowerCase() === selectedDesignSlug ||
+          slugify(d.name) === selectedDesignSlug
+      )
+      if (match) return match
+    }
+    return designs[0]
+  }, [designs, selectedDesignSlug])
 
   // Delivery Pincode Box state
   const [deliveryPin, setDeliveryPin] = useState<string>('560001')
@@ -86,20 +126,44 @@ export default function ProductDetail({ product }: { product: Product }) {
     shipping: false
   })
 
-  // Available sizes
+  // Available sizes calculated for the selected design or product
   const availableSizes = useMemo(() => {
+    if (selectedDesign) {
+      if (selectedDesign.variants && selectedDesign.variants.length > 0) {
+        const sizes = selectedDesign.variants
+          .filter(
+            (v) => v.status === 'Active' && (!product.trackInventory || v.stock - v.reserved > 0)
+          )
+          .map((v) => String(v.size))
+        if (sizes.length > 0) return Array.from(new Set(sizes))
+      }
+      if (product.variants && product.variants.length > 0 && selectedDesign.id != null) {
+        const matching = product.variants.filter((v) => v.designId === selectedDesign.id)
+        if (matching.length > 0) {
+          const sizes = matching
+            .filter(
+              (v) => v.status === 'Active' && (!product.trackInventory || v.stock - v.reserved > 0)
+            )
+            .map((v) => String(v.size))
+          if (sizes.length > 0) return Array.from(new Set(sizes))
+        }
+      }
+    }
+
     return product.variants?.length
       ? Array.from(
           new Set(
             product.variants
               .filter(
-                (variant) => variant.status === 'Active' && variant.stock - variant.reserved > 0
+                (variant) =>
+                  variant.status === 'Active' &&
+                  (!product.trackInventory || variant.stock - variant.reserved > 0)
               )
               .map((variant) => String(variant.size))
           )
         )
       : getAvailableProductSizes(product)
-  }, [product])
+  }, [product, selectedDesign])
 
   const isNumeric = availableSizes.length > 0 && availableSizes.every((s) => /^\d+$/.test(s))
 
@@ -107,7 +171,7 @@ export default function ProductDetail({ product }: { product: Product }) {
   const isThermalWaffle = product.name.toLowerCase().includes('thermal waffle')
   const title = isThermalWaffle ? 'Thermal Waffle Knit Tee' : product.name
 
-  // Build image list
+  // Build image list (prefer selected design gallery)
   const images = useMemo(() => {
     if (isThermalWaffle) {
       return [
@@ -118,6 +182,9 @@ export default function ProductDetail({ product }: { product: Product }) {
         '/mock-assets/pdp/gallery_5.png'
       ]
     }
+    if (selectedDesign?.images && selectedDesign.images.length > 0) {
+      return selectedDesign.images
+    }
     const raw = (
       Array.isArray(product.images) && product.images.length > 0
         ? product.images
@@ -126,12 +193,37 @@ export default function ProductDetail({ product }: { product: Product }) {
 
     const unique = Array.from(new Set(raw))
     return unique.length > 0 ? unique : [product.img]
-  }, [product, isThermalWaffle])
+  }, [product, isThermalWaffle, selectedDesign])
+
+  // Price calculation with design override support
+  const currentPriceNum = selectedDesign?.priceOverride ?? product.priceNum
+  const currentPrice = selectedDesign?.priceOverride
+    ? `₹${selectedDesign.priceOverride.toLocaleString('en-IN')}`
+    : product.price
+  const originalPrice = product.compareAtPrice ?? Math.round(currentPriceNum * 1.286)
+  const discountPercent =
+    originalPrice > currentPriceNum
+      ? Math.round(((originalPrice - currentPriceNum) / originalPrice) * 100)
+      : 0
 
   const catMeta = (product.category ? CATEGORY_META[product.category] : null) ?? {
     label: 'All Garments',
     href: '/shop'
   }
+
+  // Ensure active image index is valid when gallery changes
+  useEffect(() => {
+    if (activeImageIdx >= images.length) {
+      setActiveImageIdx(0)
+    }
+  }, [images.length, activeImageIdx])
+
+  // Keep size selection valid when design/variants change
+  useEffect(() => {
+    if (availableSizes.length > 0 && !availableSizes.includes(selectedSize)) {
+      setSelectedSize(availableSizes.includes('S') ? 'S' : availableSizes[0])
+    }
+  }, [availableSizes, selectedSize, setSelectedSize])
 
   useEffect(() => {
     let isSubscribed = true
@@ -225,15 +317,38 @@ export default function ProductDetail({ product }: { product: Product }) {
       product_name: product.name,
       product_slug: getProductSlug(product),
       category: product.category,
-      price: product.priceNum,
+      price: currentPriceNum,
       currency: 'INR',
-
-      color: selectedColor || product.color,
+      design: selectedDesign?.name,
+      color: selectedDesign ? selectedDesign.name : (selectedColor || product.color),
       selected_size: selectedSize,
       sizes_available: availableSizes,
       in_stock: availableSizes.length > 0
     })
-  }, [product.id])
+  }, [product.id, selectedDesign, currentPriceNum])
+
+  function handleSelectDesign(design: ProductDesign) {
+    const slug = design.slug || slugify(design.name)
+    setSelectedDesignSlug(slug.toLowerCase())
+    setActiveImageIdx(0)
+
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('design', slug)
+      window.history.replaceState(null, '', url.pathname + url.search)
+    }
+
+    trackEvent('product_variant_selected', {
+      product_id: product.id,
+      product_name: product.name,
+      product_slug: getProductSlug(product),
+      variant_type: 'design',
+      design_id: design.id,
+      design_name: design.name,
+      design_slug: design.slug,
+      in_stock: true
+    })
+  }
 
   function handleSelectColor(colorName: string) {
     setSelectedColor(colorName)
@@ -255,7 +370,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       product_name: product.name,
       product_slug: getProductSlug(product),
       variant_type: 'size',
-      color: selectedColor,
+      color: selectedDesign ? selectedDesign.name : selectedColor,
       size,
       in_stock: availableSizes.includes(size)
     })
@@ -277,7 +392,7 @@ export default function ProductDetail({ product }: { product: Product }) {
         product_id: product.id,
         product_name: product.name,
         category: product.category,
-        price: product.priceNum
+        price: currentPriceNum
       })
     } else {
       trackEvent('product_unfavorited', {
@@ -288,10 +403,20 @@ export default function ProductDetail({ product }: { product: Product }) {
   }
 
   function handleAddToCart(sourceLocation: 'pdp' | 'sticky_bar' = 'pdp') {
-    if (!availableSizes.includes(selectedSize)) return
-    addItem(product.id, selectedSize, product, selectedColor || undefined)
+    if (availableSizes.length > 0 && !availableSizes.includes(selectedSize)) return
+    addItem(
+      product.id,
+      selectedSize,
+      product,
+      selectedDesign ? selectedDesign.name : (selectedColor || undefined),
+      selectedDesign?.id,
+      selectedDesign?.name,
+      currentPriceNum,
+      images[0] || product.img
+    )
     setAdded(true)
-    showToast(`Added ${product.name} (${selectedSize}) to bag`)
+    const label = selectedDesign ? `${product.name} - ${selectedDesign.name}` : product.name
+    showToast(`Added ${label} (${selectedSize}) to bag`)
     setTimeout(() => setAdded(false), 2000)
     setTimeout(() => {
       openOverlay('cart')
@@ -302,10 +427,11 @@ export default function ProductDetail({ product }: { product: Product }) {
       product_name: product.name,
       product_slug: getProductSlug(product),
       category: product.category,
-      price: product.priceNum,
+      price: currentPriceNum,
       currency: 'INR',
-
-      color: selectedColor || product.color,
+      design_id: selectedDesign?.id,
+      design_name: selectedDesign?.name,
+      color: selectedDesign?.name || selectedColor || product.color,
       size: selectedSize,
       quantity: 1,
       source_location: sourceLocation,
@@ -314,17 +440,18 @@ export default function ProductDetail({ product }: { product: Product }) {
   }
 
   function handleBuyNow(sourceLocation: 'pdp' | 'sticky_bar' = 'pdp') {
-    if (!availableSizes.includes(selectedSize)) return
+    if (availableSizes.length > 0 && !availableSizes.includes(selectedSize)) return
 
     trackEvent('product_buy_now_clicked', {
       product_id: product.id,
       product_name: product.name,
       product_slug: getProductSlug(product),
       category: product.category,
-      price: product.priceNum,
+      price: currentPriceNum,
       currency: 'INR',
-
-      color: selectedColor || product.color,
+      design_id: selectedDesign?.id,
+      design_name: selectedDesign?.name,
+      color: selectedDesign?.name || selectedColor || product.color,
       size: selectedSize,
       quantity: 1,
       source_location: sourceLocation,
@@ -333,7 +460,8 @@ export default function ProductDetail({ product }: { product: Product }) {
 
     const checkoutUrl = getProductCheckoutUrl(product, {
       size: selectedSize,
-      color: selectedColor || undefined,
+      color: selectedDesign ? selectedDesign.name : (selectedColor || undefined),
+      design: selectedDesign?.slug,
       qty: 1
     })
     router.push(checkoutUrl)
@@ -345,10 +473,6 @@ export default function ProductDetail({ product }: { product: Product }) {
       [section]: !prev[section]
     }))
   }
-
-  // Calculate original price & discount
-  const originalPrice = Math.round(product.priceNum * 1.286)
-  const discountPercent = Math.round(((originalPrice - product.priceNum) / originalPrice) * 100)
 
   return (
     <div className="mx-auto max-w-[1360px] px-4 sm:px-6 lg:px-8 pt-6 pb-20 font-sans">
@@ -389,7 +513,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             />
           </div>
 
-          {/* 5 Thumbnails Reel Below Hero */}
+          {/* Thumbnails Reel Below Hero */}
           {images.length > 1 && (
             <div className="grid grid-cols-5 gap-3 mt-4" role="group" aria-label="Thumbnail angles">
               {images.map((src, idx) => {
@@ -425,59 +549,124 @@ export default function ProductDetail({ product }: { product: Product }) {
           </div>
 
           {/* Product Title */}
-          <h1 className="text-3xl lg:text-[34px] font-bold text-gray-950 tracking-tight leading-tight mb-3">
+          <h1 className="text-3xl lg:text-[34px] font-bold text-gray-950 tracking-tight leading-tight mb-2">
             {title}
           </h1>
+
+          {/* Optional Short Description */}
+          {product.shortDescription && (
+            <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+              {product.shortDescription}
+            </p>
+          )}
 
           {/* Price & Discount Row */}
           <div className="flex items-center gap-3 mb-1">
             <span className="text-2xl lg:text-[28px] font-bold text-gray-950 tabular-nums">
-              {product.price}
+              {currentPrice}
             </span>
             <span className="text-base sm:text-lg text-gray-400 line-through font-normal tabular-nums">
               ₹{(isThermalWaffle ? 1799 : originalPrice).toLocaleString('en-IN')}
             </span>
-            <span className="bg-[#e6f4ea] text-[#137333] text-xs font-bold px-2.5 py-1 rounded-full">
-              {isThermalWaffle ? 22 : discountPercent}% OFF
-            </span>
+            {discountPercent > 0 && (
+              <span className="bg-[#e6f4ea] text-[#137333] text-xs font-bold px-2.5 py-1 rounded-full">
+                {isThermalWaffle ? 22 : discountPercent}% OFF
+              </span>
+            )}
           </div>
 
           {/* Taxes Notice */}
           <div className="text-xs text-gray-400 mb-6">Inclusive of all taxes</div>
 
-          {/* Colorway Selector */}
-          <div className="mb-6">
-            <div className="text-sm text-gray-900 mb-3">
-              Color: <strong className="font-bold text-gray-950">{selectedColor}</strong>
-            </div>
+          {/* Design / Print Selector (when multi-design product) */}
+          {designs.length > 0 ? (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3 text-sm text-gray-900">
+                <span>
+                  Design: <strong className="font-bold text-gray-950">{selectedDesign?.name}</strong>
+                </span>
+                <span className="text-xs text-gray-500 font-medium">
+                  {designs.length} {designs.length === 1 ? 'Design' : 'Designs'}
+                </span>
+              </div>
 
-            <div
-              className="flex items-center gap-2.5 sm:gap-3 flex-wrap"
-              role="group"
-              aria-label="Color choices"
-            >
-              {PDP_SWATCHES.map((swatch) => {
-                const isSelected = selectedColor.toLowerCase() === swatch.name.toLowerCase()
-                return (
-                  <button
-                    key={swatch.name}
-                    type="button"
-                    onClick={() => handleSelectColor(swatch.name)}
-                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full cursor-pointer transition-all touch-manipulation outline-none ${
-                      swatch.isWhite ? 'border border-gray-200' : ''
-                    } ${
-                      isSelected
-                        ? 'ring-2 ring-black ring-offset-2 scale-105'
-                        : 'hover:scale-105 opacity-90 hover:opacity-100'
-                    }`}
-                    style={{ backgroundColor: swatch.hex }}
-                    title={swatch.name}
-                    aria-label={`Select color ${swatch.name}`}
-                  />
-                )
-              })}
+              <div
+                className="grid grid-cols-3 sm:grid-cols-4 gap-2.5"
+                role="radiogroup"
+                aria-label="Select graphic design"
+              >
+                {designs.map((design) => {
+                  const isSelected =
+                    selectedDesign?.slug === design.slug ||
+                    selectedDesign?.id === design.id ||
+                    (selectedDesign && slugify(selectedDesign.name) === slugify(design.name))
+                  const thumb = design.images?.[0] || product.img
+                  return (
+                    <button
+                      key={design.slug || design.name}
+                      type="button"
+                      onClick={() => handleSelectDesign(design)}
+                      className={`group relative rounded-xl border p-2 text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-black bg-neutral-50 ring-1 ring-black shadow-xs'
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-neutral-50/50'
+                      }`}
+                      aria-checked={isSelected ? 'true' : 'false'}
+                      role="radio"
+                    >
+                      <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-gray-100 mb-2">
+                        <Image
+                          src={thumb}
+                          alt={design.name}
+                          fill
+                          sizes="(max-width: 640px) 30vw, 120px"
+                          className="object-cover transition-transform group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="text-xs font-bold text-gray-950 truncate">{design.name}</div>
+                      <div className="text-[11px] text-gray-500 mt-0.5 font-medium tabular-nums">
+                        {design.priceOverride ? `₹${design.priceOverride.toLocaleString('en-IN')}` : product.price}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Standard Colorway Selector (when no designs) */
+            <div className="mb-6">
+              <div className="text-sm text-gray-900 mb-3">
+                Color: <strong className="font-bold text-gray-950">{selectedColor}</strong>
+              </div>
+
+              <div
+                className="flex items-center gap-2.5 sm:gap-3 flex-wrap"
+                role="group"
+                aria-label="Color choices"
+              >
+                {PDP_SWATCHES.map((swatch) => {
+                  const isSelected = selectedColor.toLowerCase() === swatch.name.toLowerCase()
+                  return (
+                    <button
+                      key={swatch.name}
+                      type="button"
+                      onClick={() => handleSelectColor(swatch.name)}
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full cursor-pointer transition-all touch-manipulation outline-none ${
+                        swatch.isWhite ? 'border border-gray-200' : ''
+                      } ${
+                        isSelected
+                          ? 'ring-2 ring-black ring-offset-2 scale-105'
+                          : 'hover:scale-105 opacity-90 hover:opacity-100'
+                      }`}
+                      style={{ backgroundColor: swatch.hex }}
+                      title={swatch.name}
+                      aria-label={`Select color ${swatch.name}`}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Size Selector */}
           <div className="mb-6">
@@ -634,13 +823,13 @@ export default function ProductDetail({ product }: { product: Product }) {
                 id="pdp-add-to-cart-btn"
                 type="button"
                 onClick={() => handleAddToCart('pdp')}
-                disabled={!availableSizes.includes(selectedSize)}
+                disabled={availableSizes.length > 0 && !availableSizes.includes(selectedSize)}
                 className={`flex-1 h-12 rounded-xl text-white font-brand text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors active:scale-[0.99] touch-manipulation cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs ${
                   added ? 'bg-[#15803d]' : 'bg-black hover:bg-neutral-900'
                 }`}
               >
                 {added ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
-                <span>{added ? 'ADDED TO BAG' : `ADD TO BAG  —  ${product.price}`}</span>
+                <span>{added ? 'ADDED TO BAG' : `ADD TO BAG  —  ${currentPrice}`}</span>
               </button>
             </div>
 
@@ -649,7 +838,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               id="pdp-buy-now-btn"
               type="button"
               onClick={() => handleBuyNow('pdp')}
-              disabled={!availableSizes.includes(selectedSize)}
+              disabled={availableSizes.length > 0 && !availableSizes.includes(selectedSize)}
               className="w-full h-12 rounded-xl border border-gray-200 bg-white text-gray-950 font-brand text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-gray-50 transition-colors active:scale-[0.99] touch-manipulation cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               BUY NOW
@@ -799,8 +988,9 @@ export default function ProductDetail({ product }: { product: Product }) {
         added={added}
         onAddToCart={() => handleAddToCart('sticky_bar')}
         onBuyNow={() => handleBuyNow('sticky_bar')}
-        selectedColor={selectedColor}
-        productImage={images[activeImageIdx] || product.img}
+        selectedColor={selectedDesign ? selectedDesign.name : selectedColor}
+        displayPrice={currentPrice}
+        productImage={images[activeImageIdx] || images[0] || product.img}
         onSizeChange={handleSelectSize}
       />
 
@@ -811,5 +1001,13 @@ export default function ProductDetail({ product }: { product: Product }) {
         productCategory={product.category}
       />
     </div>
+  )
+}
+
+export default function ProductDetail({ product }: { product: Product }) {
+  return (
+    <Suspense fallback={<ProductDetailSkeleton />}>
+      <ProductDetailContent product={product} />
+    </Suspense>
   )
 }

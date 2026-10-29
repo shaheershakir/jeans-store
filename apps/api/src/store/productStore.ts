@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm'
+import { and, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm'
 import {
   CATEGORIES,
   type Category,
@@ -17,17 +17,26 @@ import {
   products as productsTable,
   productVariants as productVariantsTable,
   productImages as productImagesTable,
+  tags as tagsTable,
+  productTags as productTagsTable,
+  productCollections as productCollectionsTable,
+  productDesigns as productDesignsTable,
   type DbCategory,
   type DbProduct,
   type DbProductVariant,
-  type DbProductImage
+  type DbProductImage,
+  type DbTag,
+  type DbProductTag,
+  type DbProductCollection,
+  type DbProductDesign
 } from '@jeans-store/db'
 import {
   generateBaseSku,
   generateProductScopedSku,
+  generateDesignSku,
   type SkuComponents
 } from '../services/skuService.js'
-import { assetUrl, keyFromUrl } from '@jeans-store/shared'
+import { assetUrl, keyFromUrl, type ProductDesign } from '@jeans-store/shared'
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80'
@@ -158,6 +167,7 @@ function variantFromRow(row: DbProductVariant, product?: DbProduct): Variant {
   return {
     id: row.id,
     productId: row.productId,
+    designId: row.designId ?? undefined,
     sku: row.sku,
     size: row.size,
     color: row.color,
@@ -182,15 +192,49 @@ export function toProduct(
   row: DbProduct,
   categorySlug: string,
   variants: Variant[] = [],
-  images: Array<{ storageKey: string | null; externalUrl: string | null; position: number }> = []
+  images: Array<{ storageKey: string | null; externalUrl: string | null; position: number; designId?: number | null }> = [],
+  designs: Array<{ id: number; name: string; slug: string; priceOverride?: number | null; sortOrder: number; status: string }> = [],
+  tags: string[] = [],
+  collectionIds: number[] = []
 ): Product {
-  const urls = imageUrls(images)
+  const coverImages = images.filter((img) => !img.designId)
+  const coverUrls = imageUrls(coverImages)
+
+  const mappedDesigns: ProductDesign[] = designs
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((d) => {
+      const designImages = images.filter((img) => img.designId === d.id)
+      const dUrls = imageUrls(designImages)
+      const dVariants = variants.filter((v) => v.designId === d.id)
+      return {
+        id: d.id,
+        name: d.name,
+        slug: d.slug,
+        priceOverride: d.priceOverride ?? null,
+        sortOrder: d.sortOrder,
+        status: (d.status as 'Active' | 'Inactive') || 'Active',
+        images: dUrls,
+        variants: dVariants.length > 0 ? dVariants : undefined
+      }
+    })
+
+  const allUrls = coverUrls.length > 0 ? coverUrls : (mappedDesigns[0]?.images ?? imageUrls(images))
   const attributes = attributesFromRow(row)
   const firstVariant = variants[0]
   const adminData: Record<string, unknown> = {
     status: adminStatus(normalizeStatus(row.status)),
     collectionId: row.collectionId,
+    collectionIds: collectionIds.length > 0 ? collectionIds : (row.collectionId ? [row.collectionId] : []),
+    tags,
     weightGrams: row.weightGrams,
+    lengthCm: row.lengthCm,
+    widthCm: row.widthCm,
+    heightCm: row.heightCm,
+    trackInventory: row.trackInventory,
+    continueSelling: row.continueSelling,
+    seoTitle: row.seoTitle,
+    seoDescription: row.seoDescription,
+    shortDescription: row.shortDescription,
     isFeatured: row.isFeatured,
     isFreeSize: row.isFreeSize,
     compareAtPrice: row.compareAtPrice,
@@ -206,6 +250,9 @@ export function toProduct(
     store: 'teesgarage' as StoreType,
     category: categorySlug as Category,
     categoryId: row.categoryId,
+    collectionId: row.collectionId ?? undefined,
+    collectionIds: collectionIds.length > 0 ? collectionIds : (row.collectionId ? [row.collectionId] : undefined),
+    tags: tags.length > 0 ? tags : undefined,
     slug: row.slug,
     status: normalizeStatus(row.status),
     attributes,
@@ -214,6 +261,14 @@ export function toProduct(
     price: `₹${row.price.toLocaleString('en-IN')}`,
     priceNum: row.price,
     weightGrams: row.weightGrams,
+    lengthCm: row.lengthCm ?? undefined,
+    widthCm: row.widthCm ?? undefined,
+    heightCm: row.heightCm ?? undefined,
+    trackInventory: row.trackInventory ?? true,
+    continueSelling: row.continueSelling ?? false,
+    seoTitle: row.seoTitle ?? undefined,
+    seoDescription: row.seoDescription ?? undefined,
+    shortDescription: row.shortDescription ?? undefined,
     compareAtPrice: row.compareAtPrice,
     costPrice: row.costPrice,
     taxRate: row.taxRate,
@@ -221,9 +276,9 @@ export function toProduct(
     isFeatured: row.isFeatured,
     isFreeSize: row.isFreeSize,
     careInstructions: row.careInstructions ?? undefined,
-    img: urls[0] ?? FALLBACK_IMAGE,
-    img2: urls[1] ?? urls[0] ?? FALLBACK_IMAGE,
-    images: urls.length > 0 ? urls : undefined,
+    img: allUrls[0] ?? FALLBACK_IMAGE,
+    img2: allUrls[1] ?? allUrls[0] ?? FALLBACK_IMAGE,
+    images: allUrls.length > 0 ? allUrls : undefined,
     badge: row.badge ?? undefined,
     desc: row.description,
     color: firstVariant?.color,
@@ -232,6 +287,7 @@ export function toProduct(
     inStock: variants.some((variant) => variant.stock - variant.reserved > 0),
     adminData,
     variants: variants.length > 0 ? variants : undefined,
+    designs: mappedDesigns.length > 0 ? mappedDesigns : undefined,
     createdAt: row.createdAt
   }
 }
@@ -305,6 +361,7 @@ export class ProductStore {
             this.memoryProductImages.push({
               id: this.memoryProductImages.length + 1,
               productId: p.id,
+              designId: null,
               color: null,
               storageKey: img.storageKey,
               externalUrl: img.externalUrl,
@@ -357,12 +414,19 @@ export class ProductStore {
 
   private hydrateMemory(product: Product): Product {
     const variants = this.memoryVariants.filter((variant) => variant.productId === product.id)
-    const urls = imageUrls(this.memoryProductImages.filter((image) => image.productId === product.id))
+    const coverImages = this.memoryProductImages.filter(
+      (image) => image.productId === product.id && !(image as any).designId
+    )
+    const coverUrls = imageUrls(coverImages)
+    const allUrls =
+      coverUrls.length > 0
+        ? coverUrls
+        : imageUrls(this.memoryProductImages.filter((image) => image.productId === product.id))
     return {
       ...product,
-      img: urls[0] ?? product.img ?? FALLBACK_IMAGE,
-      img2: urls[1] ?? product.img2 ?? urls[0] ?? product.img ?? FALLBACK_IMAGE,
-      images: urls.length > 0 ? urls : product.images,
+      img: allUrls[0] ?? product.img ?? FALLBACK_IMAGE,
+      img2: allUrls[1] ?? product.img2 ?? allUrls[0] ?? product.img ?? FALLBACK_IMAGE,
+      images: allUrls.length > 0 ? allUrls : product.images,
       sizes: variants.length > 0 ? [...new Set(variants.map((variant) => String(variant.size)))] : product.sizes,
       variants
     }
@@ -373,10 +437,17 @@ export class ProductStore {
     const productIds = rows.map((row) => row.id)
     const categoryIds = [...new Set(rows.map((row) => row.categoryId))]
 
-    const [categoryRows, variantRows, imageRows] = await Promise.all([
+    const [categoryRows, variantRows, imageRows, designRows, productTagRows, productColRows] = await Promise.all([
       db!.select().from(categoriesTable).where(inArray(categoriesTable.id, categoryIds)),
       db!.select().from(productVariantsTable).where(inArray(productVariantsTable.productId, productIds)),
-      db!.select().from(productImagesTable).where(inArray(productImagesTable.productId, productIds))
+      db!.select().from(productImagesTable).where(inArray(productImagesTable.productId, productIds)),
+      db!.select().from(productDesignsTable).where(inArray(productDesignsTable.productId, productIds)),
+      db!
+        .select({ productId: productTagsTable.productId, tagId: productTagsTable.tagId, tagName: tagsTable.name })
+        .from(productTagsTable)
+        .innerJoin(tagsTable, eq(tagsTable.id, productTagsTable.tagId))
+        .where(inArray(productTagsTable.productId, productIds)),
+      db!.select().from(productCollectionsTable).where(inArray(productCollectionsTable.productId, productIds))
     ])
 
     const categoryMap = new Map<number, string>(categoryRows.map((category) => [category.id, category.slug]))
@@ -386,11 +457,29 @@ export class ProductStore {
       list.push(variantFromRow(row, rows.find((product) => product.id === row.productId)))
       variantMap.set(row.productId, list)
     }
-    const imageMap = new Map<string, DbProductImage[]>()
+    const imageMap = new Map<string, Array<DbProductImage & { designId?: number | null }>>()
     for (const image of imageRows) {
       const list = imageMap.get(image.productId) ?? []
       list.push(image)
       imageMap.set(image.productId, list)
+    }
+    const designMap = new Map<string, DbProductDesign[]>()
+    for (const design of designRows) {
+      const list = designMap.get(design.productId) ?? []
+      list.push(design)
+      designMap.set(design.productId, list)
+    }
+    const tagsMap = new Map<string, string[]>()
+    for (const pt of productTagRows) {
+      const list = tagsMap.get(pt.productId) ?? []
+      list.push(pt.tagName)
+      tagsMap.set(pt.productId, list)
+    }
+    const collectionsMap = new Map<string, number[]>()
+    for (const pc of productColRows) {
+      const list = collectionsMap.get(pc.productId) ?? []
+      list.push(pc.collectionId)
+      collectionsMap.set(pc.productId, list)
     }
 
     return rows.map((row) =>
@@ -398,7 +487,10 @@ export class ProductStore {
         row,
         categoryMap.get(row.categoryId) ?? 'printed-tees',
         variantMap.get(row.id) ?? [],
-        imageMap.get(row.id) ?? []
+        imageMap.get(row.id) ?? [],
+        designMap.get(row.id) ?? [],
+        tagsMap.get(row.id) ?? [],
+        collectionsMap.get(row.id) ?? []
       )
     )
   }
@@ -731,8 +823,20 @@ export class ProductStore {
       const parsed = Number(value)
       return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed) : null
     }
+    const optionalDimension = (value: unknown): number | null => {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+    }
+    const primaryCollectionId =
+      input.collectionIds?.[0] ??
+      input.collectionId ??
+      adminData.collectionIds?.[0] ??
+      adminData.collectionId ??
+      null
     return {
-      ...(input.collectionId !== undefined ? { collectionId: input.collectionId } : {}),
+      ...(primaryCollectionId !== null && primaryCollectionId !== undefined
+        ? { collectionId: primaryCollectionId }
+        : {}),
       price: Math.max(0, Math.round(Number(input.priceNum) || 0)),
       compareAtPrice: optionalMoney(input.compareAtPrice ?? adminData.compareAtPrice ?? null),
       costPrice: optionalMoney(input.costPrice ?? adminData.costPrice ?? null),
@@ -742,7 +846,79 @@ export class ProductStore {
       isFeatured: input.isFeatured ?? Boolean(adminData.featured) ?? false,
       isFreeSize: input.isFreeSize ?? Boolean(adminData.isFreeSize),
       weightGrams,
+      shortDescription: input.shortDescription ?? adminData.shortDescription ?? null,
+      trackInventory:
+        input.trackInventory !== undefined
+          ? Boolean(input.trackInventory)
+          : adminData.trackInventory !== undefined
+            ? Boolean(adminData.trackInventory)
+            : true,
+      continueSelling:
+        input.continueSelling !== undefined
+          ? Boolean(input.continueSelling)
+          : Boolean(adminData.continueSelling) ?? false,
+      lengthCm: optionalDimension(input.lengthCm ?? adminData.lengthCm),
+      widthCm: optionalDimension(input.widthCm ?? adminData.widthCm),
+      heightCm: optionalDimension(input.heightCm ?? adminData.heightCm),
+      seoTitle: input.seoTitle ?? adminData.seoTitle ?? null,
+      seoDescription: input.seoDescription ?? adminData.seoDescription ?? null,
       careInstructions: input.careInstructions ?? (adminData.careInstructions as string) ?? null
+    }
+  }
+
+  private async syncTagsAndCollections(
+    tx: any,
+    productId: string,
+    tags?: string[],
+    collectionIds?: number[]
+  ): Promise<void> {
+    if (tags !== undefined) {
+      await tx.delete(productTagsTable).where(eq(productTagsTable.productId, productId))
+      for (const rawTag of tags) {
+        const tagName = rawTag.trim()
+        if (!tagName) continue
+        const tagSlug = slugify(tagName)
+        const [existingTag] = await tx
+          .select({ id: tagsTable.id })
+          .from(tagsTable)
+          .where(sql`lower(${tagsTable.slug}) = ${tagSlug.toLowerCase()}`)
+        let tagId: number
+        if (existingTag) {
+          tagId = existingTag.id
+        } else {
+          const [inserted] = await tx
+            .insert(tagsTable)
+            .values({ name: tagName, slug: tagSlug })
+            .onConflictDoNothing()
+            .returning({ id: tagsTable.id })
+          if (inserted) {
+            tagId = inserted.id
+          } else {
+            const [found] = await tx
+              .select({ id: tagsTable.id })
+              .from(tagsTable)
+              .where(sql`lower(${tagsTable.slug}) = ${tagSlug.toLowerCase()}`)
+            tagId = found?.id ?? 0
+          }
+        }
+        if (tagId) {
+          await tx
+            .insert(productTagsTable)
+            .values({ productId, tagId })
+            .onConflictDoNothing()
+        }
+      }
+    }
+
+    if (collectionIds !== undefined) {
+      await tx.delete(productCollectionsTable).where(eq(productCollectionsTable.productId, productId))
+      for (const colId of collectionIds) {
+        if (!colId || !Number.isInteger(colId)) continue
+        await tx
+          .insert(productCollectionsTable)
+          .values({ productId, collectionId: colId })
+          .onConflictDoNothing()
+      }
     }
   }
 
@@ -779,57 +955,160 @@ export class ProductStore {
     const newProductId = explicitId ?? randomUUID()
 
     if (isDatabaseConfigured() && db) {
-      await db.insert(productsTable).values({
-        id: newProductId,
-        categoryId,
-        slug,
-        name: input.name,
-        description: input.desc,
-        status,
-        ...this.productColumns(input, attributes, weightGrams)
-      })
-    }
+      await db.transaction(async (tx) => {
+        await tx.insert(productsTable).values({
+          id: newProductId,
+          categoryId,
+          slug,
+          name: input.name,
+          description: input.desc,
+          status,
+          ...this.productColumns(input, attributes, weightGrams)
+        })
 
-    try {
-      const variantsToInsert = await this.prepareVariants(rawVariants, input, newProductId, weightGrams)
+        const tags = input.tags ?? ((input.adminData as any)?.tags as string[] | undefined)
+        const rawCollectionIds =
+          input.collectionIds ??
+          ((input.adminData as any)?.collectionIds as (number | null | undefined)[] | undefined) ??
+          (input.collectionId ? [input.collectionId] : undefined)
+        const collectionIds =
+          rawCollectionIds !== undefined
+            ? rawCollectionIds.filter(
+                (cid): cid is number => typeof cid === 'number' && Number.isInteger(cid)
+              )
+            : undefined
+        await this.syncTagsAndCollections(tx, newProductId, tags, collectionIds)
 
-      if (isDatabaseConfigured() && db) {
         for (const norm of normalizedImages) {
-          await db.insert(productImagesTable).values({
+          await tx.insert(productImagesTable).values({
             productId: newProductId,
+            designId: null,
             storageKey: norm.storageKey,
             externalUrl: norm.externalUrl,
             position: norm.position
           })
         }
 
-        for (const variant of variantsToInsert) {
-          const [row] = await db
-            .insert(productVariantsTable)
-            .values({
-              productId: newProductId,
-              sku: variant.sku,
-              size: variant.size,
-              color: variant.color,
-              price: variant.price !== input.priceNum ? variant.price : null,
-              stock: variant.stock,
-              reserved: variant.reserved,
-              reorderPoint: variant.reorderPoint,
-              weightGrams: variant.weight !== weightGrams ? variant.weight : null,
-              barcode: variant.barcode || null,
-              status: variant.status
-            })
-            .returning()
-          if (row && row.sku) this.memoryClaimedSkus.set(row.sku.toUpperCase(), newProductId)
-        }
+        if (input.designs && input.designs.length > 0) {
+          for (let dIndex = 0; dIndex < input.designs.length; dIndex++) {
+            const design = input.designs[dIndex]
+            const designSlug = slugify(design.slug || design.name)
+            const [createdDesign] = await tx
+              .insert(productDesignsTable)
+              .values({
+                productId: newProductId,
+                name: design.name,
+                slug: designSlug,
+                priceOverride:
+                  design.priceOverride !== undefined && design.priceOverride !== null
+                    ? Math.round(Number(design.priceOverride))
+                    : null,
+                sortOrder: design.sortOrder ?? dIndex,
+                status: design.status || 'Active'
+              })
+              .returning({ id: productDesignsTable.id })
 
-        return (await this.getById(newProductId))!
-      }
+            const designId = createdDesign.id
+            if (design.images && design.images.length > 0) {
+              const dNormImages = normalizeImageInputs(
+                design.images[0],
+                design.images[1] || design.images[0],
+                design.images
+              )
+              for (const img of dNormImages) {
+                await tx.insert(productImagesTable).values({
+                  productId: newProductId,
+                  designId,
+                  storageKey: img.storageKey,
+                  externalUrl: img.externalUrl,
+                  position: img.position
+                })
+              }
+            }
+
+            const dVariants: RawVariantInput[] =
+              design.variants && design.variants.length > 0
+                ? (design.variants as RawVariantInput[])
+                : (input.sizes || ['S', 'M', 'L', 'XL']).map((sz) => ({ size: sz, stock: 20 }))
+
+            for (const v of dVariants) {
+              const size = String(v.size || 'M').trim()
+              const color = String(v.color || design.name).trim()
+              let sku = v.sku?.trim()
+              if (sku) {
+                const claimed = await this.isSkuClaimedByOtherProduct(sku, newProductId)
+                if (claimed) sku = undefined
+              }
+              if (!sku) {
+                const baseSku = generateDesignSku({
+                  category: rawCategory,
+                  designSlug: design.slug || design.name,
+                  designName: design.name,
+                  size
+                })
+                sku = baseSku
+                let suffix = 2
+                while (await this.isSkuClaimedByOtherProduct(sku, newProductId)) {
+                  sku = `${baseSku}-${suffix++}`
+                }
+              }
+              const price = v.price !== undefined && v.price !== null ? Math.round(Number(v.price)) : null
+              const [row] = await tx
+                .insert(productVariantsTable)
+                .values({
+                  productId: newProductId,
+                  designId,
+                  sku,
+                  size,
+                  color,
+                  price: price !== input.priceNum ? price : null,
+                  stock: Math.max(0, Math.round(Number(v.stock ?? 20))),
+                  reserved: 0,
+                  reorderPoint: Math.max(0, Math.round(Number(v.reorderPoint ?? 5))),
+                  weightGrams: v.weight && v.weight !== weightGrams ? Math.round(Number(v.weight)) : null,
+                  barcode: v.barcode || null,
+                  status: v.status || 'Active'
+                })
+                .returning()
+              if (row && row.sku) this.memoryClaimedSkus.set(row.sku.toUpperCase(), newProductId)
+            }
+          }
+        } else {
+          const variantsToInsert = await this.prepareVariants(rawVariants, input, newProductId, weightGrams)
+          for (const variant of variantsToInsert) {
+            const [row] = await tx
+              .insert(productVariantsTable)
+              .values({
+                productId: newProductId,
+                designId: null,
+                sku: variant.sku,
+                size: variant.size,
+                color: variant.color,
+                price: variant.price !== input.priceNum ? variant.price : null,
+                stock: variant.stock,
+                reserved: variant.reserved,
+                reorderPoint: variant.reorderPoint,
+                weightGrams: variant.weight !== weightGrams ? variant.weight : null,
+                barcode: variant.barcode || null,
+                status: variant.status
+              })
+              .returning()
+            if (row && row.sku) this.memoryClaimedSkus.set(row.sku.toUpperCase(), newProductId)
+          }
+        }
+      })
+
+      return (await this.getById(newProductId))!
+    }
+
+    try {
+      const variantsToInsert = await this.prepareVariants(rawVariants, input, newProductId, weightGrams)
 
       for (const norm of normalizedImages) {
         this.memoryProductImages.push({
           id: this.memoryProductImages.length + 1,
           productId: newProductId,
+          designId: null,
           color: null,
           storageKey: norm.storageKey,
           externalUrl: norm.externalUrl,
@@ -848,6 +1127,17 @@ export class ProductStore {
         status,
         attributes,
         weightGrams,
+        shortDescription: input.shortDescription,
+        trackInventory: input.trackInventory ?? true,
+        continueSelling: input.continueSelling ?? false,
+        lengthCm: input.lengthCm,
+        widthCm: input.widthCm,
+        heightCm: input.heightCm,
+        seoTitle: input.seoTitle,
+        seoDescription: input.seoDescription,
+        designs: input.designs,
+        tags: input.tags,
+        collectionIds: input.collectionIds,
         adminData: { ...(input.adminData ?? {}), status: adminStatus(status) },
         createdAt: new Date(),
         variants: variantsToInsert.map((variant) => ({ ...variant }))
@@ -1013,11 +1303,29 @@ export class ProductStore {
 
       await db.update(productsTable).set(updateData).where(eq(productsTable.id, id))
 
+      const tags = patch.tags ?? ((patch.adminData as any)?.tags as string[] | undefined)
+      const rawCollectionIds =
+        patch.collectionIds ??
+        ((patch.adminData as any)?.collectionIds as (number | null | undefined)[] | undefined) ??
+        (patch.collectionId !== undefined && patch.collectionId !== null ? [patch.collectionId] : undefined)
+      const collectionIds =
+        rawCollectionIds !== undefined
+          ? rawCollectionIds.filter(
+              (cid): cid is number => typeof cid === 'number' && Number.isInteger(cid)
+            )
+          : undefined
+      if (tags !== undefined || collectionIds !== undefined) {
+        await this.syncTagsAndCollections(db!, id, tags, collectionIds)
+      }
+
       if (hasImagePatch) {
-        await db.delete(productImagesTable).where(eq(productImagesTable.productId, id))
+        await db
+          .delete(productImagesTable)
+          .where(and(eq(productImagesTable.productId, id), isNull(productImagesTable.designId)))
         for (const norm of normalizedImages) {
           await db.insert(productImagesTable).values({
             productId: id,
+            designId: null,
             storageKey: norm.storageKey,
             externalUrl: norm.externalUrl,
             position: norm.position
@@ -1025,7 +1333,15 @@ export class ProductStore {
         }
       }
 
-      if (patch.variants !== undefined) {
+      if (patch.designs !== undefined) {
+        await this.syncDbDesigns(
+          id,
+          patch.designs,
+          patch.category || existing.category,
+          weightGrams,
+          patch.priceNum ?? existing.priceNum
+        )
+      } else if (patch.variants !== undefined) {
         await this.syncDbVariants(id, patch, existing, weightGrams)
       }
 
@@ -1043,6 +1359,17 @@ export class ProductStore {
       status,
       attributes,
       weightGrams: patch.weightGrams ?? existing.weightGrams,
+      shortDescription: patch.shortDescription ?? existing.shortDescription,
+      trackInventory: patch.trackInventory ?? existing.trackInventory,
+      continueSelling: patch.continueSelling ?? existing.continueSelling,
+      lengthCm: patch.lengthCm ?? existing.lengthCm,
+      widthCm: patch.widthCm ?? existing.widthCm,
+      heightCm: patch.heightCm ?? existing.heightCm,
+      seoTitle: patch.seoTitle ?? existing.seoTitle,
+      seoDescription: patch.seoDescription ?? existing.seoDescription,
+      designs: patch.designs ?? existing.designs,
+      tags: patch.tags ?? existing.tags,
+      collectionIds: patch.collectionIds ?? existing.collectionIds,
       adminData: { ...(existing.adminData ?? {}), ...(patch.adminData ?? {}), status: adminStatus(status) }
     }
 
@@ -1133,6 +1460,7 @@ export class ProductStore {
         this.memoryProductImages.push({
           id: this.memoryProductImages.length + 1,
           productId: id,
+          designId: null,
           color: null,
           storageKey: norm.storageKey,
           externalUrl: norm.externalUrl,
@@ -1144,6 +1472,187 @@ export class ProductStore {
 
     this.memoryProducts = this.memoryProducts.map((product) => (product.id === id ? updated : product))
     return this.hydrateMemory(updated)
+  }
+
+  private async syncDbDesigns(
+    productId: string,
+    designs: ProductDesign[],
+    categorySlug: string,
+    weightGrams: number,
+    basePrice: number
+  ): Promise<void> {
+    const existingDesigns = await db!
+      .select()
+      .from(productDesignsTable)
+      .where(eq(productDesignsTable.productId, productId))
+
+    const existingById = new Map<number, DbProductDesign>()
+    for (const d of existingDesigns) {
+      existingById.set(d.id, d)
+    }
+
+    const updatedDesignIds = new Set<number>()
+
+    for (let i = 0; i < designs.length; i++) {
+      const design = designs[i]
+      const designSlug = slugify(design.slug || design.name)
+      const priceOverride =
+        design.priceOverride !== undefined && design.priceOverride !== null
+          ? Math.round(Number(design.priceOverride))
+          : null
+      const sortOrder = design.sortOrder ?? i
+      const status = design.status || 'Active'
+
+      let designId: number
+      if (design.id && existingById.has(design.id)) {
+        designId = design.id
+        await db!
+          .update(productDesignsTable)
+          .set({
+            name: design.name,
+            slug: designSlug,
+            priceOverride,
+            sortOrder,
+            status,
+            updatedAt: new Date()
+          })
+          .where(eq(productDesignsTable.id, designId))
+      } else {
+        const [created] = await db!
+          .insert(productDesignsTable)
+          .values({
+            productId,
+            name: design.name,
+            slug: designSlug,
+            priceOverride,
+            sortOrder,
+            status
+          })
+          .returning({ id: productDesignsTable.id })
+        designId = created.id
+      }
+      updatedDesignIds.add(designId)
+
+      // Sync images for this design
+      if (design.images !== undefined) {
+        await db!
+          .delete(productImagesTable)
+          .where(and(eq(productImagesTable.productId, productId), eq(productImagesTable.designId, designId)))
+        if (design.images.length > 0) {
+          const normImages = normalizeImageInputs(
+            design.images[0],
+            design.images[1] || design.images[0],
+            design.images
+          )
+          for (const img of normImages) {
+            await db!.insert(productImagesTable).values({
+              productId,
+              designId,
+              storageKey: img.storageKey,
+              externalUrl: img.externalUrl,
+              position: img.position
+            })
+          }
+        }
+      }
+
+      // Sync variants for this design
+      if (design.variants !== undefined) {
+        const existingVariants = await db!
+          .select()
+          .from(productVariantsTable)
+          .where(and(eq(productVariantsTable.productId, productId), eq(productVariantsTable.designId, designId)))
+        const vById = new Map(existingVariants.map((v) => [v.id, v]))
+        const updatedVariantIds = new Set<number>()
+
+        for (const v of design.variants) {
+          const size = String(v.size || 'M').trim()
+          const color = String(v.color || design.name).trim()
+          const price = v.price !== undefined && v.price !== null ? Math.round(Number(v.price)) : null
+          const stock = Math.max(0, Math.round(Number(v.stock ?? 20)))
+          const weight = v.weight && v.weight !== weightGrams ? Math.round(Number(v.weight)) : null
+
+          if (v.id && vById.has(v.id)) {
+            const current = vById.get(v.id)!
+            updatedVariantIds.add(v.id)
+            let sku = v.sku?.trim() || current.sku
+            if (sku && (await this.isSkuClaimedByOtherProduct(sku, productId))) {
+              sku = generateDesignSku({
+                category: categorySlug,
+                designSlug: design.slug || design.name,
+                designName: design.name,
+                size
+              })
+            }
+            await db!
+              .update(productVariantsTable)
+              .set({
+                sku,
+                size,
+                color,
+                price: price !== basePrice ? price : null,
+                stock: Math.max(current.reserved, stock),
+                reorderPoint: Math.max(0, Math.round(Number(v.reorderPoint ?? current.reorderPoint ?? 5))),
+                weightGrams: weight,
+                barcode: v.barcode ?? current.barcode,
+                status: v.status || current.status || 'Active',
+                updatedAt: new Date()
+              })
+              .where(eq(productVariantsTable.id, v.id))
+          } else {
+            let sku = v.sku?.trim()
+            if (sku) {
+              const claimed = await this.isSkuClaimedByOtherProduct(sku, productId)
+              if (claimed) sku = undefined
+            }
+            if (!sku) {
+              const baseSku = generateDesignSku({
+                category: categorySlug,
+                designSlug: design.slug || design.name,
+                designName: design.name,
+                size
+              })
+              sku = baseSku
+              let suffix = 2
+              while (await this.isSkuClaimedByOtherProduct(sku, productId)) {
+                sku = `${baseSku}-${suffix++}`
+              }
+            }
+
+            const [created] = await db!
+              .insert(productVariantsTable)
+              .values({
+                productId,
+                designId,
+                sku,
+                size,
+                color,
+                price: price !== basePrice ? price : null,
+                stock,
+                reserved: 0,
+                reorderPoint: Math.max(0, Math.round(Number(v.reorderPoint ?? 5))),
+                weightGrams: weight,
+                barcode: v.barcode || null,
+                status: v.status || 'Active'
+              })
+              .returning({ id: productVariantsTable.id })
+            updatedVariantIds.add(created.id)
+          }
+        }
+
+        for (const ev of existingVariants) {
+          if (!updatedVariantIds.has(ev.id)) {
+            await db!.delete(productVariantsTable).where(eq(productVariantsTable.id, ev.id))
+          }
+        }
+      }
+    }
+
+    for (const ed of existingDesigns) {
+      if (!updatedDesignIds.has(ed.id)) {
+        await db!.delete(productDesignsTable).where(eq(productDesignsTable.id, ed.id))
+      }
+    }
   }
 
   private async syncDbVariants(

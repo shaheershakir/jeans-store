@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { MapPin, MoreHorizontal, Truck } from 'lucide-react'
+import { MapPin, MoreHorizontal, Truck, User } from 'lucide-react'
 import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine'
 import {
@@ -44,9 +44,10 @@ interface KanbanCardProps {
   order: OrderItemCardData
   onStatusChange: (orderId: string | number, newStatus: FulfillmentStatus) => void
   onPrint?: (order: OrderItemCardData) => void
+  onCardClick?: (order: OrderItemCardData) => void
 }
 
-export function KanbanCard({ order, onStatusChange, onPrint }: KanbanCardProps) {
+export function KanbanCard({ order, onStatusChange, onPrint, onCardClick }: KanbanCardProps) {
   const cardRef = React.useRef<HTMLDivElement | null>(null)
   const [isDragging, setIsDragging] = React.useState(false)
   const [isOver, setIsOver] = React.useState(false)
@@ -92,6 +93,7 @@ export function KanbanCard({ order, onStatusChange, onPrint }: KanbanCardProps) 
   return (
     <div
       ref={cardRef}
+      onClick={() => onCardClick?.(order)}
       className={`group relative rounded-2xl border bg-white dark:bg-card p-4 transition-all duration-150 select-none cursor-grab active:cursor-grabbing ${
         isDragging
           ? 'opacity-40 scale-[0.98] ring-2 ring-blue-500 shadow-md'
@@ -114,38 +116,60 @@ export function KanbanCard({ order, onStatusChange, onPrint }: KanbanCardProps) 
         </span>
       </div>
 
-      {/* Middle Section: Thumbnails, Product Name, and Customer Info */}
-      <div className="flex items-center gap-3 my-3">
-        {/* Thumbnails row */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {order.images.slice(0, 3).map((imgUrl, idx) => (
-            <div
-              key={idx}
-              className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/80"
-            >
-              <Image
-                src={imgUrl}
-                alt={`${order.productName} preview ${idx + 1}`}
-                fill
-                sizes="48px"
-                className="object-cover"
-              />
+      {/* Middle Section: Prominent Image(s), Product Name, and Customer Info */}
+      <div className="my-3">
+        {/* Thumbnails Display: Main large image + optional stacked secondary thumbnails */}
+        <div className="flex items-center gap-2">
+          {/* Main Large Thumbnail */}
+          <div className="relative h-[104px] w-[104px] rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/80 shrink-0">
+            <Image
+              src={order.images[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=400&q=80'}
+              alt={`${order.productName} preview 1`}
+              fill
+              sizes="112px"
+              className="object-cover"
+            />
+          </div>
+
+          {/* Secondary Stacked Thumbnails (when multiple items) */}
+          {order.images.length > 1 && (
+            <div className="flex flex-col gap-2 shrink-0">
+              {order.images.slice(1, 3).map((imgUrl, idx) => (
+                <div
+                  key={idx}
+                  className="relative h-[48px] w-[48px] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/80"
+                >
+                  <Image
+                    src={imgUrl}
+                    alt={`${order.productName} preview ${idx + 2}`}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                  {idx === 1 && order.itemsCount > 3 && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white font-bold text-[10px]">
+                      +{order.itemsCount - 3}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
 
-        {/* Product Name, Customer & Location */}
-        <div className="min-w-0 flex-1 space-y-0.5">
+        {/* Product Name, Customer & Location Below Images */}
+        <div className="mt-2.5 space-y-1">
           <p
-            className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-foreground truncate leading-tight"
+            className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-foreground truncate leading-snug"
             title={order.productName}
           >
             {order.productName}
           </p>
-          <p className="font-medium text-[11px] text-slate-600 dark:text-slate-400 truncate">
-            {order.customerName}
-          </p>
-          <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-muted-foreground truncate">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate">
+            <User className="h-3 w-3 shrink-0 text-slate-400 dark:text-slate-500" />
+            <span className="truncate">{order.customerName}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-muted-foreground truncate">
             <MapPin className="h-3 w-3 shrink-0 text-slate-400 dark:text-slate-500" />
             <span className="truncate">{order.locationShort}</span>
           </div>
@@ -153,17 +177,16 @@ export function KanbanCard({ order, onStatusChange, onPrint }: KanbanCardProps) 
       </div>
 
       {/* Bottom Section: Price, Shipped tag, Date, and Actions */}
-      <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-border/60">
+      <div className="flex items-center justify-between gap-2 pt-2.5 mt-2.5 border-t border-slate-100 dark:border-border/60">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-foreground tnum">
-            {formatINR(order.total)}
-          </span>
-
-          {/* Shipped Status Pill if in Shipped */}
-          {isShipped && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60 px-1.5 py-0.5 rounded-md">
+          {isShipped ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 px-2 py-0.5 rounded-full">
               <Truck className="h-3 w-3" />
               Shipped
+            </span>
+          ) : (
+            <span className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-foreground tnum">
+              {formatINR(order.total)}
             </span>
           )}
         </div>
@@ -203,7 +226,11 @@ export function KanbanCard({ order, onStatusChange, onPrint }: KanbanCardProps) 
                     <DropdownMenuItem
                       key={status}
                       disabled={order.fulfillmentStatus === status}
-                      onClick={() => onStatusChange(order.id, status)}
+                      onSelect={() => onStatusChange(order.id, status)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onStatusChange(order.id, status)
+                      }}
                     >
                       {status}
                     </DropdownMenuItem>

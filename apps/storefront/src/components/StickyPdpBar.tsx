@@ -15,6 +15,7 @@ interface StickyPdpBarProps {
   onAddToCart: () => void
   onBuyNow?: () => void
   selectedColor?: string
+  displayPrice?: string
   sizeOptions?: string[]
   productImage?: string
   onSizeChange?: (size: string) => void
@@ -30,6 +31,7 @@ export default function StickyPdpBar({
   onAddToCart,
   onBuyNow,
   selectedColor,
+  displayPrice,
   sizeOptions,
   productImage,
   onSizeChange,
@@ -172,7 +174,7 @@ export default function StickyPdpBar({
                 {product.name}
               </div>
               <div className="text-[13px] text-gray-500 leading-tight mt-1 flex items-center gap-1.5">
-                <span className="font-bold text-gray-950">{product.price}</span>
+                <span className="font-bold text-gray-950">{displayPrice || product.price}</span>
                 {colorOrWash && (
                   <>
                     <span className="text-gray-300">·</span>
@@ -250,7 +252,7 @@ export default function StickyPdpBar({
                 {product.name}
               </div>
               <div className="text-[12px] text-gray-500 leading-tight mt-0.5 flex items-center gap-1.5">
-                <span className="font-bold text-gray-950">{product.price}</span>
+                <span className="font-bold text-gray-950">{displayPrice || product.price}</span>
                 {colorOrWash && (
                   <>
                     <span className="text-gray-300">·</span>

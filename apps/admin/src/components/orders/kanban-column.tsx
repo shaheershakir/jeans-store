@@ -37,6 +37,7 @@ interface KanbanColumnProps {
   totalCount: number
   onStatusChange: (orderId: string | number, newStatus: FulfillmentStatus) => void
   onPrint?: (order: OrderItemCardData) => void
+  onCardClick?: (order: OrderItemCardData) => void
 }
 
 export function KanbanColumn({
@@ -46,6 +47,7 @@ export function KanbanColumn({
   totalCount,
   onStatusChange,
   onPrint,
+  onCardClick,
 }: KanbanColumnProps) {
   const columnRef = React.useRef<HTMLDivElement | null>(null)
   const dragHandleRef = React.useRef<HTMLButtonElement | null>(null)
@@ -121,7 +123,7 @@ export function KanbanColumn({
   return (
     <div
       ref={columnRef}
-      className={`group/column relative flex flex-col rounded-3xl border p-3.5 transition-all duration-150 min-h-[640px] ${
+      className={`group/column relative flex flex-col rounded-3xl border p-3.5 transition-all duration-150 min-h-[640px] h-full flex-1 ${
         column.colorClass.container
       } ${
         isDragging
@@ -139,8 +141,8 @@ export function KanbanColumn({
         <div className="pointer-events-none absolute right-0 top-2 bottom-2 w-1.5 bg-blue-600 rounded-full z-30 translate-x-1 shadow-md animate-pulse" />
       )}
 
-      {/* Column Header */}
-      <div className="flex items-center justify-between px-1 py-1 mb-3">
+      {/* Column Header: Sticky so it remains clearly accessible even when scrolled down */}
+      <div className="sticky top-0 z-20 -mx-3.5 -mt-3.5 mb-3 px-3.5 py-3 rounded-t-3xl backdrop-blur-md bg-white/90 dark:bg-card/90 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           {/* Drag Handle for Horizontal Column Reorder */}
           <button
@@ -218,8 +220,8 @@ export function KanbanColumn({
         </DropdownMenu>
       </div>
 
-      {/* Orders Cards Drop Area */}
-      <div className="flex-1 flex flex-col gap-3 min-h-[200px]">
+      {/* Orders Cards Drop Area: Stretches full column height */}
+      <div className="flex-1 flex flex-col gap-3 min-h-[200px] h-full">
         {orders.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center py-16 px-4 text-center">
             <div className="h-12 w-12 rounded-2xl bg-white dark:bg-card border border-slate-200/80 dark:border-slate-800 flex items-center justify-center text-slate-400 mb-3 shadow-xs">
@@ -239,6 +241,7 @@ export function KanbanColumn({
               order={order}
               onStatusChange={onStatusChange}
               onPrint={onPrint}
+              onCardClick={onCardClick}
             />
           ))
         )}

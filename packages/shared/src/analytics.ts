@@ -39,15 +39,22 @@ export interface ProductViewedProperties extends BaseProductProperties {
   color?: string
   selected_size?: string
   sizes_available: string[]
+  design?: string
+  design_id?: number
+  design_name?: string
+  in_stock?: boolean
 }
 
 export interface ProductVariantSelectedProperties {
   product_id: string | number
   product_name: string
   product_slug?: string
-  variant_type: 'color' | 'size'
+  variant_type: 'color' | 'size' | 'design'
   color?: string
   size?: string
+  design_id?: number
+  design_name?: string
+  design_slug?: string
   in_stock: boolean
 }
 
@@ -74,6 +81,8 @@ export interface ProductAddedToCartProperties extends BaseProductProperties {
   color?: string
   size: string
   quantity: number
+  design_id?: number
+  design_name?: string
   source_location: 'pdp' | 'sticky_bar' | 'product_card' | 'quick_add'
 }
 
@@ -82,6 +91,8 @@ export interface ProductBuyNowClickedProperties extends BaseProductProperties {
   color?: string
   size: string
   quantity: number
+  design_id?: number
+  design_name?: string
   source_location: 'pdp' | 'sticky_bar'
 }
 
@@ -90,6 +101,8 @@ export interface CartItemSummary {
   product_name: string
   size: string
   color?: string
+  design_id?: number
+  design_name?: string
   price: number
   quantity: number
 }

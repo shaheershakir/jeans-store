@@ -10,6 +10,8 @@ import { identifyUser, resetUser } from './analytics'
 export interface CartItem {
   id: string
   variantId?: number
+  designId?: number
+  designName?: string
   color?: string
   name: string
   price: string
@@ -45,7 +47,16 @@ function migrateLegacyCartItems(items: unknown): CartItem[] {
 
 interface CartState {
   items: CartItem[]
-  addItem: (productId: string, size: string, product?: Product, color?: string) => void
+  addItem: (
+    productId: string,
+    size: string,
+    product?: Product,
+    color?: string,
+    designId?: number,
+    designName?: string,
+    overridePrice?: number,
+    overrideImg?: string
+  ) => void
   updateQty: (id: string, size: string, delta: number, variantId?: number) => void
   removeItem: (id: string, size: string, variantId?: number) => void
   clearCart: () => void
@@ -55,13 +66,34 @@ export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
       items: [],
-      addItem: (productId, size, productDetails, color) =>
+      addItem: (
+        productId,
+        size,
+        productDetails,
+        color,
+        designId,
+        designName,
+        overridePrice,
+        overrideImg
+      ) =>
         set((state) => {
           const product = productDetails ?? PRODUCTS.find((p) => String(p.id) === String(productId))
           if (!product) return state
-          const variant = product.variants?.find((item) => String(item.size) === String(size) && item.status === 'Active' && (!color || item.color.toLowerCase() === color.toLowerCase()))
+          const variant = product.variants?.find((item) => {
+            const matchesSize = String(item.size) === String(size)
+            const matchesActive = item.status === 'Active'
+            const matchesDesign = designId ? item.designId === designId : true
+            const matchesColor = color ? item.color.toLowerCase() === color.toLowerCase() : true
+            return matchesSize && matchesActive && matchesDesign && (designId ? true : matchesColor)
+          })
           if (product.variants && (!variant || variant.stock - variant.reserved <= 0)) return state
-          const existing = state.items.find((item) => String(item.id) === String(productId) && item.size === size && item.variantId === variant?.id)
+          const existing = state.items.find(
+            (item) =>
+              String(item.id) === String(productId) &&
+              item.size === size &&
+              item.variantId === variant?.id &&
+              item.designId === designId
+          )
           if (existing) {
             return {
               items: state.items.map((item) =>
@@ -69,19 +101,26 @@ export const useCartStore = create<CartState>()(
               )
             }
           }
+          const priceNum = overridePrice ?? variant?.price ?? product.priceNum
+          const price = overridePrice
+            ? `₹${overridePrice.toLocaleString('en-IN')}`
+            : variant?.price
+              ? `₹${variant.price.toLocaleString('en-IN')}`
+              : product.price
+          const img = overrideImg ?? product.img
           return {
             items: [
               ...state.items,
               {
                 id: product.id,
                 variantId: variant?.id,
+                designId,
+                designName,
                 color: variant?.color ?? color ?? product.color,
                 name: product.name,
-
-
-                price: variant?.price ? `₹${variant.price.toLocaleString('en-IN')}` : product.price,
-                priceNum: variant?.price ?? product.priceNum,
-                img: product.img,
+                price,
+                priceNum,
+                img,
                 size,
                 qty: 1,
                 weight:

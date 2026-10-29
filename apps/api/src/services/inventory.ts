@@ -140,7 +140,50 @@ async function applyReservation(executor: DbExecutor, item: ReservationItem): Pr
     throw new ReservationUnavailableError('Reservation quantity must be a positive integer.')
   }
 
-  if (item.isFreeSize) {
+  const prodResult = await executor.execute(sql`
+    SELECT track_inventory, continue_selling, is_free_size FROM products WHERE id = ${item.productId}
+  `)
+  const prod = prodResult.rows[0] as { track_inventory?: boolean; continue_selling?: boolean; is_free_size?: boolean } | undefined
+  const trackInventory = prod?.track_inventory ?? true
+  const continueSelling = prod?.continue_selling ?? false
+  const isFreeSize = item.isFreeSize ?? Boolean(prod?.is_free_size)
+
+  if (!trackInventory) {
+    const rows = await executor.execute(sql`
+      SELECT id, product_id, sku, stock, reserved
+      FROM product_variants
+      WHERE id = ${item.variantId} AND product_id = ${item.productId}
+    `)
+    return rows.rows as unknown as VariantStockRow[]
+  }
+
+  if (continueSelling) {
+    if (isFreeSize) {
+      const updated = await executor.execute(sql`
+        UPDATE product_variants
+        SET reserved = reserved + LEAST(${item.quantity}, GREATEST(0, stock - reserved)), updated_at = now()
+        WHERE product_id = ${item.productId}
+          AND (status = 'Active' OR reserved > 0)
+        RETURNING id, product_id, sku, stock, reserved
+      `)
+      return updated.rows as unknown as VariantStockRow[]
+    }
+
+    const updated = await executor.execute(sql`
+      UPDATE product_variants
+      SET reserved = reserved + LEAST(${item.quantity}, GREATEST(0, stock - reserved)), updated_at = now()
+      WHERE id = ${item.variantId}
+        AND product_id = ${item.productId}
+        AND status = 'Active'
+      RETURNING id, product_id, sku, stock, reserved
+    `)
+    if (updated.rows.length === 0) {
+      throw new ReservationUnavailableError('This size is not available.')
+    }
+    return updated.rows as unknown as VariantStockRow[]
+  }
+
+  if (isFreeSize) {
     const expected = await freeSizeReservationTargetCount(executor, item.productId, item.quantity)
     const updated = await executor.execute(sql`
       UPDATE product_variants
@@ -180,6 +223,42 @@ async function releaseStock(
     isFreeSize?: boolean
   }
 ): Promise<VariantStockRow[]> {
+  const prodResult = await executor.execute(sql`
+    SELECT track_inventory, continue_selling FROM products WHERE id = ${item.productId}
+  `)
+  const prod = prodResult.rows[0] as { track_inventory?: boolean; continue_selling?: boolean } | undefined
+  const trackInventory = prod?.track_inventory ?? true
+  const continueSelling = prod?.continue_selling ?? false
+
+  if (!trackInventory) {
+    const rows = await executor.execute(sql`
+      SELECT id, product_id, sku, stock, reserved
+      FROM product_variants
+      WHERE id = ${item.variantId} AND product_id = ${item.productId}
+    `)
+    return rows.rows as unknown as VariantStockRow[]
+  }
+
+  if (continueSelling) {
+    if (item.isFreeSize) {
+      const updated = await executor.execute(sql`
+        UPDATE product_variants
+        SET reserved = GREATEST(0, reserved - ${item.quantity}), updated_at = now()
+        WHERE product_id = ${item.productId}
+        RETURNING id, product_id, sku, stock, reserved
+      `)
+      return updated.rows as unknown as VariantStockRow[]
+    }
+
+    const updated = await executor.execute(sql`
+      UPDATE product_variants
+      SET reserved = GREATEST(0, reserved - ${item.quantity}), updated_at = now()
+      WHERE id = ${item.variantId}
+      RETURNING id, product_id, sku, stock, reserved
+    `)
+    return updated.rows as unknown as VariantStockRow[]
+  }
+
   if (item.isFreeSize) {
     const expected = await freeSizeTargetCount(executor, item.productId, item.quantity)
     const updated = await executor.execute(sql`
@@ -217,6 +296,49 @@ async function confirmStock(
     isFreeSize?: boolean
   }
 ): Promise<VariantStockRow[]> {
+  const prodResult = await executor.execute(sql`
+    SELECT track_inventory, continue_selling FROM products WHERE id = ${item.productId}
+  `)
+  const prod = prodResult.rows[0] as { track_inventory?: boolean; continue_selling?: boolean } | undefined
+  const trackInventory = prod?.track_inventory ?? true
+  const continueSelling = prod?.continue_selling ?? false
+
+  if (!trackInventory) {
+    const rows = await executor.execute(sql`
+      SELECT id, product_id, sku, stock, reserved
+      FROM product_variants
+      WHERE id = ${item.variantId} AND product_id = ${item.productId}
+    `)
+    return rows.rows as unknown as VariantStockRow[]
+  }
+
+  if (continueSelling) {
+    if (item.isFreeSize) {
+      const updated = await executor.execute(sql`
+        UPDATE product_variants
+        SET stock = GREATEST(0, stock - ${item.quantity}),
+            reserved = GREATEST(0, reserved - ${item.quantity}),
+            updated_at = now()
+        WHERE product_id = ${item.productId}
+        RETURNING id, product_id, sku, stock, reserved
+      `)
+      return updated.rows as unknown as VariantStockRow[]
+    }
+
+    const updated = await executor.execute(sql`
+      UPDATE product_variants
+      SET stock = GREATEST(0, stock - ${item.quantity}),
+          reserved = GREATEST(0, reserved - ${item.quantity}),
+          updated_at = now()
+      WHERE id = ${item.variantId}
+      RETURNING id, product_id, sku, stock, reserved
+    `)
+    if (updated.rows.length === 0) {
+      throw new ReservationUnavailableError('This size no longer exists.')
+    }
+    return updated.rows as unknown as VariantStockRow[]
+  }
+
   if (item.isFreeSize) {
     const expected = await freeSizeTargetCount(executor, item.productId, item.quantity, true)
     const updated = await executor.execute(sql`

@@ -116,6 +116,20 @@ export const collections = pgTable(
   ]
 )
 
+export const tags = pgTable(
+  'tags',
+  {
+    id: serial('id').primaryKey(),
+    name: varchar('name', { length: 60 }).notNull(),
+    slug: varchar('slug', { length: 80 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+  },
+  (t) => [
+    uniqueIndex('tags_slug_lower_idx').on(sql`lower(${t.slug})`),
+    uniqueIndex('tags_name_lower_idx').on(sql`lower(${t.name})`)
+  ]
+)
+
 export const products = pgTable(
   'products',
   {
@@ -126,6 +140,7 @@ export const products = pgTable(
     collectionId: integer('collection_id').references(() => collections.id, { onDelete: 'set null' }),
     slug: varchar('slug', { length: 160 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
+    shortDescription: varchar('short_description', { length: 200 }),
     description: text('description').notNull(),
     status: varchar('status', { length: 20 }).default('draft').notNull(),
     price: integer('price').notNull(),
@@ -136,7 +151,14 @@ export const products = pgTable(
     badge: varchar('badge', { length: 50 }),
     isFeatured: boolean('is_featured').default(false).notNull(),
     isFreeSize: boolean('is_free_size').default(false).notNull(),
+    trackInventory: boolean('track_inventory').default(true).notNull(),
+    continueSelling: boolean('continue_selling').default(false).notNull(),
     weightGrams: integer('weight_grams').notNull(),
+    lengthCm: real('length_cm'),
+    widthCm: real('width_cm'),
+    heightCm: real('height_cm'),
+    seoTitle: varchar('seo_title', { length: 70 }),
+    seoDescription: varchar('seo_description', { length: 170 }),
     ratingAverage: real('rating_average').default(0).notNull(),
     reviewCount: integer('review_count').default(0).notNull(),
     careInstructions: text('care_instructions'),
@@ -154,7 +176,68 @@ export const products = pgTable(
     check('products_tax_rate_check', sql.raw('tax_rate >= 0 AND tax_rate <= 1')),
     check('products_review_count_check', sql.raw('review_count >= 0')),
     check('products_weight_check', sql.raw('weight_grams > 0')),
-    check('products_rating_check', sql.raw('rating_average >= 0 AND rating_average <= 5'))
+    check('products_rating_check', sql.raw('rating_average >= 0 AND rating_average <= 5')),
+    check(
+      'products_dimensions_check',
+      sql.raw(
+        '(length_cm IS NULL OR length_cm > 0) AND (width_cm IS NULL OR width_cm > 0) AND (height_cm IS NULL OR height_cm > 0)'
+      )
+    )
+  ]
+)
+
+export const productTags = pgTable(
+  'product_tags',
+  {
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    tagId: integer('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' })
+  },
+  (t) => [
+    primaryKey({ columns: [t.productId, t.tagId] }),
+    index('product_tags_tag_idx').on(t.tagId)
+  ]
+)
+
+export const productCollections = pgTable(
+  'product_collections',
+  {
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    collectionId: integer('collection_id')
+      .notNull()
+      .references(() => collections.id, { onDelete: 'cascade' })
+  },
+  (t) => [
+    primaryKey({ columns: [t.productId, t.collectionId] }),
+    index('product_collections_collection_idx').on(t.collectionId)
+  ]
+)
+
+export const productDesigns = pgTable(
+  'product_designs',
+  {
+    id: serial('id').primaryKey(),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 120 }).notNull(),
+    slug: varchar('slug', { length: 160 }).notNull(),
+    priceOverride: integer('price_override'),
+    sortOrder: integer('sort_order').default(0).notNull(),
+    status: varchar('status', { length: 20 }).default('Active').notNull(),
+    ...timestamps
+  },
+  (t) => [
+    uniqueIndex('product_designs_product_slug_lower_idx').on(t.productId, sql`lower(${t.slug})`),
+    index('product_designs_product_sort_idx').on(t.productId, t.sortOrder),
+    check('product_designs_price_override_check', sql.raw('price_override IS NULL OR price_override >= 0')),
+    check('product_designs_sort_order_check', sql.raw('sort_order >= 0')),
+    check('product_designs_status_check', sql.raw("status IN ('Active', 'Inactive')"))
   ]
 )
 
@@ -165,6 +248,7 @@ export const productImages = pgTable(
     productId: uuid('product_id')
       .notNull()
       .references(() => products.id, { onDelete: 'cascade' }),
+    designId: integer('design_id').references(() => productDesigns.id, { onDelete: 'cascade' }),
     color: varchar('color', { length: 50 }),
     storageKey: text('storage_key'),
     externalUrl: text('external_url'),
@@ -172,7 +256,12 @@ export const productImages = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
   },
   (t) => [
-    uniqueIndex('product_images_product_position_idx').on(t.productId, t.position),
+    uniqueIndex('product_images_product_cover_position_idx')
+      .on(t.productId, t.position)
+      .where(sql`design_id IS NULL`),
+    uniqueIndex('product_images_design_position_idx')
+      .on(t.designId, t.position)
+      .where(sql`design_id IS NOT NULL`),
     uniqueIndex('product_images_storage_key_idx').on(t.storageKey),
     check(
       'product_images_source_check',
@@ -189,6 +278,7 @@ export const productVariants = pgTable(
     productId: uuid('product_id')
       .notNull()
       .references(() => products.id, { onDelete: 'cascade' }),
+    designId: integer('design_id').references(() => productDesigns.id, { onDelete: 'cascade' }),
     sku: varchar('sku', { length: 100 }).notNull(),
     size: varchar('size', { length: 50 }).notNull(),
     color: varchar('color', { length: 50 }).notNull(),
@@ -202,7 +292,12 @@ export const productVariants = pgTable(
     ...timestamps
   },
   (t) => [
-    uniqueIndex('product_variants_product_color_size_idx').on(t.productId, t.color, t.size),
+    uniqueIndex('product_variants_legacy_product_color_size_idx')
+      .on(t.productId, t.color, t.size)
+      .where(sql`design_id IS NULL`),
+    uniqueIndex('product_variants_design_size_idx')
+      .on(t.designId, t.size)
+      .where(sql`design_id IS NOT NULL`),
     uniqueIndex('product_variants_sku_lower_idx').on(sql`lower(${t.sku})`),
     uniqueIndex('product_variants_barcode_idx').on(t.barcode),
     index('product_variants_product_idx').on(t.productId),
@@ -473,8 +568,10 @@ export const orderItems = pgTable(
       .references(() => orders.id, { onDelete: 'cascade' }),
     productId: uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
     variantId: integer('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
+    designId: integer('design_id').references(() => productDesigns.id, { onDelete: 'set null' }),
     sku: varchar('sku', { length: 100 }),
     name: varchar('name', { length: 255 }).notNull(),
+    designName: varchar('design_name', { length: 120 }),
     size: varchar('size', { length: 50 }).notNull(),
     color: varchar('color', { length: 50 }),
     unitPrice: integer('unit_price').notNull(),
@@ -1060,8 +1157,16 @@ export type DbCategory = typeof categories.$inferSelect
 export type DbNewCategory = typeof categories.$inferInsert
 export type DbCollection = typeof collections.$inferSelect
 export type DbNewCollection = typeof collections.$inferInsert
+export type DbTag = typeof tags.$inferSelect
+export type DbNewTag = typeof tags.$inferInsert
 export type DbProduct = typeof products.$inferSelect
 export type DbNewProduct = typeof products.$inferInsert
+export type DbProductTag = typeof productTags.$inferSelect
+export type DbNewProductTag = typeof productTags.$inferInsert
+export type DbProductCollection = typeof productCollections.$inferSelect
+export type DbNewProductCollection = typeof productCollections.$inferInsert
+export type DbProductDesign = typeof productDesigns.$inferSelect
+export type DbNewProductDesign = typeof productDesigns.$inferInsert
 export type DbProductImage = typeof productImages.$inferSelect
 export type DbNewProductImage = typeof productImages.$inferInsert
 export type DbProductVariant = typeof productVariants.$inferSelect

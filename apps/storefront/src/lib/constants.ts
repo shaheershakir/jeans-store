@@ -25,6 +25,17 @@ export const DEFAULT_NAV_LINKS: NavigationItem[] = [
   { id: 'nav-9', label: 'Sweatpants', href: '/shop/sweatpants', type: 'category', targetValue: 'sweatpants', order: 8, isActive: true, openInNewTab: false },
 ]
 
+export interface ProductDesign {
+  id?: number
+  name: string
+  slug: string
+  priceOverride?: number | null
+  sortOrder?: number
+  status?: 'Active' | 'Inactive'
+  images?: string[]
+  variants?: ProductVariant[]
+}
+
 export interface Product {
   id: string
   store?: string
@@ -57,14 +68,27 @@ export interface Product {
   rating?: number
   inStock?: boolean
   collection?: string
+  collectionIds?: number[]
+  tags?: string[]
   createdAt?: string
   weight?: number
+  shortDescription?: string | null
+  compareAtPrice?: number | null
+  trackInventory?: boolean
+  continueSelling?: boolean
+  lengthCm?: number | null
+  widthCm?: number | null
+  heightCm?: number | null
+  seoTitle?: string | null
+  seoDescription?: string | null
   variants?: ProductVariant[]
+  designs?: ProductDesign[]
 }
 
 export interface ProductVariant {
   id?: number
   productId?: string
+  designId?: number | null
   sku?: string
   size: string | number
   color: string

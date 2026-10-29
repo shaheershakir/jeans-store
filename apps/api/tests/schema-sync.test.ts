@@ -8,6 +8,10 @@ import {
   productVariants,
   categories,
   collections,
+  tags,
+  productTags,
+  productCollections,
+  productDesigns,
   orders,
   orderItems,
   orderEvents,
@@ -58,7 +62,8 @@ test('Single source of truth in @jeans-store/db (Phase 5)', async (t) => {
       '0008_free_size_shared_stock.sql',
       '0009_material_shen.sql',
       '0010_useful_leech.sql',
-      '0011_schema_cleanup.sql'
+      '0011_schema_cleanup.sql',
+      '0012_product_designs_and_metadata.sql'
     ]
 
     const sqlFiles = fs.readdirSync(pkgDrizzle).filter((f) => f.endsWith('.sql'))
@@ -75,6 +80,10 @@ test('Single source of truth in @jeans-store/db (Phase 5)', async (t) => {
     assert.ok(productVariants, 'productVariants table exported')
     assert.ok(categories, 'categories table exported')
     assert.ok(collections, 'collections table exported')
+    assert.ok(tags, 'tags table exported')
+    assert.ok(productTags, 'productTags table exported')
+    assert.ok(productCollections, 'productCollections table exported')
+    assert.ok(productDesigns, 'productDesigns table exported')
     assert.ok(orders, 'orders table exported')
     assert.ok(orderItems, 'orderItems table exported')
     assert.ok(orderEvents, 'orderEvents table exported')

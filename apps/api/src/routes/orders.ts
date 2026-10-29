@@ -75,10 +75,8 @@ orderRouter.get(
 
 const orderItemInputSchema = z.object({
   id: z.string().uuid(),
-  variantId: z
-    .union([z.number().int().positive(), z.null()])
-    .optional()
-    .transform((v) => v ?? undefined),
+  variantId: z.number().int().positive().nullable().optional(),
+  designId: z.number().int().positive().nullable().optional(),
   size: z.string().min(1),
   quantity: z.number().int().positive().max(50),
 });
@@ -97,7 +95,13 @@ const createRazorpayOrderSchema = z.object({
 });
 
 async function calculateCheckout(
-  itemsRequest: CreateOrder["items"],
+  itemsRequest: Array<{
+    id: string;
+    variantId?: number | null;
+    designId?: number | null;
+    size: string;
+    quantity: number;
+  }>,
   state: string,
   pincode?: string,
   couponCode?: string,
@@ -142,7 +146,13 @@ async function calculateCheckout(
         `Size ${requested.size} for ${product.name} is no longer available.`,
       );
     }
+
+    const trackInventory = product.trackInventory ?? true;
+    const continueSelling = product.continueSelling ?? false;
+
     if (
+      trackInventory &&
+      !continueSelling &&
       !options.skipStockCheck &&
       variant.stock - variant.reserved < requested.quantity
     ) {
@@ -150,7 +160,7 @@ async function calculateCheckout(
         `${product.name} (${requested.size}) does not have enough stock.`,
       );
     }
-    if (product.isFreeSize) {
+    if (product.isFreeSize && trackInventory && !continueSelling) {
       const current = freeSizeRequested.get(product.id);
       freeSizeRequested.set(product.id, {
         quantity: (current?.quantity ?? 0) + requested.quantity,
@@ -158,10 +168,26 @@ async function calculateCheckout(
         name: product.name,
       });
     }
-    const unitPrice =
+
+    const design =
+      variant.designId && product.designs
+        ? product.designs.find((d) => d.id === variant.designId)
+        : undefined;
+    const variantPrice =
       typeof variant.price === "number" && variant.price > 0
         ? variant.price
-        : product.priceNum;
+        : undefined;
+    const designPrice =
+      design?.priceOverride != null && design.priceOverride > 0
+        ? design.priceOverride
+        : undefined;
+    const unitPrice = variantPrice ?? designPrice ?? product.priceNum;
+
+    const designImage = design?.images?.[0];
+    const lineImg = designImage || product.img;
+    const designName = design?.name;
+    const variantLabel = [designName ?? variant.color, variant.size].filter(Boolean).join(" / ");
+
     pricedInputs.push({
       productId: product.id,
       variantId: variant.id!,
@@ -171,12 +197,14 @@ async function calculateCheckout(
       sku: variant.sku,
       quantity: requested.quantity,
       unitPrice,
-      weightGrams: variant.weight,
-      img: product.img,
+      weightGrams: variant.weight ?? product.weightGrams ?? 350,
+      img: lineImg,
       categoryId: product.categoryId,
       isFreeSize: Boolean(product.isFreeSize),
       taxRate: product.taxRate ?? 0,
-      variantLabel: [variant.color, variant.size].filter(Boolean).join(" / "),
+      variantLabel,
+      designId: variant.designId ?? undefined,
+      designName,
     });
   }
 
@@ -220,6 +248,8 @@ async function calculateCheckout(
   const items: CalculatedOrder["items"] = pricing.lines.map((line) => ({
     id: line.productId,
     variantId: line.variantId,
+    designId: line.designId,
+    designName: line.designName,
     name: line.name,
     size: line.size,
     price: line.price,

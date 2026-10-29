@@ -98,6 +98,8 @@ function toOrder(
       taxAmount: item.taxAmount,
       taxableAmount: item.taxableAmount,
       variantLabel: item.variantLabel ?? undefined,
+      designId: item.designId ?? undefined,
+      designName: item.designName ?? undefined,
     };
   });
 
@@ -528,11 +530,14 @@ class OrderStore {
 
     const variantRows = await executor.execute(sql`
       SELECT v.id AS variant_id, v.product_id, v.sku, v.size, v.color, v.price AS variant_price,
-             v.weight_grams AS variant_weight, v.status AS variant_status,
+             v.weight_grams AS variant_weight, v.status AS variant_status, v.design_id,
+             d.name AS design_name, d.price_override AS design_price_override,
              p.name AS product_name, p.price AS product_price, p.tax_rate, p.weight_grams AS product_weight,
-             p.is_free_size, p.category_id, p.status AS product_status
+             p.is_free_size, p.category_id, p.status AS product_status,
+             p.track_inventory, p.continue_selling
       FROM product_variants v
       INNER JOIN products p ON p.id = v.product_id
+      LEFT JOIN product_designs d ON d.id = v.design_id
       WHERE v.id IN (${sql.join(
         variantIds.map((id) => sql`${id}`),
         sql`, `,
@@ -549,7 +554,7 @@ class OrderStore {
     ];
     const imageRows = productIds.length
       ? await executor.execute(sql`
-          SELECT product_id, storage_key, external_url
+          SELECT product_id, design_id, storage_key, external_url
           FROM product_images
           WHERE product_id IN (${sql.join(
             productIds.map((id) => sql`${id}`),
@@ -559,16 +564,25 @@ class OrderStore {
         `)
       : { rows: [] as Record<string, unknown>[] };
     const imageByProduct = new Map<string, string>();
+    const imageByDesign = new Map<number, string>();
     for (const raw of imageRows.rows) {
       const row = raw as Record<string, unknown>;
       const productId = String(row.product_id);
-      if (imageByProduct.has(productId)) continue;
+      const designId =
+        row.design_id !== null && row.design_id !== undefined
+          ? Number(row.design_id)
+          : null;
       const image = row.external_url
         ? String(row.external_url)
         : row.storage_key
           ? assetUrl(String(row.storage_key))
           : "";
-      if (image) imageByProduct.set(productId, image);
+      if (image) {
+        if (!imageByProduct.has(productId)) imageByProduct.set(productId, image);
+        if (designId !== null && !imageByDesign.has(designId)) {
+          imageByDesign.set(designId, image);
+        }
+      }
     }
 
     return items.map((item) => {
@@ -589,16 +603,40 @@ class OrderStore {
       if (item.id && item.id !== productId) {
         throw new Error("A cart item does not belong to the selected product.");
       }
+      const designId =
+        row.design_id !== null && row.design_id !== undefined
+          ? Number(row.design_id)
+          : undefined;
+      const designName = row.design_name ? String(row.design_name) : undefined;
+      const rawDesignPrice =
+        row.design_price_override !== null &&
+        row.design_price_override !== undefined
+          ? Number(row.design_price_override)
+          : undefined;
+      const designPriceOverride =
+        rawDesignPrice !== undefined &&
+        Number.isFinite(rawDesignPrice) &&
+        rawDesignPrice > 0
+          ? rawDesignPrice
+          : undefined;
       const variantPrice = Number(row.variant_price);
       const unitPrice =
         Number.isFinite(variantPrice) && variantPrice > 0
           ? variantPrice
-          : Number(row.product_price);
+          : (designPriceOverride ?? Number(row.product_price));
       const weight = Number(row.variant_weight ?? row.product_weight ?? 0);
       const quantity = Math.max(1, Math.min(50, Math.round(item.quantity)));
+      const img =
+        (designId !== undefined ? imageByDesign.get(designId) : undefined) ??
+        imageByProduct.get(productId);
+      const variantLabel = [designName ?? row.color, row.size]
+        .filter(Boolean)
+        .join(" / ");
       return {
         productId,
         variantId: item.variantId,
+        designId,
+        designName,
         name: String(row.product_name),
         size: String(row.size),
         color: row.color ? String(row.color) : undefined,
@@ -607,11 +645,13 @@ class OrderStore {
         unitPrice,
         lineTotal: unitPrice * quantity,
         weightGrams: weight,
-        img: imageByProduct.get(productId),
+        img,
         categoryId: Number(row.category_id),
         isFreeSize: Boolean(row.is_free_size),
+        trackInventory: row.track_inventory !== false,
+        continueSelling: Boolean(row.continue_selling),
         taxRate: Number(row.tax_rate ?? 0),
-        variantLabel: [row.color, row.size].filter(Boolean).join(" / "),
+        variantLabel,
       };
     });
   }
@@ -667,6 +707,8 @@ class OrderStore {
           catalogLines.map((line) => ({
             productId: line.productId,
             variantId: line.variantId,
+            designId: line.designId,
+            designName: line.designName,
             name: line.name,
             size: line.size,
             color: line.color,
@@ -677,6 +719,8 @@ class OrderStore {
             img: line.img,
             categoryId: line.categoryId,
             isFreeSize: line.isFreeSize,
+            trackInventory: line.trackInventory,
+            continueSelling: line.continueSelling,
             taxRate: line.taxRate,
             variantLabel: line.variantLabel,
           })),
@@ -725,6 +769,8 @@ class OrderStore {
             orderId: row.id,
             productId: line.productId,
             variantId: line.variantId,
+            designId: line.designId ?? null,
+            designName: line.designName ?? null,
             sku: line.sku ?? null,
             name: line.name,
             size: line.size,
@@ -748,6 +794,8 @@ class OrderStore {
             variantId: line.variantId,
             quantity: line.quantity,
             isFreeSize: Boolean(line.isFreeSize),
+            trackInventory: line.trackInventory,
+            continueSelling: line.continueSelling,
             sku: line.sku,
           }),
         );
@@ -870,6 +918,8 @@ class OrderStore {
       input.items.map((item) => ({
         productId: item.id,
         variantId: item.variantId,
+        designId: item.designId ?? undefined,
+        designName: item.designName ?? undefined,
         name: item.name,
         size: item.size,
         color: (item as { color?: string }).color,
@@ -886,6 +936,8 @@ class OrderStore {
     const items: Order["items"] = priced.lines.map((line) => ({
       id: line.productId,
       variantId: line.variantId,
+      designId: line.designId,
+      designName: line.designName,
       name: line.name,
       size: line.size,
       price: line.price,

@@ -16,6 +16,10 @@
 export interface PricedLineInput {
   productId: string
   variantId: number
+  designId?: number
+  designName?: string
+  trackInventory?: boolean
+  continueSelling?: boolean
   name: string
   size: string
   color?: string
