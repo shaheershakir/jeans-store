@@ -478,3 +478,119 @@ export function SearchSkeleton() {
     </div>
   )
 }
+
+
+export function CheckoutSkeleton() {
+  return (
+    <main className="min-h-screen bg-[#faf9f6] py-8 sm:py-12">
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        {/* Breadcrumb / back shimmer */}
+        <div className="mb-6 flex items-center gap-2">
+          <div className="h-4 w-28 rounded-md skeleton-shimmer" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left: Form Fields (7 cols) */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* Contact Information card */}
+            <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-4 shadow-xs">
+              <div className="h-5 w-40 rounded-md skeleton-shimmer" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="h-11 rounded-lg skeleton-shimmer" />
+                <div className="h-11 rounded-lg skeleton-shimmer" />
+              </div>
+            </div>
+
+            {/* Shipping Address card */}
+            <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-4 shadow-xs">
+              <div className="h-5 w-36 rounded-md skeleton-shimmer" />
+              <div className="space-y-3">
+                <div className="h-11 rounded-lg skeleton-shimmer" />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="h-11 rounded-lg skeleton-shimmer" />
+                  <div className="h-11 rounded-lg skeleton-shimmer" />
+                  <div className="h-11 rounded-lg skeleton-shimmer" />
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Method card */}
+            <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-4 shadow-xs">
+              <div className="h-5 w-32 rounded-md skeleton-shimmer" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="h-14 rounded-lg skeleton-shimmer" />
+                <div className="h-14 rounded-lg skeleton-shimmer" />
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Order Summary (5 cols) */}
+          <div className="lg:col-span-5">
+            <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-5 shadow-xs sticky top-24">
+              <div className="h-5 w-32 rounded-md skeleton-shimmer" />
+              
+              {/* Item lines */}
+              <div className="space-y-4 border-y border-neutral-100 py-4">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="h-16 w-16 rounded-lg skeleton-shimmer shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-3/4 rounded-md skeleton-shimmer" />
+                      <div className="h-3 w-1/3 rounded-md skeleton-shimmer" />
+                    </div>
+                    <div className="h-4 w-12 rounded-md skeleton-shimmer" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Price rows */}
+              <div className="space-y-2.5">
+                <div className="flex justify-between">
+                  <div className="h-3.5 w-16 rounded-md skeleton-shimmer" />
+                  <div className="h-3.5 w-12 rounded-md skeleton-shimmer" />
+                </div>
+                <div className="flex justify-between">
+                  <div className="h-3.5 w-20 rounded-md skeleton-shimmer" />
+                  <div className="h-3.5 w-10 rounded-md skeleton-shimmer" />
+                </div>
+                <div className="flex justify-between pt-2 border-t border-neutral-100">
+                  <div className="h-5 w-14 rounded-md skeleton-shimmer" />
+                  <div className="h-5 w-20 rounded-md skeleton-shimmer" />
+                </div>
+              </div>
+
+              <div className="h-12 w-full rounded-lg skeleton-shimmer mt-4" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  )
+}
+
+export function AccountPortalSkeleton() {
+  return (
+    <main className="min-h-screen bg-[#faf9f6] py-8 sm:py-12">
+      <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+          {/* Side Nav */}
+          <aside className="md:col-span-4 lg:col-span-3 space-y-2">
+            <div className="rounded-xl border border-neutral-200 bg-white p-4 space-y-2 shadow-xs">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-9 w-full rounded-lg skeleton-shimmer" />
+              ))}
+            </div>
+          </aside>
+          {/* Main Body */}
+          <section className="md:col-span-8 lg:col-span-9">
+            <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-4 shadow-xs">
+              <div className="h-6 w-48 rounded-md skeleton-shimmer" />
+              <div className="h-4 w-72 rounded-md skeleton-shimmer" />
+              <div className="h-32 w-full rounded-lg skeleton-shimmer mt-4" />
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  )
+}

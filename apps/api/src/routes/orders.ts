@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { orderRateLimiter } from "../middleware/rateLimit.js";
 import { orderStore } from "../store/orderStore.js";
 import { createOrderSchema } from "../schemas/order.js";
 import { verifyAdminAuth } from "../middleware/auth.js";
@@ -392,6 +393,7 @@ orderRouter.post(
 
 orderRouter.post(
   "/api/orders/razorpay/create-order",
+  orderRateLimiter,
   async (req: Request, res: Response) => {
     const parsed = createRazorpayOrderSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -932,7 +934,7 @@ orderRouter.post(
 );
 
 // Public order submission from Storefront
-orderRouter.post("/api/orders", async (req: Request, res: Response) => {
+orderRouter.post("/api/orders", orderRateLimiter, async (req: Request, res: Response) => {
   const parsed = createOrderSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({

@@ -1,8 +1,8 @@
 import crypto from 'node:crypto'
 import { Router, type Request, type Response } from 'express'
-import rateLimit from 'express-rate-limit'
 import { z } from 'zod'
 import { createAdminSession, verifyAdminSession } from '../services/adminSession.js'
+import { authRateLimiter } from '../middleware/rateLimit.js'
 
 export const adminAuthRouter = Router()
 
@@ -11,20 +11,13 @@ const loginSchema = z.object({
   password: z.string().min(1).max(1024)
 })
 
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
-  standardHeaders: true,
-  legacyHeaders: false
-})
-
 function safeEqual(left: string, right: string): boolean {
   const a = crypto.createHash('sha256').update(left).digest()
   const b = crypto.createHash('sha256').update(right).digest()
   return crypto.timingSafeEqual(a, b)
 }
 
-adminAuthRouter.post('/api/admin/auth/login', loginLimiter, (req: Request, res: Response) => {
+adminAuthRouter.post('/api/admin/auth/login', authRateLimiter, (req: Request, res: Response) => {
   const parsed = loginSchema.safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'Enter a valid email address and password.' })

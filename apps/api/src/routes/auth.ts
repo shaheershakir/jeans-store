@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
+import { authRateLimiter } from "../middleware/rateLimit.js";
 import {
   registerSchema,
   loginSchema,
@@ -77,7 +78,7 @@ async function getOrCreateCustomer(email: string, name?: string, phone?: string,
 export const authRouter = Router();
 
 // 1. User Registration (Storefront Sign-up)
-authRouter.post("/api/auth/register", async (req: Request, res: Response) => {
+authRouter.post("/api/auth/register", authRateLimiter, async (req: Request, res: Response) => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -129,7 +130,7 @@ authRouter.post("/api/auth/register", async (req: Request, res: Response) => {
 });
 
 // 2. User Login (Storefront Sign-in)
-authRouter.post("/api/auth/login", async (req: Request, res: Response) => {
+authRouter.post("/api/auth/login", authRateLimiter, async (req: Request, res: Response) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -273,7 +274,7 @@ authRouter.get("/api/auth/google/url", async (req: Request, res: Response) => {
 });
 
 // 6. Google OAuth Sign-in / Sign-up (/api/auth/google)
-authRouter.post("/api/auth/google", async (req: Request, res: Response) => {
+authRouter.post("/api/auth/google", authRateLimiter, async (req: Request, res: Response) => {
   const parsed = googleAuthSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
