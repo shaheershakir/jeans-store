@@ -1635,7 +1635,7 @@ export default function ShopClient({
 
             {/* Mobile Filter Modal (2-Column Split Body) */}
             <div
-              className={`fixed inset-0 z-[99999] hidden h-[100dvh] w-screen flex-col overflow-hidden bg-white [transition:transform_0.28s_cubic-bezier(0.16,1,0.3,1),visibility_0.28s] [@media(max-width:768px)]:flex ${drawerOpen ? 'visible pointer-events-auto [transform:translateY(0)]' : 'invisible pointer-events-none [transform:translateY(100%)]'}`}
+              className={`fixed inset-0 z-[99999] hidden h-[100dvh] w-full flex-col overflow-hidden bg-white [transition:transform_0.28s_cubic-bezier(0.16,1,0.3,1),visibility_0.28s] [@media(max-width:768px)]:flex ${drawerOpen ? 'visible pointer-events-auto [transform:translateY(0)]' : 'invisible pointer-events-none [transform:translateY(100%)]'}`}
               aria-hidden={!drawerOpen}
               role="dialog"
               aria-label="Filter catalog"

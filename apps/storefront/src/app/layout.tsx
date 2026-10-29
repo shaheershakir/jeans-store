@@ -12,12 +12,29 @@ import './globals.css'
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://teesgarage.in'),
-  title: 'TEESGARAGE — Heavyweight T-Shirts & Premium Bottomwear',
+  title: {
+    default: 'TEESGARAGE — Heavyweight T-Shirts & Premium Bottomwear',
+    template: '%s | TEESGARAGE'
+  },
   description:
     'Heavyweight combed cotton tees, henleys, trackpants, and sweatpants made for everyday wear. Delivery is charged by location.',
   manifest: '/site.webmanifest',
   icons: {
     icon: '/icon.svg'
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1
+    }
+  },
+  alternates: {
+    canonical: '/'
   },
   openGraph: {
     title: 'TEESGARAGE — Heavyweight T-Shirts & Premium Bottomwear',
@@ -26,7 +43,22 @@ export const metadata: Metadata = {
     url: 'https://teesgarage.in',
     siteName: 'TEESGARAGE',
     locale: 'en_IN',
-    type: 'website'
+    type: 'website',
+    images: [
+      {
+        url: '/mock-assets/hero-banner-rooftop-desktop.png',
+        width: 1200,
+        height: 630,
+        alt: 'TEESGARAGE — Heavyweight T-Shirts & Premium Bottomwear'
+      }
+    ]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'TEESGARAGE — Heavyweight T-Shirts & Premium Bottomwear',
+    description:
+      'Heavyweight combed cotton tees, henleys, trackpants, and sweatpants made for everyday wear.',
+    images: ['/mock-assets/hero-banner-rooftop-desktop.png']
   }
 }
 

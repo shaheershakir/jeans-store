@@ -511,6 +511,7 @@ function ProductDetailContent({ product }: { product: Product }) {
               alt={`${title} — view ${activeImageIdx + 1}`}
               fill
               priority
+              sizes="(max-width: 1024px) 100vw, 58vw"
               className="object-cover transition-all duration-300"
             />
           </div>
@@ -532,7 +533,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                     }`}
                     aria-label={`Select angle view ${idx + 1}`}
                   >
-                    <Image src={src} alt="" fill className="object-cover" />
+                    <Image src={src} alt="" fill sizes="120px" className="object-cover" />
                   </button>
                 )
               })}

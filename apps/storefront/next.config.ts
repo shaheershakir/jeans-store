@@ -37,7 +37,9 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../../'),
   transpilePackages: ['@jeans-store/shared', '@jeans-store/validators'],
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns,
+    minimumCacheTTL: 86400,
   },
   async headers() {
     return [

@@ -76,9 +76,37 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params
   const config = SLUG_TO_CONFIG[category.toLowerCase()]
   if (!config) return { title: 'Not Found — TEESGARAGE' }
+
+  const title = `${config.title} — TEESGARAGE`
+  const description = config.desc
+  const slug = category.toLowerCase()
+
   return {
-    title: `${config.title} — TEESGARAGE`,
-    description: config.desc,
+    title,
+    description,
+    alternates: {
+      canonical: `/shop/${slug}`
+    },
+    openGraph: {
+      title,
+      description,
+      url: `/shop/${slug}`,
+      type: 'website',
+      images: [
+        {
+          url: '/mock-assets/hero-banner-rooftop-desktop.png',
+          width: 1200,
+          height: 630,
+          alt: title
+        }
+      ]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/mock-assets/hero-banner-rooftop-desktop.png']
+    }
   }
 }
 

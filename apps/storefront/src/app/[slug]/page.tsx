@@ -42,9 +42,39 @@ export async function generateMetadata({
   if (!product) {
     return { title: 'Not found — TEESGARAGE' }
   }
+
+  const title = `${product.name} — TEESGARAGE`
+  const description =
+    product.desc ||
+    `Shop ${product.name}. Premium heavyweight combed cotton streetwear with durable construction and tailored fit.`
+  const imageUrl = product.img || product.images?.[0] || '/mock-assets/hero-banner-rooftop-desktop.png'
+
   return {
-    title: `${product.name} — TEESGARAGE`,
-    description: product.desc
+    title,
+    description,
+    alternates: {
+      canonical: `/${slug}`
+    },
+    openGraph: {
+      title,
+      description,
+      url: `/${slug}`,
+      type: 'website',
+      images: [
+        {
+          url: imageUrl,
+          width: 800,
+          height: 1000,
+          alt: product.name
+        }
+      ]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl]
+    }
   }
 }
 
