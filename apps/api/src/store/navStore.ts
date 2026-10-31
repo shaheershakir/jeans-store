@@ -76,12 +76,23 @@ export const DEFAULT_NAV_ITEMS: NavigationItem[] = [
     openInNewTab: false
   },
   {
+    id: 'nav-jeans',
+    label: 'Jeans',
+    href: '/shop/jeans',
+    type: 'category',
+    targetValue: 'jeans',
+    order: 7,
+    isActive: true,
+    openInNewTab: false,
+    badge: 'NEW'
+  },
+  {
     id: 'nav-8',
     label: 'Trackpants',
     href: '/shop/trackpants',
     type: 'category',
     targetValue: 'trackpants',
-    order: 7,
+    order: 8,
     isActive: true,
     openInNewTab: false
   },
@@ -91,7 +102,7 @@ export const DEFAULT_NAV_ITEMS: NavigationItem[] = [
     href: '/shop/sweatpants',
     type: 'category',
     targetValue: 'sweatpants',
-    order: 8,
+    order: 9,
     isActive: true,
     openInNewTab: false
   }

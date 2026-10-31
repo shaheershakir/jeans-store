@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -16,6 +16,7 @@ import {
   Heart,
   Settings,
   ChevronRight,
+  ChevronDown,
   MapPin
 } from 'lucide-react'
 import { cartCount, useCartStore, useUIStore, useFilterStore, useAuthStore, useFavoriteStore } from '@/lib/store'
@@ -25,6 +26,26 @@ import MobileTabBar from '@/components/MobileTabBar'
 
 const HEADER_ACTION_BTN =
   'grid h-[38px] w-[38px] cursor-pointer place-items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#111] no-underline transition-[background-color] duration-150 ease-[ease] hover:bg-[rgba(0,0,0,0.05)]'
+
+const BOTTOMWEAR_SLUGS = new Set(['bottomwear', 'jeans', 'trackpants', 'sweatpants'])
+const TSHIRT_SLUGS = new Set([
+  't-shirts',
+  'stripes',
+  'fullsleeve',
+  'drsleeve',
+  'printed-tees',
+  'ringer-tees',
+  'henley',
+  'waffle'
+])
+
+type Department = 't-shirts' | 'bottomwear'
+
+function getInitialDepartment(pathname: string): Department {
+  const clean = pathname.replace('/shop/', '').toLowerCase()
+  if (BOTTOMWEAR_SLUGS.has(clean)) return 'bottomwear'
+  return 't-shirts'
+}
 
 interface HeaderProps {
   initialNavItems?: NavigationItem[]
@@ -51,8 +72,19 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const [pendingHref, setPendingHref] = useState<string | null>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
+  const [expandedDept, setExpandedDept] = useState<Department>(() => getInitialDepartment(pathname))
+  const [mobileExpandedDept, setMobileExpandedDept] = useState<Department | null>(() => getInitialDepartment(pathname))
+
   useEffect(() => {
     setPendingHref(null)
+    const clean = pathname.replace('/shop/', '').toLowerCase()
+    if (BOTTOMWEAR_SLUGS.has(clean)) {
+      setExpandedDept('bottomwear')
+      setMobileExpandedDept('bottomwear')
+    } else if (TSHIRT_SLUGS.has(clean)) {
+      setExpandedDept('t-shirts')
+      setMobileExpandedDept('t-shirts')
+    }
   }, [pathname])
 
   const [navLinks, setNavLinks] = useState<NavigationItem[]>(
@@ -105,6 +137,29 @@ export default function Header({ initialNavItems }: HeaderProps) {
       setNavLinks(initialNavItems)
     }
   }, [initialNavItems])
+
+  const activeLinks = navLinks.filter((l) => l.isActive)
+
+  const tshirtLinks = useMemo(() => {
+    return activeLinks.filter((link) => {
+      const val = (link.targetValue || link.href.replace('/shop/', '')).toLowerCase()
+      return TSHIRT_SLUGS.has(val)
+    })
+  }, [activeLinks])
+
+  const bottomwearLinks = useMemo(() => {
+    return activeLinks.filter((link) => {
+      const val = (link.targetValue || link.href.replace('/shop/', '')).toLowerCase()
+      return BOTTOMWEAR_SLUGS.has(val)
+    })
+  }, [activeLinks])
+
+  const otherLinks = useMemo(() => {
+    return activeLinks.filter((link) => {
+      const val = (link.targetValue || link.href.replace('/shop/', '')).toLowerCase()
+      return !TSHIRT_SLUGS.has(val) && !BOTTOMWEAR_SLUGS.has(val)
+    })
+  }, [activeLinks])
 
   const isLinkActive = (href: string) => {
     if (href === '/shop') {
@@ -174,7 +229,58 @@ export default function Header({ initialNavItems }: HeaderProps) {
   }
 
   const count = cartCount(items)
-  const activeLinks = navLinks.filter((l) => l.isActive)
+
+  const handleDepartmentClick = (dept: Department, e?: React.MouseEvent) => {
+    if (expandedDept !== dept) {
+      if (e) e.preventDefault()
+      setExpandedDept(dept)
+    } else {
+      const targetHref = `/shop/${dept}`
+      if (pathname !== targetHref) {
+        setPendingHref(targetHref)
+      }
+      setCategory(dept)
+      router.push(targetHref)
+    }
+  }
+
+  const renderNavLink = (link: NavigationItem) => {
+    const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
+    const isActive = isLinkActive(link.href)
+    const targetHref =
+      link.type === 'category'
+        ? (link.targetValue || 'all') === 'all'
+          ? '/shop'
+          : `/shop/${link.targetValue}`
+        : link.href
+    const isPending = pendingHref === targetHref || pendingHref === link.href
+
+    return (
+      <Link
+        key={link.id || link.label}
+        href={link.href}
+        className={`relative shrink-0 whitespace-nowrap text-[13.5px] font-medium leading-none tracking-[0.02em] text-[#242424] no-underline transition-colors duration-150 hover:text-black active:scale-[0.98] press-feedback ${
+          isPending ? 'opacity-70' : ''
+        } ${
+          isSale ? 'font-semibold text-[#e01a2b]!' : ''
+        } ${
+          isActive
+            ? "font-semibold text-black after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:rounded-[1px] after:bg-black after:content-['']"
+            : ''
+        }`}
+        target={link.openInNewTab ? '_blank' : undefined}
+        rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
+        onClick={(e) => handleNavClick(link, e)}
+      >
+        <span>{link.label}</span>
+        {link.badge && (
+          <span className="ml-[5px] rounded-[2px] bg-black px-[5px] py-px text-[9px] font-semibold uppercase text-white">
+            {link.badge}
+          </span>
+        )}
+      </Link>
+    )
+  }
 
   const userInitial = (user?.name?.trim()?.charAt(0) || user?.email?.trim()?.charAt(0) || 'U').toUpperCase()
 
@@ -241,43 +347,107 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
             {/* Center: Department & Category Links (Vertically Centered with logo and buttons) */}
             <nav
-              className="hidden lg:flex flex-1 items-center justify-center gap-7 xl:gap-8"
+              className="hidden lg:flex flex-1 items-center justify-center overflow-x-auto no-scrollbar py-2"
               aria-label="Department and Category Navigation"
             >
-              {activeLinks.map((link) => {
-                const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
-                const isActive = isLinkActive(link.href)
-                const targetHref =
-                  link.type === 'category'
-                    ? (link.targetValue || 'all') === 'all'
-                      ? '/shop'
-                      : `/shop/${link.targetValue}`
-                    : link.href
-                const isPending = pendingHref === targetHref || pendingHref === link.href
-                return (
-                  <Link
-                    key={link.id || link.label}
-                    href={link.href}
-                    className={`relative whitespace-nowrap text-[13.5px] font-medium leading-none tracking-[0.02em] text-[#242424] no-underline transition-colors duration-150 hover:text-black active:scale-[0.98] press-feedback ${
-                      isPending ? 'opacity-70' : ''
+              <div className="flex items-center">
+                {/* T-Shirts Department Cluster */}
+                <div className="flex items-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => handleDepartmentClick('t-shirts', e)}
+                    aria-expanded={expandedDept === 't-shirts'}
+                    aria-controls="desktop-tshirt-subcategories"
+                    className={`relative inline-flex items-center gap-1.5 whitespace-nowrap text-[13.5px] font-semibold leading-none tracking-[0.02em] no-underline transition-colors duration-150 cursor-pointer active:scale-[0.98] press-feedback select-none ${
+                      expandedDept === 't-shirts' ? 'text-black' : 'text-[#444] hover:text-black'
                     } ${
-                      isSale ? 'font-semibold text-[#e01a2b]!' : ''
-                    } ${
-                      isActive
-                        ? "font-semibold text-black after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:rounded-[1px] after:bg-black after:content-['']"
+                      pathname === '/shop/t-shirts'
+                        ? "after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:rounded-[1px] after:bg-black after:content-['']"
                         : ''
                     }`}
-                    target={link.openInNewTab ? '_blank' : undefined}
-                    rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
-                    onClick={(e) => handleNavClick(link, e)}
                   >
-                    <span>{link.label}</span>
-                    {link.badge && (
-                      <span className="ml-[5px] rounded-[2px] bg-black px-[5px] py-px text-[9px] font-semibold uppercase text-white">{link.badge}</span>
-                    )}
-                  </Link>
-                )
-              })}
+                    <span>T-Shirts</span>
+                    <ChevronDown
+                      className={`h-3 w-3 text-zinc-400 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                        expandedDept === 't-shirts' ? 'rotate-0 text-black' : '-rotate-90'
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  {/* T-Shirts Subcategories (Horizontal Smooth Accordion) */}
+                  <div
+                    id="desktop-tshirt-subcategories"
+                    className={`flex items-center overflow-hidden transition-[max-width,opacity,transform] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${
+                      expandedDept === 't-shirts'
+                        ? 'max-w-[750px] opacity-100 translate-x-0 pointer-events-auto'
+                        : 'max-w-0 opacity-0 -translate-x-3 pointer-events-none'
+                    }`}
+                    aria-hidden={expandedDept !== 't-shirts'}
+                  >
+                    <div className="flex items-center gap-6 xl:gap-7 pl-4 xl:pl-5 whitespace-nowrap">
+                      {tshirtLinks.map(renderNavLink)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Divider between Departments */}
+                <div className="mx-4 xl:mx-5 flex items-center shrink-0" aria-hidden="true">
+                  <span className="h-3.5 w-px bg-black/15 shrink-0" />
+                </div>
+
+                {/* Bottomwear Department Cluster */}
+                <div className="flex items-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => handleDepartmentClick('bottomwear', e)}
+                    aria-expanded={expandedDept === 'bottomwear'}
+                    aria-controls="desktop-bottomwear-subcategories"
+                    className={`relative inline-flex items-center gap-1.5 whitespace-nowrap text-[13.5px] font-semibold leading-none tracking-[0.02em] no-underline transition-colors duration-150 cursor-pointer active:scale-[0.98] press-feedback select-none ${
+                      expandedDept === 'bottomwear' ? 'text-black' : 'text-[#444] hover:text-black'
+                    } ${
+                      pathname === '/shop/bottomwear'
+                        ? "after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:rounded-[1px] after:bg-black after:content-['']"
+                        : ''
+                    }`}
+                  >
+                    <span>Bottomwear</span>
+                    <ChevronDown
+                      className={`h-3 w-3 text-zinc-400 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                        expandedDept === 'bottomwear' ? 'rotate-0 text-black' : '-rotate-90'
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  {/* Bottomwear Subcategories (Horizontal Smooth Accordion) */}
+                  <div
+                    id="desktop-bottomwear-subcategories"
+                    className={`flex items-center overflow-hidden transition-[max-width,opacity,transform] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${
+                      expandedDept === 'bottomwear'
+                        ? 'max-w-[450px] opacity-100 translate-x-0 pointer-events-auto'
+                        : 'max-w-0 opacity-0 -translate-x-3 pointer-events-none'
+                    }`}
+                    aria-hidden={expandedDept !== 'bottomwear'}
+                  >
+                    <div className="flex items-center gap-6 xl:gap-7 pl-4 xl:pl-5 whitespace-nowrap">
+                      {bottomwearLinks.map(renderNavLink)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Other Links (e.g. Sale) if any */}
+                {otherLinks.length > 0 && (
+                  <>
+                    <div className="mx-4 xl:mx-5 flex items-center shrink-0" aria-hidden="true">
+                      <span className="h-3.5 w-px bg-black/15 shrink-0" />
+                    </div>
+                    <div className="flex items-center gap-6 xl:gap-7 shrink-0">
+                      {otherLinks.map(renderNavLink)}
+                    </div>
+                  </>
+                )}
+              </div>
             </nav>
 
             {/* Right: Action Utilities */}
@@ -569,16 +739,138 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 Shop All Garments
               </button>
 
-              {activeLinks.map((link) => {
+              {/* T-Shirts Mobile Section */}
+              <div className="border-b border-b-[#e9e7e1]">
+                <button
+                  type="button"
+                  className="flex min-h-[46px] w-full cursor-pointer items-center justify-between border-0 bg-transparent py-2 text-left text-[14px] font-semibold uppercase leading-normal text-[#182126] press-feedback [font-family:var(--font-ui)]"
+                  onClick={() => setMobileExpandedDept((curr) => (curr === 't-shirts' ? null : 't-shirts'))}
+                  aria-expanded={mobileExpandedDept === 't-shirts'}
+                >
+                  <span className={mobileExpandedDept === 't-shirts' ? 'text-black font-bold' : 'text-[#182126]'}>T-Shirts</span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-zinc-500 transition-transform duration-250 ease-out ${
+                      mobileExpandedDept === 't-shirts' ? 'rotate-180 text-black' : 'rotate-0'
+                    }`}
+                  />
+                </button>
+                <div
+                  className={`grid transition-[grid-template-rows] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                    mobileExpandedDept === 't-shirts' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="flex flex-col pl-3 border-l-2 border-l-black/10 my-1 mb-2 space-y-0.5">
+                      <Link
+                        href="/shop/t-shirts"
+                        className={`flex min-h-[40px] items-center justify-between py-1.5 text-[12.5px] uppercase leading-normal no-underline press-feedback [font-family:var(--font-brand)] ${
+                          pathname === '/shop/t-shirts' ? 'font-bold text-black' : 'font-medium text-zinc-600'
+                        }`}
+                        onClick={() => {
+                          setPendingHref('/shop/t-shirts')
+                          setCategory('t-shirts')
+                          setMenuOpen(false)
+                        }}
+                      >
+                        All T-Shirts
+                      </Link>
+                      {tshirtLinks.map((link) => {
+                        const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
+                        const isActive = isLinkActive(link.href)
+                        return (
+                          <Link
+                            key={link.id || link.label}
+                            href={link.href}
+                            className={`flex min-h-[40px] items-center justify-between py-1.5 text-[12.5px] uppercase leading-normal no-underline press-feedback [font-family:var(--font-brand)] ${
+                              isActive ? 'font-bold text-black' : 'font-medium text-zinc-700'
+                            } ${isSale ? 'text-[#e01a2b]!' : ''}`}
+                            onClick={(e) => {
+                              handleNavClick(link, e)
+                              setMenuOpen(false)
+                            }}
+                          >
+                            <span>{link.label}</span>
+                            {link.badge && (
+                              <span className="rounded-[2px] bg-black px-[5px] py-px text-[9px] font-semibold uppercase text-white">
+                                {link.badge}
+                              </span>
+                            )}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottomwear Mobile Section */}
+              <div className="border-b border-b-[#e9e7e1]">
+                <button
+                  type="button"
+                  className="flex min-h-[46px] w-full cursor-pointer items-center justify-between border-0 bg-transparent py-2 text-left text-[14px] font-semibold uppercase leading-normal text-[#182126] press-feedback [font-family:var(--font-ui)]"
+                  onClick={() => setMobileExpandedDept((curr) => (curr === 'bottomwear' ? null : 'bottomwear'))}
+                  aria-expanded={mobileExpandedDept === 'bottomwear'}
+                >
+                  <span className={mobileExpandedDept === 'bottomwear' ? 'text-black font-bold' : 'text-[#182126]'}>Bottomwear</span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-zinc-500 transition-transform duration-250 ease-out ${
+                      mobileExpandedDept === 'bottomwear' ? 'rotate-180 text-black' : 'rotate-0'
+                    }`}
+                  />
+                </button>
+                <div
+                  className={`grid transition-[grid-template-rows] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                    mobileExpandedDept === 'bottomwear' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="flex flex-col pl-3 border-l-2 border-l-black/10 my-1 mb-2 space-y-0.5">
+                      <Link
+                        href="/shop/bottomwear"
+                        className={`flex min-h-[40px] items-center justify-between py-1.5 text-[12.5px] uppercase leading-normal no-underline press-feedback [font-family:var(--font-brand)] ${
+                          pathname === '/shop/bottomwear' ? 'font-bold text-black' : 'font-medium text-zinc-600'
+                        }`}
+                        onClick={() => {
+                          setPendingHref('/shop/bottomwear')
+                          setCategory('bottomwear')
+                          setMenuOpen(false)
+                        }}
+                      >
+                        All Bottomwear
+                      </Link>
+                      {bottomwearLinks.map((link) => {
+                        const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
+                        const isActive = isLinkActive(link.href)
+                        return (
+                          <Link
+                            key={link.id || link.label}
+                            href={link.href}
+                            className={`flex min-h-[40px] items-center justify-between py-1.5 text-[12.5px] uppercase leading-normal no-underline press-feedback [font-family:var(--font-brand)] ${
+                              isActive ? 'font-bold text-black' : 'font-medium text-zinc-700'
+                            } ${isSale ? 'text-[#e01a2b]!' : ''}`}
+                            onClick={(e) => {
+                              handleNavClick(link, e)
+                              setMenuOpen(false)
+                            }}
+                          >
+                            <span>{link.label}</span>
+                            {link.badge && (
+                              <span className="rounded-[2px] bg-black px-[5px] py-px text-[9px] font-semibold uppercase text-white">
+                                {link.badge}
+                              </span>
+                            )}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Other Links (e.g. Sale) if any */}
+              {otherLinks.map((link) => {
                 const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
                 const isActive = isLinkActive(link.href)
-                const targetHref =
-                  link.type === 'category'
-                    ? (link.targetValue || 'all') === 'all'
-                      ? '/shop'
-                      : `/shop/${link.targetValue}`
-                    : link.href
-                const isPending = pendingHref === targetHref || pendingHref === link.href
                 return (
                   <Link
                     key={link.id || link.label}
@@ -587,9 +879,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                       isActive
                         ? 'rounded-[6px] bg-[var(--bone)] pr-0 pl-2.5 font-bold text-black'
                         : 'px-0 font-semibold text-[#182126]'
-                    } ${isSale ? 'font-semibold' : ''} ${isPending ? 'opacity-70' : ''}`}
-                    target={link.openInNewTab ? '_blank' : undefined}
-                    rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
+                    } ${isSale ? 'font-semibold' : ''}`}
                     onClick={(e) => {
                       handleNavClick(link, e)
                       setMenuOpen(false)
