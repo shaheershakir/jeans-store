@@ -578,11 +578,13 @@ export const useAdminStore = create<AdminState>()(
         saveCategory: (c) => {
           if (c.id != null) {
             const id = c.id
+            const existing = get().data.categories.find((x) => x.id === id)
             const updated: Category = {
               id,
               name: c.name,
               slug: slugFromName(c.name),
               description: c.description,
+              parentId: c.parentId !== undefined ? c.parentId : (existing?.parentId ?? null),
             }
             set({
               data: {
@@ -599,6 +601,7 @@ export const useAdminStore = create<AdminState>()(
             name: c.name,
             slug: slugFromName(c.name),
             description: c.description,
+            parentId: c.parentId ?? null,
           }
           set({ data: { ...get().data, categories: [...get().data.categories, created] } })
           get().log('Created category', 'Category', created.name, `Added category ${created.name}`)

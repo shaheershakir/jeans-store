@@ -18,6 +18,9 @@ export const CATEGORIES = [
   'waffle',
   'trackpants',
   'sweatpants',
+  'jeans',
+  't-shirts',
+  'bottomwear',
 ] as const
 export type Category = (typeof CATEGORIES)[number]
 

@@ -47,6 +47,11 @@ export interface AdvancedFilterOptions {
   collections?: string[]
 }
 
+export const DEPARTMENT_SUBCATEGORIES_MAP: Record<string, string[]> = {
+  't-shirts': ['t-shirts', 'stripes', 'fullsleeve', 'drsleeve', 'printed-tees', 'ringer-tees', 'henley', 'waffle'],
+  bottomwear: ['bottomwear', 'jeans', 'trackpants', 'sweatpants']
+}
+
 export function filterAndSortProducts(
 
   prices: string[],
@@ -79,7 +84,11 @@ export function filterAndSortProducts(
           if (cat === 'sale') {
             return p.badge?.toLowerCase() === 'sale' || p.priceNum <= 1500
           }
-          return p.category?.toLowerCase() === cat
+          const pCat = p.category?.toLowerCase()
+          if (!pCat) return false
+          if (pCat === cat) return true
+          const subcats = DEPARTMENT_SUBCATEGORIES_MAP[cat]
+          return subcats ? subcats.includes(pCat) : false
         })
       })
     }

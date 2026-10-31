@@ -124,6 +124,9 @@ export interface Category {
   name: string
   slug: string
   description: string
+  parentId?: number | null
+  sortOrder?: number
+  isActive?: boolean
 }
 
 export interface Collection {

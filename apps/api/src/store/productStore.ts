@@ -41,21 +41,36 @@ import { assetUrl, keyFromUrl, type ProductDesign } from '@jeans-store/shared'
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80'
 
-export const INITIAL_CATEGORIES = [
-  { id: 1, slug: 'stripes', name: 'Stripes', sortOrder: 1, isActive: true },
-  { id: 2, slug: 'fullsleeve', name: 'Fullsleeve', sortOrder: 2, isActive: true },
-  { id: 3, slug: 'drsleeve', name: 'Drsleeve', sortOrder: 3, isActive: true },
-  { id: 4, slug: 'printed-tees', name: 'Printed Tees', sortOrder: 4, isActive: true },
-  { id: 5, slug: 'ringer-tees', name: 'Ringer Tees', sortOrder: 5, isActive: true },
-  { id: 6, slug: 'henley', name: 'Henley', sortOrder: 6, isActive: true },
-  { id: 7, slug: 'trackpants', name: 'Trackpants', sortOrder: 7, isActive: true },
-  { id: 8, slug: 'sweatpants', name: 'Sweatpants', sortOrder: 8, isActive: true },
-  { id: 9, slug: 't-shirts', name: 'T-Shirts', sortOrder: 9, isActive: true },
-  { id: 10, slug: 'shirts', name: 'Shirts', sortOrder: 10, isActive: true },
-  { id: 11, slug: 'hoodies', name: 'Hoodies', sortOrder: 11, isActive: true },
-  { id: 12, slug: 'accessories', name: 'Accessories', sortOrder: 12, isActive: true },
-  { id: 13, slug: 'jeans', name: 'Jeans', sortOrder: 13, isActive: true },
-  { id: 14, slug: 'waffle', name: 'Waffle', sortOrder: 14, isActive: true }
+export const INITIAL_CATEGORIES: Array<{
+  id: number
+  slug: string
+  name: string
+  sortOrder: number
+  isActive: boolean
+  parentId?: number | null
+}> = [
+  // Parent departments
+  { id: 9, slug: 't-shirts', name: 'T-Shirts', sortOrder: 1, isActive: true, parentId: null },
+  { id: 15, slug: 'bottomwear', name: 'Bottomwear', sortOrder: 2, isActive: true, parentId: null },
+
+  // T-Shirts subcategories
+  { id: 1, slug: 'stripes', name: 'Stripes', sortOrder: 1, isActive: true, parentId: 9 },
+  { id: 2, slug: 'fullsleeve', name: 'Fullsleeve', sortOrder: 2, isActive: true, parentId: 9 },
+  { id: 3, slug: 'drsleeve', name: 'Drsleeve', sortOrder: 3, isActive: true, parentId: 9 },
+  { id: 4, slug: 'printed-tees', name: 'Printed Tees', sortOrder: 4, isActive: true, parentId: 9 },
+  { id: 5, slug: 'ringer-tees', name: 'Ringer Tees', sortOrder: 5, isActive: true, parentId: 9 },
+  { id: 6, slug: 'henley', name: 'Henley', sortOrder: 6, isActive: true, parentId: 9 },
+  { id: 14, slug: 'waffle', name: 'Waffle', sortOrder: 7, isActive: true, parentId: 9 },
+
+  // Bottomwear subcategories
+  { id: 13, slug: 'jeans', name: 'Jeans', sortOrder: 1, isActive: true, parentId: 15 },
+  { id: 7, slug: 'trackpants', name: 'Trackpants', sortOrder: 2, isActive: true, parentId: 15 },
+  { id: 8, slug: 'sweatpants', name: 'Sweatpants', sortOrder: 3, isActive: true, parentId: 15 },
+
+  // Secondary categories
+  { id: 10, slug: 'shirts', name: 'Shirts', sortOrder: 10, isActive: true, parentId: null },
+  { id: 11, slug: 'hoodies', name: 'Hoodies', sortOrder: 11, isActive: true, parentId: null },
+  { id: 12, slug: 'accessories', name: 'Accessories', sortOrder: 12, isActive: true, parentId: null }
 ]
 
 export const ATTRIBUTE_SPEC_KEYS = [
@@ -475,6 +490,40 @@ export class ProductStore {
     return null
   }
 
+  async getCategoryAndDescendantIds(slug: string): Promise<number[]> {
+    const cleanSlug = slug.trim().toLowerCase()
+    if (isDatabaseConfigured() && db) {
+      const [category] = await db.select().from(categoriesTable).where(eq(categoriesTable.slug, cleanSlug))
+      if (!category) return []
+      const childRows = await db
+        .select({ id: categoriesTable.id })
+        .from(categoriesTable)
+        .where(eq(categoriesTable.parentId, category.id))
+      return [category.id, ...childRows.map((r) => r.id)]
+    }
+    const found = INITIAL_CATEGORIES.find((c) => c.slug === cleanSlug)
+    if (!found) return []
+    const children = INITIAL_CATEGORIES.filter((c) => c.parentId === found.id)
+    return [found.id, ...children.map((c) => c.id)]
+  }
+
+  async getCategoryAndDescendantSlugs(slug: string): Promise<string[]> {
+    const cleanSlug = slug.trim().toLowerCase()
+    if (isDatabaseConfigured() && db) {
+      const [category] = await db.select().from(categoriesTable).where(eq(categoriesTable.slug, cleanSlug))
+      if (!category) return [cleanSlug]
+      const childRows = await db
+        .select({ slug: categoriesTable.slug })
+        .from(categoriesTable)
+        .where(eq(categoriesTable.parentId, category.id))
+      return [category.slug.toLowerCase(), ...childRows.map((r) => r.slug.toLowerCase())]
+    }
+    const found = INITIAL_CATEGORIES.find((c) => c.slug === cleanSlug)
+    if (!found) return [cleanSlug]
+    const children = INITIAL_CATEGORIES.filter((c) => c.parentId === found.id)
+    return [found.slug.toLowerCase(), ...children.map((c) => c.slug.toLowerCase())]
+  }
+
   async getValidCategorySlugs(): Promise<string[]> {
     if (isDatabaseConfigured() && db) {
       const rows = await db.select({ slug: categoriesTable.slug }).from(categoriesTable)
@@ -559,9 +608,13 @@ export class ProductStore {
       const conditions: ReturnType<typeof eq>[] = []
 
       if (filters?.category && filters.category !== 'all') {
-        const category = await this.resolveCategory(filters.category)
-        if (!category) return []
-        conditions.push(eq(productsTable.categoryId, category.id))
+        const categoryIds = await this.getCategoryAndDescendantIds(filters.category)
+        if (categoryIds.length === 0) return []
+        if (categoryIds.length === 1) {
+          conditions.push(eq(productsTable.categoryId, categoryIds[0]))
+        } else {
+          conditions.push(inArray(productsTable.categoryId, categoryIds))
+        }
       }
       if (filters?.status) {
         conditions.push(eq(productsTable.status, filters.status.toLowerCase()) as any)
@@ -601,7 +654,8 @@ export class ProductStore {
       list = list.filter((p) => p.store === filters.store)
     }
     if (filters?.category && filters.category !== 'all') {
-      list = list.filter((p) => p.category?.toLowerCase() === filters.category!.toLowerCase())
+      const allowedSlugs = await this.getCategoryAndDescendantSlugs(filters.category)
+      list = list.filter((p) => p.category && allowedSlugs.includes(p.category.toLowerCase()))
     }
     if (filters?.status) {
       list = list.filter((p) => (p.status || 'active').toLowerCase() === filters.status!.toLowerCase())

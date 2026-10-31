@@ -5,7 +5,7 @@ import { Plus, Trash2, Edit2, FolderTree } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
 import { saveCategory, deleteCategory } from '@/services/catalog'
 import { PageContent, PageHeader } from '@/components/ui/page-header'
-import { Button, Card, CardHeader, Field, Input, Textarea } from '@/components/ui/primitives'
+import { Button, Card, CardHeader, Field, Input, Select, Textarea } from '@/components/ui/primitives'
 import { toastSuccess, toastError } from '@/components/ui/toast'
 import type { Category } from '@/lib/types'
 
@@ -16,17 +16,24 @@ export default function CategoriesPage() {
   const [editCategory, setEditCategory] = React.useState<Category | null | 'new'>(null)
   const [name, setName] = React.useState('')
   const [description, setDescription] = React.useState('')
+  const [parentId, setParentId] = React.useState<number | null>(null)
   const [loading, setLoading] = React.useState(false)
+
+  const parentOptions = React.useMemo(() => {
+    return categories.filter((c) => !c.parentId && (editCategory === 'new' || c.id !== editCategory?.id))
+  }, [categories, editCategory])
 
   const handleOpenNew = () => {
     setName('')
     setDescription('')
+    setParentId(null)
     setEditCategory('new')
   }
 
   const handleOpenEdit = (c: Category) => {
     setName(c.name)
     setDescription(c.description)
+    setParentId(c.parentId ?? null)
     setEditCategory(c)
   }
 
@@ -37,7 +44,7 @@ export default function CategoriesPage() {
     try {
       setLoading(true)
       const id = editCategory === 'new' ? undefined : editCategory?.id
-      await saveCategory({ id, name: name.trim(), description: description.trim() })
+      await saveCategory({ id, name: name.trim(), description: description.trim(), parentId })
       toastSuccess(`Category "${name}" saved.`)
       setEditCategory(null)
     } catch (err: any) {
@@ -87,6 +94,20 @@ export default function CategoriesPage() {
                   <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Printed tees" />
                 </Field>
 
+                <Field label="Parent Department">
+                  <Select
+                    value={parentId ?? ''}
+                    onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">None (Top-level Department)</option>
+                    {parentOptions.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+
                 <Field label="Description">
                   <Textarea
                     rows={3}
@@ -115,6 +136,7 @@ export default function CategoriesPage() {
               <thead className="border-b border-divider bg-surface-subtle text-ink-3">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Category Name</th>
+                  <th className="px-4 py-3 font-semibold">Department</th>
                   <th className="px-4 py-3 font-semibold">Slug</th>
                   <th className="px-4 py-3 font-semibold">Description</th>
                   <th className="px-4 py-3 font-semibold text-center">Products Count</th>
@@ -124,10 +146,22 @@ export default function CategoriesPage() {
               <tbody className="divide-y divide-divider">
                 {categories.map((c) => {
                   const productCount = products.filter((p) => p.categoryId === c.id).length
+                  const parentName = c.parentId ? categories.find((p) => p.id === c.parentId)?.name : null
 
                   return (
                     <tr key={c.id} className="hover:bg-surface-subtle transition-colors">
                       <td className="px-4 py-3 font-semibold text-ink">{c.name}</td>
+                      <td className="px-4 py-3 text-ink-2">
+                        {parentName ? (
+                          <span className="inline-flex items-center rounded-md bg-surface-subtle border border-divider px-2 py-0.5 text-[11px] font-medium text-ink">
+                            {parentName}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                            Department
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 font-mono text-ink-2">{c.slug}</td>
                       <td className="px-4 py-3 text-ink-2 max-w-sm">{c.description || '—'}</td>
                       <td className="px-4 py-3 text-center font-bold tnum text-ink">{productCount}</td>

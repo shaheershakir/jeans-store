@@ -42,15 +42,16 @@ import type { Product, ProductDesign, ProductStatus, Variant } from '@/lib/types
 import { cn } from '@/lib/utils'
 
 const APPAREL_CATEGORIES = [
-  { name: 'Stripes', slug: 'stripes' },
-  { name: 'Fullsleeve', slug: 'fullsleeve' },
-  { name: 'Drsleeve', slug: 'drsleeve' },
-  { name: 'Printed tees', slug: 'printed-tees' },
-  { name: 'Ringer tees', slug: 'ringer-tees' },
-  { name: 'Henley', slug: 'henley' },
-  { name: 'Waffle', slug: 'waffle' },
-  { name: 'Trackpants', slug: 'trackpants' },
-  { name: 'Sweatpants', slug: 'sweatpants' },
+  { name: 'Stripes', slug: 'stripes', group: 'T-Shirts' },
+  { name: 'Fullsleeve', slug: 'fullsleeve', group: 'T-Shirts' },
+  { name: 'Drsleeve', slug: 'drsleeve', group: 'T-Shirts' },
+  { name: 'Printed tees', slug: 'printed-tees', group: 'T-Shirts' },
+  { name: 'Ringer tees', slug: 'ringer-tees', group: 'T-Shirts' },
+  { name: 'Henley', slug: 'henley', group: 'T-Shirts' },
+  { name: 'Waffle', slug: 'waffle', group: 'T-Shirts' },
+  { name: 'Jeans', slug: 'jeans', group: 'Bottomwear' },
+  { name: 'Trackpants', slug: 'trackpants', group: 'Bottomwear' },
+  { name: 'Sweatpants', slug: 'sweatpants', group: 'Bottomwear' },
 ] as const
 
 const STANDARD_SIZES = ['S', 'M', 'L', 'XL']
@@ -74,6 +75,7 @@ function getDesignCategoryCode(categorySlug: string): string {
   if (clean === 'waffle') return 'WAF'
   if (clean === 'trackpants') return 'TRK'
   if (clean === 'sweatpants') return 'SWT'
+  if (clean === 'jeans') return 'JNS'
   return clean.slice(0, 3).toUpperCase() || 'TEE'
 }
 
@@ -576,11 +578,20 @@ export function ProductForm({ product }: { product?: Product }) {
                   onChange={(e) => setCategorySlug(e.target.value)}
                   className="mt-1 h-10 text-sm"
                 >
-                  {APPAREL_CATEGORIES.map((cat) => (
-                    <option key={cat.slug} value={cat.slug}>
-                      {cat.name}
-                    </option>
-                  ))}
+                  <optgroup label="T-Shirts">
+                    {APPAREL_CATEGORIES.filter((c) => c.group === 'T-Shirts').map((cat) => (
+                      <option key={cat.slug} value={cat.slug}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Bottomwear">
+                    {APPAREL_CATEGORIES.filter((c) => c.group === 'Bottomwear').map((cat) => (
+                      <option key={cat.slug} value={cat.slug}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 </Select>
               </div>
 

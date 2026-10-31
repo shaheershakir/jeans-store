@@ -15,7 +15,7 @@ import {
 import type { Product } from '@/lib/constants'
 import type { PriceRange, SortMode } from '@/lib/store'
 import { useCartStore, useFilterStore } from '@/lib/store'
-import { filterAndSortProducts } from '@/lib/utils'
+import { filterAndSortProducts, DEPARTMENT_SUBCATEGORIES_MAP } from '@/lib/utils'
 import ProductCard from '@/components/ProductCard'
 import { trackEvent } from '@/lib/analytics'
 import { getProductSlug } from '@/lib/products'
@@ -48,6 +48,9 @@ const SHOP_CATEGORIES = [
   { id: 'waffle', slug: 'waffle', href: '/shop/waffle', label: 'Waffle' },
   { id: 'trackpants', slug: 'trackpants', href: '/shop/trackpants', label: 'Trackpants' },
   { id: 'sweatpants', slug: 'sweatpants', href: '/shop/sweatpants', label: 'Sweatpants' },
+  { id: 'jeans', slug: 'jeans', href: '/shop/jeans', label: 'Jeans' },
+  { id: 't-shirts', slug: 't-shirts', href: '/shop/t-shirts', label: 'T-Shirts' },
+  { id: 'bottomwear', slug: 'bottomwear', href: '/shop/bottomwear', label: 'Bottomwear' },
   { id: 'sale', slug: 'sale', href: '/shop/sale', label: 'Sale & Archive' }
 ]
 
@@ -151,6 +154,9 @@ const CATEGORY_FACETS: Record<string, FacetKey[]> = {
   henley: ['size', 'color', 'price', 'availability', 'discount', 'rating'],
   trackpants: ['waistSize', 'color', 'price', 'availability', 'discount', 'rating'],
   sweatpants: ['waistSize', 'color', 'price', 'availability', 'discount', 'rating'],
+  jeans: ['waistSize', 'color', 'price', 'availability', 'discount', 'rating'],
+  't-shirts': ['size', 'color', 'price', 'availability', 'discount', 'rating'],
+  bottomwear: ['waistSize', 'color', 'price', 'availability', 'discount', 'rating'],
   sale: ['categories', 'size', 'color', 'price', 'availability', 'discount', 'rating']
 }
 
@@ -491,8 +497,9 @@ export default function ShopClient({
   // Scoped product pool for count calculation
   const poolForCounts = useMemo(() => {
     if (routeCategory !== 'all') {
+      const allowed = DEPARTMENT_SUBCATEGORIES_MAP[routeCategory.toLowerCase()] || [routeCategory.toLowerCase()]
       return initialProducts.filter(
-        (p) => p.category?.toLowerCase() === routeCategory.toLowerCase()
+        (p) => p.category && allowed.includes(p.category.toLowerCase())
       )
     }
     if (filterCategories.length === 0) return initialProducts
@@ -502,7 +509,11 @@ export default function ShopClient({
         if (cat === 'sale') {
           return p.badge?.toLowerCase() === 'sale' || p.priceNum <= 1500
         }
-        return p.category?.toLowerCase() === cat
+        const pCat = p.category?.toLowerCase()
+        if (!pCat) return false
+        if (pCat === cat) return true
+        const subcats = DEPARTMENT_SUBCATEGORIES_MAP[cat]
+        return subcats ? subcats.includes(pCat) : false
       })
     })
   }, [initialProducts, routeCategory, filterCategories])
@@ -518,10 +529,12 @@ export default function ShopClient({
         map[`cat-${c.slug}`] = initialProducts.filter(
           (p) => p.badge?.toLowerCase() === 'sale' || p.priceNum <= 1500
         ).length
-      else
+      else {
+        const allowed = DEPARTMENT_SUBCATEGORIES_MAP[c.slug] || [c.slug]
         map[`cat-${c.slug}`] = initialProducts.filter(
-          (p) => p.category?.toLowerCase() === c.slug
+          (p) => p.category && allowed.includes(p.category.toLowerCase())
         ).length
+      }
     })
 
     // Size

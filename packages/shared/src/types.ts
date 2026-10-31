@@ -25,11 +25,23 @@ export const CATEGORIES = [
   'trackpants',
   'sweatpants',
   't-shirts',
+  'bottomwear',
+  'jeans',
   'shirts',
   'hoodies',
   'accessories'
 ] as const
 export type Category = (typeof CATEGORIES)[number]
+
+export interface CategoryDefinition {
+  id: number
+  slug: string
+  name: string
+  description?: string | null
+  parentId?: number | null
+  sortOrder?: number
+  isActive?: boolean
+}
 
 export interface Variant {
   id?: number

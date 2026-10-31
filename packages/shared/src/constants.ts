@@ -19,7 +19,10 @@ export const CATEGORY_FILTERS = [
   { id: 'henley', label: 'Henley' },
   { id: 'waffle', label: 'Waffle' },
   { id: 'trackpants', label: 'Trackpants' },
-  { id: 'sweatpants', label: 'Sweatpants' }
+  { id: 'sweatpants', label: 'Sweatpants' },
+  { id: 'jeans', label: 'Jeans' },
+  { id: 't-shirts', label: 'T-Shirts' },
+  { id: 'bottomwear', label: 'Bottomwear' }
 ] as const
 
 export const DEFAULT_NAV_LINKS: NavigationItem[] = [

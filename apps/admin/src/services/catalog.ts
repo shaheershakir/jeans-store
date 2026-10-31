@@ -226,7 +226,7 @@ export async function saveSizeChart(chart: SizeChart): Promise<void> {
   useAdminStore.getState().saveSizeChart(chart)
 }
 
-export async function saveCategory(input: { id?: number; name: string; description: string }) {
+export async function saveCategory(input: { id?: number; name: string; description: string; parentId?: number | null }) {
   return useAdminStore.getState().saveCategory(input)
 }
 

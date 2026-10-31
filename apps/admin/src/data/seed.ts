@@ -23,19 +23,27 @@ import type {
 export const DATA_VERSION = 8
 
 export const CATEGORIES: Category[] = [
-  { id: 1, name: 'Stripes', slug: 'stripes', description: 'Classic horizontal and vertical striped t-shirts.' },
-  { id: 2, name: 'Fullsleeve', slug: 'fullsleeve', description: 'Full sleeve heavyweight and ribbed t-shirts.' },
-  { id: 3, name: 'Drsleeve', slug: 'drsleeve', description: 'Drop shoulder loose and boxy cut tees.' },
-  { id: 4, name: 'Printed tees', slug: 'printed-tees', description: 'Screen printed and graphic streetwear tees.' },
-  { id: 5, name: 'Ringer tees', slug: 'ringer-tees', description: 'Vintage style contrast rib collar and cuff tees.' },
-  { id: 6, name: 'Henley', slug: 'henley', description: 'Button placket waffle and jersey knit tees.' },
-  { id: 7, name: 'Waffle', slug: 'waffle', description: 'Thermal waffle knit tees and long sleeves with textured honeycomb weave.' },
-  { id: 8, name: 'Trackpants', slug: 'trackpants', description: 'Athletic, training and tapered trackpants.' },
-  { id: 9, name: 'Sweatpants', slug: 'sweatpants', description: 'Heavyweight fleece and French terry sweatpants.' },
+  // Parent departments
+  { id: 10, name: 'T-Shirts', slug: 't-shirts', description: 'Curated collection of heavyweight and casual tees.', parentId: null },
+  { id: 11, name: 'Bottomwear', slug: 'bottomwear', description: 'Denim jeans, trackpants, and fleece sweatpants built for movement and comfort.', parentId: null },
+
+  // T-Shirts subcategories
+  { id: 1, name: 'Stripes', slug: 'stripes', description: 'Classic horizontal and vertical striped t-shirts.', parentId: 10 },
+  { id: 2, name: 'Fullsleeve', slug: 'fullsleeve', description: 'Full sleeve heavyweight and ribbed t-shirts.', parentId: 10 },
+  { id: 3, name: 'Drsleeve', slug: 'drsleeve', description: 'Drop shoulder loose and boxy cut tees.', parentId: 10 },
+  { id: 4, name: 'Printed tees', slug: 'printed-tees', description: 'Screen printed and graphic streetwear tees.', parentId: 10 },
+  { id: 5, name: 'Ringer tees', slug: 'ringer-tees', description: 'Vintage style contrast rib collar and cuff tees.', parentId: 10 },
+  { id: 6, name: 'Henley', slug: 'henley', description: 'Button placket waffle and jersey knit tees.', parentId: 10 },
+  { id: 7, name: 'Waffle', slug: 'waffle', description: 'Thermal waffle knit tees and long sleeves with textured honeycomb weave.', parentId: 10 },
+
+  // Bottomwear subcategories
+  { id: 12, name: 'Jeans', slug: 'jeans', description: 'Premium heavyweight denim in raw and washed silhouettes.', parentId: 11 },
+  { id: 8, name: 'Trackpants', slug: 'trackpants', description: 'Athletic, training and tapered trackpants.', parentId: 11 },
+  { id: 9, name: 'Sweatpants', slug: 'sweatpants', description: 'Heavyweight fleece and French terry sweatpants.', parentId: 11 },
 ]
 
 function sizeRangeFor(category: string): Array<string | number> {
-  return category === 'trackpants' || category === 'sweatpants'
+  return category === 'trackpants' || category === 'sweatpants' || category === 'jeans' || category === 'bottomwear'
     ? [28, 30, 32, 34, 36, 38, 40]
     : ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 }
@@ -48,7 +56,7 @@ function buildSizeCharts(): SizeChart[] {
       size,
       waist: typeof size === 'number' ? size : 32,
       hip: typeof size === 'number' ? size + 8 : 40,
-      inseam: cat.slug === 'trackpants' || cat.slug === 'sweatpants' ? 32 : undefined,
+      inseam: cat.slug === 'trackpants' || cat.slug === 'sweatpants' || cat.slug === 'jeans' ? 32 : undefined,
       thigh: typeof size === 'number' ? Math.round(size * 0.72) : undefined,
     })),
   }))

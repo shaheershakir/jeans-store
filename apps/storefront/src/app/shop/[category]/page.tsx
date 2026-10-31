@@ -61,6 +61,21 @@ const SLUG_TO_CONFIG: Record<
     title: 'Sweatpants',
     desc: '450 GSM ultra-heavy French terry, sun-faded fleece, and open-hem stacking sweatpants.',
   },
+  jeans: {
+    category: 'jeans',
+    title: 'Denim Jeans',
+    desc: 'Heavyweight selvedge denim, wide-leg skater cuts, straight fits, and raw vintage washes.',
+  },
+  't-shirts': {
+    category: 't-shirts',
+    title: 'T-Shirts Archive',
+    desc: 'Heavyweight combed cotton, drop shoulder cuts, Breton stripes, and graphic streetwear tees.',
+  },
+  bottomwear: {
+    category: 'bottomwear',
+    title: 'Bottomwear Collection',
+    desc: 'Heavyweight denim jeans, trackpants, and fleece sweatpants engineered for comfort and movement.',
+  },
   sale: {
     category: 'sale',
     title: 'Archive Drops & Sale',

@@ -14,7 +14,8 @@ import {
   uniqueIndex,
   index,
   primaryKey,
-  check
+  check,
+  type AnyPgColumn
 } from 'drizzle-orm/pg-core'
 
 const timestamps = {
@@ -49,6 +50,7 @@ export const categories = pgTable(
   'categories',
   {
     id: serial('id').primaryKey(),
+    parentId: integer('parent_id').references((): AnyPgColumn => categories.id, { onDelete: 'cascade' }),
     slug: varchar('slug', { length: 60 }).notNull(),
     name: varchar('name', { length: 100 }).notNull(),
     description: text('description'),
@@ -57,6 +59,7 @@ export const categories = pgTable(
     ...timestamps
   },
   (t) => [
+    index('categories_parent_idx').on(t.parentId),
     index('categories_sort_idx').on(t.sortOrder),
     uniqueIndex('categories_slug_lower_idx').on(sql`lower(${t.slug})`),
     check('categories_sort_order_check', sql.raw('sort_order >= 0'))

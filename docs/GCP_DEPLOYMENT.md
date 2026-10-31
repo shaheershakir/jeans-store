@@ -37,6 +37,7 @@ Set these GitHub repository **variables** or **secrets** for `.github/workflows/
 - `JWT_SECRET`: 32+ character signing key (auto-generated if omitted)
 - `GOOGLE_CLIENT_SECRET`: OAuth secret if Google sign-in is used
 - `RAZORPAY_KEY_SECRET`: Live Razorpay secret key if Razorpay checkout is used
+- `RAZORPAY_WEBHOOK_SECRET`: Secret string of your choice configured in both GitHub Secrets and Razorpay Webhook settings for HMAC signature verification
 
 By default, the GitHub Actions workflow injects secrets directly into Cloud Run container environment variables from GitHub Secrets without requiring the Google Cloud Secret Manager API. If you prefer to bind secrets via GCP Secret Manager, enable `secretmanager.googleapis.com` in GCP and set `USE_GCP_SECRET_MANAGER=true`.
 
