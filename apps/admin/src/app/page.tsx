@@ -16,12 +16,11 @@ import {
   Package,
   RotateCcw,
   ShoppingBag,
-  TrendingUp,
   Warehouse,
 } from 'lucide-react'
 import { useAdminStore } from '@/store/admin-store'
 import { Sparkline } from '@/components/ui/sparkline'
-import { RevenueOrdersTrendChart, TrendDataPoint } from '@/components/dashboard/revenue-trend-chart'
+import { RevenueOrdersTrendChart, type TrendDataPoint } from '@/components/dashboard/revenue-trend-chart'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,83 +32,275 @@ import { formatINR } from '@/lib/format'
 import { fetchBackendOrders } from '@/services/commerce'
 import { fetchBackendProducts } from '@/services/catalog'
 
-// Curated Unsplash images for clothing categories and products
 const CATEGORY_IMAGES: Record<string, string> = {
-  'Striped Tees': 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=120&q=80',
-  'Printed Tees': 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=120&q=80',
-  Henley: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=120&q=80',
-  Trackpants: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=120&q=80',
-  Waffle: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=120&q=80',
+  stripes: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=120&q=80',
+  fullsleeve: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=120&q=80',
+  drsleeve: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=120&q=80',
+  'printed-tees': 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=120&q=80',
+  'ringer-tees': 'https://images.unsplash.com/photo-1503343394128-c104d54dba01?auto=format&fit=crop&w=120&q=80',
+  henley: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=120&q=80',
+  waffle: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=120&q=80',
+  trackpants: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=120&q=80',
+  sweatpants: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=120&q=80',
 }
 
-const TOP_PRODUCT_IMAGES = [
-  'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=120&q=80',
-  'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=120&q=80',
-  'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=120&q=80',
-  'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=120&q=80',
-  'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=120&q=80',
-]
-
-// Sparkline series matching the visual trajectories in the dashboard
-const SPARKLINE_DATA = {
-  sales: [210, 218, 212, 230, 226, 245, 240, 258, 252, 270, 265, 284],
-  orders: [380, 395, 388, 410, 405, 428, 432, 450, 442, 465, 472, 486],
-  aov: [540, 545, 542, 558, 550, 565, 562, 574, 570, 582, 579, 586],
-  fulfillment: [14, 16, 15, 18, 17, 21, 19, 22, 20, 24, 22, 23],
-}
-
-// 11 timeline points matching the chart in the screenshot
-const BASE_TREND_DATA: TrendDataPoint[] = [
-  { label: '25 Sep', sales: 9800, orders: 18, prevSales: 8600, prevOrders: 15 },
-  { label: '28 Sep', sales: 11200, orders: 20, prevSales: 9900, prevOrders: 17 },
-  { label: '1 Oct', sales: 10400, orders: 19, prevSales: 9400, prevOrders: 16 },
-  { label: '4 Oct', sales: 12800, orders: 22, prevSales: 11000, prevOrders: 19 },
-  { label: '7 Oct', sales: 11900, orders: 21, prevSales: 10500, prevOrders: 18 },
-  { label: '10 Oct', sales: 13600, orders: 24, prevSales: 12100, prevOrders: 20 },
-  { label: '13 Oct', sales: 14800, orders: 26, prevSales: 13200, prevOrders: 22 },
-  { label: '16 Oct', sales: 14100, orders: 25, prevSales: 12800, prevOrders: 21 },
-  { label: '19 Oct', sales: 17200, orders: 30, prevSales: 15000, prevOrders: 25 },
-  { label: '22 Oct', sales: 15800, orders: 27, prevSales: 14200, prevOrders: 24 },
-  { label: '24 Oct', sales: 18600, orders: 32, prevSales: 16400, prevOrders: 28 },
-]
+const FALLBACK_PRODUCT_IMAGE =
+  'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=120&q=80'
 
 export default function DashboardOverviewPage() {
   const data = useAdminStore((s) => s.data)
-  const { products, orders, returns, payments } = data
+  const { products, orders, categories, refunds, payments } = data
 
   const [dateRange, setDateRange] = React.useState('Last 30 days')
-  const [dateLabel, setDateLabel] = React.useState('25 Sep - 24 Oct 2026')
+  const [dateLabel, setDateLabel] = React.useState('Last 30 days')
   const [compareEnabled, setCompareEnabled] = React.useState(true)
   const [showSales, setShowSales] = React.useState(true)
   const [showOrders, setShowOrders] = React.useState(true)
 
-  // Try refreshing store data on mount
   React.useEffect(() => {
-    void Promise.all([fetchBackendOrders(), fetchBackendProducts()]).catch(() => {
-      // Keep running smoothly with local seed data
-    })
+    void Promise.all([fetchBackendOrders(), fetchBackendProducts()]).catch(() => undefined)
   }, [])
 
-  // Calculate live numbers with high-fidelity fallbacks
+  const days = React.useMemo(() => {
+    if (dateRange === 'Today') return 1
+    if (dateRange === 'Last 7 days') return 7
+    if (dateRange === 'Last 90 days') return 90
+    if (dateRange === 'Year to date') {
+      const startOfYear = new Date(new Date().getFullYear(), 0, 1).getTime()
+      return Math.max(1, Math.floor((Date.now() - startOfYear) / 86400000))
+    }
+    return 30
+  }, [dateRange])
+
+  const now = React.useMemo(() => Date.now(), [])
+  const windowStart = now - days * 86400000
+  const prevStart = now - days * 2 * 86400000
+
+  const curOrders = React.useMemo(
+    () =>
+      orders.filter((o) => {
+        const t = new Date(o.createdAt).getTime()
+        return t >= windowStart && t <= now
+      }),
+    [orders, windowStart, now]
+  )
+
+  const prevOrders = React.useMemo(
+    () =>
+      orders.filter((o) => {
+        const t = new Date(o.createdAt).getTime()
+        return t >= prevStart && t < windowStart
+      }),
+    [orders, prevStart, windowStart]
+  )
+
+  const curSales = React.useMemo(
+    () => curOrders.reduce((sum, o) => sum + (o.paymentStatus === 'Paid' ? o.total : 0), 0),
+    [curOrders]
+  )
+
+  const prevSales = React.useMemo(
+    () => prevOrders.reduce((sum, o) => sum + (o.paymentStatus === 'Paid' ? o.total : 0), 0),
+    [prevOrders]
+  )
+
+  const curOrdersCount = curOrders.length
+  const prevOrdersCount = prevOrders.length
+
+  const curAov = curOrdersCount > 0 ? Math.round(curSales / curOrdersCount) : 0
+  const prevAov = prevOrdersCount > 0 ? Math.round(prevSales / prevOrdersCount) : 0
+
+  const deltaPct = (cur: number, prev: number) => {
+    if (prev === 0) return cur === 0 ? 0 : 100
+    return ((cur - prev) / prev) * 100
+  }
+
+  const salesGrowth = deltaPct(curSales, prevSales)
+  const ordersGrowth = deltaPct(curOrdersCount, prevOrdersCount)
+  const aovGrowth = deltaPct(curAov, prevAov)
+
   const pendingOrdersCount = orders.filter(
     (o) => o.fulfillmentStatus === 'Pending' || o.fulfillmentStatus === 'Processing'
-  ).length || 23
+  ).length
 
   const lowStockCount = products
     .flatMap((p) => p.variants)
-    .filter((v) => v.stock <= 10).length || 8
+    .filter((v) => v.stock <= 10).length
 
-  const pendingReturnsCount = returns.filter((r) => r.status === 'Requested').length || 4
-  const paymentIssuesCount = payments.filter((p) => p.status === 'Failed').length || 3
+  const pendingRefundsCount = refunds.filter((r) => r.status === 'Pending').length
+  const paymentIssuesCount = payments.filter((p) => p.status === 'Failed').length
+
+  // Generate 12 time-series points for sparklines
+  const sparklineSeries = React.useMemo(() => {
+    const pointsCount = 12
+    const intervalMs = (days * 86400000) / pointsCount
+    const salesArr: number[] = new Array(pointsCount).fill(0)
+    const ordersArr: number[] = new Array(pointsCount).fill(0)
+    const aovArr: number[] = new Array(pointsCount).fill(0)
+    const fulfillArr: number[] = new Array(pointsCount).fill(0)
+
+    for (const o of curOrders) {
+      const t = new Date(o.createdAt).getTime()
+      const bucket = Math.min(pointsCount - 1, Math.max(0, Math.floor((t - windowStart) / intervalMs)))
+      ordersArr[bucket] += 1
+      if (o.paymentStatus === 'Paid') salesArr[bucket] += o.total
+      if (o.fulfillmentStatus === 'Pending' || o.fulfillmentStatus === 'Processing') {
+        fulfillArr[bucket] += 1
+      }
+    }
+
+    for (let i = 0; i < pointsCount; i++) {
+      aovArr[i] = ordersArr[i] > 0 ? Math.round(salesArr[i] / ordersArr[i]) : 0
+    }
+
+    return {
+      sales: salesArr,
+      orders: ordersArr,
+      aov: aovArr,
+      fulfillment: fulfillArr,
+    }
+  }, [curOrders, days, windowStart])
+
+  // Generate timeline points for Revenue & Orders Trend chart
+  const trendData: TrendDataPoint[] = React.useMemo(() => {
+    const pointCount = 11
+    const intervalMs = (days * 86400000) / pointCount
+    const points: TrendDataPoint[] = []
+
+    for (let i = 0; i < pointCount; i++) {
+      const bucketStart = windowStart + i * intervalMs
+      const bucketEnd = bucketStart + intervalMs
+      const prevBucketStart = prevStart + i * intervalMs
+      const prevBucketEnd = prevBucketStart + intervalMs
+
+      const bCurOrders = orders.filter((o) => {
+        const t = new Date(o.createdAt).getTime()
+        return t >= bucketStart && t < bucketEnd
+      })
+      const bPrevOrders = orders.filter((o) => {
+        const t = new Date(o.createdAt).getTime()
+        return t >= prevBucketStart && t < prevBucketEnd
+      })
+
+      const bSales = bCurOrders.reduce((sum, o) => sum + (o.paymentStatus === 'Paid' ? o.total : 0), 0)
+      const bPrevSales = bPrevOrders.reduce((sum, o) => sum + (o.paymentStatus === 'Paid' ? o.total : 0), 0)
+
+      const labelDate = new Date(bucketStart)
+      const label = labelDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+
+      points.push({
+        label,
+        sales: bSales,
+        orders: bCurOrders.length,
+        prevSales: bPrevSales,
+        prevOrders: bPrevOrders.length,
+      })
+    }
+
+    return points
+  }, [days, orders, prevStart, windowStart])
+
+  // Sales by category computed from live data
+  const salesByCategory = React.useMemo(() => {
+    const catMap = new Map<number, { name: string; slug: string; sales: number; units: number }>()
+
+    for (const c of categories) {
+      catMap.set(c.id, { name: c.name, slug: c.slug, sales: 0, units: 0 })
+    }
+
+    const prodToCat = new Map(products.map((p) => [p.id, p.categoryId]))
+
+    for (const o of curOrders) {
+      for (const item of o.items) {
+        const catId = prodToCat.get(item.productId)
+        if (catId != null && catMap.has(catId)) {
+          const entry = catMap.get(catId)!
+          entry.units += item.quantity
+          entry.sales += item.total || item.price * item.quantity
+        }
+      }
+    }
+
+    const rows = Array.from(catMap.values())
+    const totalSales = rows.reduce((s, r) => s + r.sales, 0)
+
+    return rows
+      .map((r) => ({
+        ...r,
+        pct: totalSales > 0 ? Math.round((r.sales / totalSales) * 100) : 0,
+      }))
+      .sort((a, b) => b.sales - a.sales)
+  }, [categories, curOrders, products])
+
+  // Top products computed from live data
+  const topProductsList = React.useMemo(() => {
+    const prodStats = new Map<string, { units: number; revenue: number }>()
+
+    for (const o of orders) {
+      for (const item of o.items) {
+        const entry = prodStats.get(item.productId) ?? { units: 0, revenue: 0 }
+        entry.units += item.quantity
+        entry.revenue += item.total || item.price * item.quantity
+        prodStats.set(item.productId, entry)
+      }
+    }
+
+    const prodLookup = new Map(products.map((p) => [p.id, p]))
+
+    const rows = Array.from(prodStats.entries())
+      .map(([id, stats]) => {
+        const product = prodLookup.get(id)
+        const totalStock = product?.variants.reduce((sum, v) => sum + v.stock, 0) ?? 0
+        return {
+          id,
+          name: product?.name ?? `Product #${id}`,
+          image: product?.image || FALLBACK_PRODUCT_IMAGE,
+          units: stats.units,
+          revenue: stats.revenue,
+          stockStatus: totalStock > 10 ? 'In stock' : 'Low stock',
+        }
+      })
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
+      .map((item, idx) => ({ ...item, rank: idx + 1 }))
+
+    return rows
+  }, [orders, products])
+
+  // Recent orders sorted desc
+  const recentOrdersList = React.useMemo(() => {
+    return [...orders]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5)
+      .map((o) => {
+        const customerName =
+          data.customers.find((c) => c.id === o.customerId)?.name ?? 'Customer'
+        const formattedDate = new Date(o.createdAt).toLocaleString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+        return {
+          id: o.number || `TG-${o.id}`,
+          customer: customerName,
+          date: formattedDate,
+          payment: o.paymentStatus,
+          fulfillment: o.fulfillmentStatus,
+          total: o.total,
+        }
+      })
+  }, [data.customers, orders])
 
   // Export report handler
   const handleExport = () => {
     const csvContent =
-      'Metric,Value,Growth\n' +
-      'Net Sales,₹284650,+12.8%\n' +
-      'Orders,486,+8.4%\n' +
-      'Average Order Value,₹586,+4.1%\n' +
-      'Pending Fulfillment,23,+15%\n'
+      'Metric,Current Period,Previous Period,Growth\n' +
+      `Net Sales,${curSales},${prevSales},${salesGrowth >= 0 ? '+' : ''}${salesGrowth.toFixed(1)}%\n` +
+      `Orders,${curOrdersCount},${prevOrdersCount},${ordersGrowth >= 0 ? '+' : ''}${ordersGrowth.toFixed(1)}%\n` +
+      `Average Order Value,${curAov},${prevAov},${aovGrowth >= 0 ? '+' : ''}${aovGrowth.toFixed(1)}%\n` +
+      `Pending Fulfillment,${pendingOrdersCount},N/A,N/A\n`
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
@@ -124,9 +315,7 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-background/80 p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
-      {/* ========================================================================= */}
-      {/* 1. Header with Title, Date Range Dropdown, Compare Switch, and Export     */}
-      {/* ========================================================================= */}
+      {/* 1. Header with Title, Date Range Dropdown, Compare Switch, and Export */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-foreground">
@@ -161,7 +350,7 @@ export default function DashboardOverviewPage() {
               <DropdownMenuItem
                 onClick={() => {
                   setDateRange('Today')
-                  setDateLabel('24 Oct 2026')
+                  setDateLabel('Today')
                 }}
               >
                 Today
@@ -169,7 +358,7 @@ export default function DashboardOverviewPage() {
               <DropdownMenuItem
                 onClick={() => {
                   setDateRange('Last 7 days')
-                  setDateLabel('18 Oct - 24 Oct 2026')
+                  setDateLabel('Last 7 days')
                 }}
               >
                 Last 7 days
@@ -177,7 +366,7 @@ export default function DashboardOverviewPage() {
               <DropdownMenuItem
                 onClick={() => {
                   setDateRange('Last 30 days')
-                  setDateLabel('25 Sep - 24 Oct 2026')
+                  setDateLabel('Last 30 days')
                 }}
               >
                 Last 30 days
@@ -185,7 +374,7 @@ export default function DashboardOverviewPage() {
               <DropdownMenuItem
                 onClick={() => {
                   setDateRange('Last 90 days')
-                  setDateLabel('27 Jul - 24 Oct 2026')
+                  setDateLabel('Last 90 days')
                 }}
               >
                 Last 90 days
@@ -193,7 +382,7 @@ export default function DashboardOverviewPage() {
               <DropdownMenuItem
                 onClick={() => {
                   setDateRange('Year to date')
-                  setDateLabel('1 Jan - 24 Oct 2026')
+                  setDateLabel('Year to date')
                 }}
               >
                 Year to date
@@ -224,7 +413,7 @@ export default function DashboardOverviewPage() {
                 Compare
               </div>
               <div className="text-[11px] text-slate-400 dark:text-muted-foreground">
-                vs previous 30 days
+                vs previous period
               </div>
             </div>
           </div>
@@ -241,9 +430,7 @@ export default function DashboardOverviewPage() {
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 2. Top 4 Metric KPI Cards with Sparklines                                 */}
-      {/* ========================================================================= */}
+      {/* 2. Top 4 Metric KPI Cards with Sparklines */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {/* Net Sales */}
         <Link
@@ -262,20 +449,26 @@ export default function DashboardOverviewPage() {
               Net sales
             </p>
             <p className="mt-1 text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 dark:text-foreground tnum">
-              ₹2,84,650
+              {formatINR(curSales)}
             </p>
           </div>
 
           <div className="mt-4 flex items-end justify-between">
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 font-semibold text-emerald-600 dark:text-emerald-400 text-[11px]">
-                ↑ 12.8%
+              <span
+                className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold text-[11px] ${
+                  salesGrowth >= 0
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                {salesGrowth >= 0 ? '↑' : '↓'} {Math.abs(salesGrowth).toFixed(1)}%
               </span>
               <span className="text-[11px] text-slate-400 dark:text-muted-foreground">
-                vs ₹2,52,341
+                vs {formatINR(prevSales)}
               </span>
             </div>
-            <Sparkline data={SPARKLINE_DATA.sales} color="#2563eb" width={96} height={32} />
+            <Sparkline data={sparklineSeries.sales} color="#2563eb" width={96} height={32} />
           </div>
         </Link>
 
@@ -296,20 +489,26 @@ export default function DashboardOverviewPage() {
               Orders
             </p>
             <p className="mt-1 text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 dark:text-foreground tnum">
-              486
+              {curOrdersCount}
             </p>
           </div>
 
           <div className="mt-4 flex items-end justify-between">
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 font-semibold text-emerald-600 dark:text-emerald-400 text-[11px]">
-                ↑ 8.4%
+              <span
+                className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold text-[11px] ${
+                  ordersGrowth >= 0
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                {ordersGrowth >= 0 ? '↑' : '↓'} {Math.abs(ordersGrowth).toFixed(1)}%
               </span>
               <span className="text-[11px] text-slate-400 dark:text-muted-foreground">
-                vs 448
+                vs {prevOrdersCount}
               </span>
             </div>
-            <Sparkline data={SPARKLINE_DATA.orders} color="#2563eb" width={96} height={32} />
+            <Sparkline data={sparklineSeries.orders} color="#2563eb" width={96} height={32} />
           </div>
         </Link>
 
@@ -330,20 +529,26 @@ export default function DashboardOverviewPage() {
               Average order value
             </p>
             <p className="mt-1 text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 dark:text-foreground tnum">
-              ₹586
+              {formatINR(curAov)}
             </p>
           </div>
 
           <div className="mt-4 flex items-end justify-between">
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 font-semibold text-emerald-600 dark:text-emerald-400 text-[11px]">
-                ↑ 4.1%
+              <span
+                className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold text-[11px] ${
+                  aovGrowth >= 0
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                {aovGrowth >= 0 ? '↑' : '↓'} {Math.abs(aovGrowth).toFixed(1)}%
               </span>
               <span className="text-[11px] text-slate-400 dark:text-muted-foreground">
-                vs ₹563
+                vs {formatINR(prevAov)}
               </span>
             </div>
-            <Sparkline data={SPARKLINE_DATA.aov} color="#2563eb" width={96} height={32} />
+            <Sparkline data={sparklineSeries.aov} color="#2563eb" width={96} height={32} />
           </div>
         </Link>
 
@@ -371,20 +576,18 @@ export default function DashboardOverviewPage() {
           <div className="mt-4 flex items-end justify-between">
             <div className="flex items-center gap-1.5 text-xs">
               <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 font-semibold text-amber-600 dark:text-amber-400 text-[11px]">
-                ↑ 15%
+                {pendingOrdersCount > 0 ? 'Action needed' : 'All clear'}
               </span>
               <span className="text-[11px] text-slate-400 dark:text-muted-foreground">
-                vs 20
+                in queue
               </span>
             </div>
-            <Sparkline data={SPARKLINE_DATA.fulfillment} color="#f59e0b" width={96} height={32} />
+            <Sparkline data={sparklineSeries.fulfillment} color="#f59e0b" width={96} height={32} />
           </div>
         </Link>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 3. Middle Section: Revenue Trend & Sales by Category                      */}
-      {/* ========================================================================= */}
+      {/* 3. Middle Section: Revenue Trend & Sales by Category */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
         {/* Left: Revenue & Orders Trend (7 of 12 columns) */}
         <div className="lg:col-span-7 xl:col-span-7 rounded-2xl border border-slate-200/80 dark:border-border bg-white dark:bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between">
@@ -425,10 +628,16 @@ export default function DashboardOverviewPage() {
                 <div>
                   <div className="flex items-center gap-1.5 sm:justify-end">
                     <span className="text-sm font-bold text-slate-900 dark:text-foreground tnum">
-                      ₹2,84,650
+                      {formatINR(curSales)}
                     </span>
-                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      ↑ 12.8%
+                    <span
+                      className={`text-xs font-semibold ${
+                        salesGrowth >= 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                      }`}
+                    >
+                      {salesGrowth >= 0 ? '↑' : '↓'} {Math.abs(salesGrowth).toFixed(1)}%
                     </span>
                   </div>
                   <span className="text-[11px] text-slate-400 dark:text-muted-foreground">
@@ -439,10 +648,16 @@ export default function DashboardOverviewPage() {
                 <div>
                   <div className="flex items-center gap-1.5 sm:justify-end">
                     <span className="text-sm font-bold text-slate-900 dark:text-foreground tnum">
-                      486
+                      {curOrdersCount}
                     </span>
-                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      ↑ 8.4%
+                    <span
+                      className={`text-xs font-semibold ${
+                        ordersGrowth >= 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                      }`}
+                    >
+                      {ordersGrowth >= 0 ? '↑' : '↓'} {Math.abs(ordersGrowth).toFixed(1)}%
                     </span>
                   </div>
                   <span className="text-[11px] text-slate-400 dark:text-muted-foreground">
@@ -454,7 +669,7 @@ export default function DashboardOverviewPage() {
 
             {/* Main Interactive Trend Chart */}
             <RevenueOrdersTrendChart
-              data={BASE_TREND_DATA}
+              data={trendData}
               showSales={showSales}
               showOrders={showOrders}
               showCompare={compareEnabled}
@@ -486,18 +701,12 @@ export default function DashboardOverviewPage() {
             </div>
 
             <div className="divide-y divide-slate-100 dark:divide-border/60">
-              {[
-                { name: 'Striped Tees', sales: 78340, units: 162, pct: 82 },
-                { name: 'Printed Tees', sales: 56120, units: 118, pct: 58 },
-                { name: 'Henley', sales: 42680, units: 86, pct: 44 },
-                { name: 'Trackpants', sales: 32450, units: 71, pct: 34 },
-                { name: 'Waffle', sales: 28110, units: 64, pct: 29 },
-              ].map((cat) => (
+              {salesByCategory.slice(0, 5).map((cat) => (
                 <div key={cat.name} className="flex items-center justify-between py-3.5 group">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="h-8 w-8 relative overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/60 dark:border-slate-700">
                       <Image
-                        src={CATEGORY_IMAGES[cat.name] || CATEGORY_IMAGES['Striped Tees']}
+                        src={CATEGORY_IMAGES[cat.slug] || CATEGORY_IMAGES['stripes']}
                         alt={cat.name}
                         fill
                         sizes="32px"
@@ -510,7 +719,6 @@ export default function DashboardOverviewPage() {
                   </div>
 
                   <div className="flex items-center gap-4 sm:gap-6 shrink-0">
-                    {/* Visual Progress Bar */}
                     <div className="w-20 sm:w-28 md:w-36 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-blue-600 transition-all duration-500"
@@ -528,14 +736,17 @@ export default function DashboardOverviewPage() {
                   </div>
                 </div>
               ))}
+              {salesByCategory.length === 0 && (
+                <div className="py-6 text-center text-xs text-slate-400 dark:text-muted-foreground">
+                  No sales recorded in this period.
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 4. Lower Section: Action Required & Top Products                          */}
-      {/* ========================================================================= */}
+      {/* 4. Lower Section: Action Required & Top Products */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
         {/* Left: Action Required (5 of 12 columns) */}
         <div className="lg:col-span-5 rounded-2xl border border-slate-200/80 dark:border-border bg-white dark:bg-card p-5 sm:p-6 shadow-xs">
@@ -565,7 +776,7 @@ export default function DashboardOverviewPage() {
 
               <div className="flex items-center gap-2 shrink-0">
                 <span className="rounded-full bg-rose-50 dark:bg-rose-950/50 px-2 py-0.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
-                  ● High
+                  ● {pendingOrdersCount > 0 ? 'High' : 'None'}
                 </span>
                 <Link
                   href="/orders"
@@ -594,7 +805,7 @@ export default function DashboardOverviewPage() {
 
               <div className="flex items-center gap-2 shrink-0">
                 <span className="rounded-full bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                  ● Medium
+                  ● {lowStockCount > 0 ? 'Medium' : 'None'}
                 </span>
                 <Link
                   href="/inventory"
@@ -613,7 +824,7 @@ export default function DashboardOverviewPage() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 dark:text-foreground">
-                    {pendingReturnsCount} refunds pending
+                    {pendingRefundsCount} refunds pending
                   </p>
                   <p className="text-[11px] text-slate-400 dark:text-muted-foreground truncate">
                     Customer refund requests require action
@@ -623,7 +834,7 @@ export default function DashboardOverviewPage() {
 
               <div className="flex items-center gap-2 shrink-0">
                 <span className="rounded-full bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                  ● Medium
+                  ● {pendingRefundsCount > 0 ? 'Medium' : 'None'}
                 </span>
                 <Link
                   href="/refunds"
@@ -652,7 +863,7 @@ export default function DashboardOverviewPage() {
 
               <div className="flex items-center gap-2 shrink-0">
                 <span className="rounded-full bg-rose-50 dark:bg-rose-950/50 px-2 py-0.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
-                  ● High
+                  ● {paymentIssuesCount > 0 ? 'High' : 'None'}
                 </span>
                 <Link
                   href="/payments"
@@ -691,45 +902,9 @@ export default function DashboardOverviewPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-border/60">
-                {[
-                  {
-                    rank: 1,
-                    name: 'Classic Striped Heavyweight Tee',
-                    units: 128,
-                    revenue: 63872,
-                    stockStatus: 'In stock',
-                  },
-                  {
-                    rank: 2,
-                    name: 'Cargo Straight Fit Denim Jeans',
-                    units: 96,
-                    revenue: 57504,
-                    stockStatus: 'In stock',
-                  },
-                  {
-                    rank: 3,
-                    name: 'Printed Oversize Tee',
-                    units: 84,
-                    revenue: 41916,
-                    stockStatus: 'Low stock',
-                  },
-                  {
-                    rank: 4,
-                    name: 'Waffle Knit Henley',
-                    units: 72,
-                    revenue: 34488,
-                    stockStatus: 'In stock',
-                  },
-                  {
-                    rank: 5,
-                    name: 'Essential Trackpants',
-                    units: 68,
-                    revenue: 28900,
-                    stockStatus: 'Low stock',
-                  },
-                ].map((item, idx) => (
+                {topProductsList.map((item) => (
                   <tr
-                    key={item.name}
+                    key={item.id}
                     className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
                   >
                     <td className="py-3 px-2 text-center text-slate-400 font-medium tnum">
@@ -739,7 +914,7 @@ export default function DashboardOverviewPage() {
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 relative overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/60 dark:border-slate-700">
                           <Image
-                            src={TOP_PRODUCT_IMAGES[idx] || TOP_PRODUCT_IMAGES[0]}
+                            src={item.image}
                             alt={item.name}
                             fill
                             sizes="32px"
@@ -770,15 +945,20 @@ export default function DashboardOverviewPage() {
                     </td>
                   </tr>
                 ))}
+                {topProductsList.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="py-6 text-center text-xs text-slate-400 dark:text-muted-foreground">
+                      No product sales recorded yet.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 5. Bottom Section: Recent Orders Full-Width Table                         */}
-      {/* ========================================================================= */}
+      {/* 5. Bottom Section: Recent Orders Full-Width Table */}
       <div className="rounded-2xl border border-slate-200/80 dark:border-border bg-white dark:bg-card p-5 sm:p-6 shadow-xs">
         <div className="flex items-center justify-between pb-4">
           <h2 className="text-base font-bold text-slate-900 dark:text-foreground">
@@ -806,54 +986,13 @@ export default function DashboardOverviewPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-border/60">
-              {[
-                {
-                  id: 'TG-872917',
-                  customer: 'Muhammed Arshad',
-                  date: '24 Oct 2026, 10:42 AM',
-                  payment: 'Paid',
-                  fulfillment: 'Processing',
-                  total: 1499,
-                },
-                {
-                  id: 'TG-872916',
-                  customer: 'Aditya Nair',
-                  date: '24 Oct 2026, 09:18 AM',
-                  payment: 'Paid',
-                  fulfillment: 'Pending',
-                  total: 899,
-                },
-                {
-                  id: 'TG-872915',
-                  customer: 'Sahil Khan',
-                  date: '23 Oct 2026, 08:31 PM',
-                  payment: 'Paid',
-                  fulfillment: 'Shipped',
-                  total: 2398,
-                },
-                {
-                  id: 'TG-872914',
-                  customer: 'Vishnu Prasad',
-                  date: '23 Oct 2026, 06:14 PM',
-                  payment: 'COD',
-                  fulfillment: 'Processing',
-                  total: 1199,
-                },
-                {
-                  id: 'TG-872913',
-                  customer: 'Arjun Mehta',
-                  date: '23 Oct 2026, 02:07 PM',
-                  payment: 'Paid',
-                  fulfillment: 'Delivered',
-                  total: 2099,
-                },
-              ].map((order) => (
+              {recentOrdersList.map((order) => (
                 <tr
                   key={order.id}
                   className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
                 >
                   <td className="py-3.5 px-4 font-semibold text-slate-900 dark:text-foreground">
-                    <Link href={`/orders`} className="hover:text-blue-600 transition-colors">
+                    <Link href="/orders" className="hover:text-blue-600 transition-colors">
                       {order.id}
                     </Link>
                   </td>
@@ -897,7 +1036,7 @@ export default function DashboardOverviewPage() {
                   <td className="py-3.5 px-4 text-right">
                     <div className="inline-flex items-center gap-2 justify-end">
                       <Link
-                        href={`/orders`}
+                        href="/orders"
                         className="rounded-lg border border-slate-200 dark:border-border bg-white dark:bg-card px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                       >
                         View
@@ -933,6 +1072,13 @@ export default function DashboardOverviewPage() {
                   </td>
                 </tr>
               ))}
+              {recentOrdersList.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-6 text-center text-xs text-slate-400 dark:text-muted-foreground">
+                    No orders placed yet.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

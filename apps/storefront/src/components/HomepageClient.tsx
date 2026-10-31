@@ -225,7 +225,7 @@ export default function HomepageClient({ products }: HomepageClientProps) {
 
             {/* Stamp Logo: moves to top-left if text is on right */}
             <Image
-              src="/mock-assets/good-tees-stamp.png"
+              src="/good-tees-stamp.png"
               alt="Good Tees Better Days"
               width={130}
               height={130}
@@ -380,7 +380,7 @@ export default function HomepageClient({ products }: HomepageClientProps) {
             {newArrivals.map((item) => {
               const favorited = isFavorite(item.id)
               const href = getProductUrl(item)
-              const imageSrc = item.img || item.images?.[0] || '/mock-assets/product-vintage-skate-clean.jpg'
+              const imageSrc = item.img || item.images?.[0] || '/hero-man.jpg'
               const swatches = getProductSwatches(item)
               const subtitle = item.color || item.category || 'Everyday Essential'
               return (
@@ -537,7 +537,7 @@ export default function HomepageClient({ products }: HomepageClientProps) {
             {recommendedProducts.map((item) => {
               const favorited = isFavorite(item.id)
               const href = getProductUrl(item)
-              const imageSrc = item.img || item.images?.[0] || '/mock-assets/prod-1-clean.jpg'
+              const imageSrc = item.img || item.images?.[0] || '/hero-man.jpg'
               const swatches = getProductSwatches(item)
               const subtitle = item.color || item.category || 'Everyday Essential'
               return (

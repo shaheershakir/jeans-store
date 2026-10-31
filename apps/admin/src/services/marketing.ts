@@ -2,7 +2,7 @@
 
 import { simulateLatency } from './api'
 import { useAdminStore } from '@/store/admin-store'
-import type { Banner, Coupon, Promotion, ReviewStatus, Review } from '@/lib/types'
+import type { Coupon, ReviewStatus, Review } from '@/lib/types'
 
 export async function saveCoupon(coupon: Coupon): Promise<void> {
   await simulateLatency()
@@ -17,26 +17,6 @@ export async function deleteCoupon(id: number): Promise<void> {
 export async function toggleCoupon(id: number): Promise<void> {
   await simulateLatency(120)
   useAdminStore.getState().toggleCoupon(id)
-}
-
-export async function savePromotion(promotion: Promotion): Promise<void> {
-  await simulateLatency()
-  useAdminStore.getState().savePromotion(promotion)
-}
-
-export async function deletePromotion(id: number): Promise<void> {
-  await simulateLatency()
-  useAdminStore.getState().deletePromotion(id)
-}
-
-export async function saveBanner(banner: Banner): Promise<void> {
-  await simulateLatency()
-  useAdminStore.getState().saveBanner(banner)
-}
-
-export async function deleteBanner(id: number): Promise<void> {
-  await simulateLatency()
-  useAdminStore.getState().deleteBanner(id)
 }
 
 export async function setReviewStatus(id: number, status: ReviewStatus): Promise<void> {

@@ -1,6 +1,6 @@
 # TEESGARAGE — Apparel Commerce Monorepo
 
-A modern apparel e-commerce platform built as an integrated monorepo powered by **Turborepo** and **npm workspaces**. The catalog covers Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants.
+A modern apparel e-commerce platform built as an integrated monorepo powered by **Turborepo** and **npm workspaces**. The catalog covers Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Waffle, Trackpants, and Sweatpants.
 
 ---
 
@@ -19,7 +19,7 @@ jeans-store/
 │   ├── validators/        # Shared Zod validation schemas
 │   └── config/            # Shared TypeScript, ESLint, and tooling configurations
 │
-├── infra/                 # Deployment and infrastructure configuration (Cloud Run, Render, Docker)
+├── infra/                 # Deployment and infrastructure configuration (Cloud Run, Docker)
 ├── docs/                  # Architecture, API specifications, and deployment runbooks
 ├── .github/workflows/     # CI/CD pipelines (GitHub Actions)
 │

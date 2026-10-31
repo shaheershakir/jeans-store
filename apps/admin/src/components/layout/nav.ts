@@ -4,19 +4,13 @@ import {
   Compass,
   CreditCard,
   FolderTree,
-  Image as ImageIcon,
-  KeyRound,
   LayoutDashboard,
   Layers,
-  Megaphone,
   MessageSquareQuote,
   Package,
-  RotateCcw,
   Ruler,
   ScrollText,
-  ShieldCheck,
   ShoppingCart,
-  Sparkles,
   TicketPercent,
   Truck,
   UserRound,
@@ -63,7 +57,6 @@ export const NAV_GROUPS: NavGroup[] = [
     perm: 'orders.read',
     items: [
       { label: 'All Orders', href: '/orders', icon: ShoppingCart },
-      { label: 'Returns', href: '/returns', icon: RotateCcw },
       { label: 'Refunds', href: '/refunds', icon: Banknote },
     ],
   },
@@ -75,8 +68,6 @@ export const NAV_GROUPS: NavGroup[] = [
     perm: 'marketing.read',
     items: [
       { label: 'Coupons', href: '/marketing/coupons', icon: TicketPercent },
-      { label: 'Promotions', href: '/marketing/promotions', icon: Megaphone },
-      { label: 'Banners', href: '/marketing/banners', icon: ImageIcon },
     ],
   },
 
@@ -84,7 +75,6 @@ export const NAV_GROUPS: NavGroup[] = [
   { items: [{ label: 'Payments', href: '/payments', icon: CreditCard, perm: 'payments.read' }] },
   { items: [{ label: 'Reviews', href: '/reviews', icon: MessageSquareQuote, perm: 'reviews.read' }] },
   { items: [{ label: 'Analytics', href: '/analytics', icon: BarChart3, perm: 'analytics.read' }] },
-  { items: [{ label: 'AI Assistant', href: '/ai', icon: Sparkles, perm: 'ai.use' }] },
 
   {
     label: 'Settings',
@@ -93,7 +83,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Store Settings', href: '/settings/store', icon: Building2, perm: 'settings.read' },
       { label: 'Homepage Layout', href: '/settings/homepage', icon: LayoutTemplate, perm: 'settings.read' },
       { label: 'Storefront Navigation', href: '/settings/navigation', icon: Compass, perm: 'settings.read' },
-      { label: 'Administrator Access', href: '/settings/users', icon: ShieldCheck, perm: 'admin.read' },
       { label: 'Audit Logs', href: '/settings/audit', icon: ScrollText, perm: 'audit.read' },
     ],
   },

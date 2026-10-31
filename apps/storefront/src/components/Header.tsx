@@ -147,7 +147,6 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const isAuthOrCheckoutRoute =
     pathname === '/login' ||
     pathname === '/register' ||
-    pathname === '/onboarding' ||
     pathname === '/checkout' ||
     pathname?.endsWith('/checkout') ||
     pathname?.includes('/checkout/')

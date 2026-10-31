@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
 import { googleAuth } from '@/lib/auth'
-import { useAuthStore, useUIStore, useOnboardingStore } from '@/lib/store'
+import { useAuthStore, useUIStore } from '@/lib/store'
 
 function CallbackHandler() {
   const router = useRouter()
@@ -68,18 +68,7 @@ function CallbackHandler() {
           }
         }
 
-        if (res.isNewUser) {
-          const onboarding = useOnboardingStore.getState()
-          onboarding.triggerAfterRegister(res.user.id || (res.user as any).uid)
-
-          const onboardingTarget =
-            target && target !== '/'
-              ? `/onboarding?redirect=${encodeURIComponent(target)}`
-              : '/onboarding'
-          router.push(onboardingTarget)
-        } else {
-          router.push(target || '/')
-        }
+        router.push(target || '/')
       })
       .catch((err: any) => {
         setStatus('error')

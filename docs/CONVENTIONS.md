@@ -1,42 +1,44 @@
-﻿# Coding conventions
+# Coding Conventions
 
 This document outlines the code organization, TypeScript standards, styling patterns, and state rules across the TEESGARAGE codebase.
 
-## Code organization
+## Code Organization
 
-Each app in the repository is self-contained. Do not cross-import code between apps directly through relative file paths. Shared models must be synchronized explicitly between `frontend/` and `backend/`.
+The repository is structured as a Turborepo monorepo with npm workspaces. Shared contracts and utilities live in `packages/` (`@jeans-store/shared`, `@jeans-store/validators`, `@jeans-store/db`, `@jeans-store/config`). Applications in `apps/` (`storefront`, `admin`, `api`) import shared packages directly through workspace dependencies.
 
-### Directory layout within applications
+### Directory Layout Within Applications
 
 - `src/app/`: Next.js App Router route segments, layouts, and page entrypoints.
 - `src/components/`: Reusable React components.
 - `src/lib/`: Shared utilities, constants, store definitions, and helper functions.
-- `src/data/`: Static seed arrays and data snapshots.
+- `src/store/`: State management stores.
 
-## TypeScript standards
+## TypeScript Standards
 
-- Strict mode is enabled across all apps.
+- Strict mode is enabled across all workspaces.
 - Do not use `any`. Use `unknown` with runtime type narrowing or Zod schemas.
 - Use explicit return types for public library functions and API route handlers.
-- Exhaustive checks must cover union types. When operating on `Fit` values, ensure all branches are handled.
+- Exhaustive checks must cover union types.
 - Prefer explicit interfaces over complex inline intersection types.
 
-## Styling architecture
+## Styling Architecture
 
-### Frontend storefront
+### Storefront (`apps/storefront`)
 
-- The storefront uses vanilla CSS with CSS variables in `frontend/src/app/globals.css`.
-- Do not install or configure Tailwind CSS in `frontend/`.
-- Use semantic class names that reflect component structure (`product-card`, `cart-drawer`, `checkout-form`).
-- All interactive buttons and inputs must declare explicit hover, focus, and active states.
-- Media queries follow standard device breakpoints: 900px for tablets, 640px and 480px for mobile devices.
+- The storefront uses Tailwind CSS v4 configured via `@import "tailwindcss";` in `src/app/globals.css`.
+- Follow modern Tailwind v4 patterns:
+  - Define custom design tokens inside `@theme` blocks in CSS; do not create `tailwind.config.js`.
+  - Use slash modifier syntax for opacity (`bg-black/50`, `text-white/80`).
+  - Use `@utility name { ... }` for custom reusable utilities.
+  - Interactive buttons and inputs declare explicit tactile feedback and hover/active transitions.
+  - Media queries follow standard responsive breakpoints (`sm:`, `md:`, `lg:`, `xl:`).
 
-### Admin dashboard
+### Admin Dashboard (`apps/admin`)
 
-- The admin app uses Tailwind CSS v4.
+- The admin app uses Tailwind CSS v4 with Lucide React icons and Recharts.
 - Use utility classes consistently and extract repeating layouts into component primitives.
 
-## State management
+## State Management
 
 - Use Zustand stores for client-side state.
 - Split stores by functional area:
@@ -46,7 +48,7 @@ Each app in the repository is self-contained. Do not cross-import code between a
 - Persist state to `localStorage` using the `persist` middleware only where user expectation warrants it (cart items and filters).
 - Components reading persisted stores must trigger store rehydration inside a `useEffect` hook to prevent server and client markup mismatch.
 
-## Error handling
+## Error Handling
 
 - Never swallow errors silently. Catch blocks must log an informative message or surface a friendly notification to the customer.
 - External network operations must use an `AbortController` timeout to prevent hanging connections.

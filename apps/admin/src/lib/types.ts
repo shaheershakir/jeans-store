@@ -231,36 +231,13 @@ export interface Customer {
   addresses: Address[]
 }
 
-export type ReturnStatus =
-  | 'Requested'
-  | 'Approved'
-  | 'Rejected'
-  | 'Pickup Scheduled'
-  | 'Received'
-  | 'Refunded'
-  | 'Completed'
-
-export interface ReturnRequest {
-  id: number
-  number: string
-  orderId: number
-  customerId: number
-  items: OrderItem[]
-  reason: string
-  details: string
-  status: ReturnStatus
-  amount: number
-  requestedAt: string
-  updatedAt: string
-}
-
 export type RefundStatus = 'Pending' | 'Processed' | 'Failed'
 
 export interface Refund {
   id: number
   number: string
   orderId: number
-  returnId: number | null
+  returnId?: number | null
   customerId: number
   amount: number
   reason: string
@@ -287,34 +264,6 @@ export interface Coupon {
   categoryIds: number[]
   isActive: boolean
   timesUsed: number
-}
-
-export type PromotionTarget = 'Product' | 'Category' | 'Collection' | 'Fit' | 'Color'
-
-export interface Promotion {
-  id: number
-  title: string
-  target: PromotionTarget
-  targetId: number | string
-  discountType: DiscountType
-  discountValue: number
-  startsAt: string
-  endsAt: string
-  status: 'Scheduled' | 'Active' | 'Ended'
-  createdAt: string
-}
-
-export interface Banner {
-  id: number
-  title: string
-  subtitle: string
-  ctaLabel: string
-  link: string
-  image: string
-  startsAt: string
-  endsAt: string
-  status: 'Active' | 'Scheduled' | 'Ended'
-  order: number
 }
 
 export type ReviewStatus = 'Pending' | 'Approved' | 'Rejected' | 'Hidden'
@@ -390,21 +339,6 @@ export interface PaymentRecord {
   settledAt: string | null
 }
 
-export interface AdminUser {
-  id: number
-  name: string
-  email: string
-  roleId: number
-  status: 'Active' | 'Inactive'
-  lastLoginAt: string | null
-}
-
-export interface Role {
-  id: number
-  name: string
-  description: string
-  permissions: string[]
-}
 
 export interface AuditLogEntry {
   id: number
@@ -476,19 +410,14 @@ export interface DbState {
   collections: Collection[]
   orders: Order[]
   customers: Customer[]
-  returns: ReturnRequest[]
   refunds: Refund[]
   coupons: Coupon[]
-  promotions: Promotion[]
-  banners: Banner[]
   reviews: Review[]
   sizeCharts: SizeChart[]
   shippingZones: ShippingZone[]
   shipments: Shipment[]
   payments: PaymentRecord[]
   inventoryMovements: InventoryMovement[]
-  adminUsers: AdminUser[]
-  roles: Role[]
   auditLog: AuditLogEntry[]
   notifications: AppNotification[]
   settings: StoreSettings

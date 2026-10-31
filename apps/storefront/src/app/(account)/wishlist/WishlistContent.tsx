@@ -34,7 +34,7 @@ interface WishlistProduct {
 function productToWishlistItem(p: Product, inWishlist: boolean = true): WishlistProduct {
   const color = p.color || p.variants?.[0]?.color || 'Standard'
   const size = p.sizes?.[0] || 'L'
-  const image = p.img || p.images?.[0] || '/mock-assets/prod-1-clean.jpg'
+  const image = p.img || p.images?.[0] || '/hero-man.jpg'
   const COLOR_HEX: Record<string, string> = {
     black: '#141414',
     white: '#f5f5f5',

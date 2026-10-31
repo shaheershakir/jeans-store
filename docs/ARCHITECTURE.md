@@ -19,7 +19,7 @@ jeans-store/
 │   ├── validators/        Shared Zod validation schemas
 │   └── config/            Shared TypeScript, ESLint, and tooling configurations
 │
-├── infra/                 Deployment blueprints (Cloud Run, Render, Docker)
+├── infra/                 Deployment blueprints (Cloud Run, Docker)
 ├── docs/                  System documentation, architecture, API and deployment guides
 ├── .github/workflows/     CI/CD automated pipelines
 │
@@ -34,7 +34,7 @@ jeans-store/
 ## Applications (`apps/`)
 
 ### 1. Storefront (`apps/storefront`)
-- **Framework**: Next.js 15 (App Router), React 19, Vanilla CSS Custom Properties, Zustand.
+- **Framework**: Next.js 15 (App Router), React 19, Tailwind CSS v4, Zustand.
 - **Port**: `:3000`
 - **Features**: Product catalog, collection filtering, size guide modal, cart drawer, checkout manifest, user profile & orders, wishlist.
 - **Data Fetching**: Statically generated at build time with fallback snapshot resilience. When the backend API is online, pages are dynamically revalidated on catalog changes.
@@ -57,18 +57,28 @@ jeans-store/
 ## Shared Packages (`packages/`)
 
 ### 1. Database (`@jeans-store/db`)
-- Manages PostgreSQL tables via Drizzle ORM (Schema V2):
+- Manages PostgreSQL tables via Drizzle ORM:
   - `categories`: Normalized categories with hierarchical parent-child relationships and display ordering.
-  - `products`: Apparel products, categories, slugs, statuses, descriptive spec attributes JSON, and legacy media columns.
-  - `product_images`: Key-based image storage (S3/GCS compatible) with position ordering and external URL fallbacks.
+  - `products`: Apparel products, categories, slugs, statuses, descriptive spec attributes JSON, and media arrays.
+  - `product_images`: Storage image references with display ordering and alt metadata.
   - `product_variants`: Size × color SKU matrix with inventory tracking and non-negative stock constraints.
-  - `users`: Customer accounts with Google OAuth subject ID (`google_sub`) and onboarding completion tracking.
-  - `orders`: Customer checkout orders linked to `users.id`, with Razorpay transaction IDs and check constraints.
+  - `users`: Customer accounts with Google OAuth subject ID (`google_sub`) and password hashes.
+  - `orders`: Customer checkout orders linked to `users.id`, with Razorpay transaction IDs, COD support, and check constraints.
   - `order_items`: Normalized line items with image snapshot keys.
-  - `order_events`: Atomic append-only order events and admin notes timeline.
-  - `shipping_settings`: Paid delivery rates by Kerala/rest of India and parcel weight.
-  - `navigation_items`: Dynamic store navigation items.
-  - `admin_state`: Operational state storage for coupons and audit tracking.
+  - `order_events`: Append-only order status transition history.
+  - `customers`: Customer CRM directory with addresses, phone numbers, and lifetime metrics.
+  - `customer_addresses`: Customer shipping and billing address records.
+  - `payments`: Razorpay and COD transaction records with status and refund linkage.
+  - `coupons`: Promotional discount rules and usage tracking.
+  - `reviews`: Verified product reviews and ratings.
+  - `inventory_movements`: Stock adjustment and audit ledger.
+  - `shipping_zones`: Delivery rates by region and weight.
+  - `size_charts`: Apparel sizing charts and measurements.
+  - `store_settings`: Store operational settings.
+  - `navigation_items`: Dynamic store navigation menu items.
+  - `homepage_sections`: Dynamic homepage content blocks.
+  - `audit_log`: Administrative mutation audit trail.
+  - `notifications`: System and order notifications.
 - Exports typed client `db`, connection helpers, and migrations in `drizzle/`.
 
 ### 2. Shared Types & Constants (`@jeans-store/shared`)

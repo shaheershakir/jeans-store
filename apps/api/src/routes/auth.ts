@@ -353,38 +353,6 @@ authRouter.post("/api/auth/google", authRateLimiter, async (req: Request, res: R
   }
 });
 
-// 7. Complete Onboarding (/api/auth/onboarding/complete)
-authRouter.post("/api/auth/onboarding/complete", async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Missing or malformed Authorization header" });
-    return;
-  }
-
-  const token = authHeader.slice(7).trim();
-  const claims = await verifyCloudIamToken(token);
-  if (!claims) {
-    res.status(401).json({ error: "Invalid or expired Cloud IAM token" });
-    return;
-  }
-
-  let user = await userStore.findByUid(claims.uid);
-  if (!user) {
-    user = await userStore.findByEmail(claims.email);
-  }
-
-  if (!user) {
-    res.status(404).json({ error: "User account not found" });
-    return;
-  }
-
-  const updatedUser = await userStore.completeOnboarding(user.id);
-  res.json({
-    success: true,
-    user: formatProfile(updatedUser || user)
-  });
-});
-
 // 8. Update Profile Settings (/api/auth/me)
 authRouter.patch("/api/auth/me", async (req: Request, res: Response) => {
   const claims = await getAuthClaims(req);

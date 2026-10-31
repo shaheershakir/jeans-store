@@ -4,15 +4,12 @@ import { getProductBySlug, getProducts, getProductSlug } from '@/lib/products'
 import ProductDetail from '@/app/product/[id]/ProductDetail'
 
 const RESERVED_SLUGS = new Set([
-  'admin',
   'api',
   'auth',
   'bag',
-  'category',
   'checkout',
   'favorites',
   'login',
-  'onboarding',
   'orders',
   'preferences',
   'product',
@@ -47,7 +44,7 @@ export async function generateMetadata({
   const description =
     product.desc ||
     `Shop ${product.name}. Premium heavyweight combed cotton streetwear with durable construction and tailored fit.`
-  const imageUrl = product.img || product.images?.[0] || '/mock-assets/hero-banner-rooftop-desktop.png'
+  const imageUrl = product.img || product.images?.[0] || '/hero-man.jpg'
 
   return {
     title,

@@ -94,7 +94,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'website',
       images: [
         {
-          url: '/mock-assets/hero-banner-rooftop-desktop.png',
+          url: '/hero-man.jpg',
           width: 1200,
           height: 630,
           alt: title
@@ -105,7 +105,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title,
       description,
-      images: ['/mock-assets/hero-banner-rooftop-desktop.png']
+      images: ['/hero-man.jpg']
     }
   }
 }

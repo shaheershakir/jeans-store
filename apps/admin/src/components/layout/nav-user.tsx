@@ -93,12 +93,6 @@ export function NavUser() {
                   <span>Store Settings</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings/users" className="cursor-pointer">
-                  <ShieldCheck className="mr-2 h-4 w-4" />
-                  <span>Users & Roles</span>
-                </Link>
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem

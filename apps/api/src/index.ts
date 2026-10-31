@@ -1,7 +1,6 @@
 import 'dotenv/config'
 import { validateApiEnv } from '@jeans-store/validators'
 import { buildApp } from './app.js'
-import { seedIfEmpty } from './db/seed.js'
 import { db, isDatabaseConfigured } from './db/index.js'
 import type { DbExecutor } from './db/types.js'
 import { expireReservations } from './services/inventory.js'
@@ -25,12 +24,6 @@ const app = buildApp({ corsOrigin: CORS_ORIGIN })
 
 // Validate environment on startup
 validateApiEnv(process.env)
-
-if (process.env.NODE_ENV !== 'production') {
-  void seedIfEmpty().catch((err) => {
-    logger.warn({ err }, 'Initial database seed check failed')
-  })
-}
 
 const server = app.listen(PORT, HOST, () => {
   logger.info({ host: HOST, port: PORT }, 'TEESGARAGE backend listening')

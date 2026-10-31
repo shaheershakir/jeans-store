@@ -5,10 +5,8 @@ import { persist, type PersistOptions } from 'zustand/middleware'
 import { createDbState, DATA_VERSION, DEFAULT_NAVIGATION_ITEMS, DEFAULT_HOMEPAGE_CONFIG } from '@/data/seed'
 import { nextPaymentOnTransition, transitionError, computeTotals } from '@/lib/order-machine'
 import type {
-  AdminUser,
   AppNotification,
   AuditLogEntry,
-  Banner,
   Category,
   Collection,
   Color,
@@ -29,15 +27,11 @@ import type {
   Product,
   ProductDesign,
   ProductStatus,
-  Promotion,
   Refund,
   RefundStatus,
-  ReturnRequest,
-  ReturnStatus,
   Review,
   ReviewStatus,
   Rise,
-  Role,
   ShippingZone,
   SizeChart,
   StockStatus,
@@ -47,7 +41,7 @@ import type {
 } from '@/lib/types'
 import { WAIST_SIZES } from '@/lib/constants'
 import { uid, clamp } from '@/lib/utils'
-import { roleById } from '@/lib/permissions'
+import { roleById, type Permission } from '@/lib/permissions'
 import { generateBaseSku, generateProductScopedSku } from '@/lib/sku'
 
 /** Shape accepted by saveProduct — create (no id) or update (with id). */
@@ -153,9 +147,9 @@ interface AdminState {
   setHydrated: () => void
   setReady: () => void
   replaceProducts: (products: Product[]) => void
-  replaceOperationalData: (data: Partial<Pick<DbState, 'collections' | 'returns' | 'refunds' | 'coupons' | 'promotions' | 'banners' | 'reviews' | 'sizeCharts' | 'shipments' | 'inventoryMovements' | 'auditLog' | 'notifications' | 'settings' | 'roles'>>) => void
+  replaceOperationalData: (data: Partial<Pick<DbState, 'collections' | 'customers' | 'refunds' | 'coupons' | 'reviews' | 'sizeCharts' | 'shipments' | 'payments' | 'inventoryMovements' | 'auditLog' | 'notifications' | 'settings'>>) => void
 
-  login: (user: AdminUser) => void
+  login: (user: { id: number; name: string; email: string }) => void
   logout: () => void
 
   log: (action: string, entity: string, entityId: string, detail: string) => void
@@ -186,28 +180,15 @@ interface AdminState {
     paymentMethod: PaymentMethod
     discount: number
   }) => Order
-
-  createReturn: (orderId: number, reason: string, details: string) => ReturnRequest
-  transitionReturn: (returnId: number, to: ReturnStatus) => void
   createRefund: (input: { orderId: number; returnId?: number; amount: number; reason: string; method: PaymentMethod }) => Refund
   processRefund: (refundId: number, fail?: boolean) => void
-  cancelReturn: (returnId: number) => void
 
   saveCoupon: (c: Coupon) => void
   deleteCoupon: (id: number) => void
   toggleCoupon: (id: number) => void
-  savePromotion: (p: Promotion) => void
-  deletePromotion: (id: number) => void
-  saveBanner: (b: Banner) => void
-  deleteBanner: (id: number) => void
 
   setReviewStatus: (id: number, status: ReviewStatus) => void
   respondToReview: (id: number, text: string) => void
-
-  saveAdminUser: (u: AdminUser) => void
-  deleteAdminUser: (id: number) => void
-  setAdminUserStatus: (id: number, status: 'Active' | 'Inactive') => void
-  saveRole: (r: Role) => void
   saveShippingZone: (z: ShippingZone) => void
   deleteShippingMethod: (methodId: number) => void
   updateSettings: (patch: Partial<StoreSettings>) => void
@@ -341,17 +322,36 @@ export const useAdminStore = create<AdminState>()(
         replaceOperationalData: (operationalData) => set({ data: { ...get().data, ...operationalData } }),
 
         login: (user) => {
-          const role = roleById(user.roleId)
-          if (!role) throw new StoreError('Role not found')
-          if (user.status !== 'Active') throw new StoreError('This admin account is inactive.')
           set({
             session: {
               userId: user.id,
               userName: user.name,
               userEmail: user.email,
-              roleId: role.id,
-              roleName: role.name,
-              permissions: [...role.permissions],
+              roleId: 1,
+              roleName: 'Administrator',
+              permissions: [
+                'dashboard.read',
+                'products.read',
+                'products.write',
+                'inventory.read',
+                'inventory.write',
+                'orders.read',
+                'orders.write',
+                'customers.read',
+                'customers.write',
+                'marketing.read',
+                'marketing.write',
+                'shipping.read',
+                'shipping.write',
+                'payments.read',
+                'payments.write',
+                'reviews.read',
+                'reviews.write',
+                'analytics.read',
+                'settings.read',
+                'settings.write',
+                'audit.read',
+              ],
             },
           })
         },
@@ -866,94 +866,6 @@ export const useAdminStore = create<AdminState>()(
           return order
         },
 
-        createReturn: (orderId, reason, details) => {
-          const order = get().data.orders.find((o) => o.id === orderId)
-          if (!order) throw new StoreError('Order not found.')
-          if (order.fulfillmentStatus !== 'Delivered') {
-            throw new StoreError('Only delivered orders can be returned.')
-          }
-          const existing = get().data.returns.find((r) => r.orderId === orderId && r.status !== 'Rejected')
-          if (existing) throw new StoreError('A return already exists for this order.')
-          if (!reason.trim()) throw new StoreError('Please choose a return reason.')
-          const id = nextId(get().data.returns)
-          let maxSeq = 400
-          for (const r of get().data.returns) {
-            const m = /^RTN-(\d+)$/.exec(r.number)
-            if (m) maxSeq = Math.max(maxSeq, parseInt(m[1], 10))
-          }
-          const ret: ReturnRequest = {
-            id,
-            number: `RTN-${maxSeq + 1}`,
-            orderId,
-            customerId: order.customerId,
-            items: order.items,
-            reason,
-            details,
-            status: 'Requested',
-            amount: order.total,
-            requestedAt: nowIso(),
-            updatedAt: nowIso(),
-          }
-          set({ data: { ...get().data, returns: [...get().data.returns, ret] } })
-          get().log('Created return', 'Return', ret.number, `${ret.number} for ${order.number} — ${reason}`)
-          return ret
-        },
-
-        transitionReturn: (returnId, to) => {
-          const returns = get().data.returns.map((r) => ({ ...r, items: [...r.items] }))
-          const ret = returns.find((r) => r.id === returnId)
-          if (!ret) throw new StoreError('Return not found.')
-          const machine: Partial<Record<ReturnStatus, ReturnStatus[]>> = {
-            Requested: ['Approved', 'Rejected'],
-            Approved: ['Pickup Scheduled', 'Rejected'],
-            'Pickup Scheduled': ['Received'],
-            Received: ['Refunded'],
-          }
-          const allowed = machine[ret.status] ?? []
-          if (!allowed.includes(to)) {
-            throw new StoreError(`Return cannot move from “${ret.status}” to “${to}”.`)
-          }
-          ret.status = to
-          ret.updatedAt = nowIso()
-          const orders = get().data.orders.map((o) => ({ ...o, timeline: [...o.timeline] }))
-          const order = orders.find((o) => o.id === ret.orderId)
-
-          if (to === 'Received' && order) {
-            order.fulfillmentStatus = 'Returned'
-            restockItems(ret.items, ret.number)
-          }
-          if (to === 'Refunded') {
-            const id = nextId(get().data.refunds)
-            const refund: Refund = {
-              id,
-              number: `RF-${500 + id}`,
-              orderId: ret.orderId,
-              returnId: ret.id,
-              customerId: ret.customerId,
-              amount: ret.amount,
-              reason: `Return ${ret.number} — ${ret.reason}`,
-              method: order?.paymentMethod === 'COD' ? 'UPI' : order?.paymentMethod ?? 'UPI',
-              status: 'Pending',
-              createdAt: nowIso(),
-              processedAt: null,
-            }
-            set({ data: { ...get().data, returns, refunds: [...get().data.refunds, refund] } })
-            get().log('Refund created for return', 'Refund', refund.number, `${refund.number} for ${ret.number} — ₹${refund.amount}`)
-            return
-          }
-          if (order) {
-            order.timeline.push({
-              id: nextId(order.timeline),
-              status: `Return ${to}`,
-              note: `${ret.number} ${to.toLowerCase()}`,
-              at: nowIso(),
-              by: actorName(),
-            })
-          }
-          set({ data: { ...get().data, returns, orders } })
-          get().log('Return transition', 'Return', ret.number, `${ret.number}: → ${to}`)
-        },
-
         createRefund: (input) => {
           const order = get().data.orders.find((o) => o.id === input.orderId)
           if (!order) throw new StoreError('Order not found.')
@@ -988,41 +900,8 @@ export const useAdminStore = create<AdminState>()(
           refund.processedAt = fail ? null : nowIso()
           const orders = get().data.orders.map((o) => ({ ...o, timeline: [...o.timeline] }))
           const order = orders.find((o) => o.id === refund.orderId)
-          const relatedReturn = get().data.returns.find((r) => r.id === refund.returnId)
-
-          if (!fail && order) {
-            order.paymentStatus = 'Refunded'
-            if (order.fulfillmentStatus === 'Returned' || order.fulfillmentStatus === 'Cancelled') {
-              order.fulfillmentStatus = 'Refunded'
-            }
-            order.timeline.push({
-              id: nextId(order.timeline),
-              status: 'Refund processed',
-              note: `${refund.number} — ₹${refund.amount} to customer`,
-              at: nowIso(),
-              by: actorName(),
-            })
-          }
-          const returns = relatedReturn
-            ? get().data.returns.map((r) =>
-                r.id === relatedReturn.id && !fail ? { ...r, status: 'Completed' as const } : r
-              )
-            : get().data.returns
-          set({ data: { ...get().data, refunds, orders, returns } })
+          set({ data: { ...get().data, refunds, orders } })
           get().log(fail ? 'Refund failed' : 'Refund processed', 'Refund', refund.number, `${refund.number} — ₹${refund.amount}`)
-        },
-
-        cancelReturn: (returnId) => {
-          const returns = get().data.returns.map((r) => ({ ...r }))
-          const ret = returns.find((r) => r.id === returnId)
-          if (!ret) throw new StoreError('Return not found.')
-          if (ret.status === 'Completed' || ret.status === 'Refunded') {
-            throw new StoreError('Return is already past the cancelling stage.')
-          }
-          ret.status = 'Rejected'
-          ret.updatedAt = nowIso()
-          set({ data: { ...get().data, returns } })
-          get().log('Rejected return', 'Return', ret.number, `${ret.number} rejected`)
         },
 
         saveCoupon: (c) => {
@@ -1056,34 +935,6 @@ export const useAdminStore = create<AdminState>()(
           get().log(c.isActive ? 'Deactivated coupon' : 'Activated coupon', 'Coupon', c.code, `${c.code} → ${c.isActive ? 'inactive' : 'active'}`)
         },
 
-        savePromotion: (p) => {
-          const isNew = !get().data.promotions.some((x) => x.id === p.id)
-          const promotions = isNew
-            ? [...get().data.promotions, p]
-            : get().data.promotions.map((x) => (x.id === p.id ? p : x))
-          set({ data: { ...get().data, promotions } })
-          get().log(isNew ? 'Created promotion' : 'Updated promotion', 'Promotion', p.title, p.title)
-        },
-
-        deletePromotion: (id) => {
-          set({ data: { ...get().data, promotions: get().data.promotions.filter((x) => x.id !== id) } })
-          get().log('Deleted promotion', 'Promotion', String(id), 'Removed promotion')
-        },
-
-        saveBanner: (b) => {
-          const isNew = !get().data.banners.some((x) => x.id === b.id)
-          const banners = isNew
-            ? [...get().data.banners, b]
-            : get().data.banners.map((x) => (x.id === b.id ? b : x))
-          set({ data: { ...get().data, banners } })
-          get().log(isNew ? 'Created banner' : 'Updated banner', 'Banner', b.title, b.title)
-        },
-
-        deleteBanner: (id) => {
-          set({ data: { ...get().data, banners: get().data.banners.filter((x) => x.id !== id) } })
-          get().log('Deleted banner', 'Banner', String(id), 'Removed banner')
-        },
-
         setReviewStatus: (id, status) => {
           const review = get().data.reviews.find((r) => r.id === id)
           if (!review) throw new StoreError('Review not found.')
@@ -1107,52 +958,6 @@ export const useAdminStore = create<AdminState>()(
             },
           })
           get().log('Replied to review', 'Review', `#${id}`, `Posted merchant response on review #${id}`)
-        },
-
-        saveAdminUser: (u) => {
-          const existing = get().data.adminUsers.find(
-            (x) => x.id !== u.id && x.email.toLowerCase() === u.email.toLowerCase()
-          )
-          if (existing) throw new StoreError(`A user with email ${u.email} already exists.`)
-          const isNew = !get().data.adminUsers.some((x) => x.id === u.id)
-          const users = isNew
-            ? [...get().data.adminUsers, u]
-            : get().data.adminUsers.map((x) => (x.id === u.id ? u : x))
-          set({ data: { ...get().data, adminUsers: users } })
-          get().log(isNew ? 'Created admin user' : 'Updated admin user', 'Admin User', u.name, `${u.name} — role ${u.roleId}`)
-        },
-
-        deleteAdminUser: (id) => {
-          if (get().session?.userId === id) throw new StoreError('You cannot delete your own account.')
-          const u = get().data.adminUsers.find((x) => x.id === id)
-          set({ data: { ...get().data, adminUsers: get().data.adminUsers.filter((x) => x.id !== id) } })
-          get().log('Deleted admin user', 'Admin User', u?.name ?? String(id), `Removed ${u?.name ?? id}`)
-        },
-
-        setAdminUserStatus: (id, status) => {
-          if (get().session?.userId === id && status === 'Inactive') {
-            throw new StoreError('You cannot deactivate your own account.')
-          }
-          const u = get().data.adminUsers.find((x) => x.id === id)
-          set({
-            data: {
-              ...get().data,
-              adminUsers: get().data.adminUsers.map((x) => (x.id === id ? { ...x, status } : x)),
-            },
-          })
-          get().log('Changed admin status', 'Admin User', u?.name ?? '', `${u?.name} → ${status}`)
-        },
-
-        saveRole: (r) => {
-          set({
-            data: { ...get().data, roles: get().data.roles.map((x) => (x.id === r.id ? r : x)) },
-          })
-          const role = get().data.roles.find((x) => x.id === r.id)
-          const session = get().session
-          if (session && role && session.roleId === r.id) {
-            set({ session: { ...session, roleName: role.name, permissions: [...role.permissions] } })
-          }
-          get().log('Updated role', 'Role', r.name, `Saved permissions for ${r.name}`)
         },
 
         saveShippingZone: (z) => {

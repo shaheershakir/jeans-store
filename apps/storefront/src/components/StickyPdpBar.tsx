@@ -113,7 +113,7 @@ export default function StickyPdpBar({
     productImage ||
     (Array.isArray(product.images) && product.images[0]) ||
     product.img ||
-    '/mock-assets/pdp/hero_clean_high.png'
+    '/hero-man.jpg'
 
   const SIZE_ORDER: Record<string, number> = {
     XS: 1,

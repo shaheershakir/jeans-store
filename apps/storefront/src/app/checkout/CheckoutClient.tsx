@@ -27,7 +27,7 @@ import {
 import { cartCount, cartSubtotal, useCartStore, useAuthStore, type UserAddress } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
 import type { Order } from '@jeans-store/shared'
-import { PRODUCTS, type Product } from '@/lib/constants'
+import type { Product } from '@/lib/constants'
 import { getProductUrl, getAvailableProductSizes } from '@/lib/products'
 import { trackEvent } from '@/lib/analytics'
 import { FloatingInput, FloatingSelect } from '@/components/ui/FloatingInput'
@@ -1080,10 +1080,6 @@ export default function CheckoutClient({ mode = { type: 'bag' } }: CheckoutClien
   const totalWeight = useMemo(() => {
     return items.reduce((sum, item) => {
       let weight = (item as any).weight
-      if (typeof weight !== 'number' || weight <= 0) {
-        const snap = PRODUCTS.find((p) => String(p.id) === String(item.id) || p.name === item.name)
-        weight = snap?.weight ?? ((snap as any)?.weightGrams)
-      }
       if (typeof weight !== 'number' || weight <= 0) {
         const lowerName = (item.name || '').toLowerCase()
         weight =

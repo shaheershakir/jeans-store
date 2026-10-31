@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react'
 import { signIn, googleAuth, getGoogleOAuthUrl, getGoogleClientId } from '@/lib/auth'
-import { useAuthStore, useUIStore, useOnboardingStore } from '@/lib/store'
+import { useAuthStore, useUIStore } from '@/lib/store'
 import { AuthFormSkeleton } from '@/components/skeletons/StorefrontSkeletons'
 
 function LoginForm() {
@@ -88,18 +88,7 @@ function LoginForm() {
         setAuth(res.user, res.token)
         showToast(`Signed in with Google as ${res.user.name}`)
 
-        if (res.isNewUser) {
-          const onboarding = useOnboardingStore.getState()
-          const uid = res.user.id ? String(res.user.id) : (res.user as { uid?: string }).uid
-          onboarding.triggerAfterRegister(uid)
 
-          const target =
-            redirectParam && redirectParam !== '/'
-              ? `/onboarding?redirect=${encodeURIComponent(redirectParam)}`
-              : '/onboarding'
-          router.push(target)
-          return
-        }
 
         const redirect = redirectParam || '/'
         router.push(redirect)

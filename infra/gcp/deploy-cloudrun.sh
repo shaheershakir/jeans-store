@@ -38,6 +38,10 @@ deploy_api() {
       secret_bindings+=",RAZORPAY_KEY_SECRET=razorpay-key-secret:latest,RAZORPAY_WEBHOOK_SECRET=razorpay-webhook-secret:latest"
     fi
 
+    api_sm_env="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${PROJECT};ADMIN_EMAIL=${ADMIN_EMAIL};ADMIN_NAME=${ADMIN_NAME:-Store administrator};GCS_PRODUCT_IMAGES_BUCKET=${GCS_PRODUCT_IMAGES_BUCKET};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-};FRONTEND_URL=${FRONTEND_URL};CORS_ORIGIN=${FRONTEND_URL},${ADMIN_URL};POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}"
+    if [[ -n "${POSTHOG_API_KEY:-}" ]]; then api_sm_env+=";POSTHOG_API_KEY=${POSTHOG_API_KEY}"; fi
+    if [[ -n "${REVALIDATION_SECRET:-}" ]]; then api_sm_env+=";REVALIDATION_SECRET=${REVALIDATION_SECRET}"; fi
+
     gcloud run deploy teesgarage-backend \
       --project="${PROJECT}" \
       --image="${REGISTRY}/backend:${TAG}" \
@@ -45,19 +49,21 @@ deploy_api() {
       --platform=managed \
       --allow-unauthenticated \
       --port=4000 \
-      --set-env-vars="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${PROJECT};ADMIN_EMAIL=${ADMIN_EMAIL};ADMIN_NAME=${ADMIN_NAME:-Store administrator};GCS_PRODUCT_IMAGES_BUCKET=${GCS_PRODUCT_IMAGES_BUCKET};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-};FRONTEND_URL=${FRONTEND_URL};CORS_ORIGIN=${FRONTEND_URL},${ADMIN_URL}" \
+      --set-env-vars="${api_sm_env}" \
       --set-secrets="${secret_bindings}"
   else
     : "${DATABASE_URL:?Set DATABASE_URL before deploying the API without Secret Manager}"
     : "${ADMIN_PASSWORD:?Set ADMIN_PASSWORD before deploying the API without Secret Manager}"
     admin_session_sec="${ADMIN_SESSION_SECRET:-$(openssl rand -hex 32 2>/dev/null || echo '0123456789012345678901234567890123456789')}"
     jwt_sec="${JWT_SECRET:-$(openssl rand -hex 32 2>/dev/null || echo '0123456789012345678901234567890123456789')}"
-    env_vars="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${PROJECT};DATABASE_URL=${DATABASE_URL};ADMIN_EMAIL=${ADMIN_EMAIL};ADMIN_NAME=${ADMIN_NAME:-Store administrator};ADMIN_PASSWORD=${ADMIN_PASSWORD};ADMIN_SESSION_SECRET=${admin_session_sec};JWT_SECRET=${jwt_sec};GCS_PRODUCT_IMAGES_BUCKET=${GCS_PRODUCT_IMAGES_BUCKET};FRONTEND_URL=${FRONTEND_URL};CORS_ORIGIN=${FRONTEND_URL},${ADMIN_URL}"
+    env_vars="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${PROJECT};DATABASE_URL=${DATABASE_URL};ADMIN_EMAIL=${ADMIN_EMAIL};ADMIN_NAME=${ADMIN_NAME:-Store administrator};ADMIN_PASSWORD=${ADMIN_PASSWORD};ADMIN_SESSION_SECRET=${admin_session_sec};JWT_SECRET=${jwt_sec};GCS_PRODUCT_IMAGES_BUCKET=${GCS_PRODUCT_IMAGES_BUCKET};FRONTEND_URL=${FRONTEND_URL};CORS_ORIGIN=${FRONTEND_URL},${ADMIN_URL};POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}"
     if [[ -n "${GOOGLE_CLIENT_ID:-}" ]]; then env_vars+=";GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"; fi
     if [[ -n "${GOOGLE_CLIENT_SECRET:-}" ]]; then env_vars+=";GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}"; fi
     if [[ -n "${RAZORPAY_KEY_ID:-}" ]]; then env_vars+=";RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}"; fi
     if [[ -n "${RAZORPAY_KEY_SECRET:-}" ]]; then env_vars+=";RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}"; fi
     if [[ -n "${RAZORPAY_WEBHOOK_SECRET:-}" ]]; then env_vars+=";RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET}"; fi
+    if [[ -n "${POSTHOG_API_KEY:-}" ]]; then env_vars+=";POSTHOG_API_KEY=${POSTHOG_API_KEY}"; fi
+    if [[ -n "${REVALIDATION_SECRET:-}" ]]; then env_vars+=";REVALIDATION_SECRET=${REVALIDATION_SECRET}"; fi
 
     if gcloud run services describe teesgarage-backend --project="${PROJECT}" --region="${REGION}" >/dev/null 2>&1; then
       latest_ready=$(gcloud run services describe teesgarage-backend --project="${PROJECT}" --region="${REGION}" --format='value(status.latestReadyRevisionName)' 2>/dev/null || true)
@@ -98,9 +104,22 @@ deploy_storefront() {
     --build-arg "NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}" \
     --build-arg "NEXT_PUBLIC_SITE_URL=${FRONTEND_URL}" \
     --build-arg "NEXT_PUBLIC_RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}" \
+    --build-arg "NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY:-}" \
+    --build-arg "NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST:-/ingest}" \
+    --build-arg "NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN:-}" \
+    --build-arg "SENTRY_DSN=${SENTRY_DSN:-}" \
+    --build-arg "REVALIDATION_SECRET=${REVALIDATION_SECRET:-}" \
     -t "${REGISTRY}/frontend:${TAG}" \
     -f apps/storefront/Dockerfile .
   docker push "${REGISTRY}/frontend:${TAG}"
+
+  local storefront_env="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${backend_url};NEXT_PUBLIC_API_URL=${backend_url};NEXT_PUBLIC_SITE_URL=${FRONTEND_URL}"
+  if [[ -n "${NEXT_PUBLIC_POSTHOG_KEY:-}" ]]; then storefront_env+=";NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY}"; fi
+  if [[ -n "${NEXT_PUBLIC_POSTHOG_HOST:-}" ]]; then storefront_env+=";NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST}"; fi
+  if [[ -n "${NEXT_PUBLIC_SENTRY_DSN:-}" ]]; then storefront_env+=";NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}"; fi
+  if [[ -n "${SENTRY_DSN:-}" ]]; then storefront_env+=";SENTRY_DSN=${SENTRY_DSN}"; fi
+  if [[ -n "${REVALIDATION_SECRET:-}" ]]; then storefront_env+=";REVALIDATION_SECRET=${REVALIDATION_SECRET}"; fi
+
   gcloud run deploy teesgarage-frontend \
     --project="${PROJECT}" \
     --image="${REGISTRY}/frontend:${TAG}" \
@@ -108,7 +127,7 @@ deploy_storefront() {
     --platform=managed \
     --allow-unauthenticated \
     --port=3000 \
-    --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${backend_url};NEXT_PUBLIC_API_URL=${backend_url};NEXT_PUBLIC_SITE_URL=${FRONTEND_URL}"
+    --set-env-vars="${storefront_env}"
 }
 
 deploy_admin() {

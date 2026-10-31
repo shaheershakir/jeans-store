@@ -264,11 +264,6 @@ export function topProducts(data: DbState, limit = 8): ProductPerformance[] {
     }
   }
   const returnedUnits = new Map<string, number>()
-  for (const r of data.returns) {
-    for (const item of r.items) {
-      returnedUnits.set(item.productId, (returnedUnits.get(item.productId) ?? 0) + item.quantity)
-    }
-  }
   const rows: ProductPerformance[] = []
   for (const [id, entry] of sold) {
     const product = byProduct.get(id)
@@ -314,12 +309,6 @@ export function returnRateByFit(data: DbState): RatePoint[] {
       units.set(fitKey, (units.get(fitKey) ?? 0) + item.quantity)
     }
   }
-  for (const r of data.returns) {
-    const p = data.products.find((x) => x.id === r.items[0]?.productId)
-    if (!p) continue
-    const fitKey = p.fit ?? 'Regular'
-    returnedMap.set(fitKey, (returnedMap.get(fitKey) ?? 0) + r.items.reduce((s, i) => s + i.quantity, 0))
-  }
   return [...units.entries()].map(([key, unitTotal]) => ({
     key,
     rate: unitTotal ? ((returnedMap.get(key) ?? 0) / unitTotal) * 100 : 0,
@@ -336,13 +325,6 @@ export function returnRateBySize(data: DbState): RatePoint[] {
       const v = variantOf(data, item.variantId)
       if (!v) continue
       units.set(String(v.size), (units.get(String(v.size)) ?? 0) + item.quantity)
-    }
-  }
-  for (const r of data.returns) {
-    for (const item of r.items) {
-      const v = variantOf(data, item.variantId)
-      if (!v) continue
-      returnedMap.set(String(v.size), (returnedMap.get(String(v.size)) ?? 0) + item.quantity)
     }
   }
   return [...units.entries()].map(([key, unitTotal]) => ({
@@ -561,7 +543,7 @@ export function customerStats(data: DbState, customerId: number): CustomerStats 
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   const paid = orders.filter((o) => o.paymentStatus === 'Paid')
   const totalSpent = paid.reduce((s, o) => s + o.total, 0)
-  const returnsCount = data.returns.filter((r) => r.customerId === customerId && r.status !== 'Rejected').length
+  const returnsCount = data.refunds.filter((r) => r.customerId === customerId).length
   const refundsTotal = data.refunds
     .filter((r) => r.customerId === customerId && r.status === 'Processed')
     .reduce((s, r) => s + r.amount, 0)

@@ -8,7 +8,9 @@ import {
   couponProducts,
   couponRedemptions,
   coupons,
+  customerAddresses,
   customers,
+  payments,
   inventoryMovements,
   notifications,
   orders,
@@ -81,6 +83,9 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
     auditRows,
     notificationRows,
     refundRows,
+    customerRows,
+    addressRows,
+    paymentRows,
     settings
   ] = await Promise.all([
     db.select().from(collections).orderBy(collections.sortOrder),
@@ -95,6 +100,9 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
     db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(200),
     db.select().from(notifications).orderBy(desc(notifications.createdAt)).limit(200),
     db.select().from(refunds).orderBy(desc(refunds.createdAt)),
+    db.select().from(customers).orderBy(customers.id),
+    db.select().from(customerAddresses),
+    db.select().from(payments).orderBy(desc(payments.createdAt)),
     getSettings()
   ])
 
@@ -118,6 +126,32 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
     measurementsByChart.set(row.sizeChartId, list)
   }
 
+  const addressesByCustomer = new Map<number, Array<{
+    id: number
+    label: 'Home' | 'Work'
+    line1: string
+    line2: string
+    city: string
+    state: string
+    pincode: string
+    phone: string
+  }>>()
+
+  for (const addr of addressRows) {
+    const list = addressesByCustomer.get(addr.customerId) ?? []
+    list.push({
+      id: addr.id,
+      label: (addr.label === 'Work' ? 'Work' : 'Home') as 'Home' | 'Work',
+      line1: addr.line1,
+      line2: addr.line2 ?? '',
+      city: addr.city,
+      state: addr.state,
+      pincode: addr.pincode,
+      phone: addr.phone ?? ''
+    })
+    addressesByCustomer.set(addr.customerId, list)
+  }
+
   return {
     collections: collectionRows.map((row) => ({
       id: row.id,
@@ -126,7 +160,21 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
       description: row.description ?? '',
       status: row.status
     })),
-    returns: [],
+    customers: customerRows.map((row) => {
+      const addrs = addressesByCustomer.get(row.id) ?? []
+      const defaultAddr = addrs[0]
+      return {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        phone: row.phone ?? '',
+        city: defaultAddr?.city ?? '',
+        state: defaultAddr?.state ?? '',
+        pincode: defaultAddr?.pincode ?? '',
+        joinedAt: iso(row.createdAt),
+        addresses: addrs
+      }
+    }),
     refunds: refundRows.map((row) => ({
       id: row.id,
       number: row.number,
@@ -155,8 +203,6 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
       isActive: row.isActive,
       timesUsed: (row as any).timesUsed ?? 0
     })),
-    promotions: [],
-    banners: [],
     reviews: reviewRows.map((row) => ({
       id: row.id,
       customerId: row.customerId ?? 0,
@@ -216,6 +262,18 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
       detail: row.detail ?? '',
       at: iso(row.createdAt)
     })),
+    payments: paymentRows.map((row) => ({
+      id: row.id,
+      orderId: row.orderId ?? 0,
+      method: (row.method === 'COD' ? 'COD' : 'Razorpay') as any,
+      amount: row.amount,
+      status: (row.status === 'Captured' || row.status === 'Paid' ? 'Paid' : row.status === 'Failed' ? 'Failed' : 'Pending') as any,
+      gateway: row.gateway,
+      gatewayFee: null,
+      settled: row.status === 'Captured' || row.status === 'Paid',
+      createdAt: iso(row.createdAt),
+      settledAt: row.verifiedAt ? iso(row.verifiedAt) : null
+    })),
     notifications: notificationRows.map((row) => ({
       id: row.id,
       type: row.type,
@@ -224,8 +282,7 @@ export async function getAdminState(): Promise<Record<string, unknown>> {
       at: iso(row.createdAt),
       read: row.isRead
     })),
-    settings,
-    roles: []
+    settings
   }
 }
 

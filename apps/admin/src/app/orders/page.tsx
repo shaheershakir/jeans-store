@@ -93,14 +93,6 @@ export default function OrdersPage() {
   const [selectedDetailOrder, setSelectedDetailOrder] = React.useState<OrderItemCardData | null>(null)
   const [detailSheetOpen, setDetailSheetOpen] = React.useState(false)
 
-  // Create Order Dialog state
-  const [createDialogOpen, setCreateDialogOpen] = React.useState(false)
-  const [newCustomerName, setNewCustomerName] = React.useState('')
-  const [newCity, setNewCity] = React.useState('Kochi')
-  const [newState, setNewState] = React.useState('Kerala')
-  const [newPaymentStatus, setNewPaymentStatus] = React.useState('Paid')
-  const [newAmount, setNewAmount] = React.useState('1499')
-
   React.useEffect(() => {
     let active = true
     void fetchBackendOrders().finally(() => {
@@ -327,70 +319,6 @@ export default function OrdersPage() {
     },
     [displayOrders, statusOverrides, storeOrders]
   )
-
-  // Handle Quick Create Order
-  const handleCreateOrder = (e: React.FormEvent) => {
-    e.preventDefault()
-    const parsedTotal = parseInt(newAmount, 10) || 1499
-    const orderNumber = `TGE-${Math.floor(100000 + Math.random() * 899999)}`
-    const isKerala = newState.trim().toLowerCase() === 'kerala'
-
-    const newCreatedOrder: Order = {
-      id: Date.now(),
-      number: orderNumber,
-      customerId: 1,
-      items: [
-        {
-          id: 1,
-          productId: products[0]?.id || '1',
-          variantId: 1,
-          productName: 'Heavyweight Cotton Tee',
-          variantLabel: 'Black · Size L',
-          sku: 'TEE-BLK-L',
-          quantity: 1,
-          price: parsedTotal,
-          total: parsedTotal,
-        },
-      ],
-      subtotal: parsedTotal,
-      discount: 0,
-      shippingFee: 0,
-      total: parsedTotal,
-      paymentMethod: (newPaymentStatus === 'Paid' ? 'Razorpay' : 'COD') as any,
-      paymentStatus: (newPaymentStatus === 'Paid' ? 'Paid' : 'Pending') as any,
-      transactionId: null,
-      fulfillmentStatus: 'Pending',
-      shippingAddress: {
-        id: Date.now(),
-        label: 'Home',
-        line1: 'Main Street',
-        line2: '',
-        city: newCity.trim() || 'Kochi',
-        state: newState.trim() || 'Kerala',
-        pincode: '682001',
-        phone: '9876543210',
-      },
-      carrier: null,
-      trackingNumber: null,
-      shippedAt: null,
-      deliveredAt: null,
-      timeline: [],
-      notes: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-
-    useAdminStore.setState((state) => ({
-      data: {
-        ...state.data,
-        orders: [newCreatedOrder, ...state.data.orders],
-      },
-    }))
-    setStatusOverrides((prev) => ({ ...prev, [String(newCreatedOrder.id)]: 'Pending' }))
-    setCreateDialogOpen(false)
-    setNewCustomerName('')
-    toastSuccess(`Created order ${orderNumber}`)
-  }
 
   // Checkbox selection for list view
   const allVisibleSelected =
@@ -805,14 +733,7 @@ export default function OrdersPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <button
-              type="button"
-              onClick={() => setCreateDialogOpen(true)}
-              className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-2xs shrink-0"
-              aria-label="Create Order"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+            null
           )}
         </div>
       </div>
@@ -964,107 +885,7 @@ export default function OrdersPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Create Order Button & Modal */}
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-xs font-semibold shadow-xs transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Create Order</span>
-              </button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <form onSubmit={handleCreateOrder}>
-                <DialogHeader>
-                  <DialogTitle>Create New Order</DialogTitle>
-                  <DialogDescription>
-                    Add a quick customer order to the dashboard.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4 text-xs">
-                  <div>
-                    <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Customer Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Rahul Varma"
-                      value={newCustomerName}
-                      onChange={(e) => setNewCustomerName(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 dark:border-border p-2.5 bg-white dark:bg-card focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        City
-                      </label>
-                      <input
-                        type="text"
-                        value={newCity}
-                        onChange={(e) => setNewCity(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 dark:border-border p-2.5 bg-white dark:bg-card"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        State
-                      </label>
-                      <input
-                        type="text"
-                        value={newState}
-                        onChange={(e) => setNewState(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 dark:border-border p-2.5 bg-white dark:bg-card"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        Payment Status
-                      </label>
-                      <select
-                        value={newPaymentStatus}
-                        onChange={(e) => setNewPaymentStatus(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 dark:border-border p-2.5 bg-white dark:bg-card"
-                      >
-                        <option value="Paid">Paid</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        Order Total (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={newAmount}
-                        onChange={(e) => setNewAmount(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 dark:border-border p-2.5 bg-white dark:bg-card"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <button
-                    type="button"
-                    onClick={() => setCreateDialogOpen(false)}
-                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-1.5 text-xs font-semibold text-white shadow-xs"
-                  >
-                    Confirm & Save
-                  </button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          
         </div>
       </div>
 

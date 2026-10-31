@@ -176,6 +176,9 @@ jobs:
           RAZORPAY_WEBHOOK_SECRET_VAL="${{ secrets.RAZORPAY_WEBHOOK_SECRET || vars.RAZORPAY_WEBHOOK_SECRET }}"
           FRONTEND_URL_VAL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}"
           ADMIN_URL_VAL="${{ vars.ADMIN_URL || secrets.ADMIN_URL }}"
+          REVALIDATION_SEC="${{ secrets.REVALIDATION_SECRET || vars.REVALIDATION_SECRET }}"
+          POSTHOG_API_KEY_VAL="${{ secrets.POSTHOG_API_KEY || vars.POSTHOG_API_KEY }}"
+          POSTHOG_HOST_VAL="${{ vars.POSTHOG_HOST || secrets.POSTHOG_HOST || 'https://us.i.posthog.com' }}"
 
           STORE_URL=$(gcloud run services describe ${{ env.FRONTEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || true)
           ADM_URL=$(gcloud run services describe ${{ env.ADMIN_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || true)
@@ -196,6 +199,13 @@ jobs:
             if [ -n "$RAZORPAY_KEY_ID_VAL" ]; then
               SECRET_BINDINGS="$SECRET_BINDINGS,RAZORPAY_KEY_SECRET=razorpay-key-secret:latest,RAZORPAY_WEBHOOK_SECRET=razorpay-webhook-secret:latest"
             fi
+            SM_ENV_VARS="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};STORAGE_PROVIDER=${{ vars.STORAGE_PROVIDER || 'gcs' }};ASSET_BASE_URL=${ASSET_BASE_VAL};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID_VAL};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID_VAL};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${CORS_VAL};POSTHOG_HOST=${POSTHOG_HOST_VAL}"
+            if [ -n "$REVALIDATION_SEC" ]; then
+              SM_ENV_VARS="${SM_ENV_VARS};REVALIDATION_SECRET=${REVALIDATION_SEC}"
+            fi
+            if [ -n "$POSTHOG_API_KEY_VAL" ]; then
+              SM_ENV_VARS="${SM_ENV_VARS};POSTHOG_API_KEY=${POSTHOG_API_KEY_VAL}"
+            fi
             gcloud run deploy ${{ env.BACKEND_SERVICE }} \
               --project="${{ env.GCP_PROJECT_ID }}" \
               --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/backend:${{ github.sha }}" \
@@ -203,7 +213,7 @@ jobs:
               --platform=managed \
               --allow-unauthenticated \
               --port=4000 \
-              --set-env-vars="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};STORAGE_PROVIDER=${{ vars.STORAGE_PROVIDER || 'gcs' }};ASSET_BASE_URL=${ASSET_BASE_VAL};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID_VAL};RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID_VAL};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${CORS_VAL}" \
+              --set-env-vars="${SM_ENV_VARS}" \
               --set-secrets="$SECRET_BINDINGS"
           else
             echo "::notice::Deploying backend with direct GitHub Secrets environment variables (no Secret Manager dependency)..."
@@ -226,7 +236,7 @@ jobs:
               JWT_SEC=$(openssl rand -hex 32)
             fi
 
-            ENV_VARS="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};DATABASE_URL=${DB_URL};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};ADMIN_PASSWORD=${ADMIN_PWD};ADMIN_SESSION_SECRET=${ADMIN_SESSION_SEC};JWT_SECRET=${JWT_SEC};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};STORAGE_PROVIDER=${{ vars.STORAGE_PROVIDER || 'gcs' }};ASSET_BASE_URL=${ASSET_BASE_VAL};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${CORS_VAL}"
+            ENV_VARS="^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }};DATABASE_URL=${DB_URL};ADMIN_EMAIL=${ADMIN_EMAIL_VAL};ADMIN_NAME=${ADMIN_NAME_VAL};ADMIN_PASSWORD=${ADMIN_PWD};ADMIN_SESSION_SECRET=${ADMIN_SESSION_SEC};JWT_SECRET=${JWT_SEC};GCS_PRODUCT_IMAGES_BUCKET=${BUCKET_VAL};STORAGE_PROVIDER=${{ vars.STORAGE_PROVIDER || 'gcs' }};ASSET_BASE_URL=${ASSET_BASE_VAL};FRONTEND_URL=${FRONTEND_URL_VAL};CORS_ORIGIN=${CORS_VAL};POSTHOG_HOST=${POSTHOG_HOST_VAL}"
 
             if [ -n "$GOOGLE_CLIENT_ID_VAL" ]; then
               ENV_VARS="${ENV_VARS};GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID_VAL}"
@@ -247,6 +257,12 @@ jobs:
             fi
             if [ -n "$RAZORPAY_WEBHOOK_SECRET_VAL" ]; then
               ENV_VARS="${ENV_VARS};RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET_VAL}"
+            fi
+            if [ -n "$POSTHOG_API_KEY_VAL" ]; then
+              ENV_VARS="${ENV_VARS};POSTHOG_API_KEY=${POSTHOG_API_KEY_VAL}"
+            fi
+            if [ -n "$REVALIDATION_SEC" ]; then
+              ENV_VARS="${ENV_VARS};REVALIDATION_SECRET=${REVALIDATION_SEC}"
             fi
 
             gcloud run deploy ${{ env.BACKEND_SERVICE }} \
@@ -329,6 +345,11 @@ jobs:
             --build-arg NEXT_PUBLIC_SITE_URL="${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}" \
             --build-arg NEXT_PUBLIC_ASSET_BASE_URL="${{ vars.NEXT_PUBLIC_ASSET_BASE_URL || secrets.NEXT_PUBLIC_ASSET_BASE_URL || '' }}" \
             --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="${{ vars.RAZORPAY_KEY_ID || secrets.RAZORPAY_KEY_ID || '' }}" \
+            --build-arg NEXT_PUBLIC_POSTHOG_KEY="${{ vars.NEXT_PUBLIC_POSTHOG_KEY || secrets.NEXT_PUBLIC_POSTHOG_KEY || '' }}" \
+            --build-arg NEXT_PUBLIC_POSTHOG_HOST="${{ vars.NEXT_PUBLIC_POSTHOG_HOST || secrets.NEXT_PUBLIC_POSTHOG_HOST || '/ingest' }}" \
+            --build-arg NEXT_PUBLIC_SENTRY_DSN="${{ vars.NEXT_PUBLIC_SENTRY_DSN || secrets.NEXT_PUBLIC_SENTRY_DSN || '' }}" \
+            --build-arg SENTRY_DSN="${{ secrets.SENTRY_DSN || vars.SENTRY_DSN || '' }}" \
+            --build-arg REVALIDATION_SECRET="${{ secrets.REVALIDATION_SECRET || vars.REVALIDATION_SECRET || '' }}" \
             -t "$IMAGE" -t "$LATEST" \
             -f apps/storefront/Dockerfile .
           docker push "$IMAGE"
@@ -341,6 +362,22 @@ jobs:
             STORE_URL=$(gcloud run services describe ${{ env.FRONTEND_SERVICE }} --project="${{ env.GCP_PROJECT_ID }}" --region="${{ env.GAR_LOCATION }}" --format='value(status.url)' 2>/dev/null || true)
             FRONTEND_URL_VAL="${STORE_URL:-https://${{ env.FRONTEND_SERVICE }}-${{ env.GCP_PROJECT_ID }}.${{ env.GAR_LOCATION }}.run.app}"
           fi
+          STOREFRONT_ENV="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_ASSET_BASE_URL=${{ vars.NEXT_PUBLIC_ASSET_BASE_URL || secrets.NEXT_PUBLIC_ASSET_BASE_URL || '' }};NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '' }};NEXT_PUBLIC_SITE_URL=${FRONTEND_URL_VAL}"
+          if [ -n "${{ vars.NEXT_PUBLIC_POSTHOG_KEY || secrets.NEXT_PUBLIC_POSTHOG_KEY }}" ]; then
+            STOREFRONT_ENV="${STOREFRONT_ENV};NEXT_PUBLIC_POSTHOG_KEY=${{ vars.NEXT_PUBLIC_POSTHOG_KEY || secrets.NEXT_PUBLIC_POSTHOG_KEY }}"
+          fi
+          if [ -n "${{ vars.NEXT_PUBLIC_POSTHOG_HOST || secrets.NEXT_PUBLIC_POSTHOG_HOST }}" ]; then
+            STOREFRONT_ENV="${STOREFRONT_ENV};NEXT_PUBLIC_POSTHOG_HOST=${{ vars.NEXT_PUBLIC_POSTHOG_HOST || secrets.NEXT_PUBLIC_POSTHOG_HOST }}"
+          fi
+          if [ -n "${{ vars.NEXT_PUBLIC_SENTRY_DSN || secrets.NEXT_PUBLIC_SENTRY_DSN }}" ]; then
+            STOREFRONT_ENV="${STOREFRONT_ENV};NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN || secrets.NEXT_PUBLIC_SENTRY_DSN }}"
+          fi
+          if [ -n "${{ secrets.SENTRY_DSN || vars.SENTRY_DSN }}" ]; then
+            STOREFRONT_ENV="${STOREFRONT_ENV};SENTRY_DSN=${{ secrets.SENTRY_DSN || vars.SENTRY_DSN }}"
+          fi
+          if [ -n "${{ secrets.REVALIDATION_SECRET || vars.REVALIDATION_SECRET }}" ]; then
+            STOREFRONT_ENV="${STOREFRONT_ENV};REVALIDATION_SECRET=${{ secrets.REVALIDATION_SECRET || vars.REVALIDATION_SECRET }}"
+          fi
           gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
             --project="${{ env.GCP_PROJECT_ID }}" \
             --image="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/frontend:${{ github.sha }}" \
@@ -348,7 +385,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --port=3000 \
-            --set-env-vars="^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_API_URL=${{ steps.backend_url.outputs.url }};NEXT_PUBLIC_ASSET_BASE_URL=${{ vars.NEXT_PUBLIC_ASSET_BASE_URL || secrets.NEXT_PUBLIC_ASSET_BASE_URL || '' }};NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '' }};NEXT_PUBLIC_SITE_URL=${FRONTEND_URL_VAL}"
+            --set-env-vars="${STOREFRONT_ENV}"
 
   # -------------------------------------------------------------
   # 3. Admin Dashboard Service (Next.js 15)

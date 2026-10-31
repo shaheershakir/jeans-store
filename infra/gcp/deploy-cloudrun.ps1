@@ -49,7 +49,10 @@ function Deploy-Api {
     if ($env:GOOGLE_CLIENT_ID) { $secretBindings += ',GOOGLE_CLIENT_SECRET=google-client-secret:latest' }
     if ($env:RAZORPAY_KEY_ID) { $secretBindings += ',RAZORPAY_KEY_SECRET=razorpay-key-secret:latest,RAZORPAY_WEBHOOK_SECRET=razorpay-webhook-secret:latest' }
     $corsOrigins = "$FrontendUrl,$($env:ADMIN_URL)"
-    $apiEnv = "^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=$Project;ADMIN_EMAIL=$($env:ADMIN_EMAIL);ADMIN_NAME=$($env:ADMIN_NAME);GCS_PRODUCT_IMAGES_BUCKET=$($env:GCS_PRODUCT_IMAGES_BUCKET);GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID);RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID);FRONTEND_URL=$FrontendUrl;CORS_ORIGIN=$corsOrigins"
+    $posthogHost = if ($env:POSTHOG_HOST) { $env:POSTHOG_HOST } else { 'https://us.i.posthog.com' }
+    $apiEnv = "^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=$Project;ADMIN_EMAIL=$($env:ADMIN_EMAIL);ADMIN_NAME=$($env:ADMIN_NAME);GCS_PRODUCT_IMAGES_BUCKET=$($env:GCS_PRODUCT_IMAGES_BUCKET);GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID);RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID);FRONTEND_URL=$FrontendUrl;CORS_ORIGIN=$corsOrigins;POSTHOG_HOST=$posthogHost"
+    if ($env:POSTHOG_API_KEY) { $apiEnv += ";POSTHOG_API_KEY=$($env:POSTHOG_API_KEY)" }
+    if ($env:REVALIDATION_SECRET) { $apiEnv += ";REVALIDATION_SECRET=$($env:REVALIDATION_SECRET)" }
     gcloud run deploy teesgarage-backend `
       --project=$Project `
       --image=$image `
@@ -65,12 +68,15 @@ function Deploy-Api {
     $adminSessionSec = if ($env:ADMIN_SESSION_SECRET) { $env:ADMIN_SESSION_SECRET } else { [System.Guid]::NewGuid().ToString('N') + [System.Guid]::NewGuid().ToString('N') }
     $jwtSec = if ($env:JWT_SECRET) { $env:JWT_SECRET } else { [System.Guid]::NewGuid().ToString('N') + [System.Guid]::NewGuid().ToString('N') }
     $corsOrigins = "$FrontendUrl,$($env:ADMIN_URL)"
-    $apiEnv = "^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=$Project;DATABASE_URL=$($env:DATABASE_URL);ADMIN_EMAIL=$($env:ADMIN_EMAIL);ADMIN_NAME=$($env:ADMIN_NAME);ADMIN_PASSWORD=$($env:ADMIN_PASSWORD);ADMIN_SESSION_SECRET=$adminSessionSec;JWT_SECRET=$jwtSec;GCS_PRODUCT_IMAGES_BUCKET=$($env:GCS_PRODUCT_IMAGES_BUCKET);FRONTEND_URL=$FrontendUrl;CORS_ORIGIN=$corsOrigins"
+    $posthogHost = if ($env:POSTHOG_HOST) { $env:POSTHOG_HOST } else { 'https://us.i.posthog.com' }
+    $apiEnv = "^;^NODE_ENV=production;HOST=0.0.0.0;GCP_PROJECT_ID=$Project;DATABASE_URL=$($env:DATABASE_URL);ADMIN_EMAIL=$($env:ADMIN_EMAIL);ADMIN_NAME=$($env:ADMIN_NAME);ADMIN_PASSWORD=$($env:ADMIN_PASSWORD);ADMIN_SESSION_SECRET=$adminSessionSec;JWT_SECRET=$jwtSec;GCS_PRODUCT_IMAGES_BUCKET=$($env:GCS_PRODUCT_IMAGES_BUCKET);FRONTEND_URL=$FrontendUrl;CORS_ORIGIN=$corsOrigins;POSTHOG_HOST=$posthogHost"
     if ($env:GOOGLE_CLIENT_ID) { $apiEnv += ";GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID)" }
     if ($env:GOOGLE_CLIENT_SECRET) { $apiEnv += ";GOOGLE_CLIENT_SECRET=$($env:GOOGLE_CLIENT_SECRET)" }
     if ($env:RAZORPAY_KEY_ID) { $apiEnv += ";RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID)" }
     if ($env:RAZORPAY_KEY_SECRET) { $apiEnv += ";RAZORPAY_KEY_SECRET=$($env:RAZORPAY_KEY_SECRET)" }
     if ($env:RAZORPAY_WEBHOOK_SECRET) { $apiEnv += ";RAZORPAY_WEBHOOK_SECRET=$($env:RAZORPAY_WEBHOOK_SECRET)" }
+    if ($env:POSTHOG_API_KEY) { $apiEnv += ";POSTHOG_API_KEY=$($env:POSTHOG_API_KEY)" }
+    if ($env:REVALIDATION_SECRET) { $apiEnv += ";REVALIDATION_SECRET=$($env:REVALIDATION_SECRET)" }
 
     $serviceExists = gcloud run services describe teesgarage-backend --project=$Project --region=$Region --format='value(metadata.name)' 2>$null
     if ($serviceExists) {
@@ -102,10 +108,20 @@ function Deploy-Storefront {
     --build-arg "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$($env:GOOGLE_CLIENT_ID)" `
     --build-arg "NEXT_PUBLIC_SITE_URL=$FrontendUrl" `
     --build-arg "NEXT_PUBLIC_RAZORPAY_KEY_ID=$($env:RAZORPAY_KEY_ID)" `
+    --build-arg "NEXT_PUBLIC_POSTHOG_KEY=$($env:NEXT_PUBLIC_POSTHOG_KEY)" `
+    --build-arg "NEXT_PUBLIC_POSTHOG_HOST=$($env:NEXT_PUBLIC_POSTHOG_HOST)" `
+    --build-arg "NEXT_PUBLIC_SENTRY_DSN=$($env:NEXT_PUBLIC_SENTRY_DSN)" `
+    --build-arg "SENTRY_DSN=$($env:SENTRY_DSN)" `
+    --build-arg "REVALIDATION_SECRET=$($env:REVALIDATION_SECRET)" `
     -t $image `
     -f apps/storefront/Dockerfile .
   docker push $image
   $storefrontEnv = "^;^NODE_ENV=production;HOSTNAME=0.0.0.0;BACKEND_URL=$backendUrl;NEXT_PUBLIC_API_URL=$backendUrl;NEXT_PUBLIC_SITE_URL=$FrontendUrl"
+  if ($env:NEXT_PUBLIC_POSTHOG_KEY) { $storefrontEnv += ";NEXT_PUBLIC_POSTHOG_KEY=$($env:NEXT_PUBLIC_POSTHOG_KEY)" }
+  if ($env:NEXT_PUBLIC_POSTHOG_HOST) { $storefrontEnv += ";NEXT_PUBLIC_POSTHOG_HOST=$($env:NEXT_PUBLIC_POSTHOG_HOST)" }
+  if ($env:NEXT_PUBLIC_SENTRY_DSN) { $storefrontEnv += ";NEXT_PUBLIC_SENTRY_DSN=$($env:NEXT_PUBLIC_SENTRY_DSN)" }
+  if ($env:SENTRY_DSN) { $storefrontEnv += ";SENTRY_DSN=$($env:SENTRY_DSN)" }
+  if ($env:REVALIDATION_SECRET) { $storefrontEnv += ";REVALIDATION_SECRET=$($env:REVALIDATION_SECRET)" }
   gcloud run deploy teesgarage-frontend `
     --project=$Project `
     --image=$image `

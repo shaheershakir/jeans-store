@@ -4,14 +4,11 @@ import { getProductBySlug, getProductSlug } from '@/lib/products'
 import CheckoutClient from '@/app/checkout/CheckoutClient'
 
 const RESERVED_SLUGS = new Set([
-  'admin',
   'api',
   'auth',
-  'category',
   'checkout',
   'favorites',
   'login',
-  'onboarding',
   'orders',
   'preferences',
   'product',

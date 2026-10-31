@@ -1,4 +1,4 @@
-import { test, describe } from 'node:test'
+import { test, describe, before } from 'node:test'
 import assert from 'node:assert/strict'
 import request from 'supertest'
 import { buildApp } from '../src/app.js'
@@ -35,6 +35,28 @@ async function quoteCart(app: ReturnType<typeof buildApp>, items: Array<{ id: nu
 
 describe('Catalog & Orders Unified Brand Seams', () => {
   const app = buildApp({ enableLogging: false })
+
+  before(async () => {
+    const categories = ['stripes', 'fullsleeve', 'printed-tees', 'ringer-tees', 'henley', 'waffle', 'trackpants', 'sweatpants']
+    for (let i = 0; i < 16; i++) {
+      const category = categories[i % categories.length]
+      await productStore.create({
+        store: 'teesgarage',
+        category,
+        name: `Test Product ${i + 1} ${category}`,
+        fit: 'Regular',
+        price: '₹1,299',
+        priceNum: 1299,
+        img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
+        img2: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
+        desc: `Test description ${i + 1}`,
+        variants: [
+          { color: 'Black', size: 'M', price: 1299, stock: 20 },
+          { color: 'Black', size: 'L', price: 1299, stock: 20 }
+        ]
+      })
+    }
+  })
 
   test('GET /api/products returns all catalog items across categories', async () => {
     const res = await request(app).get('/api/products')

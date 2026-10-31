@@ -17,7 +17,6 @@ export default function Footer() {
   if (
     pathname === '/login' ||
     pathname === '/register' ||
-    pathname === '/onboarding' ||
     pathname === '/checkout' ||
     pathname?.endsWith('/checkout') ||
     pathname?.includes('/checkout/')

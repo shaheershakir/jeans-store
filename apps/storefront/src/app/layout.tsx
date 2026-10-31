@@ -5,7 +5,6 @@ import Footer from '@/components/Footer'
 import CartDrawer from '@/components/CartDrawer'
 import SearchOverlay from '@/components/SearchOverlay'
 import Toast from '@/components/Toast'
-import OnboardingModal from '@/components/OnboardingModal'
 import { getNavigationItems } from '@/lib/navigation'
 import { PostHogProvider } from '@/lib/analytics'
 import './globals.css'
@@ -46,7 +45,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/mock-assets/hero-banner-rooftop-desktop.png',
+        url: '/hero-man.jpg',
         width: 1200,
         height: 630,
         alt: 'TEESGARAGE — Heavyweight T-Shirts & Premium Bottomwear'
@@ -58,7 +57,7 @@ export const metadata: Metadata = {
     title: 'TEESGARAGE — Heavyweight T-Shirts & Premium Bottomwear',
     description:
       'Heavyweight combed cotton tees, henleys, trackpants, and sweatpants made for everyday wear.',
-    images: ['/mock-assets/hero-banner-rooftop-desktop.png']
+    images: ['/hero-man.jpg']
   }
 }
 
@@ -96,7 +95,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <CartDrawer />
           <SearchOverlay />
           <Toast />
-          <OnboardingModal />
           <noscript>
             <Link href="/">TEESGARAGE</Link>
           </noscript>

@@ -197,14 +197,8 @@ export default function SettingsContent() {
             <div className="rounded-[18px] bg-white border border-black/8 px-6 py-5.5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center justify-between gap-5 max-[640px]:flex-col max-[640px]:items-start">
               <div className="flex items-center gap-5">
                 {/* 1:1 Circular Profile Avatar with Camera badge */}
-                <div className="relative w-[90px] h-[90px] shrink-0">
-                  <Image
-                    src="/mock-assets/settings-avatar-mock.png"
-                    alt={fullName}
-                    fill
-                    sizes="90px"
-                    className="object-contain"
-                  />
+                <div className="relative w-[90px] h-[90px] shrink-0 rounded-full bg-stone-100 flex items-center justify-center text-xl font-bold text-stone-700 border border-black/8">
+                  {fullName ? fullName.slice(0, 2).toUpperCase() : 'TG'}
                   <button
                     type="button"
                     onClick={handleChangePhoto}

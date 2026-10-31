@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { Product } from '@/lib/constants'
-import { PRODUCTS } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
 import ProductCard from '@/components/ProductCard'
 import { trackEvent } from '@/lib/analytics'
@@ -22,37 +21,21 @@ export default function RelatedProducts({ currentProduct, catalog: initialCatalo
       fetch('/api/products')
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (Array.isArray(data?.products) && data.products.length > 0) {
+          if (Array.isArray(data?.products)) {
             setCatalog(data.products)
           } else {
-            setCatalog(PRODUCTS)
+            setCatalog([])
           }
         })
-        .catch(() => setCatalog(PRODUCTS))
+        .catch(() => setCatalog([]))
     }
   }, [initialCatalog])
 
-  const pool = catalog.length > 0 ? catalog : PRODUCTS
+  const pool = catalog
 
   const relatedList: Product[] = useMemo(() => {
     const isBottomwear =
       currentProduct.category === 'trackpants' || currentProduct.category === 'sweatpants'
-
-    const isWaffle =
-      currentProduct.name.toLowerCase().includes('thermal waffle') ||
-      String(currentProduct.id) === '3' ||
-      String(currentProduct.id) === '4'
-
-    if (isWaffle) {
-      const p1 = pool.find((p) => p.name === 'Heavy Combed Cotton Tee')
-      const p2 = pool.find((p) => p.name === 'Good Days Ahead Tee')
-      const p3 = pool.find((p) => p.name === 'Classic Stripe Tee')
-      const p4 = pool.find((p) => p.name === 'Essential Sweatpants')
-      const curated = [p1, p2, p3, p4].filter(Boolean) as Product[]
-      if (curated.length === 4) {
-        return curated
-      }
-    }
 
     if (isBottomwear) {
       const tops = pool.filter(
@@ -87,6 +70,10 @@ export default function RelatedProducts({ currentProduct, catalog: initialCatalo
       })
     }
   }, [currentProduct.id, relatedList])
+
+  if (relatedList.length === 0) {
+    return null
+  }
 
   return (
     <section

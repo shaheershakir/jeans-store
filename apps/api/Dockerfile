@@ -17,7 +17,6 @@ COPY package.json package-lock.json turbo.json ./
 COPY packages/ ./packages/
 COPY apps/api/ ./apps/api/
 RUN npx turbo run build --filter=@jeans-store/api
-RUN if [ -f apps/api/src/data/homepage-config.json ]; then mkdir -p apps/api/dist/data && cp apps/api/src/data/homepage-config.json apps/api/dist/data/; fi
 
 # Stage 3: Production Runner
 FROM base AS runner

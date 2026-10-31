@@ -1,7 +1,16 @@
 'use client'
 
 import { useAdminStore } from '@/store/admin-store'
-import type { AdminUser } from '@/lib/types'
+
+export interface SessionUser {
+  id: number
+  name: string
+  email: string
+}
+
+export interface LoginResult {
+  user: SessionUser
+}
 
 /** Sets `dataReady` so pages can render skeletons before first paint of data. */
 export async function bootstrap(): Promise<void> {
@@ -11,15 +20,11 @@ export async function bootstrap(): Promise<void> {
       useAdminStore.getState().logout()
       return
     }
-    const { user } = (await response.json()) as { user: { id: number; name: string; email: string } }
-    useAdminStore.getState().login({ ...user, roleId: 1, status: 'Active', lastLoginAt: null })
+    const { user } = (await response.json()) as { user: SessionUser }
+    useAdminStore.getState().login(user)
   } finally {
     useAdminStore.getState().setReady()
   }
-}
-
-export interface LoginResult {
-  user: AdminUser
 }
 
 export async function login(email: string, password: string): Promise<LoginResult> {
@@ -31,12 +36,11 @@ export async function login(email: string, password: string): Promise<LoginResul
   })
   const payload = (await response.json().catch(() => ({}))) as {
     error?: string
-    user?: { id: number; name: string; email: string }
+    user?: SessionUser
   }
   if (!response.ok || !payload.user) throw new Error(payload.error || 'Unable to sign in.')
-  const user: AdminUser = { ...payload.user, roleId: 1, status: 'Active', lastLoginAt: null }
-  useAdminStore.getState().login(user)
-  return { user }
+  useAdminStore.getState().login(payload.user)
+  return { user: payload.user }
 }
 
 export async function logout(): Promise<void> {

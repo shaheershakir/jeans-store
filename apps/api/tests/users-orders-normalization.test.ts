@@ -50,33 +50,6 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
       assert.equal(foundByGoogle.id, created.id)
     })
 
-    test('POST /api/auth/onboarding/complete requires auth and succeeds', async () => {
-      // 1. Without auth -> 401
-      const unauthRes = await request(app).post('/api/auth/onboarding/complete')
-      assert.equal(unauthRes.status, 401)
-
-      // 2. Register user & authenticate
-      const email = `onboarding-${Date.now()}@example.com`
-      const user = await userStore.create({
-        name: 'Jordan Lee',
-        email,
-        provider: 'cloud-iam'
-      })
-
-      const { token } = createCloudIamToken({
-        uid: user.uid,
-        email: user.email,
-        name: user.name
-      })
-
-      // 3. Mark complete
-      const res = await request(app)
-        .post('/api/auth/onboarding/complete')
-        .set('Authorization', `Bearer ${token}`)
-
-      assert.equal(res.status, 200)
-      assert.equal(res.body.success, true)
-    })
   })
 
   describe('Order Store Normalization & Dual-Write', () => {

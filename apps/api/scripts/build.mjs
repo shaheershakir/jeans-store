@@ -41,14 +41,4 @@ await build({
   ]
 })
 
-// Ensure homepage-config.json is copied if present
-const dataDir = path.join(appRoot, 'src/data')
-const distDataDir = path.join(appRoot, 'dist/data')
-const homepageConfig = path.join(dataDir, 'homepage-config.json')
-
-if (fs.existsSync(homepageConfig)) {
-  fs.mkdirSync(distDataDir, { recursive: true })
-  fs.copyFileSync(homepageConfig, path.join(distDataDir, 'homepage-config.json'))
-}
-
 console.log('✓ @jeans-store/api build complete')

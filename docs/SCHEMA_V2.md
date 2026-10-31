@@ -195,7 +195,6 @@ erDiagram
         varchar name
         text password_hash
         varchar provider
-        timestamptz onboarding_completed_at
         timestamptz created_at
         timestamptz updated_at
     }
@@ -271,7 +270,7 @@ erDiagram
 | `product_images` | None (`products.img`, `img2`, `images` URLs) | Normalized rows with `storage_key` / `external_url` | Ordered by `position` (0=main, 1=hover) |
 | `products` | Category as varchar; status buried in `admin_data`; attributes dropped | Real `category_id`, unique `slug`, indexed `status`, `attributes` JSONB | Dual-writes to legacy columns until Phase 4 |
 | `product_variants`| No check constraints | Added CHECKs: `stock >= 0`, `reserved >= 0`, `price >= 0`, valid statuses | Unchanged columns |
-| `users` | Basic IAM | Added `google_sub`, `onboarding_completed_at`, unique lowercase email | Supports Google SSO sub matching |
+| `users` | Basic IAM | Added `google_sub`, unique lowercase email | Supports Google SSO sub matching |
 | `orders` | No `user_id`, JSONB arrays for `items`/`events` | Added `user_id`, `razorpay_order_id`, `razorpay_payment_id`, status CHECKs | Dual-writes items & events |
 | `order_items` | None (JSONB in `orders.items`) | Normalized table with variant/product FKs & immutable image snapshot | Resolves SKU, price, size, image |
 | `order_events` | None (JSONB in `orders.events` & `admin_notes`) | Append-only event stream with actor, timestamp, note | Single INSERTs replace read-modify-write |
@@ -387,14 +386,12 @@ When ready to apply Phase 2 migrations to Neon:
 ### 7.1 Users Table Updates
 - **Columns Added**:
   - `google_sub`: varchar(255) unique nullable column storing Google OAuth subject ID.
-  - `onboarding_completed_at`: `timestamp with time zone` nullable timestamp. Null indicates onboarding has not yet been completed.
   - `created_at` / `updated_at`: Converted to `timestamp with time zone` (`timestamptz`).
 - **Indexes Added**:
   - `users_lower_email_idx`: Unique index on `lower(email)` for case-insensitive email matching.
   - `users_google_sub_unique`: Unique constraint on `google_sub`.
 - **API & Auth Wire-up**:
   - `POST /api/auth/google`: Verifies Google credentials, matches existing users via `google_sub` or case-insensitive email, and records `google_sub`.
-  - `POST /api/auth/onboarding/complete`: Authenticated route marking onboarding complete (`onboarding_completed_at = NOW()`), returning `{ success: true, onboardingCompleted: true, user }`.
   - `formatProfile(user)`: Exposes `onboardingCompleted: boolean` and `googleSub?: string` across all auth responses.
 
 ### 7.2 Orders Table Additive Columns & Constraints

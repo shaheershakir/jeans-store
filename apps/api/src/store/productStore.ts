@@ -133,10 +133,7 @@ export function normalizeImageInputs(img: string, img2: string, images?: string[
     if (key) {
       result.push({ storageKey: key, externalUrl: null, position: i })
     } else {
-      // The bundled catalogue ships a few storefront-local demo assets. They
-      // are served from the storefront's /mock-assets directory, so keep them
-      // relative instead of rejecting the seed on a fresh database.
-      if (!/^https:\/\//i.test(rawUrl) && !rawUrl.startsWith('/mock-assets/')) {
+      if (!/^https:\/\//i.test(rawUrl)) {
         throw new Error(`Product image URL must be a valid HTTPS URL: ${rawUrl}`)
       }
       result.push({ storageKey: null, externalUrl: rawUrl, position: i })
@@ -652,20 +649,6 @@ export class ProductStore {
       const [row] = await db.select().from(productsTable).where(eq(productsTable.id, id))
       if (row) {
         return (await this.hydrateDbRows([row]))[0]
-      }
-      // If product ID was not found by UUID (e.g. fallback snapshot ID 00000000-0000-4000-8000-000000000001),
-      // match against memory seed products to find corresponding slug/name in DB.
-      const fallbackMemory = this.memoryProducts.find((p) => p.id === id)
-      if (fallbackMemory) {
-        const cleanSlug = ((fallbackMemory as any).slug || slugify(fallbackMemory.name)).toLowerCase()
-        const [dbRowBySlug] = await db.select().from(productsTable).where(eq(productsTable.slug, cleanSlug))
-        if (dbRowBySlug) {
-          return (await this.hydrateDbRows([dbRowBySlug]))[0]
-        }
-        const [dbRowByName] = await db.select().from(productsTable).where(ilike(productsTable.name, fallbackMemory.name))
-        if (dbRowByName) {
-          return (await this.hydrateDbRows([dbRowByName]))[0]
-        }
       }
       return undefined
     }

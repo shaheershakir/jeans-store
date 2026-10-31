@@ -48,9 +48,11 @@ export const createApiEnvSchema = (isProd: boolean) =>
     JWT_SECRET: isProd
       ? z.string().min(32, 'JWT_SECRET must be at least 32 characters in production')
       : z.string().min(32).optional().or(z.literal('')),
-    REVALIDATION_SECRET: isProd
-      ? z.string().min(8, 'REVALIDATION_SECRET must be at least 8 characters in production')
-      : z.string().optional(),
+    REVALIDATION_SECRET: z
+      .string()
+      .min(8, 'REVALIDATION_SECRET must be at least 8 characters if configured')
+      .optional()
+      .or(z.literal('')),
     FRONTEND_URL: isProd
       ? z.string().url('FRONTEND_URL must be a valid URL in production')
       : z.string().url().default('http://localhost:3000'),
@@ -92,9 +94,11 @@ export const createStorefrontEnvSchema = (isProd: boolean) =>
     NEXT_PUBLIC_POSTHOG_HOST: z.string().default('/ingest'),
     NEXT_PUBLIC_WHATSAPP_NUMBER: z.string().optional(),
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().optional(),
-    REVALIDATION_SECRET: isProd
-      ? z.string().min(8, 'REVALIDATION_SECRET must be at least 8 characters in production')
-      : z.string().optional(),
+    REVALIDATION_SECRET: z
+      .string()
+      .min(8, 'REVALIDATION_SECRET must be at least 8 characters if configured')
+      .optional()
+      .or(z.literal('')),
     SENTRY_DSN: z.string().optional(),
     NEXT_PUBLIC_SENTRY_DSN: z.string().optional()
   })

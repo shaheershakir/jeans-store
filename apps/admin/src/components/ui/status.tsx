@@ -4,14 +4,12 @@ import { Badge, type Tone } from './primitives'
 import {
   ORDER_STATUSES,
   PAYMENT_STATUS_TONE,
-  RETURN_STATUSES,
   REVIEW_STATUSES,
   STOCK_STATUSES,
 } from '@/lib/constants'
 import type {
   FulfillmentStatus,
   PaymentStatus,
-  ReturnStatus,
   ReviewStatus,
   StockStatus,
   RefundStatus,
@@ -26,11 +24,6 @@ export function OrderBadge({ status }: { status: FulfillmentStatus }) {
 
 export function PaymentBadge({ status }: { status: PaymentStatus }) {
   return <Badge tone={PAYMENT_STATUS_TONE[status]}>{status}</Badge>
-}
-
-export function ReturnBadge({ status }: { status: ReturnStatus }) {
-  const meta = RETURN_STATUSES.find((s) => s.value === status)
-  return <Badge tone={meta?.tone ?? 'neutral'}>{status}</Badge>
 }
 
 export function ReviewBadge({ status }: { status: ReviewStatus }) {

@@ -1,6 +1,6 @@
 # Google Cloud Run Deployment
 
-TEESGARAGE deploys three services in `asia-south1`: the customer storefront, the operational admin, and the Express API. The current catalog is Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants.
+TEESGARAGE deploys three services in `asia-south1`: the customer storefront, the operational admin, and the Express API. The current catalog is Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Waffle, Trackpants, and Sweatpants.
 
 ## Before deployment
 

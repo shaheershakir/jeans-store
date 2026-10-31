@@ -1,6 +1,6 @@
-﻿# Infrastructure & Deployment
+# Infrastructure & Deployment
 
-This directory contains deployment specifications, containerization blueprints, and infrastructure scripts for the **TEESGARAGE / TEESGARAGE** monorepo.
+This directory contains deployment specifications, containerization blueprints, and infrastructure scripts for the **TEESGARAGE** monorepo.
 
 ## Structure
 
@@ -8,7 +8,6 @@ This directory contains deployment specifications, containerization blueprints, 
 infra/
 ├── docker/        Container definitions & multi-container compose settings
 ├── gcp/           Google Cloud Run deployment scripts & configurations
-├── render/        Render Blueprint specification (legacy test tier)
 └── README.md      Infrastructure reference
 ```
 
@@ -17,9 +16,7 @@ infra/
 | Environment | Applications | Hosting Provider | Deployment Pipeline |
 | :--- | :--- | :--- | :--- |
 | **Production** | Storefront, Admin, API | Google Cloud Run (`asia-south1`) | `.github/workflows/deploy-gcp.yml` |
-| **Edge Storefront** | Storefront (`apps/storefront`) | Vercel (Optional ISR Edge) | Git push trigger |
-| **Preview/Test** | API (`apps/api`) | Render Free Tier (`oregon`) | `infra/render/render.yaml` |
-| **Local Dev** | Storefront, Admin, API, DB | Docker Compose / Turborepo | `docker-compose.yml` / `turbo dev` |
+| **Local Dev** | Storefront, Admin, API, DB | Docker Compose / Turborepo | `docker-compose.yml` / `npm run dev` |
 
 ## Deployment Guides
 

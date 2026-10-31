@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { addDays, format, isValid } from 'date-fns'
 import { AlertCircle, ArrowRight, Check, Copy, Heart, MapPin, Truck } from 'lucide-react'
-import { PRODUCTS } from '@/lib/constants'
+import type { Product } from '@/lib/constants'
 import { formatPrice } from '@/lib/utils'
 import { getProductUrl } from '@/lib/products'
 import { useAuthStore, useFavoriteStore, useUIStore } from '@/lib/store'
@@ -49,81 +49,21 @@ const backendUrl =
   process.env.BACKEND_URL ||
   (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : '')
 
-const RECOMMENDATIONS = [
-  {
-    productId: '00000000-0000-4000-8000-000000000005',
-    name: 'Heavy Combed Cotton Tee',
-    priceNum: 1299,
-    img: '/mock-assets/pdp/like_high_1.png',
-    swatches: [
-      { name: 'Cream', hex: '#f3ecdf' },
-      { name: 'Black', hex: '#171717' },
-      { name: 'Grey', hex: '#8b8d90' },
-      { name: 'Green', hex: '#3e7558' }
-    ]
-  },
-  {
-    productId: '00000000-0000-4000-8000-000000000010',
-    name: 'Good Days Ahead Tee',
-    priceNum: 1249,
-    img: '/mock-assets/pdp/like_high_2.png',
-    swatches: [
-      { name: 'Forest Green', hex: '#1d4a35' },
-      { name: 'Black', hex: '#171717' },
-      { name: 'White', hex: '#f5f3ed' },
-      { name: 'Beige', hex: '#d8c7a7' }
-    ]
-  },
-  {
-    productId: '00000000-0000-4000-8000-000000000001',
-    name: 'Classic Stripe Tee',
-    priceNum: 1199,
-    img: '/mock-assets/pdp/like_high_3.png',
-    swatches: [
-      { name: 'White', hex: '#f5f3ed' },
-      { name: 'Navy', hex: '#1e3157' },
-      { name: 'Green', hex: '#3e7558' }
-    ]
-  },
-  {
-    productId: '00000000-0000-4000-8000-000000000023',
-    name: 'Essential Sweatpants',
-    priceNum: 1699,
-    img: '/mock-assets/pdp/like_high_4.png',
-    swatches: [
-      { name: 'Grey', hex: '#d5d5d3' },
-      { name: 'Black', hex: '#171717' },
-      { name: 'Navy', hex: '#1e3157' }
-    ]
-  }
-]
-
 const STEPS = ['Order placed', 'Shipped', 'Out for delivery', 'Delivered']
 
-function RecommendationCard({ item }: { item: (typeof RECOMMENDATIONS)[number] }) {
+function RecommendationCard({ product }: { product: Product }) {
   const [mounted, setMounted] = useState(false)
-  const [activeSwatch, setActiveSwatch] = useState(0)
   const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite)
   const showToast = useUIStore((state) => state.showToast)
 
   useEffect(() => setMounted(true), [])
 
-  const product = useMemo(
-    () =>
-      PRODUCTS.find(
-        (entry) => String(entry.id) === String(item.productId) || entry.name === item.name
-      ),
-    [item.productId, item.name]
-  )
-  const favoriteId = product?.id
-  const isFavorite = useFavoriteStore((state) =>
-    favoriteId ? state.isFavorite(favoriteId) : false
-  )
-  const href = product ? getProductUrl(product) : '/shop'
+  const isFavorite = useFavoriteStore((state) => state.isFavorite(product.id))
+  const href = getProductUrl(product)
   const saved = mounted && isFavorite
-  const imageSrc = product?.img || item.img
-  const displayPrice = product?.priceNum ?? item.priceNum
-  const displayName = product?.name ?? item.name
+  const imageSrc = product.img || product.images?.[0] || '/hero-man.jpg'
+  const displayPrice = product.priceNum
+  const displayName = product.name
 
   return (
     <article className="flex min-w-0 flex-col gap-3.5 md:flex-row md:gap-5">
@@ -141,12 +81,11 @@ function RecommendationCard({ item }: { item: (typeof RECOMMENDATIONS)[number] }
           type="button"
           className="absolute right-1.5 top-2.5 z-10 grid h-[30px] w-[30px] place-items-center rounded-full border-0 bg-white p-0 text-[#111] shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-transform duration-150 hover:scale-105 active:scale-95"
           onClick={() => {
-            if (!favoriteId) return
-            toggleFavorite(favoriteId)
-            showToast(saved ? 'Removed from favorites' : `Saved ${item.name} to favorites`)
+            toggleFavorite(product.id)
+            showToast(saved ? 'Removed from favorites' : `Saved ${product.name} to favorites`)
           }}
           aria-label={
-            saved ? `Remove ${item.name} from favorites` : `Add ${item.name} to favorites`
+            saved ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`
           }
         >
           <Heart
@@ -167,25 +106,6 @@ function RecommendationCard({ item }: { item: (typeof RECOMMENDATIONS)[number] }
         <p className="mt-1.5 text-[18px] font-bold leading-none text-[#111] tabular-nums min-[1360px]:mt-auto">
           {formatPrice(displayPrice)}
         </p>
-        <div
-          className="mt-[18px] flex items-center gap-[17px] min-[1360px]:mb-[28px] min-[1360px]:mt-[26px]"
-          role="group"
-          aria-label="Colour choices"
-        >
-          {item.swatches.map((swatch, index) => (
-            <button
-              key={swatch.name}
-              type="button"
-              className={`h-3.5 w-3.5 shrink-0 cursor-pointer rounded-full border border-black/10 p-0 transition-shadow duration-150 ${
-                activeSwatch === index ? 'ring-1 ring-[#111] ring-offset-2' : ''
-              }`}
-              style={{ backgroundColor: swatch.hex }}
-              onClick={() => setActiveSwatch(index)}
-              aria-label={swatch.name}
-              aria-pressed={activeSwatch === index}
-            />
-          ))}
-        </div>
       </div>
     </article>
   )
@@ -239,6 +159,18 @@ function OrderUnavailableState({
 }
 
 function OrderConfirmationContent() {
+  const [recommendations, setRecommendations] = useState<Product[]>([])
+
+  useEffect(() => {
+    fetch('/api/products')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data?.products)) {
+          setRecommendations(data.products.slice(0, 4))
+        }
+      })
+      .catch(() => {})
+  }, [])
   const searchParams = useSearchParams()
   const orderNumberParam = searchParams.get('orderNumber')?.trim() || null
   const tokenParam = searchParams.get('token')?.trim() || null
@@ -694,33 +626,34 @@ function OrderConfirmationContent() {
           </div>
         )}
 
-        {/* ── Recommendations ───────────────────────────────────────────── */}
-        <section className="mt-11" aria-labelledby="recommendations-heading">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <h2
-              id="recommendations-heading"
-              className="text-[22px] font-bold leading-tight tracking-[-0.02em] text-[#111] sm:text-[23px]"
-            >
-              You may also like
-            </h2>
-            <Link
-              href="/shop"
-              className="inline-flex shrink-0 items-center gap-1.5 text-[14.5px] font-medium text-[#111] no-underline transition-opacity duration-150 hover:opacity-70"
-            >
-              View all
-              <ArrowRight className="h-4 w-4" strokeWidth={1.7} />
-            </Link>
-          </div>
+        {recommendations.length > 0 && (
+          <section className="mt-14" aria-labelledby="confirmation-recommendations-heading">
+            <div className="mb-6 flex items-center justify-between border-b border-[#ece7de] pb-4">
+              <h2
+                id="confirmation-recommendations-heading"
+                className="text-[20px] font-semibold text-[#111]"
+              >
+                You may also like
+              </h2>
+              <Link
+                href="/shop"
+                className="inline-flex shrink-0 items-center gap-1.5 text-[14.5px] font-medium text-[#111] no-underline transition-opacity duration-150 hover:opacity-70"
+              >
+                View all
+                <ArrowRight className="h-4 w-4" strokeWidth={1.7} />
+              </Link>
+            </div>
 
-          <div className="grid grid-cols-2 gap-x-5 gap-y-8 xl:grid-cols-4 xl:gap-x-7">
-            {RECOMMENDATIONS.map((item) => (
-              <RecommendationCard key={item.productId} item={item} />
-            ))}
-          </div>
-        </section>
+            <div className="grid grid-cols-2 gap-x-5 gap-y-8 xl:grid-cols-4 xl:gap-x-7">
+              {recommendations.map((item) => (
+                <RecommendationCard key={item.id} product={item} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </main>
-  )
+  );
 }
 
 export default function OrderConfirmationPage() {
@@ -728,5 +661,5 @@ export default function OrderConfirmationPage() {
     <Suspense fallback={<OrderConfirmationSkeleton />}>
       <OrderConfirmationContent />
     </Suspense>
-  )
+  );
 }

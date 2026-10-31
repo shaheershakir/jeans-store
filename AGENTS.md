@@ -1,6 +1,6 @@
 # AGENTS.md
 
-TEESGARAGE is an apparel e-commerce platform structured as a Turborepo monorepo with npm workspaces. The product categories are Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants.
+TEESGARAGE is an apparel e-commerce platform structured as a Turborepo monorepo with npm workspaces. The product categories are Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Waffle, Trackpants, and Sweatpants.
 
 ## Monorepo Layout
 
@@ -15,7 +15,7 @@ jeans-store/
 │   ├── shared/        # Common TypeScript types, interfaces & constants
 │   ├── validators/    # Shared Zod validation schemas
 │   └── config/        # Shared TypeScript & ESLint configurations
-├── infra/             # Deployment specifications (Cloud Run, Render, Docker)
+├── infra/             # Deployment specifications (Cloud Run, Docker)
 ├── docs/              # System architecture, API & deployment guides
 ├── .github/workflows/ # CI & GCP Cloud Run CD pipelines
 ├── package.json       # Monorepo workspaces configuration

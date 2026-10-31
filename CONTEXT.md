@@ -11,7 +11,7 @@ An apparel listing available for purchase.
 _Avoid_: Item, article, piece
 
 **Category**:
-The product group used to organize the catalog. The current categories are Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Trackpants, and Sweatpants.
+The product group used to organize the catalog. The current categories are Stripes, Fullsleeve, Drsleeve, Printed tees, Ringer tees, Henley, Waffle, Trackpants, and Sweatpants.
 _Avoid_: Department, vertical
 
 **Variant**:

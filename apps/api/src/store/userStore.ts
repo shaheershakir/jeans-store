@@ -131,23 +131,6 @@ class UserStore {
     }
     return user
   }
-
-  async completeOnboarding(id: number): Promise<DbUser | undefined> {
-    const now = new Date()
-    if (isDatabaseConfigured() && db) {
-      const [row] = await db
-        .update(usersTable)
-        .set({ updatedAt: now })
-        .where(eq(usersTable.id, id))
-        .returning()
-      return row
-    }
-    const user = this.memoryUsers.find((u) => u.id === id)
-    if (user) {
-      user.updatedAt = now
-    }
-    return user
-  }
 }
 
 export const userStore = new UserStore()

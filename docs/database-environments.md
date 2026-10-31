@@ -39,7 +39,7 @@ Database connection strings are injected via the `DATABASE_URL` environment vari
 
 ### Logical Configuration Scheme
 
-#### Local Development (`backend/.env`)
+#### Local Development (`apps/api/.env`)
 ```env
 DATABASE_URL=postgresql://neondb_owner:[PASSWORD]@ep-muddy-mode-b3mdvd86-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
 ```
@@ -56,7 +56,7 @@ DATABASE_URL=postgresql://neondb_owner:[PASSWORD]@ep-muddy-cell-b38jjvgy-pooler.
 
 ### Security & Isolation Rules
 
-1. **Backend Owns Database Access**: Next.js (`frontend/`) and the admin client (`admin/`) communicate with the Fastify backend REST API over HTTPS. They do **not** connect directly to PostgreSQL and must **never** receive `DATABASE_URL`.
+1. **Backend Owns Database Access**: Next.js (`frontend/`) and the admin client (`admin/`) communicate with the Express backend REST API over HTTPS. They do **not** connect directly to PostgreSQL and must **never** receive `DATABASE_URL`.
 2. **No Secret Leakage**: `DATABASE_URL` must never be prefixed with `NEXT_PUBLIC_` or included in frontend client bundles.
 3. **Strict `.gitignore`**: All `.env` and `.env.*` files (excluding `.env.example`) are ignored by Git. Never commit live connection strings or passwords.
 4. **Credential Masking**: All internal logging, errors, and verification scripts mask passwords (`[user]:****@host`).
@@ -82,7 +82,7 @@ The TEESGARAGE backend uses `@neondatabase/serverless` in **HTTP query mode**:
 - Connection client instances are initialized once and safely reused across incoming requests.
 - All queries use parameterized statements to eliminate SQL injection risks.
 
-### Connection Module Implementation (`backend/src/db/index.ts`)
+### Connection Module Implementation (`packages/db/src/index.ts`)
 
 - Automatically reads `DATABASE_URL` from runtime environment variables (including Fastly Compute environment fallbacks).
 - Validates and enforces `sslmode=require` for TLS transport security.
@@ -140,15 +140,11 @@ Fastly Compute applications isolate secrets using **Fastly Secret Store**:
      --set-secrets="DATABASE_URL=neon-db-prod:latest"
    ```
 
-### C. Render Deployments (`render.yaml`)
-
-Configure `DATABASE_URL` in the Render Dashboard service environment variables with `sync: false` to ensure credentials remain outside version control.
-
 ---
 
 ## 5. Schema Migrations & Workflow
 
-All migrations are version-controlled under `backend/drizzle/`.
+All migrations are version-controlled under `packages/db/drizzle/`.
 
 ### Migration Commands
 
@@ -217,8 +213,7 @@ SELECT
 To verify the currently configured environment:
 
 ```bash
-cd backend
-npm run db:verify
+npm run db:verify --workspace=@jeans-store/api
 ```
 
 Output example:
@@ -248,7 +243,7 @@ Timestamp:  2026-10-10 23:24:27.264158+00
 
 | Issue | Cause | Resolution |
 | :--- | :--- | :--- |
-| `DATABASE_URL environment variable is missing` | `.env` not loaded or variable unset | Create `backend/.env` with target branch connection string. Ensure `dotenv/config` is loaded. |
+| `DATABASE_URL environment variable is missing` | `.env` not loaded or variable unset | Create `apps/api/.env` with target branch connection string. Ensure `dotenv/config` is loaded. |
 | `SSL connection required` | Missing SSL flag in URL | Neon requires encrypted connections. Ensure `?sslmode=require` is present in the connection string. |
 | `TCP connection timeout / Connection refused` in edge runtime | Edge runtime lacks raw TCP socket support | Use `@neondatabase/serverless` HTTP query mode (`drizzle-orm/neon-http`). Do not use standard `pg` Pool in Fastly Compute. |
 | `Compute endpoint suspended / Cold start delay` | Neon scale-to-zero compute | Normal on free/idle branches. First HTTP query will spin up compute within 1–2 seconds. Subsequent queries execute at normal latency. |

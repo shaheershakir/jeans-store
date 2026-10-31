@@ -70,12 +70,6 @@ export function ProfileDropdown() {
               <span>Store Settings</span>
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/settings/users" className="cursor-pointer">
-              <ShieldCheck className="mr-2 h-4 w-4" />
-              <span>Administrator access</span>
-            </Link>
-          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem

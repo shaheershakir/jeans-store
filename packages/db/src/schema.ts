@@ -405,7 +405,7 @@ export const orders = pgTable(
       .references(() => customers.id, { onDelete: 'restrict' }),
     status: varchar('status', { length: 30 }).default('Pending').notNull(),
     paymentStatus: varchar('payment_status', { length: 20 }).default('Pending').notNull(),
-    handoffType: varchar('handoff_type', { length: 20 }).default('whatsapp').notNull(),
+    handoffType: varchar('handoff_type', { length: 20 }).default('cod').notNull(),
     customerName: varchar('customer_name', { length: 255 }).notNull(),
     customerPhone: varchar('customer_phone', { length: 50 }).notNull(),
     customerEmail: varchar('customer_email', { length: 255 }).notNull(),

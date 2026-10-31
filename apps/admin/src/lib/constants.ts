@@ -9,9 +9,6 @@ import type {
   PaymentMethod,
   PaymentStatus,
   ProductStatus,
-  Promotion,
-  PromotionTarget,
-  ReturnStatus,
   ReviewStatus,
   Rise,
   StockStatus,
@@ -68,16 +65,6 @@ export const PAYMENT_STATUS_TONE: Record<PaymentStatus, Tone> = {
 
 export const PAYMENT_METHODS: PaymentMethod[] = ['Card', 'UPI', 'Net Banking', 'Wallet', 'COD']
 
-export const RETURN_STATUSES: { value: ReturnStatus; tone: Tone; label: string }[] = [
-  { value: 'Requested', tone: 'warning', label: 'Requested' },
-  { value: 'Approved', tone: 'info', label: 'Approved' },
-  { value: 'Rejected', tone: 'danger', label: 'Rejected' },
-  { value: 'Pickup Scheduled', tone: 'primary', label: 'Pickup Scheduled' },
-  { value: 'Received', tone: 'info', label: 'Received' },
-  { value: 'Refunded', tone: 'success', label: 'Refunded' },
-  { value: 'Completed', tone: 'success', label: 'Completed' },
-]
-
 export const REVIEW_STATUSES: { value: ReviewStatus; tone: Tone; label: string }[] = [
   { value: 'Pending', tone: 'warning', label: 'Pending' },
   { value: 'Approved', tone: 'success', label: 'Approved' },
@@ -89,15 +76,6 @@ export const STOCK_STATUSES: { value: StockStatus; tone: Tone; label: string }[]
   { value: 'Healthy', tone: 'success', label: 'Healthy' },
   { value: 'Low Stock', tone: 'warning', label: 'Low Stock' },
   { value: 'Out of Stock', tone: 'danger', label: 'Out of Stock' },
-]
-
-export const RETURN_REASONS = [
-  'Size not fitting',
-  'Quality issue',
-  'Changed my mind',
-  'Delivered damaged',
-  'Different from what I ordered',
-  'Fabric not as expected',
 ]
 
 export const CARRIERS = ['Delhivery', 'Blue Dart', 'DTDC', 'Ecom Express', 'India Post', 'XpressBees']
@@ -131,15 +109,6 @@ export function discountTypeLabel(t: DiscountType): string {
   return t === 'percentage' ? 'Percentage' : 'Fixed Amount'
 }
 
-export function promotionStatusLabel(p: Promotion): 'Scheduled' | 'Active' | 'Ended' {
-  const now = Date.now()
-  const start = new Date(p.startsAt).getTime()
-  const end = new Date(p.endsAt).getTime()
-  if (now < start) return 'Scheduled'
-  if (now > end) return 'Ended'
-  return 'Active'
-}
-
 export function couponStatusLabel(c: Coupon): 'active' | 'scheduled' | 'expired' | 'exhausted' {
   const now = Date.now()
   const start = new Date(c.startsAt).getTime()
@@ -150,5 +119,3 @@ export function couponStatusLabel(c: Coupon): 'active' | 'scheduled' | 'expired'
   if (c.usageLimit != null && c.timesUsed >= c.usageLimit) return 'exhausted'
   return 'active'
 }
-
-export const PROMOTION_TARGETS: PromotionTarget[] = ['Product', 'Category', 'Collection', 'Fit', 'Color']

@@ -3,7 +3,7 @@
 import { apiFetch, simulateLatency } from './api'
 import { fetchBackendProducts } from './catalog'
 import { useAdminStore } from '@/store/admin-store'
-import type { Order, PaymentMethod, FulfillmentStatus, PaymentStatus, ReturnRequest, ReturnStatus, Refund } from '@/lib/types'
+import type { Order, PaymentMethod, FulfillmentStatus, PaymentStatus, Refund } from '@/lib/types'
 
 /* ---------------- Inventory ---------------- */
 
@@ -62,17 +62,7 @@ export async function createOrder(input: {
   return useAdminStore.getState().createOrder(input)
 }
 
-/* ---------------- Returns & refunds ---------------- */
-
-export async function createReturn(orderId: number, reason: string, details: string): Promise<ReturnRequest> {
-  await simulateLatency()
-  return useAdminStore.getState().createReturn(orderId, reason, details)
-}
-
-export async function transitionReturn(returnId: number, to: ReturnStatus): Promise<void> {
-  await simulateLatency(160)
-  useAdminStore.getState().transitionReturn(returnId, to)
-}
+/* ---------------- Refunds ---------------- */
 
 export async function createRefund(input: {
   orderId: number

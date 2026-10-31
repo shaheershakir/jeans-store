@@ -25,11 +25,11 @@ export default function CustomerDetailPage({
 
   const customers = useAdminStore((s) => s.data.customers)
   const orders = useAdminStore((s) => s.data.orders)
-  const returns = useAdminStore((s) => s.data.returns)
+  const refunds = useAdminStore((s) => s.data.refunds)
 
   const customer = customers.find((c) => c.id === customerId)
   const customerOrders = orders.filter((o) => o.customerId === customerId)
-  const customerReturns = returns.filter((r) => r.customerId === customerId)
+  const customerRefunds = refunds.filter((r) => r.customerId === customerId)
   const totalSpent = customerOrders.reduce((sum, o) => sum + o.total, 0)
 
   if (loading) {
@@ -103,8 +103,8 @@ export default function CustomerDetailPage({
                   <span className="font-bold text-primary tnum">{formatINR(totalSpent)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-ink-3">Return Requests</span>
-                  <span className="font-bold text-ink tnum">{customerReturns.length}</span>
+                  <span className="text-ink-3">Refunds</span>
+                  <span className="font-bold text-ink tnum">{customerRefunds.length}</span>
                 </div>
               </div>
             </Card>

@@ -19,7 +19,6 @@ import {
   LogOut
 } from 'lucide-react'
 import { useCartStore, useUIStore, useAuthStore, useFavoriteStore } from '@/lib/store'
-import { PRODUCTS } from '@/lib/constants'
 import { AccountProfileSkeleton } from '@/components/skeletons/StorefrontSkeletons'
 import { fetchCustomerOrders, type CustomerOrder } from '@/lib/customerOrders'
 import { formatPrice } from '@/lib/utils'
@@ -192,12 +191,27 @@ export default function ProfilePage() {
     setIsAddAddressOpen(false)
   }
 
-  const handleBuyAgain = (productName: string) => {
-    const product = PRODUCTS.find((entry) => entry.name === productName) ?? PRODUCTS[0]
-    if (!product) return
-    addItem(product.id, 'L', product)
-    showToast(`Added ${product.name} to bag`)
-    openOverlay('cart')
+  const handleBuyAgain = async (productName: string) => {
+    if (!productName) {
+      router.push('/shop')
+      return
+    }
+    try {
+      const res = await fetch('/api/products')
+      const data = res.ok ? await res.json() : null
+      const product = Array.isArray(data?.products)
+        ? data.products.find((p: any) => p.name === productName)
+        : null
+      if (product) {
+        addItem(product.id, 'L', product)
+        showToast(`Added ${product.name} to bag`)
+        openOverlay('cart')
+      } else {
+        router.push('/shop')
+      }
+    } catch {
+      router.push('/shop')
+    }
   }
 
   const handleTrackOrder = (orderId: string) => {

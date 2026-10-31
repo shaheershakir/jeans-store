@@ -167,21 +167,10 @@ function ProductDetailContent({ product }: { product: Product }) {
 
   const isNumeric = availableSizes.length > 0 && availableSizes.every((s) => /^\d+$/.test(s))
 
-  // Canonical title and imagery matching the exact reference mockup
-  const isThermalWaffle = product.name.toLowerCase().includes('thermal waffle')
-  const title = isThermalWaffle ? 'Thermal Waffle Knit Tee' : product.name
+  const title = product.name
 
   // Build image list (prefer selected design gallery)
   const images = useMemo(() => {
-    if (isThermalWaffle) {
-      return [
-        '/mock-assets/pdp/hero_clean_high.png',
-        '/mock-assets/pdp/gallery_2.png',
-        '/mock-assets/pdp/gallery_3.png',
-        '/mock-assets/pdp/gallery_4.png',
-        '/mock-assets/pdp/gallery_5.png'
-      ]
-    }
     if (selectedDesign?.images && selectedDesign.images.length > 0) {
       return selectedDesign.images
     }
@@ -193,16 +182,16 @@ function ProductDetailContent({ product }: { product: Product }) {
 
     const unique = Array.from(new Set(raw))
     return unique.length > 0 ? unique : [product.img]
-  }, [product, isThermalWaffle, selectedDesign])
+  }, [product, selectedDesign])
 
   // Price calculation with design override support
   const currentPriceNum = selectedDesign?.priceOverride ?? product.priceNum
   const currentPrice = selectedDesign?.priceOverride
     ? `₹${selectedDesign.priceOverride.toLocaleString('en-IN')}`
     : product.price
-  const originalPrice = product.compareAtPrice ?? Math.round(currentPriceNum * 1.286)
+  const originalPrice = product.compareAtPrice ?? null
   const discountPercent =
-    originalPrice > currentPriceNum
+    originalPrice != null && originalPrice > currentPriceNum
       ? Math.round(((originalPrice - currentPriceNum) / originalPrice) * 100)
       : 0
 
@@ -568,13 +557,17 @@ function ProductDetailContent({ product }: { product: Product }) {
             <span className="text-2xl lg:text-[28px] font-bold text-gray-950 tabular-nums">
               {currentPrice}
             </span>
-            <span className="text-base sm:text-lg text-gray-400 line-through font-normal tabular-nums">
-              ₹{(isThermalWaffle ? 1799 : originalPrice).toLocaleString('en-IN')}
-            </span>
-            {discountPercent > 0 && (
-              <span className="bg-[#e6f4ea] text-[#137333] text-xs font-bold px-2.5 py-1 rounded-full">
-                {isThermalWaffle ? 22 : discountPercent}% OFF
-              </span>
+            {originalPrice != null && originalPrice > currentPriceNum && (
+              <>
+                <span className="text-base sm:text-lg text-gray-400 line-through font-normal tabular-nums">
+                  ₹{originalPrice.toLocaleString('en-IN')}
+                </span>
+                {discountPercent > 0 && (
+                  <span className="bg-[#e6f4ea] text-[#137333] text-xs font-bold px-2.5 py-1 rounded-full">
+                    {discountPercent}% OFF
+                  </span>
+                )}
+              </>
             )}
           </div>
 

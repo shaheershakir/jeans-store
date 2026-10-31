@@ -1,5 +1,4 @@
 import type { Product } from './constants'
-import { PRODUCTS as SNAPSHOT_PRODUCTS } from './constants'
 
 export function getAvailableProductSizes(product: Product): string[] {
   if (product.variants) {
@@ -120,23 +119,22 @@ export async function getProducts(): Promise<Product[]> {
 
     if (!res.ok) {
       console.warn(
-        `[TEESGARAGE] Backend responded with status ${res.status}. Falling back to bundled product snapshot.`
+        `[TEESGARAGE] Backend responded with status ${res.status}. Returning empty catalog.`
       )
-      return SNAPSHOT_PRODUCTS
+      return []
     }
 
     const data = (await res.json()) as { products?: Product[] }
-    if (Array.isArray(data?.products) && data.products.length > 0) {
+    if (Array.isArray(data?.products)) {
       return data.products
     }
 
-    console.warn('[TEESGARAGE] Backend returned empty products payload. Falling back to bundled snapshot.')
-    return SNAPSHOT_PRODUCTS
+    return []
   } catch {
     console.warn(
-      `[TEESGARAGE] Backend unreachable at ${BACKEND_URL}. Using bundled product snapshot for static generation.`
+      `[TEESGARAGE] Backend unreachable at ${BACKEND_URL}. Returning empty catalog.`
     )
-    return SNAPSHOT_PRODUCTS
+    return []
   }
 }
 
@@ -182,8 +180,6 @@ export async function getProductBySlug(slug: string): Promise<Product | undefine
   return products.find(
     (p) =>
       slugify(p.name) === cleanSlug ||
-      String(p.id) === cleanSlug ||
-      (p.name === 'Thermal Waffle Knit Tee' && cleanSlug === 'thermal-waffle-knit-fullsleeve-tee')
+      String(p.id) === cleanSlug
   )
 }
-
