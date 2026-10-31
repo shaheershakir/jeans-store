@@ -33,9 +33,9 @@ const SORT_OPTIONS: { mode: SortMode; label: string }[] = [
 ]
 
 const SIZE_PILL_INACTIVE =
-  'flex h-9 w-full cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white font-ui text-xs font-semibold text-gray-800 transition-colors duration-150 hover:border-gray-400'
+  'flex h-9 min-h-[44px] sm:min-h-9 w-full cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white font-ui text-xs font-semibold text-gray-800 transition-colors duration-150 hover:border-gray-400 press-feedback touch-manipulation'
 const SIZE_PILL_ACTIVE =
-  'flex h-9 w-full cursor-pointer items-center justify-center rounded-lg border border-black bg-black font-ui text-xs font-semibold text-white shadow-xs transition-colors duration-150'
+  'flex h-9 min-h-[44px] sm:min-h-9 w-full cursor-pointer items-center justify-center rounded-lg border border-black bg-black font-ui text-xs font-semibold text-white shadow-xs transition-colors duration-150 press-feedback touch-manipulation'
 
 const SHOP_CATEGORIES = [
   { id: 'all', slug: 'all', href: '/shop', label: 'All Garments' },
@@ -1501,7 +1501,7 @@ export default function ShopClient({
                 <div className="relative inline-block">
                   <select
                     id="shop-sort-select"
-                    className="appearance-none cursor-pointer rounded-lg border border-gray-200 bg-white py-1.5 pl-3.5 pr-8 font-ui text-xs font-semibold text-gray-900 shadow-xs hover:border-gray-300 focus:outline-none"
+                    className="appearance-none cursor-pointer rounded-lg border border-gray-200 bg-white py-1.5 pl-3.5 pr-8 font-ui text-xs font-semibold text-gray-900 shadow-xs hover:border-gray-300 focus:outline-none min-h-[44px] sm:min-h-[36px] press-feedback touch-manipulation"
                     value={sort}
                     onChange={(e) => setSort(e.target.value as SortMode)}
                     aria-label="Sort products"
@@ -1561,7 +1561,7 @@ export default function ShopClient({
             >
               <button
                 type="button"
-                className="shop-mobile-bar-btn flex flex-1 cursor-pointer touch-manipulation select-none items-center justify-center gap-2 border-0 bg-transparent font-brand text-[12.5px] font-bold uppercase leading-[18.75px] tracking-[0.06em] [-webkit-tap-highlight-color:transparent] active:scale-95 transition-transform"
+                className="shop-mobile-bar-btn flex flex-1 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation select-none items-center justify-center gap-2 border-0 bg-transparent font-brand text-[12.5px] font-bold uppercase leading-[18.75px] tracking-[0.06em] [-webkit-tap-highlight-color:transparent] active:scale-95 transition-transform press-feedback"
                 onClick={() => setSortSheetOpen(true)}
               >
                 <ArrowUpDown className="h-4 w-4" />
@@ -1570,7 +1570,7 @@ export default function ShopClient({
               <div className="shop-mobile-bar-divider h-[22px] w-px self-center" />
               <button
                 type="button"
-                className="shop-mobile-bar-btn flex flex-1 cursor-pointer touch-manipulation select-none items-center justify-center gap-2 border-0 bg-transparent font-brand text-[12.5px] font-bold uppercase leading-[18.75px] tracking-[0.06em] [-webkit-tap-highlight-color:transparent] active:scale-95 transition-transform"
+                className="shop-mobile-bar-btn flex flex-1 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation select-none items-center justify-center gap-2 border-0 bg-transparent font-brand text-[12.5px] font-bold uppercase leading-[18.75px] tracking-[0.06em] [-webkit-tap-highlight-color:transparent] active:scale-95 transition-transform press-feedback"
                 onClick={() => setDrawerOpen(true)}
               >
                 <SlidersHorizontal className="h-4 w-4" />
@@ -1603,7 +1603,7 @@ export default function ShopClient({
                 </span>
                 <button
                   type="button"
-                  className="flex cursor-pointer items-center justify-center border-0 bg-transparent p-1 text-[#878b94]"
+                  className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center border-0 bg-transparent p-1 text-[#878b94] press-feedback touch-manipulation"
                   onClick={() => setSortSheetOpen(false)}
                   aria-label="Close sort dialog"
                 >
@@ -1614,7 +1614,7 @@ export default function ShopClient({
                 {SORT_OPTIONS.map((opt) => (
                   <label
                     key={opt.mode}
-                    className={`flex cursor-pointer items-center gap-3.5 px-5 py-3.5 [transition:background_0.15s_ease] ${sort === opt.mode ? 'bg-[#fafafb]' : ''}`}
+                    className={`flex min-h-[44px] cursor-pointer items-center gap-3.5 px-5 py-3.5 press-feedback touch-manipulation [transition:background_0.15s_ease] ${sort === opt.mode ? 'bg-[#fafafb]' : ''}`}
                     onClick={() => {
                       setSort(opt.mode)
                       setSortSheetOpen(false)
@@ -1649,7 +1649,7 @@ export default function ShopClient({
                   {activeFilterCount > 0 && (
                     <button
                       type="button"
-                      className="cursor-pointer border-0 bg-transparent px-2 py-1 font-brand text-[12px] font-bold leading-[18px] tracking-[0.04em] text-[#ff3f6c]"
+                      className="min-h-[44px] cursor-pointer border-0 bg-transparent px-2 py-1 font-brand text-[12px] font-bold leading-[18px] tracking-[0.04em] text-[#ff3f6c] press-feedback touch-manipulation inline-flex items-center"
                       onClick={clearAllFilters}
                     >
                       CLEAR ALL
@@ -1657,7 +1657,7 @@ export default function ShopClient({
                   )}
                   <button
                     type="button"
-                    className="flex cursor-pointer items-center justify-center rounded-[4px] border-0 bg-transparent p-1 text-[#555964] [transition:color_0.15s,background-color_0.15s] hover:bg-[#f3f4f6] hover:text-[#111827]"
+                    className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-[4px] border-0 bg-transparent p-1 text-[#555964] [transition:color_0.15s,background-color_0.15s] hover:bg-[#f3f4f6] hover:text-[#111827] press-feedback touch-manipulation"
                     onClick={() => setDrawerOpen(false)}
                     aria-label="Close filters"
                   >
@@ -1695,17 +1695,17 @@ export default function ShopClient({
               </div>
 
               {/* Bottom Action Footer */}
-              <div className="flex h-[52px] shrink-0 border-t border-store-line bg-[rgba(248,247,243,0.97)]">
+              <div className="flex h-[52px] min-h-[44px] shrink-0 border-t border-store-line bg-[rgba(248,247,243,0.97)]">
                 <button
                   type="button"
-                  className="flex flex-1 cursor-pointer items-center justify-center rounded-[2px] border-0 border-r border-[#eaeaec] bg-store-ink font-brand text-[13px] font-bold uppercase leading-[19.5px] tracking-[0.05em] text-white [transition:background_0.15s_ease] active:bg-[#f5f5f6]"
+                  className="flex flex-1 min-h-[44px] cursor-pointer items-center justify-center rounded-[2px] border-0 border-r border-[#eaeaec] bg-store-ink font-brand text-[13px] font-bold uppercase leading-[19.5px] tracking-[0.05em] text-white [transition:background_0.15s_ease] active:bg-[#f5f5f6] press-feedback touch-manipulation"
                   onClick={() => setDrawerOpen(false)}
                 >
                   CLOSE
                 </button>
                 <button
                   type="button"
-                  className="flex flex-1 cursor-pointer items-center justify-center rounded-[2px] border-0 bg-store-ink font-brand text-[13px] font-bold uppercase leading-[19.5px] tracking-[0.05em] text-white [transition:background_0.15s_ease] active:bg-[#fff5f7]"
+                  className="flex flex-1 min-h-[44px] cursor-pointer items-center justify-center rounded-[2px] border-0 bg-store-ink font-brand text-[13px] font-bold uppercase leading-[19.5px] tracking-[0.05em] text-white [transition:background_0.15s_ease] active:bg-[#fff5f7] press-feedback touch-manipulation"
                   onClick={() => setDrawerOpen(false)}
                 >
                   APPLY {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}

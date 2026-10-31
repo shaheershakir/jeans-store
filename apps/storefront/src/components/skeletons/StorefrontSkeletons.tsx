@@ -1,5 +1,35 @@
 import React from 'react'
 
+export function ProductCardSkeleton() {
+  return (
+    <div className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white p-2 sm:p-2.5 pb-2.5 sm:pb-3 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+      {/* Exact 4/5 aspect ratio matching ProductCard */}
+      <div className="relative aspect-[4/5] w-full rounded-xl skeleton-shimmer overflow-hidden" />
+
+      {/* Details */}
+      <div className="flex flex-1 flex-col pt-2.5 sm:pt-3">
+        {/* Title */}
+        <div className="h-[18px] sm:h-5 w-4/5 rounded-md skeleton-shimmer" />
+
+        {/* Subtitle: Color/Wash · Size */}
+        <div className="mt-1 sm:mt-1.5 h-3.5 sm:h-4 w-3/5 rounded-md skeleton-shimmer" />
+
+        {/* Price & Swatches row */}
+        <div className="mt-2 sm:mt-3 flex items-center justify-between gap-1">
+          <div className="h-4 sm:h-5 w-16 rounded-md skeleton-shimmer" />
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full skeleton-shimmer" />
+            <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full skeleton-shimmer" />
+          </div>
+        </div>
+
+        {/* Action Button: ADD TO BAG */}
+        <div className="mt-2.5 sm:mt-3.5 h-9 sm:h-10 lg:h-11 w-full rounded-xl skeleton-shimmer" />
+      </div>
+    </div>
+  )
+}
+
 export function HomepageSkeleton() {
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
@@ -35,19 +65,7 @@ export function HomepageSkeleton() {
 
           <div className="grid grid-cols-4 gap-4.5 max-[900px]:grid-cols-2 max-[900px]:gap-3.5">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex flex-col">
-                <div className="w-full aspect-[1/1.18] rounded-[18px] skeleton-shimmer" />
-                <div className="mt-3 h-4 w-3/4 rounded-md skeleton-shimmer" />
-                <div className="mt-1.5 h-3 w-1/2 rounded-md skeleton-shimmer" />
-                <div className="mt-2 flex items-center justify-between">
-                  <div className="h-4 w-16 rounded-md skeleton-shimmer" />
-                  <div className="flex gap-1.5">
-                    <div className="h-2.5 w-2.5 rounded-full skeleton-shimmer" />
-                    <div className="h-2.5 w-2.5 rounded-full skeleton-shimmer" />
-                    <div className="h-2.5 w-2.5 rounded-full skeleton-shimmer" />
-                  </div>
-                </div>
-              </div>
+              <ProductCardSkeleton key={i} />
             ))}
           </div>
         </div>
@@ -103,12 +121,7 @@ export function ShopSkeleton() {
               </div>
               <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-4 xl:gap-5">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="flex flex-col">
-                    <div className="w-full aspect-[3/4] rounded-md skeleton-shimmer" />
-                    <div className="mt-3 h-4 w-4/5 rounded-md skeleton-shimmer" />
-                    <div className="mt-1.5 h-3 w-2/5 rounded-md skeleton-shimmer" />
-                    <div className="mt-2 h-4 w-1/4 rounded-md skeleton-shimmer" />
-                  </div>
+                  <ProductCardSkeleton key={i} />
                 ))}
               </div>
             </main>
@@ -462,17 +475,73 @@ export function SearchSkeleton() {
           <div className="h-8 w-28 rounded-lg skeleton-shimmer" />
         </div>
 
-        {/* 4-column 3:4 portrait card grid */}
+        {/* 4-column card grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="space-y-3">
-              <div className="w-full aspect-[3/4] rounded-xl skeleton-shimmer" />
-              <div className="space-y-1.5">
-                <div className="h-4 w-4/5 rounded-md skeleton-shimmer" />
-                <div className="h-3.5 w-1/3 rounded-md skeleton-shimmer" />
+            <ProductCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function BagSkeleton() {
+  return (
+    <div className="w-full min-h-[calc(100vh-200px)] bg-[#FAF9F6] px-4 sm:px-6 lg:px-8 pb-24 pt-6 sm:pt-9">
+      <div className="mx-auto w-full max-w-[1240px]">
+        {/* Breadcrumbs */}
+        <div className="mb-4 sm:mb-6 h-4 w-36 rounded-md skeleton-shimmer" />
+
+        {/* Page Header */}
+        <div className="mb-6 sm:mb-8 flex justify-between items-baseline border-b border-black/8 pb-4">
+          <div className="h-8 sm:h-9 w-48 rounded-lg skeleton-shimmer" />
+          <div className="h-4 w-32 rounded-md skeleton-shimmer" />
+        </div>
+
+        {/* Main Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(360px,400px)] items-start gap-8 lg:gap-10">
+          {/* Items List */}
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex gap-4 sm:gap-5 rounded-[14px] sm:rounded-[16px] border border-black/[0.08] bg-white p-4 sm:p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
+              >
+                <div className="w-[90px] sm:w-[105px] h-[105px] sm:h-[120px] rounded-[10px] skeleton-shimmer shrink-0" />
+                <div className="flex-1 flex flex-col justify-between py-1">
+                  <div className="space-y-2">
+                    <div className="h-5 w-3/4 rounded-md skeleton-shimmer" />
+                    <div className="h-4 w-1/3 rounded-md skeleton-shimmer" />
+                  </div>
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="h-8 w-24 rounded-lg skeleton-shimmer" />
+                    <div className="h-5 w-16 rounded-md skeleton-shimmer" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Summary Column */}
+          <div className="rounded-[16px] border border-black/[0.08] bg-white p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
+            <div className="h-6 w-36 rounded-md skeleton-shimmer" />
+            <div className="space-y-3 pt-2 border-t border-black/5">
+              <div className="flex justify-between">
+                <div className="h-4 w-20 rounded-md skeleton-shimmer" />
+                <div className="h-4 w-16 rounded-md skeleton-shimmer" />
+              </div>
+              <div className="flex justify-between">
+                <div className="h-4 w-24 rounded-md skeleton-shimmer" />
+                <div className="h-4 w-16 rounded-md skeleton-shimmer" />
+              </div>
+              <div className="flex justify-between pt-2 border-t border-black/5">
+                <div className="h-5 w-16 rounded-md skeleton-shimmer" />
+                <div className="h-5 w-20 rounded-md skeleton-shimmer" />
               </div>
             </div>
-          ))}
+            <div className="h-12 w-full rounded-xl skeleton-shimmer mt-4" />
+          </div>
         </div>
       </div>
     </div>

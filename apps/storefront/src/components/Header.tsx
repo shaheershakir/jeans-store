@@ -48,7 +48,12 @@ export default function Header({ initialNavItems }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [ordersModalOpen, setOrdersModalOpen] = useState(false)
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setPendingHref(null)
+  }, [pathname])
 
   const [navLinks, setNavLinks] = useState<NavigationItem[]>(
     initialNavItems && initialNavItems.length > 0 ? initialNavItems : DEFAULT_NAV_LINKS
@@ -109,6 +114,17 @@ export default function Header({ initialNavItems }: HeaderProps) {
   }
 
   const handleNavClick = (link: NavigationItem, e?: React.MouseEvent) => {
+    const targetHref =
+      link.type === 'category'
+        ? (link.targetValue || 'all') === 'all'
+          ? '/shop'
+          : `/shop/${link.targetValue}`
+        : link.href
+
+    if (pathname !== targetHref && !targetHref.startsWith('/#') && targetHref !== '#') {
+      setPendingHref(targetHref)
+    }
+
     if (link.href.startsWith('/shop') || link.href.startsWith('/category/')) {
       if (link.type === 'category') {
         const target = link.targetValue || 'all'
@@ -133,6 +149,9 @@ export default function Header({ initialNavItems }: HeaderProps) {
   }
 
   const handleShopAllClick = () => {
+    if (pathname !== '/shop') {
+      setPendingHref('/shop')
+    }
     setCategory('all')
     router.push('/shop')
   }
@@ -175,6 +194,12 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
   return (
     <>
+      {pendingHref && (
+        <div
+          className="fixed top-0 left-0 right-0 z-[9999] h-[2px] pointer-events-none route-progress-bar"
+          aria-hidden="true"
+        />
+      )}
       <header
         className={`sticky top-0 ${userMenuOpen ? 'z-[1005]' : 'z-[60]'} border-b border-b-[#e9e7e1] bg-[rgba(250,249,246,0.96)] backdrop-blur-[18px] transition-[box-shadow,background-color] duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] [@media(prefers-reduced-transparency:reduce)]:bg-white [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none [&_:is(a,button,input):focus-visible]:outline-2 [&_:is(a,button,input):focus-visible]:outline-[#31586f] [&_:is(a,button,input):focus-visible]:outline-offset-[3px] motion-reduce:[transition-duration:0.01ms]`}
       >
@@ -184,7 +209,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
             {/* Left: Mobile Hamburger + Brand Logo */}
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <button
-                className="flex lg:hidden h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] transition-colors hover:bg-black/5 active:scale-95 [-webkit-tap-highlight-color:transparent] touch-manipulation"
+                className="flex lg:hidden h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#182126] transition-colors hover:bg-black/5 active:scale-95 press-feedback [-webkit-tap-highlight-color:transparent] touch-manipulation"
                 type="button"
                 aria-label={menuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={menuOpen}
@@ -194,9 +219,14 @@ export default function Header({ initialNavItems }: HeaderProps) {
               </button>
 
               <Link
-                className="inline-flex shrink-0 items-center text-[#111] no-underline transition-opacity duration-200 hover:opacity-85"
+                className={`inline-flex shrink-0 items-center text-[#111] no-underline transition-opacity duration-200 hover:opacity-85 ${
+                  pendingHref === '/' ? 'opacity-70' : ''
+                }`}
                 href="/"
                 aria-label="TEESGARAGE Homepage"
+                onClick={() => {
+                  if (pathname !== '/') setPendingHref('/')
+                }}
               >
                 <Image
                   src="/teesgarage-logo.svg"
@@ -217,11 +247,20 @@ export default function Header({ initialNavItems }: HeaderProps) {
               {activeLinks.map((link) => {
                 const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
                 const isActive = isLinkActive(link.href)
+                const targetHref =
+                  link.type === 'category'
+                    ? (link.targetValue || 'all') === 'all'
+                      ? '/shop'
+                      : `/shop/${link.targetValue}`
+                    : link.href
+                const isPending = pendingHref === targetHref || pendingHref === link.href
                 return (
                   <Link
                     key={link.id || link.label}
                     href={link.href}
-                    className={`relative whitespace-nowrap text-[13.5px] font-medium leading-none tracking-[0.02em] text-[#242424] no-underline transition-colors duration-150 hover:text-black active:scale-[0.98] ${
+                    className={`relative whitespace-nowrap text-[13.5px] font-medium leading-none tracking-[0.02em] text-[#242424] no-underline transition-colors duration-150 hover:text-black active:scale-[0.98] press-feedback ${
+                      isPending ? 'opacity-70' : ''
+                    } ${
                       isSale ? 'font-semibold text-[#e01a2b]!' : ''
                     } ${
                       isActive
@@ -246,7 +285,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
               {/* Desktop Search Trigger (Hidden on mobile; Search is in MobileTabBar) */}
               <button
                 type="button"
-                className={`hidden md:grid ${HEADER_ACTION_BTN}`}
+                className={`hidden md:grid ${HEADER_ACTION_BTN} press-feedback`}
                 aria-label="Search products (press / to open)"
                 onClick={() => openOverlay('search')}
               >
@@ -256,9 +295,12 @@ export default function Header({ initialNavItems }: HeaderProps) {
               {/* Wishlist (Visible on mobile & desktop) */}
               <Link
                 href="/wishlist"
-                className={HEADER_ACTION_BTN}
+                className={`${HEADER_ACTION_BTN} press-feedback ${pendingHref === '/wishlist' ? 'opacity-70' : ''}`}
                 aria-label={favorites.length ? `Wishlist with ${favorites.length} saved items` : 'Wishlist'}
                 title="Wishlist"
+                onClick={() => {
+                  if (pathname !== '/wishlist') setPendingHref('/wishlist')
+                }}
               >
                 <div className="relative inline-flex items-center justify-center">
                   <Heart className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
@@ -272,7 +314,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
               {/* Shopping Bag Button with Badge (Desktop only; on mobile it is in MobileTabBar) */}
               <button
-                className={`hidden md:grid ${HEADER_ACTION_BTN} min-h-[42px] min-w-[42px]`}
+                className={`hidden md:grid ${HEADER_ACTION_BTN} min-h-[42px] min-w-[42px] press-feedback`}
                 type="button"
                 aria-label={`Shopping bag with ${count} items`}
                 title="View shopping bag"
@@ -296,7 +338,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                     onClick={() => setUserMenuOpen((v) => !v)}
                     aria-expanded={userMenuOpen}
                     aria-label={`Account menu for ${user.name || 'Member'}`}
-                    className="group relative flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-full transition-transform duration-150 ease-out hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-[#31586f] focus-visible:outline-offset-2 select-none"
+                    className="group relative flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-full transition-transform duration-150 ease-out hover:scale-105 active:scale-95 press-feedback focus-visible:outline-2 focus-visible:outline-[#31586f] focus-visible:outline-offset-2 select-none"
                   >
                     <div
                       className={`flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[#182126] text-[#faf9f6] text-[13px] font-bold tracking-tight shadow-[0_1px_3px_rgba(0,0,0,0.16)] transition-all duration-200 group-hover:bg-black group-hover:shadow-[0_2px_8px_rgba(0,0,0,0.2)] ${
@@ -343,7 +385,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                         <button
                           type="button"
                           onClick={() => setUserMenuOpen(false)}
-                          className="flex h-8 w-8 items-center justify-center rounded-full text-[#777777] hover:text-[#111111] hover:bg-black/5 transition-colors cursor-pointer"
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-[#777777] hover:text-[#111111] hover:bg-black/5 transition-colors cursor-pointer press-feedback"
                           aria-label="Close menu"
                         >
                           <X className="h-4 w-4 stroke-[2.2]" />
@@ -353,8 +395,13 @@ export default function Header({ initialNavItems }: HeaderProps) {
                       {/* View Profile Button */}
                       <Link
                         href="/profile"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] px-4 py-2.5 transition-colors text-[13.5px] font-semibold text-[#111111] cursor-pointer"
+                        onClick={() => {
+                          setUserMenuOpen(false)
+                          if (pathname !== '/profile') setPendingHref('/profile')
+                        }}
+                        className={`group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] px-4 py-2.5 transition-colors text-[13.5px] font-semibold text-[#111111] cursor-pointer press-feedback ${
+                          pendingHref === '/profile' ? 'opacity-70' : ''
+                        }`}
                       >
                         <div className="flex items-center gap-2.5">
                           <User className="h-4 w-4 text-[#333333] stroke-[2]" />
@@ -368,8 +415,13 @@ export default function Header({ initialNavItems }: HeaderProps) {
                         {/* 1. Orders */}
                         <Link
                           href="/orders"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            if (pathname !== '/orders') setPendingHref('/orders')
+                          }}
+                          className={`group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer press-feedback ${
+                            pendingHref === '/orders' ? 'opacity-70' : ''
+                          }`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-2xs border border-black/5 text-[#111111]">
@@ -386,8 +438,13 @@ export default function Header({ initialNavItems }: HeaderProps) {
                         {/* 2. Addresses */}
                         <Link
                           href="/addresses"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            if (pathname !== '/addresses') setPendingHref('/addresses')
+                          }}
+                          className={`group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer press-feedback ${
+                            pendingHref === '/addresses' ? 'opacity-70' : ''
+                          }`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-2xs border border-black/5 text-[#111111]">
@@ -404,8 +461,13 @@ export default function Header({ initialNavItems }: HeaderProps) {
                         {/* 3. Wishlist */}
                         <Link
                           href="/wishlist"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            if (pathname !== '/wishlist') setPendingHref('/wishlist')
+                          }}
+                          className={`group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer press-feedback ${
+                            pendingHref === '/wishlist' ? 'opacity-70' : ''
+                          }`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-2xs border border-black/5 text-[#111111]">
@@ -422,8 +484,13 @@ export default function Header({ initialNavItems }: HeaderProps) {
                         {/* 4. Account settings */}
                         <Link
                           href="/settings"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            if (pathname !== '/settings') setPendingHref('/settings')
+                          }}
+                          className={`group flex items-center justify-between w-full rounded-2xl bg-[#f4f2ee] hover:bg-[#eae7e1] p-3 transition-colors cursor-pointer press-feedback ${
+                            pendingHref === '/settings' ? 'opacity-70' : ''
+                          }`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-2xs border border-black/5 text-[#111111]">
@@ -442,7 +509,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
                       <button
                         type="button"
                         onClick={handleLogout}
-                        className="group flex items-center justify-between w-full rounded-2xl bg-[#fff1f2] hover:bg-[#ffe4e6] p-3.5 transition-colors cursor-pointer border border-rose-100 text-[#e11d48]"
+                        className="group flex items-center justify-between w-full rounded-2xl bg-[#fff1f2] hover:bg-[#ffe4e6] p-3.5 transition-colors cursor-pointer border border-rose-100 text-[#e11d48] press-feedback"
                       >
                         <div className="flex items-center gap-3">
                           <LogOut className="h-4 w-4 stroke-[2]" />
@@ -457,8 +524,13 @@ export default function Header({ initialNavItems }: HeaderProps) {
               ) : (
                 <Link
                   href="/login"
-                  className="hidden md:inline-flex h-[36px] items-center gap-1.5 rounded-full bg-[#182126] px-3.5 text-[12.5px] font-semibold text-white shadow-2xs transition-all duration-150 hover:bg-black hover:shadow-xs active:scale-95 [-webkit-tap-highlight-color:transparent] touch-manipulation"
+                  className={`hidden md:inline-flex h-[36px] items-center gap-1.5 rounded-full bg-[#182126] px-3.5 text-[12.5px] font-semibold text-white shadow-2xs transition-all duration-150 hover:bg-black hover:shadow-xs active:scale-95 press-feedback [-webkit-tap-highlight-color:transparent] touch-manipulation ${
+                    pendingHref === '/login' ? 'opacity-70' : ''
+                  }`}
                   aria-label="Sign in to your account"
+                  onClick={() => {
+                    if (pathname !== '/login') setPendingHref('/login')
+                  }}
                 >
                   <User className="h-3.5 w-3.5 stroke-[2.2]" />
                   <span>Login</span>
@@ -474,7 +546,7 @@ export default function Header({ initialNavItems }: HeaderProps) {
             <div className="flex flex-col gap-0">
               <button
                 type="button"
-                className="mb-2.5 flex min-h-[46px] w-full cursor-pointer items-center justify-between gap-2.5 rounded-[8px] border-0 border-b border-b-[#e9e7e1] bg-[#f4f4f5] px-3.5 py-2.5 text-left text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
+                className="mb-2.5 flex min-h-[46px] w-full cursor-pointer items-center justify-between gap-2.5 rounded-[8px] border-0 border-b border-b-[#e9e7e1] bg-[#f4f4f5] px-3.5 py-2.5 text-left text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline press-feedback [font-family:var(--font-brand)]"
                 onClick={() => {
                   setMenuOpen(false)
                   openOverlay('search')
@@ -486,7 +558,9 @@ export default function Header({ initialNavItems }: HeaderProps) {
 
               <button
                 type="button"
-                className={`flex min-h-[46px] cursor-pointer items-center justify-between border-0 bg-transparent py-2 pr-0 text-left text-[14px] font-semibold uppercase leading-normal text-[#182126] [font-family:var(--font-ui)] ${pathname === '/shop' ? 'rounded-[6px] pl-2.5 text-black' : 'pl-0'}`}
+                className={`flex min-h-[46px] cursor-pointer items-center justify-between border-0 bg-transparent py-2 pr-0 text-left text-[14px] font-semibold uppercase leading-normal text-[#182126] press-feedback [font-family:var(--font-ui)] ${
+                  pathname === '/shop' ? 'rounded-[6px] pl-2.5 text-black' : 'pl-0'
+                } ${pendingHref === '/shop' ? 'opacity-70' : ''}`}
                 onClick={() => {
                   handleShopAllClick()
                   setMenuOpen(false)
@@ -498,15 +572,22 @@ export default function Header({ initialNavItems }: HeaderProps) {
               {activeLinks.map((link) => {
                 const isSale = link.badge?.toLowerCase() === 'sale' || link.label.toLowerCase() === 'sale'
                 const isActive = isLinkActive(link.href)
+                const targetHref =
+                  link.type === 'category'
+                    ? (link.targetValue || 'all') === 'all'
+                      ? '/shop'
+                      : `/shop/${link.targetValue}`
+                    : link.href
+                const isPending = pendingHref === targetHref || pendingHref === link.href
                 return (
                   <Link
                     key={link.id || link.label}
                     href={link.href}
-                    className={`flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] py-2 text-[13px] uppercase leading-[normal] no-underline [font-family:var(--font-brand)] ${
+                    className={`flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] py-2 text-[13px] uppercase leading-[normal] no-underline press-feedback [font-family:var(--font-brand)] ${
                       isActive
                         ? 'rounded-[6px] bg-[var(--bone)] pr-0 pl-2.5 font-bold text-black'
                         : 'px-0 font-semibold text-[#182126]'
-                    } ${isSale ? 'font-semibold' : ''}`}
+                    } ${isSale ? 'font-semibold' : ''} ${isPending ? 'opacity-70' : ''}`}
                     target={link.openInNewTab ? '_blank' : undefined}
                     rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
                     onClick={(e) => {
@@ -524,31 +605,46 @@ export default function Header({ initialNavItems }: HeaderProps) {
                 <>
                   <Link
                     href="/orders"
-                    className="flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
-                    onClick={() => setMenuOpen(false)}
+                    className={`flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline press-feedback [font-family:var(--font-brand)] ${
+                      pendingHref === '/orders' ? 'opacity-70' : ''
+                    }`}
+                    onClick={() => {
+                      if (pathname !== '/orders') setPendingHref('/orders')
+                      setMenuOpen(false)
+                    }}
                   >
                     My Orders &amp; Tracking
                   </Link>
 
                   <Link
                     href="/profile"
-                    className="flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
-                    onClick={() => setMenuOpen(false)}
+                    className={`flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline press-feedback [font-family:var(--font-brand)] ${
+                      pendingHref === '/profile' ? 'opacity-70' : ''
+                    }`}
+                    onClick={() => {
+                      if (pathname !== '/profile') setPendingHref('/profile')
+                      setMenuOpen(false)
+                    }}
                   >
                     Profile &amp; Addresses
                   </Link>
 
                   <Link
                     href="/profile?tab=favorites"
-                    className="flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
-                    onClick={() => setMenuOpen(false)}
+                    className={`flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline press-feedback [font-family:var(--font-brand)] ${
+                      pendingHref === '/profile?tab=favorites' ? 'opacity-70' : ''
+                    }`}
+                    onClick={() => {
+                      if (pathname !== '/profile?tab=favorites') setPendingHref('/profile?tab=favorites')
+                      setMenuOpen(false)
+                    }}
                   >
                     Saved Favorites ({favorites.length})
                   </Link>
 
                   <button
                     type="button"
-                    className="flex min-h-[46px] cursor-pointer items-center justify-between border-0 bg-transparent py-2 pr-0 pl-0 text-left text-[14px] font-semibold uppercase leading-normal text-red-600 [font-family:var(--font-ui)]"
+                    className="flex min-h-[46px] cursor-pointer items-center justify-between border-0 bg-transparent py-2 pr-0 pl-0 text-left text-[14px] font-semibold uppercase leading-normal text-red-600 press-feedback [font-family:var(--font-ui)]"
                     onClick={handleDrawerLogout}
                   >
                     Sign Out ({user.name.split(' ')[0]})
@@ -557,8 +653,13 @@ export default function Header({ initialNavItems }: HeaderProps) {
               ) : (
                 <Link
                   href="/login"
-                  className="flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline [font-family:var(--font-brand)]"
-                  onClick={() => setMenuOpen(false)}
+                  className={`flex min-h-[46px] items-center justify-between border-b border-b-[#e9e7e1] px-0 py-2 text-[13px] font-semibold uppercase leading-[normal] text-[#182126] no-underline press-feedback [font-family:var(--font-brand)] ${
+                    pendingHref === '/login' ? 'opacity-70' : ''
+                  }`}
+                  onClick={() => {
+                    if (pathname !== '/login') setPendingHref('/login')
+                    setMenuOpen(false)
+                  }}
                 >
                   Sign In / Create Account
                 </Link>
@@ -584,6 +685,8 @@ export default function Header({ initialNavItems }: HeaderProps) {
       <MobileTabBar
         onOpenSearch={() => openOverlay('search')}
         isSearchOpen={overlay === 'search'}
+        pendingHref={pendingHref}
+        onNavigate={(href) => setPendingHref(href)}
       />
     </>
   )

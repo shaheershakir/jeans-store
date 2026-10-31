@@ -395,7 +395,7 @@ export default function BagClient() {
                         <button
                           type="button"
                           onClick={() => updateQty(item.id, item.size, -1, item.variantId)}
-                          className="w-8 h-8 flex items-center justify-center text-[#71717a] hover:text-[#111111] hover:bg-black/5 rounded-l-[5px] transition-colors cursor-pointer"
+                          className="w-9 h-9 min-h-[44px] sm:w-8 sm:h-8 sm:min-h-0 flex items-center justify-center text-[#71717a] hover:text-[#111111] hover:bg-black/5 rounded-l-[5px] transition-colors cursor-pointer press-feedback touch-manipulation"
                           aria-label={`Decrease quantity of ${item.name}`}
                         >
                           <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -406,7 +406,7 @@ export default function BagClient() {
                         <button
                           type="button"
                           onClick={() => updateQty(item.id, item.size, 1, item.variantId)}
-                          className="w-8 h-8 flex items-center justify-center text-[#71717a] hover:text-[#111111] hover:bg-black/5 rounded-r-[5px] transition-colors cursor-pointer"
+                          className="w-9 h-9 min-h-[44px] sm:w-8 sm:h-8 sm:min-h-0 flex items-center justify-center text-[#71717a] hover:text-[#111111] hover:bg-black/5 rounded-r-[5px] transition-colors cursor-pointer press-feedback touch-manipulation"
                           aria-label={`Increase quantity of ${item.name}`}
                         >
                           <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -575,10 +575,10 @@ export default function BagClient() {
                   type="button"
                   onClick={handleProceedToCheckout}
                   disabled={hasOutOfStockItems || count === 0}
-                  className={`flex h-12 w-full items-center justify-center gap-2 rounded-[10px] font-brand text-[14px] font-semibold text-white transition-all duration-150 ${
+                  className={`flex h-12 min-h-[44px] w-full items-center justify-center gap-2 rounded-[10px] font-brand text-[14px] font-semibold text-white transition-all duration-150 ${
                     hasOutOfStockItems || count === 0
                       ? 'bg-[#9ca3af] cursor-not-allowed opacity-60'
-                      : 'bg-[#111111] hover:bg-black cursor-pointer shadow-xs active:scale-[0.99]'
+                      : 'bg-[#111111] hover:bg-black cursor-pointer shadow-xs active:scale-[0.97] press-feedback touch-manipulation'
                   }`}
                   aria-disabled={hasOutOfStockItems || count === 0}
                 >

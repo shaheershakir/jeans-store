@@ -64,6 +64,7 @@ function ProductDetailContent({ product }: { product: Product }) {
   const [mounted, setMounted] = useState<boolean>(false)
   const [favAnimate, setFavAnimate] = useState<boolean>(false)
   const [added, setAdded] = useState<boolean>(false)
+  const [isAdding, setIsAdding] = useState<boolean>(false)
   const [activeImageIdx, setActiveImageIdx] = useState<number>(0)
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState<boolean>(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -392,7 +393,10 @@ function ProductDetailContent({ product }: { product: Product }) {
   }
 
   function handleAddToCart(sourceLocation: 'pdp' | 'sticky_bar' = 'pdp') {
+    if (isAdding) return
     if (availableSizes.length > 0 && !availableSizes.includes(selectedSize)) return
+    setIsAdding(true)
+    setAdded(true)
     addItem(
       product.id,
       selectedSize,
@@ -403,10 +407,12 @@ function ProductDetailContent({ product }: { product: Product }) {
       currentPriceNum,
       images[0] || product.img
     )
-    setAdded(true)
     const label = selectedDesign ? `${product.name} - ${selectedDesign.name}` : product.name
     showToast(`Added ${label} (${selectedSize}) to bag`)
-    setTimeout(() => setAdded(false), 2000)
+    setTimeout(() => {
+      setAdded(false)
+      setIsAdding(false)
+    }, 600)
     setTimeout(() => {
       openOverlay('cart')
     }, 320)
@@ -515,7 +521,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                     key={idx}
                     type="button"
                     onClick={() => setActiveImageIdx(idx)}
-                    className={`relative aspect-square w-full rounded-xl overflow-hidden bg-[#faf9f6] cursor-pointer transition-all touch-manipulation ${
+                    className={`relative aspect-square w-full rounded-xl overflow-hidden bg-[#faf9f6] cursor-pointer transition-all touch-manipulation press-feedback ${
                       isActive
                         ? 'border-2 border-black opacity-100 shadow-xs'
                         : 'border border-gray-200/80 opacity-80 hover:opacity-100 hover:border-gray-400'
@@ -602,7 +608,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                       key={design.slug || design.name}
                       type="button"
                       onClick={() => handleSelectDesign(design)}
-                      className={`group relative rounded-xl border p-2 text-left transition-all cursor-pointer ${
+                      className={`group relative rounded-xl border p-2 text-left transition-all cursor-pointer press-feedback ${
                         isSelected
                           ? 'border-black bg-neutral-50 ring-1 ring-black shadow-xs'
                           : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-neutral-50/50'
@@ -647,7 +653,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                       key={swatch.name}
                       type="button"
                       onClick={() => handleSelectColor(swatch.name)}
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full cursor-pointer transition-all touch-manipulation outline-none ${
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full cursor-pointer transition-all touch-manipulation outline-none press-feedback ${
                         swatch.isWhite ? 'border border-gray-200' : ''
                       } ${
                         isSelected
@@ -694,7 +700,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                     type="button"
                     disabled={!isAvailable}
                     onClick={() => handleSelectSize(size)}
-                    className={`h-12 w-14 sm:w-16 rounded-xl flex items-center justify-center text-sm font-semibold transition-all touch-manipulation cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                    className={`h-12 w-14 sm:w-16 rounded-xl flex items-center justify-center text-sm font-semibold transition-all touch-manipulation cursor-pointer press-feedback disabled:opacity-40 disabled:cursor-not-allowed ${
                       isSelected
                         ? 'bg-black text-white border border-black shadow-xs'
                         : 'bg-white text-gray-900 border border-gray-200 hover:border-gray-400'
@@ -800,7 +806,7 @@ function ProductDetailContent({ product }: { product: Product }) {
               <button
                 type="button"
                 onClick={handleFavoriteClick}
-                className={`w-12 h-12 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-gray-900 hover:border-gray-400 transition-colors shrink-0 touch-manipulation cursor-pointer active:scale-95 ${
+                className={`w-12 h-12 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-gray-900 hover:border-gray-400 transition-colors shrink-0 touch-manipulation cursor-pointer active:scale-95 press-feedback ${
                   favAnimate ? 'scale-110' : ''
                 }`}
                 aria-label={isFavorite ? 'Remove from wishlist' : 'Add to wishlist'}
@@ -819,8 +825,8 @@ function ProductDetailContent({ product }: { product: Product }) {
                 id="pdp-add-to-cart-btn"
                 type="button"
                 onClick={() => handleAddToCart('pdp')}
-                disabled={availableSizes.length > 0 && !availableSizes.includes(selectedSize)}
-                className={`flex-1 h-12 rounded-xl text-white font-brand text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors active:scale-[0.99] touch-manipulation cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs ${
+                disabled={isAdding || (availableSizes.length > 0 && !availableSizes.includes(selectedSize))}
+                className={`flex-1 h-12 rounded-xl text-white font-brand text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors active:scale-[0.97] press-feedback touch-manipulation cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs ${
                   added ? 'bg-[#15803d]' : 'bg-black hover:bg-neutral-900'
                 }`}
               >
@@ -835,7 +841,7 @@ function ProductDetailContent({ product }: { product: Product }) {
               type="button"
               onClick={() => handleBuyNow('pdp')}
               disabled={availableSizes.length > 0 && !availableSizes.includes(selectedSize)}
-              className="w-full h-12 rounded-xl border border-gray-200 bg-white text-gray-950 font-brand text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-gray-50 transition-colors active:scale-[0.99] touch-manipulation cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 rounded-xl border border-gray-200 bg-white text-gray-950 font-brand text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-gray-50 transition-colors active:scale-[0.97] press-feedback touch-manipulation cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               BUY NOW
             </button>

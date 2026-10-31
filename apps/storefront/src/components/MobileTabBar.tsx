@@ -8,11 +8,15 @@ import { cartCount, useCartStore, useUIStore, useAuthStore } from '@/lib/store'
 interface MobileTabBarProps {
   onOpenSearch?: () => void
   isSearchOpen?: boolean
+  pendingHref?: string | null
+  onNavigate?: (href: string) => void
 }
 
 export default function MobileTabBar({
   onOpenSearch,
-  isSearchOpen: isSearchOpenProp
+  isSearchOpen: isSearchOpenProp,
+  pendingHref: pendingHrefProp,
+  onNavigate
 }: MobileTabBarProps = {}) {
   const router = useRouter()
   const pathname = usePathname()
@@ -24,12 +28,19 @@ export default function MobileTabBar({
   const user = useAuthStore((state) => state.user)
 
   const [mounted, setMounted] = useState(false)
+  const [localPendingHref, setLocalPendingHref] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
     void useAuthStore.persist.rehydrate()
     void useCartStore.persist.rehydrate()
   }, [])
+
+  useEffect(() => {
+    setLocalPendingHref(null)
+  }, [pathname])
+
+  const currentPendingHref = pendingHrefProp !== undefined ? pendingHrefProp : localPendingHref
 
   const count = mounted ? cartCount(items) : 0
   const isBagActive = (pathname === '/bag' || pathname.startsWith('/bag')) && !isSearchOpen
@@ -46,10 +57,14 @@ export default function MobileTabBar({
     !isSearchOpen &&
     !isBagActive
 
+  const profileTarget = isAuthenticated && user ? '/profile' : '/login'
+
   const handleHomeClick = () => {
     if (pathname === '/') {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
+      setLocalPendingHref('/')
+      onNavigate?.('/')
       router.push('/')
     }
   }
@@ -66,16 +81,21 @@ export default function MobileTabBar({
     if (overlay) {
       useUIStore.getState().closeOverlay()
     }
+    if (pathname !== '/bag') {
+      setLocalPendingHref('/bag')
+      onNavigate?.('/bag')
+    }
     router.push('/bag')
   }
 
   const handleProfileClick = () => {
     const authState = useAuthStore.getState()
-    if (authState.isAuthenticated && authState.user) {
-      router.push('/profile')
-    } else {
-      router.push('/login')
+    const target = authState.isAuthenticated && authState.user ? '/profile' : '/login'
+    if (pathname !== target) {
+      setLocalPendingHref(target)
+      onNavigate?.(target)
     }
+    router.push(target)
   }
 
   const userInitial = (user?.name?.trim()?.charAt(0) || user?.email?.trim()?.charAt(0) || 'U').toUpperCase()
@@ -91,7 +111,9 @@ export default function MobileTabBar({
           type="button"
           onClick={handleHomeClick}
           aria-label="Home"
-          className="relative flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-transform duration-100 ease-out select-none [-webkit-tap-highlight-color:transparent] touch-manipulation active:scale-[0.92]"
+          className={`relative flex flex-col items-center justify-center gap-1 h-full min-h-[44px] min-w-[44px] py-1 text-center select-none [-webkit-tap-highlight-color:transparent] touch-manipulation press-feedback ${
+            currentPendingHref === '/' ? 'opacity-70' : ''
+          }`}
         >
           <div className="relative inline-flex items-center justify-center">
             <Home
@@ -122,7 +144,7 @@ export default function MobileTabBar({
           type="button"
           onClick={handleSearchClick}
           aria-label="Search"
-          className="relative flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-transform duration-100 ease-out select-none [-webkit-tap-highlight-color:transparent] touch-manipulation active:scale-[0.92]"
+          className="relative flex flex-col items-center justify-center gap-1 h-full min-h-[44px] min-w-[44px] py-1 text-center select-none [-webkit-tap-highlight-color:transparent] touch-manipulation press-feedback"
         >
           <div className="relative inline-flex items-center justify-center">
             <Search
@@ -153,7 +175,9 @@ export default function MobileTabBar({
           type="button"
           onClick={handleBagClick}
           aria-label={`Bag with ${count} items`}
-          className="relative flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-transform duration-100 ease-out select-none [-webkit-tap-highlight-color:transparent] touch-manipulation active:scale-[0.92]"
+          className={`relative flex flex-col items-center justify-center gap-1 h-full min-h-[44px] min-w-[44px] py-1 text-center select-none [-webkit-tap-highlight-color:transparent] touch-manipulation press-feedback ${
+            currentPendingHref === '/bag' ? 'opacity-70' : ''
+          }`}
         >
           <div className="relative inline-flex items-center justify-center">
             <ShoppingBag
@@ -189,7 +213,9 @@ export default function MobileTabBar({
           type="button"
           onClick={handleProfileClick}
           aria-label={isAuthenticated && user?.name ? `Profile (${user.name})` : 'Profile'}
-          className="relative flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-transform duration-100 ease-out select-none [-webkit-tap-highlight-color:transparent] touch-manipulation active:scale-[0.92]"
+          className={`relative flex flex-col items-center justify-center gap-1 h-full min-h-[44px] min-w-[44px] py-1 text-center select-none [-webkit-tap-highlight-color:transparent] touch-manipulation press-feedback ${
+            currentPendingHref === profileTarget ? 'opacity-70' : ''
+          }`}
         >
           <div className="relative inline-flex items-center justify-center">
             {mounted && isAuthenticated && user ? (

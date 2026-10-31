@@ -154,7 +154,21 @@
 /* ── Custom Utilities (Tailwind v4 @utility directive) ───────────────────── */
 
 @utility page-transition-wrapper {
-  animation: pageFadeIn var(--dur-slow) var(--ease-out) both;
+  animation: pageFadeIn 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
+}
+
+@utility press-feedback {
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1), background-color 140ms ease, border-color 140ms ease;
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+@utility route-progress-bar {
+  height: 2px;
+  background-color: #171717;
+  animation: routeProgress 300ms ease-out forwards;
 }
 
 @utility tnum {
@@ -171,13 +185,22 @@
 /* ── Keyframes ───────────────────────────────────────────────────────────── */
 
 @keyframes pageFadeIn {
-  from {
+  0% {
     opacity: 0;
     transform: translateY(6px);
   }
-  to {
+  100% {
     opacity: 1;
-    transform: none;
+    transform: translateY(0);
+  }
+}
+
+@keyframes routeProgress {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 85%;
   }
 }
 
@@ -361,15 +384,22 @@
   .animate-error-shake,
   .animate-fade-in,
   .animate-heart-pop,
-  .animate-heart-pop-icon {
+  .animate-heart-pop-icon,
+  .route-progress-bar {
     animation: none !important;
   }
   .animate-auth-progress {
     transform: scaleX(1) !important;
   }
+  .page-transition-wrapper {
+    transform: none !important;
+  }
   .skeleton-shimmer::after {
     animation: none !important;
+    transform: none !important;
   }
+  .press-feedback,
+  .press-feedback:active,
   button:active:not(:disabled),
   .clickable:active,
   .btn:active {

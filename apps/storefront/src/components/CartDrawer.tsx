@@ -195,7 +195,7 @@ export default function CartDrawer() {
             <button
               type="button"
               onClick={closeOverlay}
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-[#f4f4f5] text-[#111111] transition-colors hover:bg-[#e4e4e7] active:scale-95"
+              className="flex h-11 w-11 min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 sm:min-h-8 sm:min-w-8 cursor-pointer items-center justify-center rounded-full bg-[#f4f4f5] text-[#111111] transition-colors hover:bg-[#e4e4e7] active:scale-95 press-feedback touch-manipulation"
               aria-label="Close bag drawer"
             >
               <X className="h-4 w-4 stroke-[2]" />
@@ -278,28 +278,28 @@ export default function CartDrawer() {
                     <div className="mt-2.5 flex items-center justify-between">
                       {/* Stepper pill */}
                       <div
-                        className="inline-flex items-center rounded-[6px] border border-[#e5e7eb] bg-white h-7"
+                        className="inline-flex items-center rounded-[8px] sm:rounded-[6px] border border-[#e5e7eb] bg-white h-9 sm:h-7"
                         role="group"
                         aria-label={`Quantity for ${item.name}`}
                       >
                         <button
                           type="button"
                           onClick={() => updateQty(item.id, item.size, -1, item.variantId)}
-                          className="w-7 h-7 flex items-center justify-center text-[#71717a] hover:text-[#111111] hover:bg-black/5 rounded-l-[5px] transition-colors cursor-pointer"
+                          className="w-9 h-9 min-h-[44px] min-w-[36px] sm:w-7 sm:h-7 sm:min-h-0 sm:min-w-0 flex items-center justify-center text-[#71717a] hover:text-[#111111] hover:bg-black/5 rounded-l-[7px] sm:rounded-l-[5px] transition-colors cursor-pointer press-feedback touch-manipulation"
                           aria-label={`Decrease quantity of ${item.name}`}
                         >
-                          <Minus className="w-3 h-3 stroke-[2.5]" />
+                          <Minus className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-[2.5]" />
                         </button>
-                        <span className="min-w-6 px-1 text-center font-ui text-[12px] font-bold text-[#111111] tabular-nums select-none">
+                        <span className="min-w-6 px-1.5 text-center font-ui text-[12px] font-bold text-[#111111] tabular-nums select-none">
                           {item.qty}
                         </span>
                         <button
                           type="button"
                           onClick={() => updateQty(item.id, item.size, 1, item.variantId)}
-                          className="w-7 h-7 flex items-center justify-center text-[#71717a] hover:text-[#111111] hover:bg-black/5 rounded-r-[5px] transition-colors cursor-pointer"
+                          className="w-9 h-9 min-h-[44px] min-w-[36px] sm:w-7 sm:h-7 sm:min-h-0 sm:min-w-0 flex items-center justify-center text-[#71717a] hover:text-[#111111] hover:bg-black/5 rounded-r-[7px] sm:rounded-r-[5px] transition-colors cursor-pointer press-feedback touch-manipulation"
                           aria-label={`Increase quantity of ${item.name}`}
                         >
-                          <Plus className="w-3 h-3 stroke-[2.5]" />
+                          <Plus className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-[2.5]" />
                         </button>
                       </div>
 
@@ -307,7 +307,7 @@ export default function CartDrawer() {
                       <button
                         type="button"
                         onClick={() => removeItem(item.id, item.size, item.variantId)}
-                        className="p-1 text-[#71717a] hover:text-[#dc2626] transition-colors cursor-pointer"
+                        className="p-2 sm:p-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-[#71717a] hover:text-[#dc2626] transition-colors cursor-pointer press-feedback touch-manipulation"
                         aria-label={`Remove ${item.name} from bag`}
                         title="Remove item"
                       >
@@ -385,7 +385,7 @@ export default function CartDrawer() {
             <Link
               href="/checkout"
               onClick={closeOverlay}
-              className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-[#111111] hover:bg-black font-brand text-[13.5px] font-semibold text-white no-underline transition-colors shadow-xs"
+              className="flex h-12 min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-[#111111] hover:bg-black font-brand text-[13.5px] font-semibold text-white no-underline transition-colors shadow-xs press-feedback touch-manipulation"
             >
               <span>Proceed to checkout</span>
               <ArrowRight className="h-4 w-4 stroke-[2]" />
@@ -395,7 +395,7 @@ export default function CartDrawer() {
             <Link
               href="/bag"
               onClick={closeOverlay}
-              className="mt-2.5 flex h-11 w-full cursor-pointer items-center justify-center rounded-[10px] border border-[#e5e7eb] bg-white hover:bg-[#fafafa] font-brand text-[13px] font-semibold text-[#111111] no-underline transition-colors"
+              className="mt-2.5 flex h-11 min-h-[44px] w-full cursor-pointer items-center justify-center rounded-[10px] border border-[#e5e7eb] bg-white hover:bg-[#fafafa] font-brand text-[13px] font-semibold text-[#111111] no-underline transition-colors press-feedback touch-manipulation"
             >
               <span>View full bag ({count})</span>
             </Link>

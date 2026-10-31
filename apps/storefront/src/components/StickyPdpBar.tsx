@@ -200,7 +200,7 @@ export default function StickyPdpBar({
                     type="button"
                     disabled={!isAvailable}
                     onClick={() => onSizeChange?.(size)}
-                    className={`min-w-[38px] h-[38px] px-2.5 rounded-lg flex items-center justify-center text-[13px] font-semibold transition-all duration-150 cursor-pointer ${
+                    className={`min-w-[38px] h-[38px] px-2.5 rounded-lg flex items-center justify-center text-[13px] font-semibold transition-all duration-150 cursor-pointer press-feedback ${
                       isSelected
                         ? 'bg-[#111111] text-white shadow-xs'
                         : 'bg-[#f4f4f5] text-gray-800 hover:bg-[#e4e4e7]'
@@ -218,7 +218,7 @@ export default function StickyPdpBar({
               type="button"
               onClick={onAddToCart}
               disabled={!isAvailableForSelected}
-              className={`h-[42px] px-7 rounded-full flex items-center gap-2 text-[13.5px] font-bold tracking-tight transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] cursor-pointer ${
+              className={`h-[42px] px-7 rounded-full flex items-center gap-2 text-[13.5px] font-bold tracking-tight transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.97] press-feedback cursor-pointer ${
                 isCartAdded
                   ? 'bg-[#166534] text-white shadow-[0_4px_16px_rgba(22,101,52,0.3)]'
                   : 'bg-[#111111] text-white hover:bg-[#27272a]'
@@ -275,7 +275,7 @@ export default function StickyPdpBar({
                     type="button"
                     disabled={!isAvailable}
                     onClick={() => onSizeChange?.(size)}
-                    className={`min-w-[32px] h-[36px] px-2 rounded-lg flex items-center justify-center text-[12px] font-semibold transition-all cursor-pointer ${
+                    className={`min-w-[44px] min-h-[44px] h-[44px] px-2.5 rounded-lg flex items-center justify-center text-[12px] font-semibold transition-all cursor-pointer press-feedback touch-manipulation ${
                       isSelected
                         ? 'bg-[#111111] text-white shadow-xs'
                         : 'bg-[#f4f4f5] text-gray-800 hover:bg-[#e4e4e7]'
@@ -292,7 +292,7 @@ export default function StickyPdpBar({
               type="button"
               onClick={onAddToCart}
               disabled={!isAvailableForSelected}
-              className={`flex-1 h-[36px] px-3.5 rounded-full flex items-center justify-center gap-1.5 text-[12px] font-bold transition-all shadow-sm active:scale-[0.98] cursor-pointer whitespace-nowrap ${
+              className={`flex-1 min-h-[44px] h-[44px] px-3.5 rounded-full flex items-center justify-center gap-1.5 text-[12px] font-bold transition-all shadow-sm active:scale-[0.97] press-feedback cursor-pointer whitespace-nowrap touch-manipulation ${
                 isCartAdded
                   ? 'bg-[#166534] text-white'
                   : 'bg-[#111111] text-white hover:bg-[#27272a]'

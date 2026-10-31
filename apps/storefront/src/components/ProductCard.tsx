@@ -74,7 +74,7 @@ const dotClass = (active: boolean) =>
   }`
 
 const swatchClass =
-  'h-4 w-4 sm:h-5 sm:w-5 cursor-pointer rounded-full border border-black/10 p-0 outline-none transition-transform duration-150 hover:scale-110'
+  'h-4 w-4 sm:h-5 sm:w-5 cursor-pointer rounded-full border border-black/10 p-0 outline-none transition-transform duration-150 hover:scale-110 press-feedback'
 
 interface ProductCardProps {
   product: Product
@@ -94,6 +94,7 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
   const [favAnimate, setFavAnimate] = useState<boolean>(false)
   const [activeImageIdx, setActiveImageIdx] = useState<number>(0)
   const [activeColorIdx, setActiveColorIdx] = useState<number>(0)
+  const [isImageLoaded, setIsImageLoaded] = useState<boolean>(false)
 
   const availableSizes = useMemo(() => getAvailableProductSizes(product), [product])
   const secondaryImg = useMemo(() => {
@@ -258,9 +259,10 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
         {/* Top-Left Circular Favorite Button */}
         <button
           type="button"
-          className={`absolute left-2 top-2 sm:left-2.5 sm:top-2.5 z-10 flex h-7.5 w-7.5 sm:h-9 sm:w-9 cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-white p-0 text-black shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition-transform duration-200 hover:scale-105 active:scale-95 ${
+          className={`absolute left-2 top-2 sm:left-2.5 sm:top-2.5 z-10 flex h-7.5 w-7.5 sm:h-9 sm:w-9 cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-white p-0 text-black shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition-transform duration-200 hover:scale-105 active:scale-95 press-feedback ${
             favAnimate ? 'animate-heart-pop' : ''
           }`}
+          onPointerDown={() => setFavAnimate(true)}
           onClick={handleFavoriteClick}
           aria-label={
             mounted && isFavorite
@@ -296,13 +298,21 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
           onClick={handleCardClick}
         >
           <div className="relative h-full w-full overflow-hidden">
+            <div
+              className={`absolute inset-0 skeleton-shimmer transition-opacity duration-200 ${
+                isImageLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'
+              }`}
+            />
             <Image
               src={product.img}
               alt={product.name}
               width={600}
               height={800}
               sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 24vw"
-              className={`${cardImageClass} ${activeImageIdx === 0 ? 'opacity-100' : 'opacity-0'}`}
+              className={`${cardImageClass} transition-opacity duration-200 ${
+                isImageLoaded && activeImageIdx === 0 ? 'opacity-100' : 'opacity-0'
+              }`}
+              onLoad={() => setIsImageLoaded(true)}
               loading="lazy"
             />
             {secondaryImg && (
@@ -385,7 +395,7 @@ export default function ProductCard({ product, selectedSize }: ProductCardProps)
         {/* ── 3. Full-Width "ADD TO BAG →" Action Button ── */}
         <button
           type="button"
-          className={`group/btn relative mt-2.5 sm:mt-3.5 flex h-9 sm:h-10 lg:h-11 w-full cursor-pointer touch-manipulation items-center justify-center rounded-xl border-0 px-2 sm:px-3 lg:px-4 font-brand text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white shadow-xs transition-all duration-200 hover:bg-neutral-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 ${
+          className={`group/btn relative mt-2.5 sm:mt-3.5 flex h-9 sm:h-10 lg:h-11 w-full cursor-pointer touch-manipulation items-center justify-center rounded-xl border-0 px-2 sm:px-3 lg:px-4 font-brand text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white shadow-xs transition-all duration-200 hover:bg-neutral-800 active:scale-[0.97] press-feedback disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 ${
             isAdded ? 'bg-emerald-700' : 'bg-black'
           }`}
           onClick={handleAddToCart}
