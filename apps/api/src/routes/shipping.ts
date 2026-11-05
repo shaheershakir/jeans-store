@@ -1,7 +1,13 @@
 import { Router, type Request, type Response } from 'express'
 import { z } from 'zod'
 import { verifyAdminAuth } from '../middleware/auth.js'
-import { calculateShipping, getShippingRates, saveShippingRates, shippingRatesSchema } from '../services/shipping.js'
+import {
+  calculateShipping,
+  getShippingRates,
+  saveShippingRates,
+  shippingRatesSchema,
+  getPincodeDeliveryInfo
+} from '../services/shipping.js'
 
 export const shippingRouter = Router()
 
@@ -15,6 +21,26 @@ shippingRouter.get('/api/shipping/rates', async (_req: Request, res: Response) =
     res.json({ rates: await getShippingRates() })
   } catch {
     res.status(503).json({ error: 'Shipping rates are temporarily unavailable.' })
+  }
+})
+
+shippingRouter.get('/api/shipping/check', async (req: Request, res: Response) => {
+  const pincode = req.query.pincode
+  if (!pincode || typeof pincode !== 'string') {
+    res.status(400).json({ error: 'A 6-digit Indian PIN code is required.' })
+    return
+  }
+
+  try {
+    const rates = await getShippingRates()
+    const result = getPincodeDeliveryInfo(pincode, rates)
+    if (!result.serviceable) {
+      res.status(400).json({ error: result.error })
+      return
+    }
+    res.json(result)
+  } catch {
+    res.status(503).json({ error: 'Delivery check is temporarily unavailable.' })
   }
 })
 

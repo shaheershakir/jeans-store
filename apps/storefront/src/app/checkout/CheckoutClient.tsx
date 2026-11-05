@@ -111,26 +111,30 @@ interface ShippingRate {
 }
 
 interface ShippingRates {
+  dispatchDaysMin?: number
+  dispatchDaysMax?: number
   kerala: ShippingRate
   restOfIndia: ShippingRate
 }
 
 const DEFAULT_SHIPPING_RATES: ShippingRates = {
+  dispatchDaysMin: 1,
+  dispatchDaysMax: 2,
   kerala: {
     baseWeightGrams: 500,
     baseCharge: 60,
     additionalWeightGrams: 500,
     additionalCharge: 20,
     estimatedDaysMin: 2,
-    estimatedDaysMax: 5
+    estimatedDaysMax: 2
   },
   restOfIndia: {
     baseWeightGrams: 500,
     baseCharge: 90,
     additionalWeightGrams: 500,
     additionalCharge: 30,
-    estimatedDaysMin: 7,
-    estimatedDaysMax: 14
+    estimatedDaysMin: 5,
+    estimatedDaysMax: 7
   }
 }
 

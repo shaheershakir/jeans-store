@@ -12,7 +12,11 @@ import {
   Pencil,
   Plus,
   Check,
-  X
+  X,
+  Truck,
+  Loader2,
+  Package,
+  Clock
 } from 'lucide-react'
 import type { Product, ProductDesign } from '@/lib/constants'
 import { useCartStore, useUIStore, usePreferencesStore, useFavoriteStore, useSearchHistoryStore } from '@/lib/store'
@@ -22,6 +26,13 @@ import StickyPdpBar from '@/components/StickyPdpBar'
 import { getAvailableProductSizes, getProductCheckoutUrl, getProductSlug, slugify } from '@/lib/products'
 import { trackEvent } from '@/lib/analytics'
 import { ProductDetailSkeleton } from '@/components/skeletons/StorefrontSkeletons'
+import {
+  type ShippingRates,
+  type PincodeDeliveryInfo,
+  DEFAULT_SHIPPING_RATES,
+  fetchLiveShippingRates,
+  calculatePincodeDelivery
+} from '@/lib/shipping'
 
 // Map category ID → breadcrumb label + route
 const CATEGORY_META: Record<string, { label: string; href: string }> = {
@@ -109,10 +120,12 @@ function ProductDetailContent({ product }: { product: Product }) {
   }, [designs, selectedDesignSlug])
 
   // Delivery Pincode Box state
-  const [deliveryPin, setDeliveryPin] = useState<string>('560001')
-  const [deliveryCity, setDeliveryCity] = useState<string>('Bengaluru')
-  const [isEditingPin, setIsEditingPin] = useState<boolean>(false)
-  const [pinInput, setPinInput] = useState<string>('560001')
+  const [shippingRates, setShippingRates] = useState<ShippingRates>(DEFAULT_SHIPPING_RATES)
+  const [deliveryPin, setDeliveryPin] = useState<string>('')
+  const [deliveryCity, setDeliveryCity] = useState<string>('')
+  const [deliveryInfo, setDeliveryInfo] = useState<PincodeDeliveryInfo | null>(null)
+  const [isEditingPin, setIsEditingPin] = useState<boolean>(true)
+  const [pinInput, setPinInput] = useState<string>('')
   const [pinLoading, setPinLoading] = useState<boolean>(false)
   const [pinError, setPinError] = useState<string | null>(null)
 
@@ -240,17 +253,22 @@ function ProductDetailContent({ product }: { product: Product }) {
     }
     void hydrateAndSelect()
 
-    if (typeof window !== 'undefined') {
-      const savedPin = localStorage.getItem('teesgarage-delivery-pin')
-      if (savedPin) {
-        setDeliveryPin(savedPin)
-        setPinInput(savedPin)
+    fetchLiveShippingRates().then((liveRates) => {
+      setShippingRates(liveRates)
+      if (typeof window !== 'undefined') {
+        const savedPin = localStorage.getItem('teesgarage-delivery-pin')
+        const savedCity = localStorage.getItem('teesgarage-delivery-city') || 'India'
+        if (savedPin && /^\d{6}$/.test(savedPin)) {
+          setDeliveryPin(savedPin)
+          setPinInput(savedPin)
+          setDeliveryCity(savedCity)
+          setDeliveryInfo(calculatePincodeDelivery(savedPin, liveRates, savedCity))
+          setIsEditingPin(false)
+        } else {
+          setIsEditingPin(true)
+        }
       }
-      const savedCity = localStorage.getItem('teesgarage-delivery-city')
-      if (savedCity) {
-        setDeliveryCity(savedCity)
-      }
-    }
+    })
 
     return () => {
       isSubscribed = false
@@ -270,31 +288,39 @@ function ProductDetailContent({ product }: { product: Product }) {
 
   const handlePinSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
-    const cleanPin = pinInput.trim()
-    if (!/^\d{6}$/.test(cleanPin)) {
-      setPinError('Enter a valid 6-digit PIN')
+    const cleanPin = pinInput.trim().replace(/\D/g, '')
+    if (!/^[1-9]\d{5}$/.test(cleanPin)) {
+      setPinError('Please enter a valid 6-digit Indian PIN code.')
       return
     }
     setPinLoading(true)
     setPinError(null)
     try {
-      const res = await fetch(`https://api.postalpincode.in/pincode/${cleanPin}`)
-      const data = await res.json()
-      if (Array.isArray(data) && data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
-        const po = data[0].PostOffice[0]
-        const district = po.District || po.Name || 'India'
-        setDeliveryPin(cleanPin)
-        setDeliveryCity(district)
-        setIsEditingPin(false)
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('teesgarage-delivery-pin', cleanPin)
-          localStorage.setItem('teesgarage-delivery-city', district)
+      let district = 'India'
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${cleanPin}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data) && data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
+            const po = data[0].PostOffice[0]
+            district = po.District || po.Name || po.State || 'India'
+          }
         }
-      } else {
-        setPinError('Invalid pincode or not serviceable')
+      } catch {
+        // postal API optional
+      }
+
+      const info = calculatePincodeDelivery(cleanPin, shippingRates, district)
+      setDeliveryPin(cleanPin)
+      setDeliveryCity(district)
+      setDeliveryInfo(info)
+      setIsEditingPin(false)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('teesgarage-delivery-pin', cleanPin)
+        localStorage.setItem('teesgarage-delivery-city', district)
       }
     } catch {
-      setPinError('Failed to verify pincode')
+      setPinError('Could not verify pincode delivery availability.')
     } finally {
       setPinLoading(false)
     }
@@ -713,13 +739,35 @@ function ProductDetailContent({ product }: { product: Product }) {
             </div>
           </div>
 
-          {/* Delivery Box */}
-          <div className="bg-[#f9f9f9] border border-gray-100 rounded-2xl p-4 mb-6">
-            {isEditingPin ? (
-              <form onSubmit={handlePinSubmit} className="space-y-2">
+          {/* Delivery Availability & Pincode Checker */}
+          <div className="bg-[#FAF9F6] border border-black/8 rounded-[18px] p-4 sm:p-5 mb-6 shadow-2xs">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Truck className="w-4 h-4 text-[#111111]" />
+                <h3 className="text-[13px] font-bold text-[#111111] uppercase tracking-wider">
+                  Delivery &amp; Availability
+                </h3>
+              </div>
+              {deliveryInfo && !isEditingPin && (
+                <button
+                  type="button"
+                  onClick={handleStartEditPin}
+                  className="text-[12px] font-bold text-[#111111] hover:underline cursor-pointer"
+                >
+                  Change Pincode
+                </button>
+              )}
+            </div>
+
+            {isEditingPin || !deliveryInfo ? (
+              <form onSubmit={handlePinSubmit} className="space-y-2.5">
+                <label htmlFor="pdpPincodeInput" className="block text-[12.5px] font-medium text-[#555555]">
+                  Enter your pincode to check delivery availability:
+                </label>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
                     <input
+                      id="pdpPincodeInput"
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
@@ -729,19 +777,22 @@ function ProductDetailContent({ product }: { product: Product }) {
                         const val = e.target.value.replace(/\D/g, '').slice(0, 6)
                         setPinInput(val)
                       }}
-                      placeholder="Enter 6-digit PIN"
+                      placeholder="e.g. 682001 (Kerala) or 560001"
                       disabled={pinLoading}
-                      autoFocus
-                      className="w-full h-9 rounded-lg border border-gray-300 bg-white px-3 text-xs font-mono font-medium text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none"
+                      autoFocus={isEditingPin && Boolean(deliveryInfo)}
+                      className="w-full h-10 rounded-[10px] border border-black/15 bg-white px-3.5 text-[13.5px] font-mono font-medium text-[#111111] placeholder:text-[#999999] focus:border-black focus:outline-none transition-all shadow-2xs"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={pinLoading || pinInput.length !== 6}
-                    className="h-9 px-3 rounded-lg bg-black text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 cursor-pointer inline-flex items-center gap-1 shrink-0"
+                    className="h-10 px-4 rounded-[10px] bg-[#141414] hover:bg-[#262626] text-white text-[13px] font-semibold transition-all disabled:opacity-40 cursor-pointer inline-flex items-center justify-center gap-1.5 shrink-0 shadow-xs active:scale-98"
                   >
                     {pinLoading ? (
-                      <span>Checking...</span>
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Checking…</span>
+                      </>
                     ) : (
                       <>
                         <Check className="w-3.5 h-3.5" />
@@ -749,52 +800,72 @@ function ProductDetailContent({ product }: { product: Product }) {
                       </>
                     )}
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleCancelEditPin}
-                    disabled={pinLoading}
-                    className="h-9 px-3 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-600 hover:text-black cursor-pointer shrink-0"
-                  >
-                    Cancel
-                  </button>
+                  {deliveryInfo && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEditPin}
+                      disabled={pinLoading}
+                      className="h-10 px-3 rounded-[10px] border border-black/15 bg-white text-[12.5px] font-semibold text-[#555555] hover:text-black hover:bg-black/3 cursor-pointer shrink-0"
+                    >
+                      Cancel
+                    </button>
+                  )}
                 </div>
-                {pinError && <p className="text-xs text-rose-600 font-medium">{pinError}</p>}
+                {pinError && (
+                  <p className="text-[12px] text-rose-600 font-medium flex items-center gap-1 mt-1">
+                    <span>{pinError}</span>
+                  </p>
+                )}
+                <p className="text-[11.5px] text-[#777777] leading-relaxed">
+                  Fast delivery across India • 2 days in Kerala • 5–7 days outside Kerala
+                </p>
               </form>
             ) : (
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <MapPin className="w-4 h-4 text-gray-700 shrink-0 mt-0.5" />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap text-xs sm:text-sm text-gray-700">
-                      <span>Deliver to</span>
-                      <strong className="font-bold text-gray-950">
-                        {deliveryCity}, {deliveryPin}
-                      </strong>
-                      <button
-                        type="button"
-                        onClick={handleStartEditPin}
-                        className="text-gray-400 hover:text-gray-600 inline-flex items-center cursor-pointer"
-                        aria-label="Edit delivery pincode"
-                      >
-                        <Pencil className="w-3.5 h-3.5 ml-0.5" />
-                      </button>
-                      <span className="text-emerald-600 font-semibold text-xs inline-flex items-center gap-1 ml-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                        In stock
-                      </span>
+              <div className="space-y-3 pt-1">
+                {/* Availability Badge */}
+                <div className="flex items-center justify-between pb-2.5 border-b border-black/6">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[13px] font-bold text-emerald-800">
+                      Delivery Available {deliveryCity ? `to ${deliveryCity}` : ''} ({deliveryPin})
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {deliveryInfo.isKerala ? 'Kerala Region' : 'Outside Kerala'}
+                  </span>
+                </div>
+
+                {/* Timeline Row 1: Shipping Date */}
+                <div className="flex items-start gap-2.5 text-[12.5px] text-[#333333]">
+                  <Package className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-[#111111]">
+                      Shipping: <span className="font-semibold text-[#333333]">{deliveryInfo.dispatchText}</span>
                     </div>
-                    <div className="text-xs text-gray-500 mt-0.5">
-                      Paid delivery calculated by area and parcel weight
+                    <div className="text-[11.5px] text-[#666666] mt-0.5">
+                      Estimated dispatch: {deliveryInfo.dispatchDateRange}
                     </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleStartEditPin}
-                  className="text-xs font-bold text-gray-950 hover:underline shrink-0 cursor-pointer"
-                >
-                  Change
-                </button>
+
+                {/* Timeline Row 2: Estimated Delivery Date */}
+                <div className="flex items-start gap-2.5 text-[12.5px] text-[#333333]">
+                  <Clock className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-[#111111]">
+                      Estimated Delivery: <span className="text-emerald-700 font-extrabold">{deliveryInfo.estimatedDeliveryRange}</span>
+                    </div>
+                    <div className="text-[11.5px] text-[#666666] mt-0.5">
+                      {deliveryInfo.deliveryText} • Doorstep delivery with live tracking
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing / Policy note */}
+                <div className="pt-2 border-t border-black/6 text-[11px] text-[#777777] flex items-center justify-between">
+                  <span>Standard delivery rate: ₹{deliveryInfo.baseCharge}</span>
+                  <span className="text-[#555555]">7-day doorstep size exchange</span>
+                </div>
               </div>
             )}
           </div>
@@ -962,9 +1033,10 @@ function ProductDetailContent({ product }: { product: Product }) {
                       Orders are processed and dispatched within 24 hours from our fulfillment hub.
                     </p>
                     <ul className="list-disc list-inside space-y-1 text-gray-500">
-                      <li>Direct fulfillment from Kannur, Kerala</li>
-                      <li>Kerala delivery: 2-5 business days (standard ₹60 base rate)</li>
-                      <li>Outside Kerala: 7-14 business days (standard ₹90 base rate)</li>
+                      <li>Direct fulfillment from Kannur, Kerala hub</li>
+                      <li>Shipping dispatch: Typically within {shippingRates.dispatchDaysMin ?? 1}–{shippingRates.dispatchDaysMax ?? 2} business days</li>
+                      <li>Kerala delivery: {shippingRates.kerala.estimatedDaysMin ?? 2} business days (standard ₹{shippingRates.kerala.baseCharge} base rate)</li>
+                      <li>Outside Kerala: {shippingRates.restOfIndia.estimatedDaysMin ?? 5}–{shippingRates.restOfIndia.estimatedDaysMax ?? 7} business days (standard ₹{shippingRates.restOfIndia.baseCharge} base rate)</li>
                       <li>Weight-based parcel shipping calculated at checkout</li>
                       <li>7-day doorstep return and instant size exchange guarantee</li>
                     </ul>
