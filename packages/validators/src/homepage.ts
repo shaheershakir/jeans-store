@@ -21,6 +21,19 @@ export const announcementSchema = z.object({
   intervalSeconds: z.number().min(1).max(20).default(4)
 })
 
+export const heroBannerSlideSchema = z.object({
+  id: z.string().optional(),
+  image: z.string(),
+  alt: z.string().optional(),
+  eyebrow: z.string().optional(),
+  title: z.string().optional(),
+  subtitle: z.string().optional(),
+  ctaText: z.string().optional(),
+  ctaLink: z.string().optional(),
+  align: z.enum(['left', 'right']).optional(),
+  imagePositionClass: z.string().optional()
+})
+
 export const heroSchema = z.object({
   enabled: z.boolean().default(true),
   eyebrow: z.string().default('New Season — SS 2026'),
@@ -30,8 +43,9 @@ export const heroSchema = z.object({
   primaryCtaLink: z.string().default('/#catalog'),
   secondaryCtaText: z.string().default('All Styles'),
   secondaryCtaLink: z.string().default('/#catalog'),
-  imageUrl: z.string().default('/hero-man.jpg'),
-  trustBadges: z.array(z.string()).default(['⚡ 24h dispatch', '🔄 7-day exchange', '🚚 Delivery priced by weight'])
+  imageUrl: z.string().default('/tessgarage-banner-assets/wide_horizontal_photo_of_a_young_woman_against_a_t.webp'),
+  trustBadges: z.array(z.string()).default(['⚡ 24h dispatch', '🔄 7-day exchange', '🚚 Delivery priced by weight']),
+  banners: z.array(heroBannerSlideSchema).optional().default([])
 })
 
 export const categoryItemSchema = z.object({

@@ -5,6 +5,15 @@ import { useAdminStore } from '@/store/admin-store'
 import { DEFAULT_HOMEPAGE_CONFIG } from '@/data/seed'
 import type { HomepageConfig } from '@/lib/types'
 
+export async function uploadHomepageImage(file: File): Promise<string> {
+  const response = await apiFetch<{ url: string }>('/api/uploads/homepage', {
+    method: 'POST',
+    headers: { 'Content-Type': file.type },
+    body: file
+  })
+  return response.url
+}
+
 export async function fetchBackendHomepage(): Promise<HomepageConfig> {
   try {
     const data = await apiFetch<{ success: boolean; config: HomepageConfig }>('/api/homepage')

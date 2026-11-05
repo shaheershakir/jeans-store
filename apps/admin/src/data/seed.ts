@@ -122,8 +122,43 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     primaryCtaLink: '/shop',
     secondaryCtaText: 'All Styles',
     secondaryCtaLink: '/shop',
-    imageUrl: '/hero-man.jpg',
+    imageUrl: '/tessgarage-banner-assets/wide_horizontal_photo_of_a_young_woman_against_a_t.webp',
     trustBadges: [],
+    banners: [
+      {
+        id: '1',
+        image: '/tessgarage-banner-assets/wide_horizontal_photo_of_a_young_woman_against_a_t.webp',
+        alt: 'TEESGARAGE Streetwear - Graphic Tees for Real Life',
+        eyebrow: 'NEW SEASON',
+        title: 'Graphic Tees\nfor Real Life',
+        subtitle: 'Clean designs. Better fits. Made for\neveryday escapes.',
+        ctaText: 'Shop Printed Tees',
+        ctaLink: '/shop/printed-tees',
+        align: 'left'
+      },
+      {
+        id: '2',
+        image: '/tessgarage-banner-assets/338e5bf0-2823-44cd-96f2-dcf461e28d65.webp',
+        alt: 'TEESGARAGE Heavyweight Cotton Collection',
+        eyebrow: 'HEAVYWEIGHT DROPS',
+        title: 'Structured Cuts\nThat Last',
+        subtitle: '260+ GSM combed cotton. Engineered for\nall-day comfort & clean drape.',
+        ctaText: 'Explore Collection',
+        ctaLink: '/shop',
+        align: 'left'
+      },
+      {
+        id: '3',
+        image: '/tessgarage-banner-assets/f20a9215-9f17-44e8-97d3-77cd271b72e8.webp',
+        alt: 'TEESGARAGE Timeless Basics',
+        eyebrow: 'EVERYDAY ROTATION',
+        title: 'Timeless Basics\nModern Silhouettes',
+        subtitle: 'Micro-stripes, henleys & engineered pants.\nCuts that hold shape wash after wear.',
+        ctaText: 'Shop All Styles',
+        ctaLink: '/shop',
+        align: 'right'
+      }
+    ],
   },
   categories: {
     enabled: true,

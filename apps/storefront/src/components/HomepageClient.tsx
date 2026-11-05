@@ -141,7 +141,7 @@ interface HomepageClientProps {
   config?: HomepageConfig
 }
 
-export default function HomepageClient({ products }: HomepageClientProps) {
+export default function HomepageClient({ products, config }: HomepageClientProps) {
   const isFavorite = useFavoriteStore((s) => s.isFavorite)
   const toggleFavorite = useFavoriteStore((s) => s.toggleFavorite)
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -152,13 +152,70 @@ export default function HomepageClient({ products }: HomepageClientProps) {
     void useFavoriteStore.persist.rehydrate()
   }, [])
 
-  // Auto-change top banner image every 5 seconds
+  // Dynamically resolve hero carousel banners from admin homepage config
+  const banners = useMemo<TopBanner[]>(() => {
+    // 1. If admin configured explicit banner slides in config.hero.banners
+    if (config?.hero?.banners && config.hero.banners.length > 0) {
+      return config.hero.banners.map((b, i) => ({
+        image: b.image,
+        alt: b.alt || b.title || `Hero banner ${i + 1}`,
+        eyebrow: b.eyebrow || config?.hero?.eyebrow || 'NEW SEASON',
+        title: b.title || config?.hero?.title || 'Graphic Tees\nfor Real Life',
+        subtitle: b.subtitle || config?.hero?.subtitle || 'Clean designs. Better fits.',
+        ctaText: b.ctaText || config?.hero?.primaryCtaText || 'Shop Collection',
+        ctaLink: b.ctaLink || config?.hero?.primaryCtaLink || '/shop',
+        align: b.align || (i === 2 ? 'right' : 'left'),
+        imagePositionClass: b.imagePositionClass || 'object-center'
+      }))
+    }
+
+    // 2. If admin set/changed hero.imageUrl (primary homepage picture)
+    if (config?.hero?.imageUrl && config.hero.imageUrl.trim() !== '') {
+      const primaryBanner: TopBanner = {
+        image: config.hero.imageUrl,
+        alt: config.hero.title || 'TEESGARAGE Streetwear - Graphic Tees for Real Life',
+        eyebrow: config.hero.eyebrow || 'NEW SEASON',
+        title: config.hero.title || 'Graphic Tees\nfor Real Life',
+        subtitle: config.hero.subtitle || 'Clean designs. Better fits. Made for\neveryday escapes.',
+        ctaText: config.hero.primaryCtaText || 'Shop Collection',
+        ctaLink: config.hero.primaryCtaLink || '/shop',
+        align: 'left',
+        imagePositionClass: 'object-center'
+      }
+
+      const matchIndex = TOP_BANNERS.findIndex((tb) => tb.image === config.hero.imageUrl)
+      if (matchIndex !== -1) {
+        return TOP_BANNERS.map((tb, idx) =>
+          idx === matchIndex
+            ? {
+                ...tb,
+                eyebrow: config.hero.eyebrow || tb.eyebrow,
+                title: config.hero.title || tb.title,
+                subtitle: config.hero.subtitle || tb.subtitle,
+                ctaText: config.hero.primaryCtaText || tb.ctaText,
+                ctaLink: config.hero.primaryCtaLink || tb.ctaLink
+              }
+            : tb
+        )
+      }
+
+      return [primaryBanner, ...TOP_BANNERS.slice(1)]
+    }
+
+    return TOP_BANNERS
+  }, [config?.hero])
+
+  // Safe slide index within bounds of banners
+  const activeSlide = currentSlide < banners.length ? currentSlide : 0
+
+  // Auto-change top banner image every 5 seconds if multiple banners exist
   useEffect(() => {
+    if (banners.length <= 1) return
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % TOP_BANNERS.length)
+      setCurrentSlide((prev) => (prev + 1) % banners.length)
     }, 5000)
     return () => clearInterval(timer)
-  }, [])
+  }, [banners.length])
 
   // Live database products for New Arrivals (fresh drops)
   const newArrivals = useMemo(() => {
@@ -195,11 +252,11 @@ export default function HomepageClient({ products }: HomepageClientProps) {
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           <div className="group relative flex h-[480px] sm:h-[500px] md:h-[540px] lg:h-[570px] w-full items-end md:items-center overflow-hidden rounded-[20px] md:rounded-[26px] bg-[#111111] shadow-[0_12px_36px_rgba(0,0,0,0.18)]">
             {/* Background Carousel Images */}
-            {TOP_BANNERS.map((banner, idx) => (
+            {banners.map((banner, idx) => (
               <div
-                key={banner.image}
+                key={banner.image + idx}
                 className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                  idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none z-0'
+                  idx === activeSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none z-0'
                 }`}
               >
                 <Image
@@ -216,7 +273,7 @@ export default function HomepageClient({ products }: HomepageClientProps) {
             {/* Deep Black Gradient Overlay: from bottom on mobile, from left or right on desktop */}
             <div
               className={`absolute inset-0 bg-linear-to-t from-black/95 via-black/60 to-black/10 pointer-events-none z-[1] transition-all duration-700 ${
-                TOP_BANNERS[currentSlide].align === 'right'
+                banners[activeSlide]?.align === 'right'
                   ? 'md:bg-linear-to-l md:from-black/85 md:via-black/50 md:to-transparent'
                   : 'md:bg-linear-to-r md:from-black/85 md:via-black/50 md:to-transparent'
               }`}
@@ -231,7 +288,7 @@ export default function HomepageClient({ products }: HomepageClientProps) {
               height={130}
               priority
               className={`pointer-events-none absolute top-4 md:top-7 lg:top-9 z-10 w-16 sm:w-20 md:w-28 lg:w-32 h-auto opacity-80 invert brightness-0 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-all duration-500 ${
-                TOP_BANNERS[currentSlide].align === 'right'
+                banners[activeSlide]?.align === 'right'
                   ? 'left-4 md:left-8 lg:left-11'
                   : 'right-4 md:right-8 lg:right-11'
               }`}
@@ -240,26 +297,26 @@ export default function HomepageClient({ products }: HomepageClientProps) {
             {/* Content: lower end on mobile, left or right on desktop */}
             <div
               className={`relative z-10 flex w-full max-w-[620px] flex-col justify-end px-5 py-6 sm:px-8 sm:py-8 md:p-14 lg:p-16 transition-all duration-500 ${
-                TOP_BANNERS[currentSlide].align === 'right'
+                banners[activeSlide]?.align === 'right'
                   ? 'md:ml-auto md:items-start'
                   : 'md:mr-auto md:items-start'
               }`}
             >
               <span className="mb-2 sm:mb-3 md:mb-3.5 block text-[11.5px] sm:text-[12.5px] md:text-[13px] font-bold uppercase tracking-[0.18em] text-white/80">
-                {TOP_BANNERS[currentSlide].eyebrow}
+                {banners[activeSlide]?.eyebrow}
               </span>
               <h1 className="mb-3 sm:mb-4 md:mb-4.5 text-[32px] sm:text-[36px] md:text-[44px] lg:text-[54px] font-extrabold leading-[1.12] sm:leading-[1.14] md:leading-[1.12] tracking-[-0.025em] text-white whitespace-pre-line">
-                {TOP_BANNERS[currentSlide].title}
+                {banners[activeSlide]?.title}
               </h1>
               <p className="mb-5 sm:mb-6 md:mb-7 max-w-[340px] sm:max-w-[380px] md:max-w-[420px] text-[14.5px] sm:text-[15.5px] md:text-[16px] leading-[1.5] text-white/90 whitespace-pre-line">
-                {TOP_BANNERS[currentSlide].subtitle}
+                {banners[activeSlide]?.subtitle}
               </p>
               
               <Link
-                href={TOP_BANNERS[currentSlide].ctaLink}
+                href={banners[activeSlide]?.ctaLink || '/shop'}
                 className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-2.5 sm:px-6 sm:py-3.5 text-[13.5px] sm:text-[14.5px] font-bold text-[#111111] shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-neutral-100 hover:shadow-[0_6px_20px_rgba(0,0,0,0.45)] active:scale-[0.98]"
               >
-                <span>{TOP_BANNERS[currentSlide].ctaText}</span>
+                <span>{banners[activeSlide]?.ctaText}</span>
                 <svg
                   width="14"
                   height="14"
@@ -282,16 +339,16 @@ export default function HomepageClient({ products }: HomepageClientProps) {
               role="tablist"
               aria-label="Hero carousel pagination"
             >
-              {TOP_BANNERS.map((banner, idx) => (
+              {banners.map((banner, idx) => (
                 <button
-                  key={banner.image}
+                  key={banner.image + idx}
                   type="button"
                   role="tab"
-                  aria-selected={idx === currentSlide}
+                  aria-selected={idx === activeSlide}
                   aria-label={`Go to slide ${idx + 1}`}
                   onClick={() => setCurrentSlide(idx)}
                   className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                    idx === currentSlide
+                    idx === activeSlide
                       ? 'w-5 sm:w-7 bg-white'
                       : 'w-2 sm:w-2.5 bg-white/45 hover:bg-white/75'
                   }`}
@@ -453,8 +510,8 @@ export default function HomepageClient({ products }: HomepageClientProps) {
         <div className="mx-auto max-w-[1400px] px-6 lg:px-8">
           <div className="relative flex min-h-[350px] lg:min-h-[390px] w-full items-center overflow-hidden rounded-[26px] bg-[#8f796c] shadow-[0_4px_20px_rgba(0,0,0,0.04)] max-[768px]:min-h-[300px] max-[768px]:rounded-[18px] max-[640px]:min-h-[280px]">
             <Image
-              src="/tessgarage-banner-assets/middle-banner/wide_cinematic_coastal_scene_a_photorealistic_sh.webp"
-              alt="Everyday Essentials - Oversized Fits Minimal Effort"
+              src={config?.featured_collection?.imageUrl || "/tessgarage-banner-assets/middle-banner/wide_cinematic_coastal_scene_a_photorealistic_sh.webp"}
+              alt={config?.featured_collection?.title || "Everyday Essentials - Oversized Fits Minimal Effort"}
               fill
               sizes="(max-width: 1440px) 100vw, 1400px"
               className="absolute inset-0 h-full w-full object-cover object-center z-0"

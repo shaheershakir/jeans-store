@@ -35,6 +35,7 @@ import { DEFAULT_HOMEPAGE_CONFIG } from '@/data/seed'
 import { PageContent, PageHeader } from '@/components/ui/page-header'
 import { Button, Card, CardHeader, Field, Input, Select, Badge } from '@/components/ui/primitives'
 import { toastSuccess, toastError } from '@/components/ui/toast'
+import { HomepageImageUpload } from '@/components/homepage-image-upload'
 import type {
   HomepageConfig,
   HomepageSectionType,
@@ -453,9 +454,30 @@ export default function StorefrontHomepagePage() {
 
               {/* 2. Hero Banner */}
               {activeSection === 'hero' && (
-                <div className="space-y-4">
+                <div className="space-y-6">
+                  {/* Primary Hero Image Uploader */}
+                  <HomepageImageUpload
+                    label="Primary Hero Picture (Homepage)"
+                    hint="Upload or change the primary homepage picture. Assets are securely stored in Google Cloud Storage."
+                    value={config.hero.imageUrl}
+                    onChange={(url) => {
+                      const updatedBanners = config.hero.banners && config.hero.banners.length > 0
+                        ? config.hero.banners.map((b, idx) => idx === 0 ? { ...b, image: url } : b)
+                        : config.hero.banners
+                      setConfig({
+                        ...config,
+                        hero: {
+                          ...config.hero,
+                          imageUrl: url,
+                          banners: updatedBanners
+                        }
+                      })
+                    }}
+                    aspectRatio="hero"
+                  />
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field label="Eyebrow Tag" hint="Short label above the campaign headline">
+                    <Field label="Eyebrow Tag" hint="Short label above the campaign headline">
                       <Input
                         value={config.hero.eyebrow}
                         onChange={(e) =>
@@ -464,11 +486,11 @@ export default function StorefrontHomepagePage() {
                       />
                     </Field>
 
-                    <Field label="Background Image URL" hint="Relative (/hero-man.jpg) or Unsplash URL">
+                    <Field label="Hero Title / Campaign Name" hint="Displayed on the hero banner">
                       <Input
-                        value={config.hero.imageUrl}
+                        value={config.hero.title}
                         onChange={(e) =>
-                          setConfig({ ...config, hero: { ...config.hero, imageUrl: e.target.value } })
+                          setConfig({ ...config, hero: { ...config.hero, title: e.target.value } })
                         }
                       />
                     </Field>
@@ -577,6 +599,178 @@ export default function StorefrontHomepagePage() {
                       </Button>
                     </div>
                   </Field>
+
+                  {/* Multi-Slide Carousel Management */}
+                  <div className="pt-5 border-t border-border space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          <Layers className="h-3.5 w-3.5 text-primary" /> Hero Carousel Slides
+                        </h4>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Manage rotating banner pictures for the top hero carousel. Each picture is uploaded to Google Cloud Storage.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const currentBanners = config.hero.banners || []
+                          const newSlide = {
+                            id: String(Date.now()),
+                            image: config.hero.imageUrl || '/tessgarage-banner-assets/wide_horizontal_photo_of_a_young_woman_against_a_t.webp',
+                            eyebrow: 'NEW DROP',
+                            title: 'New Season Style',
+                            subtitle: 'Engineered for comfort and modern drape.',
+                            ctaText: 'Shop Collection',
+                            ctaLink: '/shop',
+                            align: 'left' as const
+                          }
+                          setConfig({
+                            ...config,
+                            hero: {
+                              ...config.hero,
+                              banners: [...currentBanners, newSlide]
+                            }
+                          })
+                        }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> Add Slide
+                      </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {(config.hero.banners || []).map((slide, sIdx) => (
+                        <div key={slide.id || sIdx} className="p-4 rounded-xl border border-border bg-card space-y-3">
+                          <div className="flex items-center justify-between pb-2 border-b border-border">
+                            <span className="text-xs font-bold text-foreground flex items-center gap-2">
+                              Slide {sIdx + 1}
+                              {sIdx === 0 && (
+                                <Badge tone="primary" className="text-[10px] py-0 px-1.5 font-normal">
+                                  Primary Hero
+                                </Badge>
+                              )}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {(config.hero.banners || []).length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const updated = (config.hero.banners || []).filter((_, idx) => idx !== sIdx)
+                                    setConfig({
+                                      ...config,
+                                      hero: {
+                                        ...config.hero,
+                                        banners: updated,
+                                        imageUrl: sIdx === 0 && updated[0] ? updated[0].image : config.hero.imageUrl
+                                      }
+                                    })
+                                  }}
+                                  className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-3 w-3 mr-1" /> Delete Slide
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+
+                          <HomepageImageUpload
+                            label={`Slide ${sIdx + 1} Banner Picture`}
+                            hint="Picture is stored in Google Cloud Storage."
+                            value={slide.image}
+                            onChange={(url) => {
+                              const updated = [...(config.hero.banners || [])]
+                              updated[sIdx] = { ...updated[sIdx], image: url }
+                              setConfig({
+                                ...config,
+                                hero: {
+                                  ...config.hero,
+                                  banners: updated,
+                                  imageUrl: sIdx === 0 ? url : config.hero.imageUrl
+                                }
+                              })
+                            }}
+                            aspectRatio="hero"
+                          />
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <Field label="Eyebrow Tag">
+                              <Input
+                                value={slide.eyebrow || ''}
+                                onChange={(e) => {
+                                  const updated = [...(config.hero.banners || [])]
+                                  updated[sIdx] = { ...updated[sIdx], eyebrow: e.target.value }
+                                  setConfig({ ...config, hero: { ...config.hero, banners: updated } })
+                                }}
+                              />
+                            </Field>
+
+                            <Field label="Text Alignment">
+                              <Select
+                                value={slide.align || 'left'}
+                                onChange={(e) => {
+                                  const updated = [...(config.hero.banners || [])]
+                                  updated[sIdx] = { ...updated[sIdx], align: e.target.value as 'left' | 'right' }
+                                  setConfig({ ...config, hero: { ...config.hero, banners: updated } })
+                                }}
+                              >
+                                <option value="left">Left Aligned</option>
+                                <option value="right">Right Aligned</option>
+                              </Select>
+                            </Field>
+                          </div>
+
+                          <Field label="Slide Headline">
+                            <Input
+                              value={slide.title || ''}
+                              onChange={(e) => {
+                                const updated = [...(config.hero.banners || [])]
+                                updated[sIdx] = { ...updated[sIdx], title: e.target.value }
+                                setConfig({ ...config, hero: { ...config.hero, banners: updated } })
+                              }}
+                            />
+                          </Field>
+
+                          <Field label="Slide Subtitle">
+                            <Input
+                              value={slide.subtitle || ''}
+                              onChange={(e) => {
+                                const updated = [...(config.hero.banners || [])]
+                                updated[sIdx] = { ...updated[sIdx], subtitle: e.target.value }
+                                setConfig({ ...config, hero: { ...config.hero, banners: updated } })
+                              }}
+                            />
+                          </Field>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Field label="CTA Button Label">
+                              <Input
+                                value={slide.ctaText || ''}
+                                onChange={(e) => {
+                                  const updated = [...(config.hero.banners || [])]
+                                  updated[sIdx] = { ...updated[sIdx], ctaText: e.target.value }
+                                  setConfig({ ...config, hero: { ...config.hero, banners: updated } })
+                                }}
+                              />
+                            </Field>
+                            <Field label="CTA Destination Link">
+                              <Input
+                                value={slide.ctaLink || ''}
+                                onChange={(e) => {
+                                  const updated = [...(config.hero.banners || [])]
+                                  updated[sIdx] = { ...updated[sIdx], ctaLink: e.target.value }
+                                  setConfig({ ...config, hero: { ...config.hero, banners: updated } })
+                                }}
+                              />
+                            </Field>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -721,6 +915,19 @@ export default function StorefrontHomepagePage() {
               {/* 5. Featured Collection Banner */}
               {activeSection === 'featured_collection' && (
                 <div className="space-y-4">
+                  <HomepageImageUpload
+                    label="Editorial Feature Banner Picture (Google Cloud Storage)"
+                    hint="Upload or change the middle feature banner image. Stored in Google Cloud Storage."
+                    value={config.featured_collection.imageUrl}
+                    onChange={(url) =>
+                      setConfig({
+                        ...config,
+                        featured_collection: { ...config.featured_collection, imageUrl: url }
+                      })
+                    }
+                    aspectRatio="banner"
+                  />
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="Eyebrow Tag">
                       <Input
@@ -733,13 +940,13 @@ export default function StorefrontHomepagePage() {
                         }
                       />
                     </Field>
-                    <Field label="Banner Image URL">
+                    <Field label="CTA Destination Link">
                       <Input
-                        value={config.featured_collection.imageUrl}
+                        value={config.featured_collection.ctaLink}
                         onChange={(e) =>
                           setConfig({
                             ...config,
-                            featured_collection: { ...config.featured_collection, imageUrl: e.target.value }
+                            featured_collection: { ...config.featured_collection, ctaLink: e.target.value }
                           })
                         }
                       />
@@ -1315,7 +1522,7 @@ export default function StorefrontHomepagePage() {
                             key="hero"
                             className="relative min-h-[175px] p-4 flex flex-col justify-end bg-gradient-to-t from-black via-black/40 to-transparent"
                             style={{
-                              backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.2)), url(${config.hero.imageUrl})`,
+                              backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.2)), url(${config.hero.imageUrl || config.hero.banners?.[0]?.image || "/tessgarage-banner-assets/wide_horizontal_photo_of_a_young_woman_against_a_t.webp"})`,
                               backgroundSize: 'cover',
                               backgroundPosition: 'center'
                             }}
@@ -1393,7 +1600,7 @@ export default function StorefrontHomepagePage() {
                         return (
                           <div
                             key="featured_collection"
-                            className="p-4 bg-gradient-to-r from-white/10 to-transparent relative"
+                            className="p-4 relative min-h-[140px] flex flex-col justify-end text-white" style={{ backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.3)), url(${config.featured_collection.imageUrl || "/tessgarage-banner-assets/middle-banner/wide_cinematic_coastal_scene_a_photorealistic_sh.webp"})`, backgroundSize: "cover", backgroundPosition: "center" }}
                           >
                             <span className="text-[9px] uppercase font-mono text-white/50">
                               {config.featured_collection.eyebrow}

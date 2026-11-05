@@ -474,6 +474,19 @@ export interface HomepageTrustItem {
   icon?: string
 }
 
+export interface HomepageHeroBannerItem {
+  id?: string
+  image: string
+  alt?: string
+  eyebrow?: string
+  title?: string
+  subtitle?: string
+  ctaText?: string
+  ctaLink?: string
+  align?: 'left' | 'right'
+  imagePositionClass?: string
+}
+
 export interface HomepageConfig {
   sectionsOrder: HomepageSectionType[]
   sectionsEnabled: Record<string, boolean>
@@ -493,6 +506,7 @@ export interface HomepageConfig {
     secondaryCtaLink: string
     imageUrl: string
     trustBadges: string[]
+    banners?: HomepageHeroBannerItem[]
   }
   categories: {
     enabled: boolean
