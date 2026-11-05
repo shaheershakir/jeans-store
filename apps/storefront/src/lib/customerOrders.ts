@@ -54,15 +54,14 @@ interface ApiOrder {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : '')
 
 function displayStatus(status: string): string {
-  if (!status) return 'Pending'
+  if (!status) return 'Placed'
   const s = status.trim().toLowerCase()
-  if (s === 'shipped' || s === 'out for delivery' || s === 'dispatched') return 'Dispatched'
   if (s === 'delivered') return 'Delivered'
+  if (s === 'shipped' || s === 'out for delivery' || s === 'dispatched') return 'Shipped'
+  if (s === 'confirmed' || s === 'processing' || s === 'paid') return 'Confirmed'
+  if (s === 'placed' || s === 'pending') return 'Placed'
   if (s === 'cancelled') return 'Cancelled'
   if (s === 'returned') return 'Returned'
-  if (s === 'confirmed' || s === 'paid') return 'Confirmed'
-  if (s === 'processing') return 'Processing'
-  if (s === 'pending') return 'Pending'
   return status.charAt(0).toUpperCase() + status.slice(1)
 }
 

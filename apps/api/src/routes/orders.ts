@@ -1349,14 +1349,16 @@ const adminOrderPatchSchema = z
   .object({
     status: z
       .enum([
-        "Pending",
+        "Placed",
         "Confirmed",
-        "Processing",
         "Shipped",
-        "Out for Delivery",
         "Delivered",
         "Cancelled",
         "Returned",
+        "Pending",
+        "Processing",
+        "Out for Delivery",
+        "Refunded",
       ])
       .optional(),
     paymentStatus: z.enum(["Pending", "Paid", "Failed"]).optional(),
@@ -1369,14 +1371,16 @@ const adminOrderPatchSchema = z
   );
 
 const ORDER_TRANSITIONS: Record<string, string[]> = {
-  Pending: ["Confirmed", "Cancelled"],
-  Confirmed: ["Processing", "Cancelled"],
-  Processing: ["Shipped", "Cancelled"],
-  Shipped: ["Out for Delivery", "Delivered", "Returned"],
-  "Out for Delivery": ["Delivered", "Returned"],
+  Placed: ["Confirmed", "Cancelled"],
+  Confirmed: ["Shipped", "Cancelled"],
+  Shipped: ["Delivered", "Returned"],
   Delivered: ["Returned"],
-  Returned: [],
   Cancelled: [],
+  Returned: [],
+  Pending: ["Confirmed", "Cancelled"],
+  Processing: ["Shipped", "Cancelled"],
+  "Out for Delivery": ["Delivered", "Returned"],
+  Refunded: [],
 };
 
 orderRouter.patch(

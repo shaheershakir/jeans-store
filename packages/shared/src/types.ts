@@ -124,6 +124,21 @@ export interface OrderItem {
   variantLabel?: string
 }
 
+export type OrderStatus =
+  | 'Placed'
+  | 'Confirmed'
+  | 'Shipped'
+  | 'Delivered'
+  | 'Cancelled'
+  | 'Returned'
+
+export const ORDER_STATUS_FLOW: readonly OrderStatus[] = [
+  'Placed',
+  'Confirmed',
+  'Shipped',
+  'Delivered',
+] as const
+
 export interface Order {
   id: number
   userId?: number | null

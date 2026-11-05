@@ -185,7 +185,7 @@ export default function OrdersPage() {
 
     for (const order of storeOrders) {
       const status = statusOverrides[String(order.id)] || order.fulfillmentStatus
-      if (status === 'Pending') {
+      if (status === 'Placed' || status === 'Pending') {
         pendingCount++
       }
       if (status === 'Confirmed' || status === 'Processing') {
@@ -208,6 +208,7 @@ export default function OrdersPage() {
   const tabCounts = React.useMemo(() => {
     const counts: Record<string, number> = {
       all: displayOrders.length,
+      Placed: 0,
       Pending: 0,
       Confirmed: 0,
       Processing: 0,
@@ -219,6 +220,8 @@ export default function OrdersPage() {
     for (const o of displayOrders) {
       if (counts[o.fulfillmentStatus] !== undefined) {
         counts[o.fulfillmentStatus]++
+        if (o.fulfillmentStatus === 'Pending') counts.Placed++
+        if (o.fulfillmentStatus === 'Processing') counts.Confirmed++
       }
     }
     return counts
@@ -240,7 +243,10 @@ export default function OrdersPage() {
       const matchesTab =
         viewMode === 'kanban' ||
         activeTab === 'all' ||
-        order.fulfillmentStatus.toLowerCase() === activeTab.toLowerCase()
+        order.fulfillmentStatus.toLowerCase() === activeTab.toLowerCase() ||
+        (activeTab.toLowerCase() === 'placed' && order.fulfillmentStatus.toLowerCase() === 'pending') ||
+        (activeTab.toLowerCase() === 'confirmed' && order.fulfillmentStatus.toLowerCase() === 'processing') ||
+        (activeTab.toLowerCase() === 'shipped' && order.fulfillmentStatus.toLowerCase() === 'out for delivery')
 
       const matchesPayment =
         paymentFilter === 'all' ||
@@ -491,7 +497,7 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        {/* Card 2: Pending */}
+        {/* Card 2: Placed */}
         <div className="rounded-2xl border border-slate-200/80 dark:border-border bg-white dark:bg-card p-5 shadow-xs">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400">
@@ -499,10 +505,10 @@ export default function OrdersPage() {
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500 dark:text-muted-foreground">
-                Pending
+                Placed
               </p>
               <p className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 dark:text-foreground tnum leading-tight mt-0.5">
-                {tabCounts.Pending}
+                {tabCounts.Placed}
               </p>
             </div>
             <div className="ml-auto text-right">
@@ -620,7 +626,7 @@ export default function OrdersPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-44 rounded-xl p-1 shadow-md">
               <DropdownMenuItem onClick={() => setActiveTab('all')}>All ({tabCounts.all})</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveTab('Pending')}>Pending ({tabCounts.Pending})</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab('Placed')}>Placed ({tabCounts.Placed})</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setActiveTab('Confirmed')}>Confirmed ({tabCounts.Confirmed})</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setActiveTab('Processing')}>Processing ({tabCounts.Processing})</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setActiveTab('Shipped')}>Shipped ({tabCounts.Shipped})</DropdownMenuItem>
@@ -1015,9 +1021,8 @@ export default function OrdersPage() {
             <div className="flex items-center gap-2 border-b border-slate-200 dark:border-border overflow-x-auto scrollbar-thin">
             {[
               { label: 'All Orders', value: 'all', count: tabCounts.all },
-              { label: 'Pending', value: 'Pending', count: tabCounts.Pending },
+              { label: 'Placed', value: 'Placed', count: tabCounts.Placed },
               { label: 'Confirmed', value: 'Confirmed', count: tabCounts.Confirmed },
-              { label: 'Processing', value: 'Processing', count: tabCounts.Processing },
               { label: 'Shipped', value: 'Shipped', count: tabCounts.Shipped },
               { label: 'Delivered', value: 'Delivered', count: tabCounts.Delivered },
               { label: 'Cancelled', value: 'Cancelled', count: tabCounts.Cancelled },
@@ -1282,7 +1287,7 @@ export default function OrdersPage() {
                                     ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400'
                                     : order.fulfillmentStatus === 'Shipped'
                                       ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400'
-                                      : order.fulfillmentStatus === 'Pending'
+                                      : order.fulfillmentStatus === 'Placed' || order.fulfillmentStatus === 'Pending'
                                         ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400'
                                         : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
                               }`}

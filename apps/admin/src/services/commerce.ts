@@ -130,7 +130,7 @@ export async function fetchBackendOrders(): Promise<Order[]> {
       const orderDate = new Date(remote.createdAt).toISOString()
       if (customer && orderDate < customer.joinedAt) customer.joinedAt = orderDate
     }
-    const fulfillmentStatus = (['Pending', 'Confirmed', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned', 'Refunded'].includes(remote.status) ? remote.status : 'Pending') as FulfillmentStatus
+    const fulfillmentStatus = (['Placed', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled', 'Returned', 'Pending', 'Processing', 'Out for Delivery', 'Refunded'].includes(remote.status) ? remote.status : 'Placed') as FulfillmentStatus
     const paymentStatus = (['Pending', 'Paid', 'Failed', 'Refunded'].includes(remote.paymentStatus ?? '') ? remote.paymentStatus : remote.handoffType === 'razorpay' ? 'Paid' : 'Pending') as PaymentStatus
     const paymentMethod: PaymentMethod = remote.handoffType === 'cod' ? 'COD' : 'Razorpay'
     return {

@@ -260,7 +260,7 @@ export function OrderDetailSheet({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-md">
               {(
-                ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'] as FulfillmentStatus[]
+                ['Placed', 'Confirmed', 'Shipped', 'Delivered'] as FulfillmentStatus[]
               ).map((status) => (
                 <DropdownMenuItem
                   key={status}

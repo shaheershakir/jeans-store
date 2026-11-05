@@ -25,6 +25,7 @@ interface ConfirmationItem {
 
 interface OrderConfirmation {
   orderNumber: string
+  status?: string
   paymentId: string
   paymentMethod?: 'cod' | 'online'
   total: number
@@ -49,7 +50,7 @@ const backendUrl =
   process.env.BACKEND_URL ||
   (process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : '')
 
-const STEPS = ['Order placed', 'Shipped', 'Out for delivery', 'Delivered']
+const STEPS = ['Order Placed', 'Confirmed', 'Shipped', 'Delivered']
 
 function RecommendationCard({ product }: { product: Product }) {
   const [mounted, setMounted] = useState(false)
@@ -302,6 +303,14 @@ function OrderConfirmationContent() {
     return isValid(parsed) ? parsed : new Date()
   }, [order?.createdAt])
 
+  const currentStepIndex = useMemo(() => {
+    const s = (order?.status || '').toLowerCase()
+    if (s === 'delivered') return 3
+    if (s === 'shipped' || s === 'dispatched' || s === 'out for delivery') return 2
+    if (s === 'confirmed' || s === 'processing') return 1
+    return 0
+  }, [order?.status])
+
   const orderDate = format(created, 'MMM d, yyyy')
   const arrival = `${format(addDays(created, 3), 'MMM d')} - ${format(addDays(created, 9), 'MMM d')}`
 
@@ -412,7 +421,7 @@ function OrderConfirmationContent() {
                     <ol className="relative flex items-center justify-between pl-[27px] pr-[27px] sm:pl-[41px] sm:pr-[27px]">
                       {STEPS.map((step, index) => (
                         <li key={step} className="flex items-center justify-center">
-                          {index === 0 ? (
+                          {index <= currentStepIndex ? (
                             <span
                               className="grid h-3.5 w-3.5 place-items-center rounded-full bg-[#111] text-white"
                               aria-current="step"
@@ -441,14 +450,14 @@ function OrderConfirmationContent() {
                       >
                         <p
                           className={`text-[11.5px] leading-tight sm:text-[14px] ${
-                            index === 0 ? 'font-semibold text-[#111]' : 'text-[#6b7280]'
+                            index <= currentStepIndex ? 'font-semibold text-[#111]' : 'text-[#6b7280]'
                           }`}
                         >
                           {step}
                         </p>
-                        {index === 0 && (
+                        {index === currentStepIndex && (
                           <p className="mt-1.5 text-[12px] leading-tight text-[#6b7280] sm:text-[13px]">
-                            {orderDate}
+                            {index === 0 ? orderDate : 'In progress'}
                           </p>
                         )}
                       </div>

@@ -6,10 +6,13 @@ import type { FulfillmentStatus, PaymentStatus } from './types'
  * payment is still Pending unless the order is COD).
  */
 export const ORDER_TRANSITIONS: Record<FulfillmentStatus, FulfillmentStatus[]> = {
+  Placed: ['Confirmed', 'Cancelled'],
+  Confirmed: ['Shipped', 'Cancelled'],
+  Shipped: ['Delivered', 'Returned', 'Cancelled'],
   Pending: ['Confirmed', 'Cancelled'],
-  Confirmed: ['Processing', 'Cancelled'],
+
   Processing: ['Shipped', 'Cancelled'],
-  Shipped: ['Out for Delivery', 'Cancelled'],
+
   'Out for Delivery': ['Delivered'],
   Delivered: ['Returned'],
   Returned: ['Refunded'],

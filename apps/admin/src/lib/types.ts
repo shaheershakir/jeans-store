@@ -141,14 +141,15 @@ export type PaymentMethod = 'Card' | 'UPI' | 'Net Banking' | 'Wallet' | 'Razorpa
 export type PaymentStatus = 'Pending' | 'Paid' | 'Failed' | 'Refunded'
 
 export type FulfillmentStatus =
-  | 'Pending'
+  | 'Placed'
   | 'Confirmed'
-  | 'Processing'
   | 'Shipped'
-  | 'Out for Delivery'
   | 'Delivered'
   | 'Cancelled'
   | 'Returned'
+  | 'Pending'
+  | 'Processing'
+  | 'Out for Delivery'
   | 'Refunded'
 
 export interface OrderItem {

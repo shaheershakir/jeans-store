@@ -169,19 +169,13 @@ export default function OrderDetailPage({
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-ink-2">Status Actions:</span>
 
-              {order.fulfillmentStatus === 'Pending' && (
+              {(order.fulfillmentStatus === 'Placed' || order.fulfillmentStatus === 'Pending') && (
                 <Button size="sm" onClick={() => handleTransition('Confirmed')} disabled={loading}>
                   <CheckCircle className="h-3.5 w-3.5" /> Confirm Order
                 </Button>
               )}
 
-              {order.fulfillmentStatus === 'Confirmed' && (
-                <Button size="sm" onClick={() => handleTransition('Processing')} disabled={loading}>
-                  <Package className="h-3.5 w-3.5" /> Start Processing
-                </Button>
-              )}
-
-              {order.fulfillmentStatus === 'Processing' && (
+              {(order.fulfillmentStatus === 'Confirmed' || order.fulfillmentStatus === 'Processing') && (
                 <Button size="sm" onClick={() => setShowTrackingModal(true)} disabled={loading}>
                   <Truck className="h-3.5 w-3.5" /> Ship Order
                 </Button>

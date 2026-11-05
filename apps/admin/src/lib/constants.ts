@@ -45,6 +45,7 @@ export const COLOR_SWATCH: Record<Color, string> = {
 export type Tone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
 
 export const ORDER_STATUSES: { value: FulfillmentStatus; tone: Tone; label: string }[] = [
+  { value: 'Placed', tone: 'warning', label: 'Placed' },
   { value: 'Pending', tone: 'warning', label: 'Pending' },
   { value: 'Confirmed', tone: 'info', label: 'Confirmed' },
   { value: 'Processing', tone: 'info', label: 'Processing' },

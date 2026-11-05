@@ -10,8 +10,8 @@ import type { FulfillmentStatus } from '@/lib/types'
 
 const INITIAL_KANBAN_COLUMNS: KanbanColumnConfig[] = [
   {
-    status: 'Pending',
-    title: 'Pending',
+    status: 'Placed',
+    title: 'Placed',
     icon: Clock,
     colorClass: {
       container: 'bg-[#fffaf5] dark:bg-orange-950/10 border-orange-200/80 dark:border-orange-900/40',
@@ -29,17 +29,6 @@ const INITIAL_KANBAN_COLUMNS: KanbanColumnConfig[] = [
       headerIcon: 'bg-blue-100/80 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400',
       title: 'text-blue-900 dark:text-blue-300',
       countBadge: 'bg-blue-100/70 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-    },
-  },
-  {
-    status: 'Processing',
-    title: 'Processing',
-    icon: Cpu,
-    colorClass: {
-      container: 'bg-[#faf7ff] dark:bg-purple-950/10 border-purple-200/80 dark:border-purple-900/40',
-      headerIcon: 'bg-purple-100/80 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400',
-      title: 'text-purple-900 dark:text-purple-300',
-      countBadge: 'bg-purple-100/70 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
     },
   },
   {
@@ -132,13 +121,18 @@ export function KanbanBoard({
   // Compute the current order list for a column
   const getColumnOrders = React.useCallback(
     (status: FulfillmentStatus): OrderItemCardData[] => {
-      const rawColOrders = orders.filter(
-        (o) => o.fulfillmentStatus.toLowerCase() === status.toLowerCase()
-      )
+      const rawColOrders = orders.filter((o) => {
+        const s = o.fulfillmentStatus.toLowerCase()
+        const col = status.toLowerCase()
+        if (col === 'placed') return s === 'placed' || s === 'pending'
+        if (col === 'confirmed') return s === 'confirmed' || s === 'processing'
+        if (col === 'shipped') return s === 'shipped' || s === 'out for delivery'
+        return s === col
+      })
 
       let baseOrders = [...rawColOrders]
-      // Increasing date order for Pending (19 Oct at first, then 20 Oct, and so on)
-      if (status.toLowerCase() === 'pending') {
+      // Increasing date order for Placed
+      if (status.toLowerCase() === 'placed' || status.toLowerCase() === 'pending') {
         baseOrders.sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
       }
 

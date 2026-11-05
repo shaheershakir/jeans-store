@@ -31,7 +31,15 @@ function getStatusBadge(status: string) {
       bg: 'bg-[#ebf3fc]',
       text: 'text-[#1d6ee5]',
       dot: 'bg-[#1d6ee5]',
-      label: s === 'dispatched' ? 'Dispatched' : 'Shipped'
+      label: 'Shipped'
+    }
+  }
+  if (s === 'confirmed' || s === 'processing') {
+    return {
+      bg: 'bg-[#e6f4ea]',
+      text: 'text-[#137333]',
+      dot: 'bg-[#137333]',
+      label: 'Confirmed'
     }
   }
   if (s === 'cancelled' || s === 'returned' || s === 'refunded') {
@@ -46,7 +54,7 @@ function getStatusBadge(status: string) {
     bg: 'bg-[#fef5e7]',
     text: 'text-[#c05621]',
     dot: 'bg-[#c05621]',
-    label: s === 'confirmed' ? 'Confirmed' : (s === 'processing' ? 'Processing' : 'Pending')
+    label: 'Placed'
   }
 }
 

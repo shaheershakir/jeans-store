@@ -660,7 +660,6 @@ class OrderStore {
   ): Promise<Order> {
     const createdAt = new Date();
     const paymentPaid = options.payment?.status === "Paid";
-    const status = paymentPaid ? "Confirmed" : "Pending";
     const paymentStatus = paymentPaid ? "Paid" : "Pending";
 
     if (isDatabaseConfigured() && db) {
@@ -751,11 +750,21 @@ class OrderStore {
             total: pricing.total,
             weightGrams: pricing.weightGrams,
             couponId,
-            status,
+            status: "Placed",
             paymentStatus,
             handoffType: input.handoffType,
           })
           .returning();
+
+        await executor.insert(orderEventsTable).values({
+          orderId: row.id,
+          kind: "status",
+          status: "Placed",
+          note: "Customer order placed",
+          isInternal: false,
+          actorName: "System",
+          createdAt,
+        });
 
         for (const line of pricing.lines) {
           await executor.insert(orderItemsTable).values({
@@ -818,14 +827,25 @@ class OrderStore {
           }
         }
 
+        // Automatic confirmation: after verifying stock availability and securing
+        // inventory reservations, automatically transition order to Confirmed.
+        const confirmedAt = new Date();
+        await executor
+          .update(ordersTable)
+          .set({
+            status: "Confirmed",
+            updatedAt: confirmedAt,
+          })
+          .where(eq(ordersTable.id, row.id));
+
         await executor.insert(orderEventsTable).values({
           orderId: row.id,
           kind: "status",
-          status,
-          note: "Customer order placed",
+          status: "Confirmed",
+          note: "Stock verified and confirmed automatically",
           isInternal: false,
           actorName: "System",
-          createdAt,
+          createdAt: confirmedAt,
         });
 
         if (options.payment?.gateway === "razorpay") {
@@ -938,6 +958,7 @@ class OrderStore {
       discountAmount: line.discountAmount,
       variantLabel: line.variantLabel,
     }));
+    const confirmedAt = new Date(createdAt.getTime() + 10);
     const order: Order = {
       id: orderId,
       userId: input.userId ?? undefined,
@@ -949,7 +970,7 @@ class OrderStore {
       total: priced.total,
       weightGrams: priced.weightGrams,
       store: input.store || "teesgarage",
-      status,
+      status: "Confirmed",
       paymentStatus,
       carrier: null,
       trackingNumber: null,
@@ -959,14 +980,21 @@ class OrderStore {
       events: [
         {
           id: `evt-${createdAt.getTime()}`,
-          status,
+          status: "Placed",
           note: "Customer order placed",
           at: createdAt.toISOString(),
           by: "System",
         },
+        {
+          id: `evt-${confirmedAt.getTime()}`,
+          status: "Confirmed",
+          note: "Stock verified and confirmed automatically",
+          at: confirmedAt.toISOString(),
+          by: "System",
+        },
       ],
       createdAt,
-      updatedAt: createdAt,
+      updatedAt: confirmedAt,
     };
 
     this.memoryOrders.push(order);

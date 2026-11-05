@@ -186,13 +186,14 @@ export function KanbanColumn({
               onClick={() => {
                 orders.forEach((o) => {
                   const nextMap: Record<FulfillmentStatus, FulfillmentStatus> = {
-                    Pending: 'Confirmed',
-                    Confirmed: 'Processing',
-                    Processing: 'Shipped',
+                    Placed: 'Confirmed',
+                    Confirmed: 'Shipped',
                     Shipped: 'Delivered',
                     Delivered: 'Delivered',
-                    Cancelled: 'Pending',
-                    Returned: 'Pending',
+                    Cancelled: 'Placed',
+                    Returned: 'Placed',
+                    Pending: 'Confirmed',
+                    Processing: 'Shipped',
                     'Out for Delivery': 'Delivered',
                     Refunded: 'Refunded',
                   }

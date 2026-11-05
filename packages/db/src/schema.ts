@@ -406,7 +406,7 @@ export const orders = pgTable(
     customerId: integer('customer_id')
       .notNull()
       .references(() => customers.id, { onDelete: 'restrict' }),
-    status: varchar('status', { length: 30 }).default('Pending').notNull(),
+    status: varchar('status', { length: 30 }).default('Placed').notNull(),
     paymentStatus: varchar('payment_status', { length: 20 }).default('Pending').notNull(),
     handoffType: varchar('handoff_type', { length: 20 }).default('cod').notNull(),
     customerName: varchar('customer_name', { length: 255 }).notNull(),
@@ -435,7 +435,7 @@ export const orders = pgTable(
     check(
       'orders_status_check',
       sql.raw(
-        "status IN ('Pending', 'Confirmed', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned', 'Refunded')"
+        "status IN ('Placed', 'Pending', 'Confirmed', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned', 'Refunded')"
       )
     ),
     check(

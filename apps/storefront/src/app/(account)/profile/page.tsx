@@ -609,6 +609,7 @@ export default function ProfilePage() {
                   const sLower = (order.status || '').toLowerCase()
                   const isDelivered = sLower === 'delivered'
                   const isShipped = ['shipped', 'dispatched', 'out for delivery'].includes(sLower)
+                  const isConfirmed = ['confirmed', 'processing'].includes(sLower)
                   const firstItem = order.items[0]
 
                   return (
@@ -668,7 +669,13 @@ export default function ProfilePage() {
                               Shipped
                             </span>
                           )}
-                          {!isDelivered && !isShipped && (
+                          {isConfirmed && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11.5px] font-semibold bg-[#e6f4ea] text-[#137333] mb-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#137333]" />
+                              Confirmed
+                            </span>
+                          )}
+                          {!isDelivered && !isShipped && !isConfirmed && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11.5px] font-semibold bg-[#fef5e7] text-[#c05621] mb-2">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#c05621]" />
                               {order.status}

@@ -90,7 +90,7 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
 
       assert.ok(created.id)
       assert.equal(created.orderNumber, orderNumber)
-      assert.equal(created.status, 'Pending')
+      assert.equal(created.status, 'Confirmed')
       assert.equal(created.paymentStatus, 'Pending')
       assert.equal(created.items.length, 1)
 
@@ -105,7 +105,9 @@ describe('Phase 3: Users and Orders Normalization & Schema V2', () => {
 
       // Initial placement event in events array
       assert.ok(created.events.length >= 1)
-      assert.equal(created.events[0].status, 'Pending')
+      assert.equal(created.events[0].status, 'Placed')
+      assert.equal(created.events[1].status, 'Confirmed')
+      assert.equal(created.events[1].note, 'Stock verified and confirmed automatically')
       assert.equal(created.events[0].note, 'Customer order placed')
 
       // Fetch by ID

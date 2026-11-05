@@ -423,7 +423,7 @@ export function KanbanCard({
                 <DropdownMenuSubTrigger>Move Status</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="w-40 rounded-xl p-1 shadow-md">
                   {(
-                    ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'] as FulfillmentStatus[]
+                    ['Placed', 'Confirmed', 'Shipped', 'Delivered'] as FulfillmentStatus[]
                   ).map((status) => (
                     <DropdownMenuItem
                       key={status}
