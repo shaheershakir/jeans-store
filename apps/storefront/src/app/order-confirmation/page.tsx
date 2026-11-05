@@ -8,6 +8,7 @@ import { addDays, format, isValid } from 'date-fns'
 import { AlertCircle, ArrowRight, Check, Copy, Heart, MapPin, Truck } from 'lucide-react'
 import type { Product } from '@/lib/constants'
 import { formatPrice } from '@/lib/utils'
+import { getCarrierTrackingUrl } from '@/lib/customerOrders'
 import { getProductUrl } from '@/lib/products'
 import { useAuthStore, useFavoriteStore, useUIStore } from '@/lib/store'
 import { OrderConfirmationSkeleton } from '@/components/skeletons/StorefrontSkeletons'
@@ -40,6 +41,11 @@ interface OrderConfirmation {
   city: string
   state: string
   pincode: string
+  carrier?: string | null
+  trackingNumber?: string | null
+  shippedAt?: string | null
+  deliveredAt?: string | null
+  events?: Array<{ id: string; status: string; note: string; at: string; by: string }>
   items: ConfirmationItem[]
 }
 
@@ -464,6 +470,35 @@ function OrderConfirmationContent() {
                     ))}
                   </div>
                 </div>
+
+                {order.trackingNumber && (
+                  <div className="mt-6 pt-5 border-t border-[#e7e5df] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#f2eee6] flex items-center justify-center shrink-0">
+                        <Truck className="w-4 h-4 text-[#111]" />
+                      </div>
+                      <div>
+                        <p className="text-[13.5px] font-bold text-[#111]">
+                          {order.carrier || 'Courier Partner'}: <span className="font-mono">{order.trackingNumber}</span>
+                        </p>
+                        <p className="text-[12px] text-[#6b7280]">
+                          {order.status === 'Delivered' ? 'Delivered to recipient' : 'In transit with courier'}
+                        </p>
+                      </div>
+                    </div>
+                    {getCarrierTrackingUrl(order.carrier, order.trackingNumber) && (
+                      <a
+                        href={getCarrierTrackingUrl(order.carrier, order.trackingNumber)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[7px] bg-[#161616] hover:bg-black text-white text-[12.5px] font-semibold transition-colors"
+                      >
+                        <span>Live Courier Tracking</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                )}
               </section>
 
               {/* Order details */}

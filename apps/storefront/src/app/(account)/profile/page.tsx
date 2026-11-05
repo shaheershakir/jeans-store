@@ -22,6 +22,8 @@ import { useCartStore, useUIStore, useAuthStore, useFavoriteStore } from '@/lib/
 import { AccountProfileSkeleton } from '@/components/skeletons/StorefrontSkeletons'
 import { fetchCustomerOrders, type CustomerOrder } from '@/lib/customerOrders'
 import { formatPrice } from '@/lib/utils'
+import OrderTrackingTimeline from '@/components/orders/OrderTrackingTimeline'
+import OrderTrackingModal from '@/components/orders/OrderTrackingModal'
 
 
 
@@ -55,6 +57,7 @@ export default function ProfilePage() {
   const [recentOrders, setRecentOrders] = useState<CustomerOrder[]>([])
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<CustomerOrder | null>(null)
+  const [trackingOrder, setTrackingOrder] = useState<CustomerOrder | null>(null)
 
   // Address state
   const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0]
@@ -214,12 +217,8 @@ export default function ProfilePage() {
     }
   }
 
-  const handleTrackOrder = (orderId: string) => {
-    const whatsappNum = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'
-    window.open(
-      `https://wa.me/${whatsappNum}?text=${encodeURIComponent(`Hi TEESGARAGE, please share tracking status for order #${orderId}.`)}`,
-      '_blank'
-    )
+  const handleTrackOrder = (order: CustomerOrder) => {
+    setTrackingOrder(order)
   }
 
   return (
@@ -711,15 +710,13 @@ export default function ProfilePage() {
                             </button>
                           )}
 
-                          {isShipped && (
-                            <button
-                              type="button"
-                              className="w-full py-2 px-3 rounded-[9px] text-[12.5px] font-semibold text-center bg-[#141414] hover:bg-[#262626] text-white shadow-2xs transition-all duration-150 active:scale-[0.98] cursor-pointer max-[768px]:flex-1"
-                              onClick={() => handleTrackOrder(order.orderId)}
-                            >
-                              Track Order
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            className="w-full py-2 px-3 rounded-[9px] text-[12.5px] font-semibold text-center bg-[#141414] hover:bg-[#262626] text-white shadow-2xs transition-all duration-150 active:scale-[0.98] cursor-pointer max-[768px]:flex-1"
+                            onClick={() => handleTrackOrder(order)}
+                          >
+                            Track Order
+                          </button>
 
                           <button
                             type="button"
@@ -729,6 +726,11 @@ export default function ProfilePage() {
                             View Details
                           </button>
                         </div>
+                      </div>
+
+                      {/* Inline Tracking Progress */}
+                      <div className="mt-4 pt-3.5 border-t border-black/6">
+                        <OrderTrackingTimeline order={order} compact={true} showEventsList={false} />
                       </div>
                     </article>
                   )
@@ -953,6 +955,12 @@ export default function ProfilePage() {
       )}
 
       {/* ── Order Details Dialog Modal ─────────────────────────────── */}
+      <OrderTrackingModal
+        order={trackingOrder}
+        isOpen={Boolean(trackingOrder)}
+        onClose={() => setTrackingOrder(null)}
+      />
+
       {selectedOrderDetails && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs animate-in fade-in duration-200"
@@ -977,6 +985,18 @@ export default function ProfilePage() {
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* Shipment Tracking Timeline */}
+            <div className="py-4 border-b border-black/8">
+              <h4 className="text-[12.5px] font-bold text-[#666666] uppercase tracking-wider mb-2">
+                Order Tracking Status
+              </h4>
+              <OrderTrackingTimeline
+                order={selectedOrderDetails}
+                compact={false}
+                showEventsList={true}
+              />
             </div>
 
             <div className="py-4 space-y-3 text-[14px]">

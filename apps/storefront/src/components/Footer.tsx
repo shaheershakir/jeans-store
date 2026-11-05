@@ -98,6 +98,11 @@ export default function Footer() {
           <h3 className={footerHeading}>CUSTOMER CARE</h3>
           <ul className="m-0 grid list-none gap-[7px] p-0">
             <li className="m-0">
+              <Link href="/track" className={footerLink}>
+                Track order
+              </Link>
+            </li>
+            <li className="m-0">
               <a href="mailto:concierge@teesgarage.in" className={footerLink}>
                 concierge@teesgarage.in
               </a>

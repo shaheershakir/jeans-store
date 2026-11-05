@@ -1046,7 +1046,7 @@ orderRouter.post("/api/orders", orderRateLimiter, async (req: Request, res: Resp
         amount: Number(order.total ?? calculatedOrder.total ?? 0),
         currency: "INR",
         item_count: order.items.reduce((sum, item) => sum + item.quantity, 0),
-        items: order.items.map((item) => ({
+        items: order.items.map((item: any) => ({
           product_id: item.id,
           product_name: item.name || `Product #${item.id}`,
           size: item.size,
@@ -1198,6 +1198,11 @@ async function handleOrderConfirmationLookup(
       state: order.state,
       pincode: order.pincode,
       status: order.status,
+      carrier: order.carrier,
+      trackingNumber: order.trackingNumber,
+      shippedAt: order.shippedAt,
+      deliveredAt: order.deliveredAt,
+      events: order.events,
       items: order.items.map((item) => ({
         id: item.id,
         name: item.name,
@@ -1220,6 +1225,109 @@ orderRouter.get(
   "/api/orders/lookup/:orderNumber",
   handleOrderConfirmationLookup,
 );
+
+orderRouter.get("/api/orders/track/:orderNumber", async (req: Request, res: Response) => {
+  const rawOrderNumber = req.params.orderNumber;
+  const orderNumber = (typeof rawOrderNumber === "string" ? rawOrderNumber : Array.isArray(rawOrderNumber) ? rawOrderNumber[0] : "")?.trim();
+  if (!orderNumber) {
+    res.status(400).json({ error: "Order number is required" });
+    return;
+  }
+
+  const order = await orderStore.getByOrderNumber(orderNumber);
+  if (!order) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  let isAuthorized = false;
+
+  // 1. Check admin key or session
+  const adminKey = process.env.ADMIN_API_KEY?.trim();
+  const headerKey = req.headers["x-admin-key"];
+  const authHeader = req.headers.authorization;
+  const bearerToken = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+
+  if (adminKey && (headerKey === adminKey || bearerToken === adminKey)) {
+    isAuthorized = true;
+  } else if (bearerToken && verifyAdminSession(bearerToken)) {
+    isAuthorized = true;
+  }
+
+  // 2. Check customer token
+  if (!isAuthorized) {
+    const customer = await getOptionalCustomerClaims(req);
+    if (customer && customer.email) {
+      if (order.customerEmail.toLowerCase() === customer.email.toLowerCase()) {
+        isAuthorized = true;
+      } else {
+        const user = await userStore.findByEmail(customer.email);
+        if (user && order.userId && order.userId === user.id) {
+          isAuthorized = true;
+        }
+      }
+    }
+  }
+
+  // 3. Check guest verification token
+  const token =
+    (req.query.token as string) || (req.headers["x-guest-token"] as string);
+  if (!isAuthorized && token) {
+    if (verifyGuestOrderToken(order.orderNumber, token)) {
+      isAuthorized = true;
+    }
+  }
+
+  // 4. Check email or phone query for consumer tracking lookup
+  const queryPhone = (req.query.phone as string)?.trim().replace(/\D/g, "");
+  const queryEmail = (req.query.email as string)?.trim().toLowerCase();
+  if (!isAuthorized) {
+    if (queryEmail && order.customerEmail.toLowerCase() === queryEmail) {
+      isAuthorized = true;
+    } else if (queryPhone && queryPhone.length >= 4) {
+      const orderPhoneClean = (order.customerPhone || "").replace(/\D/g, "");
+      if (orderPhoneClean && (orderPhoneClean.endsWith(queryPhone) || queryPhone.endsWith(orderPhoneClean))) {
+        isAuthorized = true;
+      }
+    }
+  }
+
+  if (!isAuthorized) {
+    res.status(403).json({
+      error: "Please provide the phone number or email associated with this order to view tracking details.",
+    });
+    return;
+  }
+
+  res.json({
+    order: {
+      orderNumber: order.orderNumber,
+      status: order.status,
+      carrier: order.carrier,
+      trackingNumber: order.trackingNumber,
+      shippedAt: order.shippedAt,
+      deliveredAt: order.deliveredAt,
+      createdAt:
+        order.createdAt instanceof Date
+          ? order.createdAt.toISOString()
+          : String(order.createdAt),
+      events: order.events || [],
+      city: order.city,
+      state: order.state,
+      pincode: order.pincode,
+      itemCount: order.items.length,
+      items: order.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        size: item.size,
+        quantity: item.quantity,
+        price: item.price,
+        priceNum: item.priceNum,
+        img: item.img,
+      })),
+    },
+  });
+});
 
 // Admin: List all captured orders
 orderRouter.get("/api/orders/mine", async (req: Request, res: Response) => {
@@ -1245,6 +1353,7 @@ orderRouter.get("/api/orders/mine", async (req: Request, res: Response) => {
         trackingNumber: order.trackingNumber,
         shippedAt: order.shippedAt,
         deliveredAt: order.deliveredAt,
+        events: order.events,
         items: order.items,
         subtotal: order.subtotal,
         shipping: order.shipping,

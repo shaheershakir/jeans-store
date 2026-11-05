@@ -14,55 +14,21 @@ import {
 } from 'lucide-react'
 import { useCartStore, useUIStore, useAuthStore } from '@/lib/store'
 import { formatPrice } from '@/lib/utils'
-import { fetchCustomerOrders, cancelCustomerOrder, type CustomerOrder } from '@/lib/customerOrders'
-
-function getStatusBadge(status: string) {
-  const s = (status || '').toLowerCase()
-  if (s === 'delivered') {
-    return {
-      bg: 'bg-[#eaf5ed]',
-      text: 'text-[#1e833a]',
-      dot: 'bg-[#1e833a]',
-      label: 'Delivered'
-    }
-  }
-  if (s === 'shipped' || s === 'dispatched' || s === 'out for delivery') {
-    return {
-      bg: 'bg-[#ebf3fc]',
-      text: 'text-[#1d6ee5]',
-      dot: 'bg-[#1d6ee5]',
-      label: 'Shipped'
-    }
-  }
-  if (s === 'confirmed' || s === 'processing') {
-    return {
-      bg: 'bg-[#e6f4ea]',
-      text: 'text-[#137333]',
-      dot: 'bg-[#137333]',
-      label: 'Confirmed'
-    }
-  }
-  if (s === 'cancelled' || s === 'returned' || s === 'refunded') {
-    return {
-      bg: 'bg-[#fdeeed]',
-      text: 'text-[#d93838]',
-      dot: 'bg-[#d93838]',
-      label: s === 'cancelled' ? 'Cancelled' : (s === 'returned' ? 'Returned' : 'Refunded')
-    }
-  }
-  return {
-    bg: 'bg-[#fef5e7]',
-    text: 'text-[#c05621]',
-    dot: 'bg-[#c05621]',
-    label: 'Placed'
-  }
-}
+import {
+  fetchCustomerOrders,
+  cancelCustomerOrder,
+  getStatusBadgeConfig,
+  type CustomerOrder
+} from '@/lib/customerOrders'
+import OrderTrackingTimeline from '@/components/orders/OrderTrackingTimeline'
+import OrderTrackingModal from '@/components/orders/OrderTrackingModal'
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<CustomerOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<CustomerOrder | null>(null)
+  const [trackingOrder, setTrackingOrder] = useState<CustomerOrder | null>(null)
 
   const addItem = useCartStore((s) => s.addItem)
   const openOverlay = useUIStore((s) => s.openOverlay)
@@ -130,14 +96,6 @@ export default function OrdersPage() {
     }
   }
 
-  const handleTrackOrder = (orderId: string) => {
-    const whatsappNum = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'
-    window.open(
-      `https://wa.me/${whatsappNum}?text=${encodeURIComponent(`Hi TEESGARAGE, please share tracking status for order #${orderId}.`)}`,
-      '_blank'
-    )
-  }
-
   const handleCancelOrder = async (orderId: string) => {
     if (!window.confirm(`Are you sure you want to cancel order #${orderId}?`)) return
     if (!token) return
@@ -161,7 +119,7 @@ export default function OrdersPage() {
           My Orders
         </h1>
         <p className="mt-1 text-[14px] sm:text-[15px] text-[#666666]">
-          Track and manage your orders.
+          Track live shipments and manage your orders.
         </p>
       </header>
 
@@ -213,11 +171,11 @@ export default function OrdersPage() {
       {!loading && orders.length > 0 && (
         <div className="space-y-4 sm:space-y-5">
           {orders.map((order) => {
-            const badge = getStatusBadge(order.status)
+            const badge = getStatusBadgeConfig(order.status)
             const sLower = (order.status || '').toLowerCase()
             const isDelivered = sLower === 'delivered'
             const isShipped = ['shipped', 'dispatched', 'out for delivery'].includes(sLower)
-            const canCancel = ['pending', 'confirmed'].includes(sLower)
+            const canCancel = ['pending', 'placed', 'confirmed'].includes(sLower)
             const isMultiItem = order.items.length > 1
             const firstItem = order.items[0]
 
@@ -238,14 +196,16 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Status Badge */}
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-[12px] font-semibold ${badge.bg} ${badge.text}`}>
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-[12px] font-semibold ${badge.bg} ${badge.text}`}
+                  >
                     <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
                     {badge.label}
                   </span>
                 </div>
 
                 {/* Main Content Area */}
-                <div className="mt-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
+                <div className="mt-3.5 flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-6">
                   {/* Left: Multi-item vs Single-item */}
                   {isMultiItem ? (
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3.5 sm:gap-5 flex-1 min-w-0">
@@ -315,7 +275,9 @@ export default function OrdersPage() {
                           {firstItem?.name || 'TEESGARAGE product'}
                         </h2>
                         <p className="text-[11.5px] sm:text-[12.5px] text-[#666666] mt-0.5 truncate">
-                          {firstItem?.size ? `Size ${firstItem.size}  •  ${firstItem.qty} × ${firstItem.price}` : 'Standard size'}
+                          {firstItem?.size
+                            ? `Size ${firstItem.size}  •  ${firstItem.qty} × ${firstItem.price}`
+                            : 'Standard size'}
                         </p>
                         <strong className="text-[15.5px] sm:text-[17.5px] font-extrabold text-[#111111] mt-1 mb-1.5 sm:mb-2 tracking-tight">
                           {formatPrice(order.total)}
@@ -327,7 +289,7 @@ export default function OrdersPage() {
                             <Truck className="w-4 h-4 text-[#222222] shrink-0 mt-0.5 stroke-[1.6]" />
                           ) : sLower === 'cancelled' ? (
                             <XCircle className="w-4 h-4 text-[#222222] shrink-0 mt-0.5 stroke-[1.6]" />
-                          ) : sLower === 'processing' ? (
+                          ) : sLower === 'confirmed' || sLower === 'processing' ? (
                             <Settings className="w-4 h-4 text-[#222222] shrink-0 mt-0.5 stroke-[1.6]" />
                           ) : (
                             <Package className="w-4 h-4 text-[#222222] shrink-0 mt-0.5 stroke-[1.6]" />
@@ -346,24 +308,22 @@ export default function OrdersPage() {
                   )}
 
                   {/* Right: Actions Column */}
-                  <div className="w-full md:w-[165px] shrink-0 flex flex-row md:flex-col gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-black/6">
+                  <div className="w-full md:w-[170px] shrink-0 flex flex-row md:flex-col gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-black/6">
+                    <button
+                      type="button"
+                      onClick={() => setTrackingOrder(order)}
+                      className="flex-1 md:w-full py-2.5 px-3 rounded-[10px] text-[13px] font-semibold text-center bg-[#141414] hover:bg-[#262626] text-white shadow-2xs transition-all duration-150 active:scale-[0.98] cursor-pointer"
+                    >
+                      Track Order
+                    </button>
+
                     {isDelivered && (
                       <button
                         type="button"
                         onClick={() => handleBuyAgain(firstItem?.name)}
-                        className="flex-1 md:w-full py-2.5 px-3 rounded-[10px] text-[13px] font-semibold text-center bg-[#141414] hover:bg-[#262626] text-white shadow-2xs transition-all duration-150 active:scale-[0.98] cursor-pointer"
+                        className="flex-1 md:w-full py-2.5 px-3 rounded-[10px] text-[13px] font-semibold text-center bg-white hover:bg-black/3 border border-black/15 text-[#111111] shadow-2xs transition-all duration-150 active:scale-[0.98] cursor-pointer"
                       >
                         Buy Again
-                      </button>
-                    )}
-
-                    {isShipped && (
-                      <button
-                        type="button"
-                        onClick={() => handleTrackOrder(order.orderId)}
-                        className="flex-1 md:w-full py-2.5 px-3 rounded-[10px] text-[13px] font-semibold text-center bg-[#141414] hover:bg-[#262626] text-white shadow-2xs transition-all duration-150 active:scale-[0.98] cursor-pointer"
-                      >
-                        Track Order
                       </button>
                     )}
 
@@ -388,6 +348,11 @@ export default function OrdersPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Inline Tracking Progress Bar */}
+                <div className="mt-4 pt-3.5 border-t border-black/6">
+                  <OrderTrackingTimeline order={order} compact={true} showEventsList={false} />
+                </div>
               </article>
             )
           })}
@@ -401,7 +366,7 @@ export default function OrdersPage() {
           role="dialog"
           aria-modal="true"
         >
-          <div className="relative w-full max-w-[540px] max-h-[90vh] overflow-y-auto rounded-[24px] bg-white p-6 shadow-2xl border border-black/8 animate-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-[580px] max-h-[90vh] overflow-y-auto rounded-[24px] bg-white p-6 shadow-2xl border border-black/8 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-black/8">
               <div>
                 <h3 className="text-[18px] font-extrabold text-[#111111]">
@@ -421,9 +386,23 @@ export default function OrdersPage() {
               </button>
             </div>
 
+            {/* Tracking Progress Section in Details */}
+            <div className="py-4 border-b border-black/8">
+              <h4 className="text-[12.5px] font-bold text-[#666666] uppercase tracking-wider mb-2">
+                Order Tracking Status
+              </h4>
+              <OrderTrackingTimeline
+                order={selectedOrderDetails}
+                compact={false}
+                showEventsList={true}
+              />
+            </div>
+
             {/* Items List */}
             <div className="py-4 border-b border-black/8 space-y-3">
-              <h4 className="text-[13px] font-bold text-[#666666] uppercase tracking-wider">Items in Order</h4>
+              <h4 className="text-[12.5px] font-bold text-[#666666] uppercase tracking-wider">
+                Items in Order ({selectedOrderDetails.items.length})
+              </h4>
               {selectedOrderDetails.items.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-3">
                   <div className="relative w-12 h-14 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-black/6">
@@ -437,7 +416,9 @@ export default function OrdersPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13.5px] font-bold text-[#111111] truncate">{item.name}</p>
-                    <p className="text-[12px] text-[#666666]">Size {item.size} • Qty {item.qty}</p>
+                    <p className="text-[12px] text-[#666666]">
+                      Size {item.size} • Qty {item.qty}
+                    </p>
                   </div>
                   <span className="text-[13.5px] font-bold text-[#111111]">{item.price}</span>
                 </div>
@@ -451,12 +432,16 @@ export default function OrdersPage() {
               </div>
               <div className="flex justify-between py-0.5">
                 <span className="text-[#666]">Subtotal</span>
-                <span className="font-medium text-[#111]">{formatPrice(selectedOrderDetails.subtotal)}</span>
+                <span className="font-medium text-[#111]">
+                  {formatPrice(selectedOrderDetails.subtotal)}
+                </span>
               </div>
               <div className="flex justify-between py-0.5">
                 <span className="text-[#666]">Shipping</span>
                 <span className="font-medium text-[#111]">
-                  {selectedOrderDetails.shipping === 0 ? 'Free' : formatPrice(selectedOrderDetails.shipping)}
+                  {selectedOrderDetails.shipping === 0
+                    ? 'Free'
+                    : formatPrice(selectedOrderDetails.shipping)}
                 </span>
               </div>
               <div className="flex justify-between py-1 border-t border-black/6 font-extrabold text-[15px]">
@@ -465,15 +450,17 @@ export default function OrdersPage() {
               </div>
               <div className="flex justify-between py-1 border-t border-black/6">
                 <span className="text-[#666]">Delivery Address</span>
-                <span className="font-medium text-[#111] text-right max-w-[260px] text-[13px] leading-snug">
+                <span className="font-medium text-[#111] text-right max-w-[280px] text-[13px] leading-snug">
                   {selectedOrderDetails.shippingAddress || 'Address on file'}
                 </span>
               </div>
               {selectedOrderDetails.trackingNumber && (
                 <div className="flex justify-between py-0.5">
-                  <span className="text-[#666]">Tracking</span>
+                  <span className="text-[#666]">Courier &amp; AWB</span>
                   <span className="font-medium text-[#111] text-[13px]">
-                    {selectedOrderDetails.trackingCourier ? `${selectedOrderDetails.trackingCourier}: ` : ''}
+                    {selectedOrderDetails.trackingCourier
+                      ? `${selectedOrderDetails.trackingCourier}: `
+                      : ''}
                     {selectedOrderDetails.trackingNumber}
                   </span>
                 </div>
@@ -492,6 +479,13 @@ export default function OrdersPage() {
           </div>
         </div>
       )}
+
+      {/* ── Interactive Order Tracking Modal ──────────────────────── */}
+      <OrderTrackingModal
+        order={trackingOrder}
+        isOpen={Boolean(trackingOrder)}
+        onClose={() => setTrackingOrder(null)}
+      />
     </>
   )
 }
